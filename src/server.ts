@@ -1,72 +1,91 @@
-import { Server, Socket } from "socket.io";
+import { RemoteSocket, Server, Socket } from "socket.io";
 import { networkInterfaces } from "os";
+import SETTINGS from "webgl-test-shared/lib/settings";
+import generateTerrain from "./terrain-generation";
+import { ClientToServerEvents, InterServerEvents, PlayerData, ServerToClientEvents, SocketData } from "webgl-test-shared";
+
+type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 // Start the server
-const io = new Server(8000);
-console.log("Server started on port 8000");
+const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
+console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 
-let tiles: unknown;
-let terrainHasBeenRequested: boolean = false;
+// Generate the tiles
+const tiles = generateTerrain();
 
-const bufferedSockets = new Array<Socket>();
+// const clients: { [key: string]: ISocket } = {};
 
-io.on("connection", socket => {
+const getSocketData = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): SocketData => {
+   const playerData = socket.data as PlayerData;
+
+   const socketData: SocketData = Object.assign(playerData, { clientID: socket.id });
+   return socketData;
+}
+
+io.on("connection", async socket => {
    // Log the new client
-   console.log("New client: " + socket.id);
+   console.log(`New client: ${socket.id}`);
 
    // Send a message to the client confirming the connection
    socket.emit("message", "Connection established");
+   // Send the tiles to the client
+   socket.emit("terrain", tiles);
 
-   // Generate the board's terrain if it hasn't been generated already
-   if (typeof tiles === "undefined") {
-      if (!terrainHasBeenRequested) {
-         // If the terrain hasn't been requested, request it
-         terrainHasBeenRequested = true;
-         
-         socket.on("terrain", (terrain: unknown) => {
-            console.log("Terrain received from client " + socket.id);
+   socket.on("playerData", async (playerData: PlayerData) => {
+      socket.data.name = playerData.name;
+      socket.data.position = playerData.position;
 
-            tiles = terrain;
+      const clients = await io.fetchSockets();
 
-            // Send the terrain to all buffered sockets
-            for (const bufferedSocket of bufferedSockets) {
-               bufferedSocket.emit("terrain", tiles);
-            }
-            
-            socket.emit("terrain", tiles);
-         });
-         
-         socket.emit("terrain_generation_request");
-      } else {
-         // Otherwise, add this socket to the list of buffered sockets
-         bufferedSockets.push(socket);
+      // Send the player data to all other players
+      for (const client of clients) {
+         if (client.id === socket.id) continue;
+
+         const socketData = getSocketData(socket);
+         client.emit("newPlayer", socketData);
       }
-   } else {
-      // Send the terrain
-      socket.emit("terrain", tiles);
-   }
+      
+      // Send existing players to the client
+      for (const client of clients) {
+         if (client.id === socket.id) continue;
 
-   socket.on("message", (...args) => {
-      console.log(args);
-      // const packet = JSON.parse(data.toString());
-
-      // switch (packet.type) {
-      //    // Receive the terrain generation function
-      //    case "terrain_generation_request": {
-      //       break;
-      //    }
-      //    // Print any messages from the client
-      //    case "message": {
-      //       console.log(packet.content);
-      //       break;
-      //    }
-      // }
+         const socketData = getSocketData(client);
+         socket.emit("newPlayer", socketData);
+      }
    });
-   
+
+   // Push any player movement packets to all other clients
+   socket.on("playerMovement", async (movementHash: number) => {
+      const clients = await io.fetchSockets();
+
+      for (const client of clients) {
+         // Don't send the chat message to the socket sending it
+         if (client.id === socket.id) continue;
+
+         client.emit("playerMovement", socket.id, movementHash);
+      }
+   });
+
+   // Push any chat messages to all other clients
+   socket.on("chatMessage", async (chatMessage: string) => {
+      const clients = await io.fetchSockets();
+
+      for (const client of clients) {
+         // Don't send the chat message to the socket sending it
+         if (client.id === socket.id) continue;
+
+         client.emit("chatMessage", socket.data.name!, chatMessage);
+      }
+   });
+
+   // Log whenever a client disconnects from the server
    socket.on("disconnect", () => {
-      console.log("Client disconnected: " + socket.id);
+      console.log(`Client disconnected: ${socket.id}`);
    });
 });
+
+
+
 
 // 
 // Print the IP address of the server
@@ -89,4 +108,4 @@ for (const name of Object.keys(nets)) {
       }
    }
 }
-console.log("IP Address:", results.eth0[0]);
+console.log("Server IP Address:", results.eth0[0]);
