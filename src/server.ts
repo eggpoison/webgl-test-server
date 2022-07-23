@@ -13,8 +13,6 @@ console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 // Generate the tiles
 const tiles = generateTerrain();
 
-// const clients: { [key: string]: ISocket } = {};
-
 const getSocketData = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): SocketData => {
    const playerData = socket.data as PlayerData;
 
@@ -26,8 +24,6 @@ io.on("connection", async socket => {
    // Log the new client
    console.log(`New client: ${socket.id}`);
 
-   // Send a message to the client confirming the connection
-   socket.emit("message", "Connection established");
    // Send the tiles to the client
    socket.emit("terrain", tiles);
 
