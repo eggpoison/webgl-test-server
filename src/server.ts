@@ -2,7 +2,8 @@ import { RemoteSocket, Server, Socket } from "socket.io";
 import { networkInterfaces } from "os";
 import SETTINGS from "webgl-test-shared/lib/settings";
 import generateTerrain from "./terrain-generation";
-import { ClientToServerEvents, InterServerEvents, PlayerData, ServerToClientEvents, SocketData } from "webgl-test-shared";
+import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
+import { startReadingInput } from "./command-input";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -10,14 +11,41 @@ type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEve
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
 console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 
+const playerPositionRequests: { [clientID: string]: Array<(playerPosition: [number, number]) => void> } = {};
+
 // Generate the tiles
 const tiles = generateTerrain();
 
-const getSocketData = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): SocketData => {
-   const playerData = socket.data as PlayerData;
+const getPlayerPosition = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): Promise<[number, number]> => {
+   return new Promise(resolve => {
+      socket.emit("position");
 
-   const socketData: SocketData = Object.assign(playerData, { clientID: socket.id });
-   return socketData;
+      if (!playerPositionRequests.hasOwnProperty(socket.id)) {
+         playerPositionRequests[socket.id] = [];
+      }
+
+      // Add the request
+      playerPositionRequests[socket.id].push(
+         (playerPosition: [number, number]): void => {
+            resolve(playerPosition);
+         }
+      );
+   });
+}
+
+const getSocketData = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): Promise<SocketData> => {
+   return new Promise(async resolve => {
+      const name = socket.data.name!;
+      
+      const position = await getPlayerPosition(socket);
+      
+      const socketData: SocketData = {
+         name: name,
+         position: position,
+         clientID: socket.id
+      };
+      resolve(socketData);
+   });
 }
 
 io.on("connection", async socket => {
@@ -27,17 +55,16 @@ io.on("connection", async socket => {
    // Send the tiles to the client
    socket.emit("terrain", tiles);
 
-   socket.on("playerData", async (playerData: PlayerData) => {
-      socket.data.name = playerData.name;
-      socket.data.position = playerData.position;
+   socket.on("socketData", async (socketData: SocketData) => {
+      socket.data.name = socketData.name;
+      socket.data.position = socketData.position;
 
       const clients = await io.fetchSockets();
 
-      // Send the player data to all other players
+      // Send the socket data to all other players
       for (const client of clients) {
          if (client.id === socket.id) continue;
 
-         const socketData = getSocketData(socket);
          client.emit("newPlayer", socketData);
       }
       
@@ -45,8 +72,8 @@ io.on("connection", async socket => {
       for (const client of clients) {
          if (client.id === socket.id) continue;
 
-         const socketData = getSocketData(client);
-         socket.emit("newPlayer", socketData);
+         const currentPlayerSocketData = await getSocketData(client);
+         socket.emit("newPlayer", currentPlayerSocketData);
       }
    });
 
@@ -62,10 +89,16 @@ io.on("connection", async socket => {
       }
    });
 
+   socket.on("position", (position: [number, number]) => {
+      if (!playerPositionRequests.hasOwnProperty(socket.id)) return;
+
+      for (const request of playerPositionRequests[socket.id]) request(position);
+      playerPositionRequests[socket.id] = [];
+   });
+
    // Push any chat messages to all other clients
    socket.on("chatMessage", async (chatMessage: string) => {
       const clients = await io.fetchSockets();
-
       for (const client of clients) {
          // Don't send the chat message to the socket sending it
          if (client.id === socket.id) continue;
@@ -75,10 +108,18 @@ io.on("connection", async socket => {
    });
 
    // Log whenever a client disconnects from the server
-   socket.on("disconnect", () => {
+   socket.on("disconnect", async () => {
       console.log(`Client disconnected: ${socket.id}`);
+
+      // Send a disconnect packet to all other players
+      const clients = await io.fetchSockets();
+      for (const client of clients) {
+         client.emit("clientDisconnect", socket.id);
+      }
    });
 });
+
+startReadingInput();
 
 
 
@@ -104,4 +145,4 @@ for (const name of Object.keys(nets)) {
       }
    }
 }
-console.log("Server IP Address:", results.eth0[0]);
+console.log("Server IP Address:", typeof results.eth0 !== "undefined" ? results.eth0[0] : results.en0[0]);
