@@ -1,7 +1,7 @@
-import Tile, { TileInfo, TILE_TYPE_INFO_RECORD } from "webgl-test-shared/lib/Tile";
-import SETTINGS from "webgl-test-shared/lib/settings";
+import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
+import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
-import BIOMES, { Biome, BiomeGenerationInfo, TileGenerationInfo } from "webgl-test-shared/lib/biomes";
+import { BIOMES, Biome, BiomeGenerationInfo, TileGenerationInfo } from "webgl-test-shared/lib/biomes";
 
 const HEIGHT_NOISE_SCALE = 25;
 const TEMPERATURE_NOISE_SCALE = 30;

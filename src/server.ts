@@ -1,6 +1,5 @@
 import { RemoteSocket, Server, Socket } from "socket.io";
-import { networkInterfaces } from "os";
-import SETTINGS from "webgl-test-shared/lib/settings";
+import { SETTINGS } from "webgl-test-shared/lib/settings";
 import generateTerrain from "./terrain-generation";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import { startReadingInput } from "./command-input";
@@ -10,7 +9,7 @@ type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEve
 // Start the server
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
 console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
-
+ 
 const playerPositionRequests: { [clientID: string]: Array<(playerPosition: [number, number]) => void> } = {};
 
 // Generate the tiles
@@ -120,29 +119,3 @@ io.on("connection", async socket => {
 });
 
 startReadingInput();
-
-
-
-
-// 
-// Print the IP address of the server
-// https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js#:~:text=Any%20IP%20address%20of%20your,networkInterfaces()%3B%20console.
-// 
-
-const nets = networkInterfaces();
-const results = Object.create(null); // Or just '{}', an empty object
-
-for (const name of Object.keys(nets)) {
-   for (const net of nets[name]!) {
-      // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
-      // 'IPv4' is in Node <= 17, from 18 it's a number 4 or 6
-      const familyV4Value = typeof net.family === 'string' ? 'IPv4' : 4
-      if (net.family === familyV4Value && !net.internal) {
-         if (!results[name]) {
-            results[name] = [];
-         }
-         results[name].push(net.address);
-      }
-   }
-}
-console.log("Server IP Address:", typeof results.eth0 !== "undefined" ? results.eth0[0] : results.en0[0]);
