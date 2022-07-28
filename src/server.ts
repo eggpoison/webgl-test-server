@@ -1,9 +1,9 @@
 import { RemoteSocket, Server, Socket } from "socket.io";
 import { networkInterfaces } from "os";
-import SETTINGS from "webgl-test-shared/lib/settings";
 import generateTerrain from "./terrain-generation";
-import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import { startReadingInput } from "./command-input";
+import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
+import { SETTINGS } from "webgl-test-shared/lib/settings";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
