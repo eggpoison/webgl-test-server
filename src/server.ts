@@ -15,6 +15,8 @@ const playerPositionRequests: { [clientID: string]: Array<(playerPosition: [numb
 // Generate the tiles
 const tiles = generateTerrain();
 
+const messageHistory = new Array<string>();
+
 const getPlayerPosition = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): Promise<[number, number]> => {
    return new Promise(resolve => {
       socket.emit("position");
@@ -97,6 +99,8 @@ io.on("connection", async socket => {
 
    // Push any chat messages to all other clients
    socket.on("chatMessage", async (chatMessage: string) => {
+      messageHistory.push(chatMessage);
+
       const clients = await io.fetchSockets();
       for (const client of clients) {
          // Don't send the chat message to the socket sending it
