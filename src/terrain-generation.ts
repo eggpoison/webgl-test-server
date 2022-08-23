@@ -1,7 +1,31 @@
 import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
 import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
-import { BIOMES, Biome, BiomeGenerationInfo, TileGenerationInfo } from "webgl-test-shared/lib/biomes";
+import { BIOMES, Biome, BiomeGenerationInfo, TileGenerationInfo, BiomeName } from "webgl-test-shared/lib/biomes";
+import { generateEntitySpawnableTiles } from "./entity-spawning";
+
+const tilesByBiome: Record<BiomeName, Array<[number, number]>> = {
+   grasslands: [],
+   desert: [],
+   tundra: [],
+   swamp: [],
+   mountains: [],
+   magmaFields: []
+};
+
+export function getTilesByBiome(biomeName: BiomeName): Array<[number, number]> {
+   return tilesByBiome[biomeName];
+}
+
+const categoriseTiles = (tiles: Array<Array<Tile>>): void => {
+   for (let x = 0; x < SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE; x++) {
+      for (let y = 0; y < SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE; y++) {
+         const tile = tiles[x][y];
+
+         tilesByBiome[tile.biome.name].push([x, y]);
+      }
+   }
+}
 
 const HEIGHT_NOISE_SCALE = 25;
 const TEMPERATURE_NOISE_SCALE = 30;
@@ -138,6 +162,11 @@ function generateTerrain(): Array<Array<Tile>> {
          return new Tile(info as TileInfo);
       });
    });
+
+   // Categorise the tiles for later use
+   categoriseTiles(tiles);
+   
+   generateEntitySpawnableTiles();
 
    return tiles;
 }

@@ -1,4 +1,4 @@
-import { Vector, Point } from "./utils";
+import { Point, Vector } from "webgl-test-shared";
 
 const lerp = (start: number, end: number, amount: number): number => {
    return start * (1 - amount) + end * amount;
