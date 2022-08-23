@@ -1,11 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { Point, SETTINGS, Tile } from "webgl-test-shared";
-import generateTerrain from "./terrain-generation";
+import { Point, SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import { runSpawnAttempt } from "./entity-spawning";
-import Chunk from "./Chunk";
-import Entity from "./entities/Entity";
 import Player from "./entities/Player";
+import Board from "./Board";
 
 /*
 
@@ -18,13 +16,18 @@ Server is responsible for:
 When a client connects, send:
 - Game ticks
 - Tiles
-- 
 
 Components:
 - Render component (client)
 - AI component (server)
 - Health component (server)
 - Hitbox component (server)
+
+Each tick, send:
+- Entity data
+   - New entities
+   - Existing entity updates
+   - Removed entities
 
 
 Tasks:
@@ -35,106 +38,115 @@ Tasks:
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
+type EntityData = {
+   readonly id: number;
+}
+
+type NewEntityData = {
+   readonly id: number;
+}
+
+type ChangedEntityData = {
+   readonly id: number;
+}
+
+export type EntityCensus = {
+   readonly newEntities: Array<NewEntityData>;
+   readonly changedEntities: Array<ChangedEntityData>;
+   /** Array of all removed entities' id's */
+   readonly removedEntities: Array<number>;
+}
+
+type PlayerData = {
+   readonly clientEntityIDs: Array<number>;
+   readonly position: Point;
+   readonly instance: Player;
+   /** Bounds of where the player can see on their screen */
+   readonly visibleChunkBounds: VisibleChunkBounds;
+}
+
 class GameServer {
    private ticks: number = 0;
 
-   private readonly tiles: Array<Array<Tile>>;
-   public readonly chunks: Array<Array<Chunk>>;
+   public readonly board: Board;
 
    private readonly io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
-   constructor() {
-      this.tiles = generateTerrain();
-      console.log("Terrain generated");
+   private readonly playerData: Record<string, PlayerData> = {};
 
-      this.chunks = this.initialiseChunks();
+   constructor() {
+      // Create the board
+      this.board = new Board();
 
       // Start the server
       this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
       this.handlePlayerConnections();
       console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 
-      setInterval(this.tick, 1000 / SETTINGS.TPS);
-   }
+      setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
-   private initialiseChunks(): Array<Array<Chunk>> {
-      const chunks = new Array<Array<Chunk>>(SETTINGS.BOARD_SIZE);
-
-      for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
-         chunks[x] = new Array<Chunk>(SETTINGS.BOARD_SIZE);
-         for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
-            chunks[x][y] = new Chunk();
-         }
-      }
-
-      return chunks;
+      setTimeout(() => {
+         const tester = new Player(new Point(200, 200), "test player");
+         SERVER.board.addEntity(tester);
+      }, 1000);
    }
 
    private handlePlayerConnections(): void {
       this.io.on("connection", (socket: ISocket) => {
          console.log("New player connected");
 
+         // Send game data
+         socket.emit("initialGameData", this.ticks, this.board.tiles);
+
          // Receive initial player data
-         socket.on("initialPlayerData", (name: string, position: [number, number]) => {
-            this.addPlayer(name, position);
+         socket.on("initialPlayerData", (name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds) => {
+            this.addPlayer(socket, name, position, visibleChunkBounds);
          });
       });
    }
 
-   private tick(): void {
+   private async tick(): Promise<void> {
       this.ticks++;
 
-      this.tickEntities();
-
-      runSpawnAttempt();
-   }
-
-   private tickEntities(): void {
-      const entityChunkChanges = new Array<[entity: Entity, previousChunk: Chunk, newChunk: Chunk]>();
-
-      for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
-         for (let y = 0; x < SETTINGS.BOARD_SIZE; y++) {
-            const chunk = this.chunks[x][y];
-
-            const entities = chunk.getEntities().slice();
-            for (const entity of entities) {
-               entity.tick();
-
-               // If the entity has changed chunks, add it to the list
-               const newChunk = entity.findContainingChunk();
-               if (newChunk !== entity.previousChunk) {
-                  entityChunkChanges.push([entity, entity.previousChunk, newChunk]);
-               }
-            }
-         }
+      const entityData: EntityCensus = {
+         newEntities: new Array<NewEntityData>(),
+         changedEntities: new Array<ChangedEntityData>(),
+         removedEntities: new Array<number>()
       }
 
-      // Apply entity chunk changes
-      for (const [entity, previousChunk, newChunk] of entityChunkChanges) {
-         previousChunk.removeEntity(entity);
-         newChunk.addEntity(entity);
+      this.board.tickEntities(entityData);
 
-         entity.previousChunk = newChunk;
+      // runSpawnAttempt();
+
+      // Send game data packets to all players
+      const sockets = await this.io.fetchSockets();
+      for (const socket of sockets) {
+         // Skip sockets which haven't been properly loaded yet
+         if (!this.playerData.hasOwnProperty(socket.id)) continue;
+
+         const playerData = this.playerData[socket.id];
+         
+         const nearbyEntities = this.board.getPlayerNearbyEntities(playerData.instance, playerData.visibleChunkBounds);
       }
    }
 
-   private addPlayer(name: string, position: [number, number]): void {
+   private addPlayer(socket: ISocket, name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds): void {
+      // Create the player entity
       const pointPosition = new Point(...position);
       const player = new Player(pointPosition, name);
-      this.addEntity(player);
-   }
+      this.board.addEntity(player);
 
-   public addEntity(entity: Entity): void {
-      const chunk = entity.findContainingChunk();
-      chunk.addEntity(entity);
-
-      entity.previousChunk = chunk;
+      // Initialise the player's gamedata record
+      this.playerData[socket.id] = {
+         clientEntityIDs: new Array<number>(),
+         position: pointPosition,
+         instance: player,
+         visibleChunkBounds: visibleChunkBounds
+      };
    }
 }
 
 export let SERVER: GameServer;
-
-let io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 /** Starts the game server */
 const startServer = (): void => {

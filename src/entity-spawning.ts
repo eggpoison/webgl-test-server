@@ -68,6 +68,13 @@ const getRandomEntityID = (type: EntityType): number => {
 
 const PASSIVE_MOB_CAP = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * 0.75;
 
+const calculatePassiveMobSpawnCount = (): number => {
+   const passiveMobCount = PASSIVE_MOB_CAP * 0.9;
+   const capFullness = passiveMobCount / PASSIVE_MOB_CAP;
+   const spawnCount = (-capFullness * capFullness + 1) / 2.5 * PASSIVE_MOB_CAP;
+   return spawnCount;
+}
+
 const spawnPassiveMobs = (): void => {
    // The mob to attempt to spawn
    const mobID = getRandomEntityID("passive");
@@ -82,11 +89,7 @@ const spawnPassiveMobs = (): void => {
 
    const eligibleTiles = spawnInfo.spawnableTiles!.slice();
 
-   const spawnPositions = new Array<[number, number]>();
-
-   const passiveMobCount = PASSIVE_MOB_CAP * 0.9;
-   const capFullness = passiveMobCount / PASSIVE_MOB_CAP;
-   const spawnCount = (-capFullness * capFullness + 1) / 2.5 * PASSIVE_MOB_CAP;
+   const spawnCount = calculatePassiveMobSpawnCount();
    for (let i = 0; i < spawnCount; i++) {
       const idx = Math.floor(Math.random() * eligibleTiles.length);
       const tileCoords = eligibleTiles[idx];
@@ -98,7 +101,7 @@ const spawnPassiveMobs = (): void => {
       // Spawn the entity
       const spawnPosition = new Point(x, y);
       const entity = new mobClass(spawnPosition);
-      SERVER.addEntity(entity);
+      SERVER.board.addEntity(entity);
 
       eligibleTiles.splice(idx, 1);
    }

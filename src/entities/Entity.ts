@@ -3,8 +3,18 @@ import { Point, SETTINGS, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
 
+let idCounter = 0;
+
+/** Finds a unique available ID for an entity */
+const findAvailableID = (): number => {
+   return idCounter++;
+}
+
 abstract class Entity {
    private readonly components = new Map<(abstract new (...args: any[]) => any), Component>();
+
+   /** Unique identifier for every entity */
+   public readonly id: number = findAvailableID();
 
    /** Position of the entity */
    public position: Point;
@@ -14,6 +24,8 @@ abstract class Entity {
    public acceleration: Vector | null = null;
 
    public previousChunk: Chunk;
+
+   public isRemoved: boolean = false;
 
    constructor(position: Point, velocity: Vector | null, acceleration: Vector | null, components: Array<Component>) {
       this.position = position;
@@ -54,7 +66,7 @@ abstract class Entity {
       const chunkX = Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
       const chunkY = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
 
-      return SERVER.chunks[chunkX][chunkY];
+      return SERVER.board.chunks[chunkX][chunkY];
    }
 }
 
