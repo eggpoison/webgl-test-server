@@ -5,14 +5,16 @@ import Entity from "./Entity";
 class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
 
-   private readonly name: string;
+   public readonly type = "player";
+
+   private readonly displayName: string;
 
    constructor(position: Point, name: string) {
       super(position, null, null, [
          new HealthComponent(Player.MAX_HEALTH, Player.MAX_HEALTH, 0)
       ]);
 
-      this.name = name;
+      this.displayName = name;
    }
 }
 
