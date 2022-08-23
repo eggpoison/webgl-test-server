@@ -2,7 +2,7 @@ import { SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
-import { EntityCensus, SERVER } from "./server";
+import { SERVER } from "./server";
 import generateTerrain from "./terrain-generation";
 
 class Board {
@@ -29,7 +29,7 @@ class Board {
       return chunks;
    }
 
-   public tickEntities(entityData: EntityCensus): void {
+   public tickEntities(removedEntities: Array<number>): void {
       const entityChunkChanges = new Array<[entity: Entity, previousChunk: Chunk, newChunk: Chunk]>();
 
       for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
@@ -46,7 +46,7 @@ class Board {
 
                // Handle removed entities
                if (entity.isRemoved) {
-                  entityData.removedEntities.push(entity.id);
+                  removedEntities.push(entity.id);
 
                   this.removeEntity(entity, newChunk);
                }

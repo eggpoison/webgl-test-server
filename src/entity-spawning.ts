@@ -16,7 +16,7 @@ SPAWN PACKET:
 
 */
 
-import { BiomeName, ENTITY_INFO_RECORD, EntityType, SETTINGS, Point } from "webgl-test-shared";
+import { BiomeName, ENTITY_INFO_RECORD, EntityType, SETTINGS, Point, EntityBehaviour, EntityInfo } from "webgl-test-shared";
 import ENTITY_CLASS_RECORD from "./entity-class-record";
 import { SERVER } from "./server";
 import { getTilesByBiome } from "./terrain-generation";
@@ -51,18 +51,19 @@ export function generateEntitySpawnableTiles(): void {
 }
 
 // Categorise all entity info
-const ENTITY_TYPE_RECORD: Record<EntityType, Array<number>> = {
+const ENTITY_BEHAVIOUR_RECORD: Record<EntityBehaviour, Array<number>> = {
    passive: [],
    neutral: [],
-   hostile: [],
-   resource: []
+   hostile: []
 };
-for (const info of ENTITY_INFO_RECORD) {
-   ENTITY_TYPE_RECORD[info.type].push(info.id);
+for (const [id, info] of Object.entries(ENTITY_INFO_RECORD) as unknown as Array<[number, EntityInfo]>) {
+   if (info.category === "mob") {
+      ENTITY_BEHAVIOUR_RECORD[info.behaviour].push(id);
+   }
 }
 
-const getRandomEntityID = (type: EntityType): number => {
-   const entityInfos = ENTITY_TYPE_RECORD[type];
+const getRandomEntityID = (behaviour: EntityBehaviour): number => {
+   const entityInfos = ENTITY_BEHAVIOUR_RECORD[behaviour];
    return entityInfos[Math.floor(Math.random() * entityInfos.length)];
 }
 

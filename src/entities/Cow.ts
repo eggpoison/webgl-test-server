@@ -5,6 +5,8 @@ import Entity from "./Entity";
 class Cow extends Entity {
    private static readonly MAX_HEALTH = 10;
 
+   public readonly type = "cow";
+
    constructor(position: Point) {
       super(position, null, null, [
          new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0)
