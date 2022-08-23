@@ -53,7 +53,7 @@ type ChangedEntityData = {
 export type EntityCensus = {
    readonly newEntities: Array<NewEntityData>;
    readonly changedEntities: Array<ChangedEntityData>;
-   /** Array of all removed entities' id's */
+   /** Array of all raemoved entities' id's */
    readonly removedEntities: Array<number>;
 }
 
