@@ -1,7 +1,6 @@
 import { Server, Socket } from "socket.io";
-import { BaseEntityData, GameDataPacket, NewEntityData, Point, SETTINGS, UpdatedEntityData, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityData, GameDataPacket, Mutable, Point, SETTINGS, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
-import { runSpawnAttempt } from "./entity-spawning";
 import Player from "./entities/Player";
 import Board from "./Board";
 
@@ -24,10 +23,7 @@ Components:
 - Hitbox component (server)
 
 Each tick, send game data:
-   - New entities
-   - Existing entity updates
-   - Removed entities
-
+- Nearby entities
 
 Tasks:
 * Start game instance
@@ -36,13 +32,6 @@ Tasks:
 */
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-
-export type EntityCensus = {
-   readonly newEntities: Array<NewEntityData>;
-   readonly changedEntities: Array<UpdatedEntityData>;
-   /** Array of all raemoved entities' id's */
-   readonly removedEntities: Array<number>;
-}
 
 type PlayerData = {
    readonly clientEntityIDs: Array<number>;
@@ -80,7 +69,7 @@ class GameServer {
 
    private handlePlayerConnections(): void {
       this.io.on("connection", (socket: ISocket) => {
-         console.log("New player connected");
+         console.log("New client connected");
 
          // Send initial game data
          socket.emit("initialGameData", this.ticks, this.board.tiles);
@@ -89,23 +78,28 @@ class GameServer {
          socket.on("initialPlayerData", (name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds) => {
             this.addPlayer(socket, name, position, visibleChunkBounds);
          });
+
+         // Handle player disconnects
+         socket.on("disconnect", () => {
+            console.log("Client disconnected");
+
+            this.handlePlayerDisconnect(socket);
+         });
       });
    }
 
    private async tick(): Promise<void> {
       this.ticks++;
 
-      const removedEntities = new Array<number>();
-
-      this.board.tickEntities(removedEntities);
+      this.board.tickEntities();
 
       // runSpawnAttempt();
 
       // Send game data packets to all players
-      this.sendGameDataPackets(removedEntities);
+      this.sendGameDataPackets();
    }
 
-   private async sendGameDataPackets(removedEntities: Array<number>): Promise<void> {
+   private async sendGameDataPackets(): Promise<void> {
       const sockets = await this.io.fetchSockets();
       for (const socket of sockets) {
          // Skip clients which haven't been properly loaded yet
@@ -115,47 +109,32 @@ class GameServer {
          const playerData = this.playerData[socket.id];
          
          // Initialise the game data packet
-         const gameDataPacket: GameDataPacket = {
-            newEntities: new Array<NewEntityData>(),
-            updatedEntities: new Array<UpdatedEntityData>(),
-            removedEntities: new Array<number>()
+         const gameDataPacket = {
+            nearbyEntities: new Array<EntityData>()
          };
-
-         // Add removed entities
-         for (let idx = playerData.clientEntityIDs.length - 1; idx >= 0; idx--) {
-            const entityID = playerData.clientEntityIDs[idx];
-            if (removedEntities.includes(entityID)) {
-               gameDataPacket.removedEntities.push(entityID);
-               playerData.clientEntityIDs.splice(idx, 1);
-            }
-         }
          
          const nearbyEntities = this.board.getPlayerNearbyEntities(playerData.instance, playerData.visibleChunkBounds);
          for (const entity of nearbyEntities) {
-            const baseEntityData: BaseEntityData = {
+            const entityData: EntityData = {
                id: entity.id,
-               position: entity.position,
-               velocity: entity.velocity,
-               acceleration: entity.acceleration,
+               type: entity.type,
+               position: entity.position.package(),
+               velocity: entity.velocity !== null ? entity.velocity.package() : null,
+               acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
                terminalVelocity: entity.terminalVelocity
             };
 
-            if (playerData.clientEntityIDs.includes(entity.id)) {
-               gameDataPacket.updatedEntities.push(baseEntityData as UpdatedEntityData);
-            } else {
-               const newEntityData = Object.assign(baseEntityData, {
-                  type: entity.type
-               });
-               gameDataPacket.newEntities.push(newEntityData);
-               
-               // Add the entity to the clientEntityID list
-               playerData.clientEntityIDs.push(entity.id);
-            }
+            gameDataPacket.nearbyEntities.push(entityData);
          }
 
          // Send the game data to the player
-         socket.emit("gameDataPacket", gameDataPacket);
+         socket.emit("gameDataPacket", gameDataPacket as GameDataPacket);
       }
+   }
+
+   private handlePlayerDisconnect(socket: ISocket): void {
+      const playerData = this.playerData[socket.id];
+      this.board.removeEntity(playerData.instance);
    }
 
    private addPlayer(socket: ISocket, name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds): void {

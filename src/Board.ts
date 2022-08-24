@@ -29,7 +29,7 @@ class Board {
       return chunks;
    }
 
-   public tickEntities(removedEntities: Array<number>): void {
+   public tickEntities(): void {
       const entityChunkChanges = new Array<[entity: Entity, previousChunk: Chunk, newChunk: Chunk]>();
 
       for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
@@ -46,7 +46,7 @@ class Board {
 
                // Handle removed entities
                if (entity.isRemoved) {
-                  removedEntities.push(entity.id);
+                  // removedEntities.push(entity.id);
 
                   this.removeEntity(entity, newChunk);
                }
@@ -75,8 +75,8 @@ class Board {
       entity.previousChunk = chunk;
    }
 
-   private removeEntity(entity: Entity, chunk: Chunk): void {
-      chunk.removeEntity(entity);
+   public removeEntity(entity: Entity, chunk?: Chunk): void {
+      (chunk || entity.previousChunk).removeEntity(entity);
    }
 
    public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity> {

@@ -16,7 +16,7 @@ SPAWN PACKET:
 
 */
 
-import { BiomeName, ENTITY_INFO_RECORD, EntityType, SETTINGS, Point, EntityBehaviour, EntityInfo } from "webgl-test-shared";
+import { BiomeName, ENTITY_INFO_RECORD, SETTINGS, Point, EntityBehaviour, EntityInfo, EntityType } from "webgl-test-shared";
 import ENTITY_CLASS_RECORD from "./entity-class-record";
 import { SERVER } from "./server";
 import { getTilesByBiome } from "./terrain-generation";
@@ -26,9 +26,8 @@ type EntitySpawnInfo = {
    spawnableTiles: null | ReadonlyArray<[number, number]>;
 }
 
-const ENTITY_SPAWN_INFO_RECORD: Record<number, EntitySpawnInfo> = {
-   // Cow
-   0: {
+const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
+   cow: {
       spawnableBiomes: ["grasslands"],
       spawnableTiles: null
    }
@@ -36,8 +35,7 @@ const ENTITY_SPAWN_INFO_RECORD: Record<number, EntitySpawnInfo> = {
 
 /** Called once the tiles have been generated */
 export function generateEntitySpawnableTiles(): void {
-   const entries = Object.entries(ENTITY_SPAWN_INFO_RECORD) as unknown as Array<[number, EntitySpawnInfo]>;
-   for (const [id, spawnInfo] of entries) {
+   for (const [type, spawnInfo] of Object.entries(ENTITY_SPAWN_INFO_RECORD) as Array<[EntityType, EntitySpawnInfo]>) {
       // Populate the spawnable tiles
       let spawnableTiles = new Array<[number, number]>();
       for (const biome of spawnInfo.spawnableBiomes) {
@@ -46,23 +44,23 @@ export function generateEntitySpawnableTiles(): void {
       }
 
       // Assign it to the spawnableTiles property
-      ENTITY_SPAWN_INFO_RECORD[id].spawnableTiles = spawnableTiles;
+      ENTITY_SPAWN_INFO_RECORD[type]!.spawnableTiles = spawnableTiles;
    }
 }
 
 // Categorise all entity info
-const ENTITY_BEHAVIOUR_RECORD: Record<EntityBehaviour, Array<number>> = {
+const ENTITY_BEHAVIOUR_RECORD: Record<EntityBehaviour, Array<EntityType>> = {
    passive: [],
    neutral: [],
    hostile: []
 };
-for (const [id, info] of Object.entries(ENTITY_INFO_RECORD) as unknown as Array<[number, EntityInfo]>) {
+for (const [type, info] of Object.entries(ENTITY_INFO_RECORD) as Array<[EntityType, EntityInfo]>) {
    if (info.category === "mob") {
-      ENTITY_BEHAVIOUR_RECORD[info.behaviour].push(id);
+      ENTITY_BEHAVIOUR_RECORD[info.behaviour].push(type);
    }
 }
 
-const getRandomEntityID = (behaviour: EntityBehaviour): number => {
+const getRandomEntityType = (behaviour: EntityBehaviour): EntityType => {
    const entityInfos = ENTITY_BEHAVIOUR_RECORD[behaviour];
    return entityInfos[Math.floor(Math.random() * entityInfos.length)];
 }
@@ -78,15 +76,15 @@ const calculatePassiveMobSpawnCount = (): number => {
 
 const spawnPassiveMobs = (): void => {
    // The mob to attempt to spawn
-   const mobID = getRandomEntityID("passive");
+   const mobType = getRandomEntityType("passive");
 
-   if (!ENTITY_SPAWN_INFO_RECORD.hasOwnProperty(mobID)) {
-      throw new Error(`No entity spawn info for mob with ID ${mobID}`);
+   if (!ENTITY_SPAWN_INFO_RECORD.hasOwnProperty(mobType)) {
+      throw new Error(`No entity spawn info for mob with ID ${mobType}`);
    }
 
    // Get info about the entity
-   const spawnInfo = ENTITY_SPAWN_INFO_RECORD[mobID];
-   const mobClass = ENTITY_CLASS_RECORD[mobID]();
+   const spawnInfo = ENTITY_SPAWN_INFO_RECORD[mobType]!;
+   const mobClass = ENTITY_CLASS_RECORD[mobType]();
 
    const eligibleTiles = spawnInfo.spawnableTiles!.slice();
 
