@@ -1,13 +1,14 @@
+import { EntityType } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 
 abstract class Component {
-   private entity!: Entity;
+   private entity!: Entity<EntityType>;
 
-   public setEntity(entity: Entity): void {
+   public setEntity(entity: Entity<EntityType>): void {
       this.entity = entity;
    }
 
-   protected getEntity(): Entity {
+   protected getEntity(): Entity<EntityType> {
       return this.entity;
    }
 

@@ -1,7 +1,8 @@
 import Chunk from "../Chunk";
-import { EntityType, lerp, Point, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, lerp, Point, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
+import HitboxComponent from "../entity-components/HitboxComponent";
 
 let idCounter = 0;
 
@@ -10,7 +11,7 @@ const findAvailableID = (): number => {
    return idCounter++;
 }
 
-abstract class Entity {
+abstract class Entity<T extends EntityType> {
    private readonly components = new Map<(abstract new (...args: any[]) => any), Component>();
 
    /** Unique identifier for every entity */
@@ -31,8 +32,6 @@ abstract class Entity {
    public previousChunk: Chunk;
 
    public isRemoved: boolean = false;
-
-   public isMoving: boolean = true;
 
    constructor(position: Point, velocity: Vector | null, acceleration: Vector | null, components: Array<Component>) {
       this.position = position;
@@ -56,14 +55,36 @@ abstract class Entity {
       });
    }
 
+   public abstract getClientArgs(): Parameters<EntityInfoClientArgs[T]>;
+
    public tick(): void {
       this.applyPhysics();
+
+      this.resolveWallCollisions();
 
       this.components.forEach(component => {
          if (typeof component.tick !== "undefined") {
             component.tick();
          }
       });
+   }
+
+   private findCurrentTile(): Tile {
+      const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
+      const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
+      return SERVER.board.tiles[tileX][tileY];
+   }
+
+   public getComponent<C extends Component>(constr: { new(...args: any[]): C }): C | null {
+      const component = this.components.get(constr);
+      return typeof component !== "undefined" ? (component as C) : null;
+   }
+
+   public findContainingChunk(): Chunk {
+      const chunkX = Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkY = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+
+      return SERVER.board.chunks[chunkX][chunkY];
    }
 
    private applyPhysics(): void {
@@ -86,7 +107,7 @@ abstract class Entity {
             this.velocity = this.velocity.add(acceleration);
          }
       }
-      else if (!this.isMoving && this.velocity !== null) {
+      else if (this.velocity !== null) {
          // Apply friction
          this.velocity.magnitude -= this.terminalVelocity * tileTypeInfo.friction * SETTINGS.FRICTION_CONSTANT / SETTINGS.TPS;
          if (this.velocity.magnitude < 0) this.velocity = null;
@@ -110,23 +131,67 @@ abstract class Entity {
          this.position = this.position.add(velocity.convertToPoint());
       }
    }
+   
+   private resolveWallCollisions(): void {
+      // Calculate the size of the entity
+      let halfWidth: number;
+      let halfHeight: number;
+      const hitboxComponent = this.getComponent(HitboxComponent);
+      if (hitboxComponent !== null) {
+         switch (hitboxComponent.hitbox.type) {
+            case "circular": {
+               halfWidth = hitboxComponent.hitbox.radius;
+               halfHeight = hitboxComponent.hitbox.radius;
+               break;
+            }
+            case "rectangular": {
+               halfWidth = hitboxComponent.hitbox.width / 2;
+               halfHeight = hitboxComponent.hitbox.height / 2;
+               break;
+            }
+         }
+      } else {
+         halfWidth = 0;
+         halfHeight = 0;
+      }
+      
+      const boardUnits = SETTINGS.DIMENSIONS * SETTINGS.TILE_SIZE;
 
-   private findCurrentTile(): Tile {
-      const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
-      const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
-      return SERVER.board.tiles[tileX][tileY];
-   }
+      if (this.position.x - halfWidth < 0) {
+         this.position.x = halfWidth;
 
-   public getComponent<C extends Component>(constr: { new(...args: any[]): C }): C | null {
-      const component = this.components.get(constr);
-      return typeof component !== "undefined" ? (component as C) : null;
-   }
+         if (this.velocity !== null) {
+            const pointVelocity = this.velocity.convertToPoint();
+            pointVelocity.x = 0;
+            this.velocity = pointVelocity.convertToVector();
+         }
+      } else if (this.position.x + halfWidth > boardUnits) {
+         this.position.x = boardUnits - halfWidth;
+         
+         if (this.velocity !== null) {
+            const pointVelocity = this.velocity.convertToPoint();
+            pointVelocity.x = 0;
+            this.velocity = pointVelocity.convertToVector();
+         }
+      }
 
-   public findContainingChunk(): Chunk {
-      const chunkX = Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-      const chunkY = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-
-      return SERVER.board.chunks[chunkX][chunkY];
+      if (this.position.y - halfHeight < 0) {
+         this.position.y = halfHeight;
+         
+         if (this.velocity !== null) {
+            const pointVelocity = this.velocity.convertToPoint();
+            pointVelocity.y = 0;
+            this.velocity = pointVelocity.convertToVector();
+         }
+      } else if (this.position.y + halfHeight > boardUnits) {
+         this.position.y = boardUnits - halfHeight;
+         
+         if (this.velocity !== null) {
+            const pointVelocity = this.velocity.convertToPoint();
+            pointVelocity.y = 0;
+            this.velocity = pointVelocity.convertToVector();
+         }
+      }
    }
 }
 

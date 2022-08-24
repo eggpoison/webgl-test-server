@@ -1,8 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { EntityData, GameDataPacket, Mutable, Point, SETTINGS, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityData, EntityType, GameDataPacket, Mutable, Point, SETTINGS, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
+import { runSpawnAttempt } from "./entity-spawning";
 
 /*
 
@@ -25,6 +26,9 @@ Components:
 Each tick, send game data:
 - Nearby entities
 
+- Player needs to handle its own wall and tile collisions
+- Server needs to handle wall and tile collisions for all entities
+
 Tasks:
 * Start game instance
 * Start the server
@@ -35,10 +39,9 @@ type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEve
 
 type PlayerData = {
    readonly clientEntityIDs: Array<number>;
-   readonly position: Point;
    readonly instance: Player;
    /** Bounds of where the player can see on their screen */
-   readonly visibleChunkBounds: VisibleChunkBounds;
+   visibleChunkBounds: VisibleChunkBounds;
 }
 
 class GameServer {
@@ -69,7 +72,7 @@ class GameServer {
 
    private handlePlayerConnections(): void {
       this.io.on("connection", (socket: ISocket) => {
-         console.log("New client connected");
+         console.log("New client connected: " + socket.id);
 
          // Send initial game data
          socket.emit("initialGameData", this.ticks, this.board.tiles);
@@ -79,12 +82,19 @@ class GameServer {
             this.addPlayer(socket, name, position, visibleChunkBounds);
          });
 
+         socket.on("newVisibleChunkBounds", (visibleChunkBounds: VisibleChunkBounds) => {
+            this.updatePlayerVisibleChunkBounds(socket, visibleChunkBounds);
+         });
+
          // Handle player disconnects
          socket.on("disconnect", () => {
-            console.log("Client disconnected");
-
+            console.log("Client disconnected: " + socket.id);
             this.handlePlayerDisconnect(socket);
          });
+
+         socket.on("playerMovement", (position: [number, number], movementHash: number) => {
+            this.sendPlayerMovementPacket(socket, position, movementHash);
+         })
       });
    }
 
@@ -93,7 +103,7 @@ class GameServer {
 
       this.board.tickEntities();
 
-      // runSpawnAttempt();
+      runSpawnAttempt();
 
       // Send game data packets to all players
       this.sendGameDataPackets();
@@ -110,18 +120,19 @@ class GameServer {
          
          // Initialise the game data packet
          const gameDataPacket = {
-            nearbyEntities: new Array<EntityData>()
+            nearbyEntities: new Array<EntityData<EntityType>>()
          };
          
          const nearbyEntities = this.board.getPlayerNearbyEntities(playerData.instance, playerData.visibleChunkBounds);
          for (const entity of nearbyEntities) {
-            const entityData: EntityData = {
+            const entityData: EntityData<EntityType> = {
                id: entity.id,
                type: entity.type,
                position: entity.position.package(),
                velocity: entity.velocity !== null ? entity.velocity.package() : null,
                acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
-               terminalVelocity: entity.terminalVelocity
+               terminalVelocity: entity.terminalVelocity,
+               clientArgs: entity.getClientArgs()
             };
 
             gameDataPacket.nearbyEntities.push(entityData);
@@ -133,8 +144,22 @@ class GameServer {
    }
 
    private handlePlayerDisconnect(socket: ISocket): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const playerData = this.playerData[socket.id];
+         this.board.removeEntity(playerData.instance);
+      }
+   }
+
+   private sendPlayerMovementPacket(socket: ISocket, position: [number, number], movementHash: number): void {
       const playerData = this.playerData[socket.id];
-      this.board.removeEntity(playerData.instance);
+
+      playerData.instance.position = Point.unpackage(position);
+      playerData.instance.updateMovementFromHash(movementHash);
+   }
+
+   private updatePlayerVisibleChunkBounds(socket: ISocket, visibleChunkBounds: VisibleChunkBounds): void {
+      const playerData = this.playerData[socket.id];
+      playerData.visibleChunkBounds = visibleChunkBounds;
    }
 
    private addPlayer(socket: ISocket, name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds): void {
@@ -146,7 +171,6 @@ class GameServer {
       // Initialise the player's gamedata record
       this.playerData[socket.id] = {
          clientEntityIDs: new Array<number>(),
-         position: pointPosition,
          instance: player,
          visibleChunkBounds: visibleChunkBounds
       };
@@ -160,128 +184,4 @@ const startServer = (): void => {
    // Create the gmae server
    SERVER = new GameServer();
 }
-
 startServer();
-
-// const messageHistory = new Array<string>();
-
-// const getPlayerPosition = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): Promise<[number, number]> => {
-//    return new Promise(resolve => {
-//       socket.emit("position");
-
-//       if (!playerPositionRequests.hasOwnProperty(socket.id)) {
-//          playerPositionRequests[socket.id] = [];
-//       }
-
-//       // Add the request
-//       playerPositionRequests[socket.id].push(
-//          (playerPosition: [number, number]): void => {
-//             resolve(playerPosition);
-//          }
-//       );
-//    });
-// }
-
-// const getSocketData = (socket: ISocket | RemoteSocket<ServerToClientEvents, SocketData>): Promise<SocketData> => {
-//    return new Promise(async resolve => {
-//       const name = socket.data.name!;
-      
-//       const position = await getPlayerPosition(socket);
-      
-//       const socketData: SocketData = {
-//          name: name,
-//          position: position,
-//          clientID: socket.id
-//       };
-//       resolve(socketData);
-//    });
-// }
-
-// io.on("connection", async socket => {
-//    // Log the new client
-//    console.log(`New client: ${socket.id}`);
-
-//    if (SERVER.tiles === null) {
-//       throw new Error("Tiles haven't been generated when client attempted to join!");
-//    }
-
-//    // Send the tiles to the client
-//    socket.emit("terrain", SERVER.tiles);
-
-//    socket.on("socketData", async (socketData: SocketData) => {
-//       socket.data.name = socketData.name;
-//       socket.data.position = socketData.position;
-
-//       const clients = await io.fetchSockets();
-
-//       // Send the socket data to all other players
-//       for (const client of clients) {
-//          if (client.id === socket.id) continue;
-
-//          client.emit("newPlayer", socketData);
-//       }
-      
-//       // Send existing players to the client
-//       for (const client of clients) {
-//          if (client.id === socket.id) continue;
-
-//          const currentPlayerSocketData = await getSocketData(client);
-//          socket.emit("newPlayer", currentPlayerSocketData);
-//       }
-//    });
-
-//    // Push any player movement packets to all other clients
-//    socket.on("playerMovement", async (movementHash: number) => {
-//       const clients = await io.fetchSockets();
-
-//       for (const client of clients) {
-//          // Don't send the chat message to the socket sending it
-//          if (client.id === socket.id) continue;
-
-//          client.emit("playerMovement", socket.id, movementHash);
-//       }
-//    });
-
-//    socket.on("position", (position: [number, number]) => {
-//       if (!playerPositionRequests.hasOwnProperty(socket.id)) return;
-
-//       for (const request of playerPositionRequests[socket.id]) request(position);
-//       playerPositionRequests[socket.id] = [];
-//    });
-
-//    // Push any chat messages to all other clients
-//    socket.on("chatMessage", async (chatMessage: string) => {
-//       messageHistory.push(chatMessage);
-
-//       const clients = await io.fetchSockets();
-//       for (const client of clients) {
-//          // Don't send the chat message to the socket sending it
-//          if (client.id === socket.id) continue;
-
-//          client.emit("chatMessage", socket.data.name!, chatMessage);
-//       }
-//    });
-
-//    // Log whenever a client disconnects from the server
-//    socket.on("disconnect", async () => {
-//       console.log(`Client disconnected: ${socket.id}`);
-
-//       // Send a disconnect packet to all other players
-//       const clients = await io.fetchSockets();
-//       for (const client of clients) {
-//          client.emit("clientDisconnect", socket.id);
-//       }
-//    });
-// });
-
-// type PacketName = keyof ServerToClientEvents;
-
-// export async function pushPacket<P extends PacketName>(packetName: P, packet: Parameters<ServerToClientEvents[P]>): Promise<void> {
-//    const clients = await io.fetchSockets();
-//    for (const client of clients) {
-//       client.emit(packetName, ...packet);
-//    }
-// }
-
-// startServer();
-// startReadingInput();

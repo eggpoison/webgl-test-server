@@ -23,13 +23,12 @@ import { getTilesByBiome } from "./terrain-generation";
 
 type EntitySpawnInfo = {
    readonly spawnableBiomes: ReadonlyArray<BiomeName>;
-   spawnableTiles: null | ReadonlyArray<[number, number]>;
+   spawnableTiles?: ReadonlyArray<[number, number]>;
 }
 
 const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
    cow: {
-      spawnableBiomes: ["grasslands"],
-      spawnableTiles: null
+      spawnableBiomes: ["grasslands"]
    }
 };
 
@@ -107,6 +106,7 @@ const spawnPassiveMobs = (): void => {
 }
 
 export function runSpawnAttempt(): void {
+   // Expected number of times that passive mobs will be spawned in a second
    const PASSIVE_MOB_SPAWN_CHANCE = 0.1;
    if (Math.random() <= PASSIVE_MOB_SPAWN_CHANCE / SETTINGS.TPS) {
       spawnPassiveMobs();

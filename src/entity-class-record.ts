@@ -3,7 +3,7 @@ import Cow from "./entities/Cow";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
 
-const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (...args: any[]) => Entity)> = {
+const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (...args: any[]) => Entity<EntityType>)> = {
    cow: () => Cow,
    player: () => Player
 };

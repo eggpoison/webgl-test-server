@@ -1,17 +1,17 @@
 import Component from "./Component";
 
-type CircularHitbox = {
+export type CircularHitbox = {
    readonly type: "circular";
    readonly radius: number;
 }
 
-type RectangularHitbox = {
+export type RectangularHitbox = {
    readonly type: "rectangular";
    readonly width: number;
    readonly height: number;
 }
 
-type Hitbox = CircularHitbox | RectangularHitbox;
+export type Hitbox = CircularHitbox | RectangularHitbox;
 
 class HitboxComponent extends Component {
    public readonly hitbox: Hitbox;

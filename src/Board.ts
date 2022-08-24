@@ -1,4 +1,4 @@
-import { SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityType, SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
@@ -30,7 +30,7 @@ class Board {
    }
 
    public tickEntities(): void {
-      const entityChunkChanges = new Array<[entity: Entity, previousChunk: Chunk, newChunk: Chunk]>();
+      const entityChunkChanges = new Array<[entity: Entity<EntityType>, previousChunk: Chunk, newChunk: Chunk]>();
 
       for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
          for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
@@ -61,6 +61,9 @@ class Board {
 
       // Apply entity chunk changes
       for (const [entity, previousChunk, newChunk] of entityChunkChanges) {
+         // if (entity.type === "player") {
+         //    console.log(`chunk change from ${previousChunk.x} ${previousChunk.y} to ${newChunk.x} ${newChunk.y}`);
+         // }
          previousChunk.removeEntity(entity);
          newChunk.addEntity(entity);
 
@@ -68,22 +71,22 @@ class Board {
       }
    }
 
-   public addEntity(entity: Entity): void {
+   public addEntity(entity: Entity<EntityType>): void {
       const chunk = entity.findContainingChunk();
       chunk.addEntity(entity);
 
       entity.previousChunk = chunk;
    }
 
-   public removeEntity(entity: Entity, chunk?: Chunk): void {
+   public removeEntity(entity: Entity<EntityType>, chunk?: Chunk): void {
       (chunk || entity.previousChunk).removeEntity(entity);
    }
 
-   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity> {
+   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity<EntityType>> {
       const playerChunk = player.previousChunk;
 
       // Find the chunks nearby to the player and all entities inside them
-      let nearbyEntities = new Array<Entity>();
+      let nearbyEntities = new Array<Entity<EntityType>>();
       for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
          for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
             const chunk = SERVER.board.chunks[chunkX][chunkY];
