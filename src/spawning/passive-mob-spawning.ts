@@ -15,23 +15,7 @@ Each eligible tile has a small chance to run a spawn
 import { ENTITY_INFO_RECORD, SETTINGS, Point, EntityBehaviour, EntityInfo, EntityType, randItem, randInt } from "webgl-test-shared";
 import ENTITY_CLASS_RECORD from "../entity-class-record";
 import { SERVER } from "../server";
-import { getTilesByBiome } from "../terrain-generation";
-import ENTITY_SPAWN_INFO_RECORD, { EntitySpawnInfo } from "./spawn-data";
-
-/** Called once the tiles have been generated */
-export function generateEntitySpawnableTiles(): void {
-   for (const [type, spawnInfo] of Object.entries(ENTITY_SPAWN_INFO_RECORD) as Array<[EntityType, EntitySpawnInfo]>) {
-      // Populate the spawnable tiles
-      let spawnableTiles = new Array<[number, number]>();
-      for (const biome of spawnInfo.spawnableBiomes) {
-         const biomeSpawnableTiles = getTilesByBiome(biome);
-         spawnableTiles = spawnableTiles.concat(biomeSpawnableTiles);
-      }
-
-      // Assign it to the spawnableTiles property
-      ENTITY_SPAWN_INFO_RECORD[type]!.spawnableTiles = spawnableTiles;
-   }
-}
+import ENTITY_SPAWN_INFO_RECORD from "./spawn-data";
 
 // Categorise all entity info
 const ENTITY_BEHAVIOUR_RECORD: Record<EntityBehaviour, Array<EntityType>> = {
@@ -53,19 +37,20 @@ const getRandomEntityType = (behaviour: EntityBehaviour): EntityType => {
 /** Max number of passive mobs that can exist */
 const PASSIVE_MOB_CAP = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * 0.5;
 
-/** Increase to make mobs spawn faster */
-const PASSIVE_MOB_SPAWN_RATE = 1;
+/** Increase to make mobs spawn faster. 0 = no spawn, 1 = max spawn rate */
+const PASSIVE_MOB_SPAWN_RATE = 0.3;
 
 const calculatePassiveMobSpawnCount = (passiveMobCount: number): number => {
-   console.log(passiveMobCount, PASSIVE_MOB_CAP)
    const capFullness = passiveMobCount / PASSIVE_MOB_CAP;
    const spawnCount = -((capFullness * capFullness - 1) / (1 / PASSIVE_MOB_SPAWN_RATE)) * PASSIVE_MOB_CAP;
    return spawnCount;
 }
 
 export function spawnPassiveMobs(passiveMobCount: number): void {
+   // Don't bother calculating the spawn amount if the amount of passive mobs has surpassed the cap
+   if (passiveMobCount >= PASSIVE_MOB_CAP) return;
+
    let remainingSpawnCount = calculatePassiveMobSpawnCount(passiveMobCount);
-   console.log(remainingSpawnCount);
    while (remainingSpawnCount > 0) {
       // Choose a random passive mob type to spawn
       const mobType = getRandomEntityType("passive");
@@ -82,8 +67,8 @@ export function spawnPassiveMobs(passiveMobCount: number): void {
       const spawnCount = typeof spawnInfo.packSize === "number" ? spawnInfo.packSize : randInt(...spawnInfo.packSize);
       for (let i = 0; i < spawnCount; i++) {
          // Find a random tile to spawn in
-         const xOffset = randInt(0, spawnInfo.packSpawnRange);
-         const yOffset = randInt(0, spawnInfo.packSpawnRange);
+         const xOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
+         const yOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
          const tileX = Math.min(Math.max(originTileCoords[0] + xOffset, 0), SETTINGS.DIMENSIONS - 1);
          const tileY = Math.min(Math.max(originTileCoords[1] + yOffset, 0), SETTINGS.DIMENSIONS - 1);
 

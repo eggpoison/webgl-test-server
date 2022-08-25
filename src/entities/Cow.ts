@@ -11,7 +11,7 @@ class Cow extends Mob<"cow"> {
 
    private static readonly WANDER_CHANCE = 0.6;
    private static readonly WANDER_ACCELERATION = 100;
-   private static readonly WANDER_TERMINAL_VELOCITY = 100;
+   private static readonly WANDER_TERMINAL_VELOCITY = 50;
    private static readonly VISION_RANGE = 64;
    private static readonly ESCAPE_RANGE = 96;
    protected readonly ai: PassiveMobAI;
