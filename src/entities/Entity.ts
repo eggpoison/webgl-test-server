@@ -23,7 +23,7 @@ abstract class Entity<T extends EntityType> {
    public position: Point;
    /** Velocity of the entity */
    public velocity: Vector | null = null;
-   /** Acceleration of the entity */
+   /** Amount of units that the entity's speed increases in a second */
    public acceleration: Vector | null = null;
 
    /** Limit to how many units the entity can move in a second */
@@ -69,10 +69,15 @@ abstract class Entity<T extends EntityType> {
       });
    }
 
-   private findCurrentTile(): Tile {
+   public findCurrentTile(): Tile {
+      const [x, y] = this.findCurrentTileCoordinates();
+      return SERVER.board.tiles[x][y];
+   }
+
+   public findCurrentTileCoordinates(): [number, number] {
       const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
-      return SERVER.board.tiles[tileX][tileY];
+      return [tileX, tileY];
    }
 
    public getComponent<C extends Component>(constr: { new(...args: any[]): C }): C | null {
@@ -96,21 +101,15 @@ abstract class Entity<T extends EntityType> {
          const acceleration = this.acceleration.copy();
          acceleration.magnitude /= SETTINGS.TPS;
 
-         // Apply friction to acceleration
-         const REDUCTION_FACTOR = 0.3;
-         acceleration.magnitude *= lerp(REDUCTION_FACTOR, 1, tileTypeInfo.friction);
-
-         // Add acceleration to velocity
-         if (this.velocity === null) {
-            this.velocity = acceleration;
-         } else {
-            this.velocity = this.velocity.add(acceleration);
-         }
+         this.velocity = this.velocity !== null ? this.velocity.add(acceleration) : acceleration;
       }
-      else if (this.velocity !== null) {
-         // Apply friction
-         this.velocity.magnitude -= this.terminalVelocity * tileTypeInfo.friction * SETTINGS.FRICTION_CONSTANT / SETTINGS.TPS;
-         if (this.velocity.magnitude < 0) this.velocity = null;
+      // Apply friction if the entity isn't accelerating
+      else if (this.velocity !== null) { 
+         const friction = tileTypeInfo.friction * SETTINGS.FRICTION_CONSTANT / SETTINGS.TPS;
+         this.velocity.magnitude /= 1 + friction;
+         
+         this.velocity.magnitude -= this.terminalVelocity / SETTINGS.TPS;
+         if (this.velocity.magnitude <= 0) this.velocity = null;
       }
 
       // Terminal velocity

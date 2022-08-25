@@ -1,8 +1,8 @@
-import { EntityType, SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityType, ENTITY_INFO_RECORD, Mutable, SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
-import { SERVER } from "./server";
+import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation";
 
 class Board {
@@ -29,8 +29,16 @@ class Board {
       return chunks;
    }
 
-   public tickEntities(): void {
+   public getChunk(x: number, y: number): Chunk {
+      return this.chunks[x][y];
+   }
+
+   public tickEntities(): EntityCensus {
       const entityChunkChanges = new Array<[entity: Entity<EntityType>, previousChunk: Chunk, newChunk: Chunk]>();
+
+      const census: Mutable<EntityCensus> = {
+         passiveMobCount: 0
+      };
 
       for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
          for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
@@ -41,13 +49,15 @@ class Board {
             for (const entity of entities) {
                entity.tick();
 
+               // Add the entity to the census
+               const entityInfo = ENTITY_INFO_RECORD[entity.type];
+               if (entityInfo.category === "mob" && entityInfo.behaviour === "passive") census.passiveMobCount++;
+
                // Find the entity's current chunk
                const newChunk = entity.findContainingChunk();
 
                // Handle removed entities
                if (entity.isRemoved) {
-                  // removedEntities.push(entity.id);
-
                   this.removeEntity(entity, newChunk);
                }
 
@@ -61,14 +71,13 @@ class Board {
 
       // Apply entity chunk changes
       for (const [entity, previousChunk, newChunk] of entityChunkChanges) {
-         // if (entity.type === "player") {
-         //    console.log(`chunk change from ${previousChunk.x} ${previousChunk.y} to ${newChunk.x} ${newChunk.y}`);
-         // }
          previousChunk.removeEntity(entity);
          newChunk.addEntity(entity);
 
          entity.previousChunk = newChunk;
       }
+
+      return census as EntityCensus;
    }
 
    public addEntity(entity: Entity<EntityType>): void {

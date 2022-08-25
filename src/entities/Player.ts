@@ -20,7 +20,7 @@ class Player extends Entity<"player"> {
    /** Player nametag. Used when sending player data to the client */
    private readonly displayName: string;
 
-   private static readonly ACCELERATION = 1000;
+   private static readonly ACCELERATION = 750;
    private static readonly TERMINAL_VELOCITY = 300;
 
    private static readonly RADIUS = 32;

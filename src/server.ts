@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { EntityData, EntityType, GameDataPacket, Mutable, Point, SETTINGS, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityData, EntityType, GameDataPacket, Point, SETTINGS, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
-import { runSpawnAttempt } from "./entity-spawning";
+import EntitySpawner from "./spawning/EntitySpawner";
 
 /*
 
@@ -44,10 +44,15 @@ type PlayerData = {
    visibleChunkBounds: VisibleChunkBounds;
 }
 
+export type EntityCensus = {
+   readonly passiveMobCount: number;
+}
+
 class GameServer {
    private ticks: number = 0;
 
    public readonly board: Board;
+   private readonly entitySpawner: EntitySpawner;
 
    private readonly io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -57,17 +62,15 @@ class GameServer {
       // Create the board
       this.board = new Board();
 
+      // Create the entity spawner
+      this.entitySpawner = new EntitySpawner();
+
       // Start the server
       this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
       this.handlePlayerConnections();
       console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-
-      setTimeout(() => {
-         const tester = new Player(new Point(200, 200), "test player");
-         SERVER.board.addEntity(tester);
-      }, 1000);
    }
 
    private handlePlayerConnections(): void {
@@ -101,9 +104,9 @@ class GameServer {
    private async tick(): Promise<void> {
       this.ticks++;
 
-      this.board.tickEntities();
+      const entityCensus = this.board.tickEntities();
 
-      runSpawnAttempt();
+      this.entitySpawner.tick(entityCensus);
 
       // Send game data packets to all players
       this.sendGameDataPackets();

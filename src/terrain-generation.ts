@@ -2,7 +2,7 @@ import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
 import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
 import { BIOMES, Biome, BiomeGenerationInfo, TileGenerationInfo, BiomeName } from "webgl-test-shared/lib/biomes";
-import { generateEntitySpawnableTiles } from "./entity-spawning";
+import { generateEntitySpawnableTiles } from "./spawning/passive-mob-spawning";
 
 const tilesByBiome: Record<BiomeName, Array<[number, number]>> = {
    grasslands: [],
