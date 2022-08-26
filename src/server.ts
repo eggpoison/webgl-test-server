@@ -4,6 +4,7 @@ import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketDa
 import Player from "./entities/Player";
 import Board from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
+import Cow from "./entities/Cow";
 
 /*
 
@@ -71,6 +72,11 @@ class GameServer {
       console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+
+      setTimeout(() => {
+         const cow = new Cow(new Point(60, 60));
+         this.board.addEntity(cow);
+      }, 1);
    }
 
    private handlePlayerConnections(): void {

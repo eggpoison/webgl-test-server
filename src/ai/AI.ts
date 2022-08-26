@@ -79,6 +79,7 @@ abstract class AI {
 
       this.entity.acceleration = new Vector(acceleration, angle);
       this.entity.terminalVelocity = terminalVelocity;
+      if (this.entity.id === 0) console.log(angle);
       this.entity.rotation = angle;
 
       this.targetPosition = targetPosition;
