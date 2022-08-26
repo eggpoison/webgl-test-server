@@ -976,10 +976,10 @@ vary@^1:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
-webgl-test-shared@^1.2.24:
-  version "1.2.24"
-  resolved "https://registry.yarnpkg.com/webgl-test-shared/-/webgl-test-shared-1.2.24.tgz#0bf04a4441f0a699d9ae065e63e0a2e31fc5c4f6"
-  integrity sha512-lqGKCgS3wSIbK4ocCXYlL6yNISi5Q75MUdS+fM/T3GvJXepv3iXvMewNe7tH2Byv4xGXdEfqXo4fxm4op9+DIQ==
+webgl-test-shared@^1.2.29:
+  version "1.2.29"
+  resolved "https://registry.yarnpkg.com/webgl-test-shared/-/webgl-test-shared-1.2.29.tgz#c22937683fbfaec065720cce69d33597ed080454"
+  integrity sha512-eWDB1WZ2be9SDc+uBGA2cdgpwU2Pvz8lRNjHibYG2VED4lfWEl7UIApCRnNHYH4DuvtEcpCry60E0ZNFQ436DA==
 
 widest-line@^3.1.0:
   version "3.1.0"

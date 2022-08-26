@@ -3,7 +3,7 @@ import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
 import { EntityCensus, SERVER } from "./server";
-import generateTerrain from "./terrain-generation";
+import generateTerrain from "./terrain-generation/terrain-generation";
 
 class Board {
    public readonly tiles: Array<Array<Tile>>;

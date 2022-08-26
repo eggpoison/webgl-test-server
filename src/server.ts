@@ -134,6 +134,7 @@ class GameServer {
                position: entity.position.package(),
                velocity: entity.velocity !== null ? entity.velocity.package() : null,
                acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
+               rotation: entity.rotation,
                terminalVelocity: entity.terminalVelocity,
                clientArgs: entity.getClientArgs()
             };

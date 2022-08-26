@@ -26,6 +26,9 @@ abstract class Entity<T extends EntityType> {
    /** Amount of units that the entity's speed increases in a second */
    public acceleration: Vector | null = null;
 
+   /** Direction the entity is facing (radians). Used in client side rendering */
+   public rotation: number;
+
    /** Limit to how many units the entity can move in a second */
    public terminalVelocity: number = 0;
 
@@ -33,10 +36,12 @@ abstract class Entity<T extends EntityType> {
 
    public isRemoved: boolean = false;
 
-   constructor(position: Point, velocity: Vector | null, acceleration: Vector | null, components: Array<Component>) {
+   constructor(position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Array<Component>) {
       this.position = position;
       this.velocity = velocity;
       this.acceleration = acceleration;
+
+      this.rotation = rotation;
 
       this.previousChunk = this.findContainingChunk();
 
@@ -101,31 +106,33 @@ abstract class Entity<T extends EntityType> {
          const acceleration = this.acceleration.copy();
          acceleration.magnitude /= SETTINGS.TPS;
 
+         // Reduce acceleration due to friction
+         const friction = tileTypeInfo.friction;
+         acceleration.magnitude *= friction;
+          
+         // Apply tile speed multiplier
+         if (typeof tileTypeInfo.moveSpeedMultiplier !== "undefined") {
+            acceleration.magnitude *= tileTypeInfo.moveSpeedMultiplier;
+         }
+
          this.velocity = this.velocity !== null ? this.velocity.add(acceleration) : acceleration;
       }
       // Apply friction if the entity isn't accelerating
       else if (this.velocity !== null) { 
-         const friction = tileTypeInfo.friction * SETTINGS.FRICTION_CONSTANT / SETTINGS.TPS;
+         const friction = tileTypeInfo.friction * SETTINGS.GLOBAL_FRICTION_CONSTANT / SETTINGS.TPS;
          this.velocity.magnitude /= 1 + friction;
-         
-         this.velocity.magnitude -= this.terminalVelocity / SETTINGS.TPS;
-         if (this.velocity.magnitude <= 0) this.velocity = null;
       }
 
-      // Terminal velocity
-      if (this.velocity !== null && this.velocity.magnitude > this.terminalVelocity) {
-         this.velocity.magnitude = this.terminalVelocity;
+      // Restrict the entity's velocity to their terminal velocity
+      const terminalVelocity = this.terminalVelocity * (tileTypeInfo.moveSpeedMultiplier || 1);
+      if (this.velocity !== null && this.velocity.magnitude > terminalVelocity) {
+         this.velocity.magnitude = terminalVelocity;
       }
 
       // Apply velocity
       if (this.velocity !== null) {
          const velocity = this.velocity.copy();
          velocity.magnitude /= SETTINGS.TPS;
-          
-         // // Apply tile slowness to velocity
-         if (typeof tileTypeInfo.effects?.moveSpeedMultiplier !== "undefined") {
-            velocity.magnitude *= tileTypeInfo.effects.moveSpeedMultiplier;
-         }
          
          this.position = this.position.add(velocity.convertToPoint());
       }
@@ -154,7 +161,7 @@ abstract class Entity<T extends EntityType> {
          halfHeight = 0;
       }
       
-      const boardUnits = SETTINGS.DIMENSIONS * SETTINGS.TILE_SIZE;
+      const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
 
       if (this.position.x - halfWidth < 0) {
          this.position.x = halfWidth;

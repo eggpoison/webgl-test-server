@@ -69,8 +69,8 @@ export function spawnPassiveMobs(passiveMobCount: number): void {
          // Find a random tile to spawn in
          const xOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
          const yOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
-         const tileX = Math.min(Math.max(originTileCoords[0] + xOffset, 0), SETTINGS.DIMENSIONS - 1);
-         const tileY = Math.min(Math.max(originTileCoords[1] + yOffset, 0), SETTINGS.DIMENSIONS - 1);
+         const tileX = Math.min(Math.max(originTileCoords[0] + xOffset, 0), SETTINGS.BOARD_DIMENSIONS - 1);
+         const tileY = Math.min(Math.max(originTileCoords[1] + yOffset, 0), SETTINGS.BOARD_DIMENSIONS - 1);
 
          // Find a random position in that tiles
          const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;

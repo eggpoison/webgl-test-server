@@ -1,5 +1,5 @@
 import { BiomeName, EntityType } from "webgl-test-shared";
-import { getTilesByBiome } from "../terrain-generation";
+import { getTilesByBiome } from "../terrain-generation/terrain-generation";
 
 export type EntitySpawnInfo = {
    readonly spawnableBiomes: ReadonlyArray<BiomeName>;

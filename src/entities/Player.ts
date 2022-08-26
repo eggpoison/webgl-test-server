@@ -30,7 +30,7 @@ class Player extends Entity<"player"> {
    };
 
    constructor(position: Point, name: string) {
-      super(position, null, null, [
+      super(position, null, null, 0, [
          new HealthComponent(Player.MAX_HEALTH, Player.MAX_HEALTH, 0),
          new HitboxComponent(Player.HITBOX)
       ]);
@@ -64,9 +64,11 @@ class Player extends Entity<"player"> {
       if (xVel === 0 && yVel === 0) {
          this.acceleration = null;
       } else {
-         this.terminalVelocity = Player.TERMINAL_VELOCITY;
          const velocity = new Point(xVel, yVel).convertToVector();
          this.acceleration = velocity;
+         this.rotation = velocity.direction;
+         
+         this.terminalVelocity = Player.TERMINAL_VELOCITY;
       }
    }
 }

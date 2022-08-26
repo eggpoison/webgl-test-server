@@ -22,7 +22,7 @@ class Cow extends Mob<"cow"> {
    };
 
    constructor(position: Point) {
-      super(position, null, null, [
+      super(position, null, null, 2 * Math.PI * Math.random(), [
          new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0),
          new HitboxComponent(Cow.HITBOX)
       ]);
