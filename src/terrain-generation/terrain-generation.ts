@@ -1,8 +1,9 @@
 import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
 import { SETTINGS } from "webgl-test-shared/lib/settings";
-import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
-import { BIOMES, Biome, BiomeGenerationInfo, TileGenerationInfo, BiomeName } from "webgl-test-shared/lib/biomes";
-import { generateEntitySpawnableTiles } from "./spawning/spawn-data";
+import { generateOctavePerlinNoise, generatePerlinNoise } from "../perlin-noise";
+import { BiomeName } from "webgl-test-shared/lib/biomes";
+import { generateEntitySpawnableTiles } from "../spawning/spawn-data";
+import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./biome-generation-info";
 
 const tilesByBiome: Record<BiomeName, Array<[number, number]>> = {
    grasslands: [],
@@ -22,7 +23,7 @@ const categoriseTiles = (tiles: Array<Array<Tile>>): void => {
       for (let y = 0; y < SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE; y++) {
          const tile = tiles[x][y];
 
-         tilesByBiome[tile.biome.name].push([x, y]);
+         tilesByBiome[tile.biome].push([x, y]);
       }
    }
 }
@@ -32,7 +33,7 @@ const TEMPERATURE_NOISE_SCALE = 30;
 const HUMIDITY_NOISE_SCALE = 15;
 const TILE_TYPE_NOISE_SCALE = 5;
 
-const matchesBiomeRequirements = (generationInfo: BiomeGenerationInfo, height: number, temperature: number, humidity: number): boolean => {
+const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height: number, temperature: number, humidity: number): boolean => {
    // Height
    if (typeof generationInfo.minHeight !== "undefined" && height < generationInfo.minHeight) return false;
    if (typeof generationInfo.maxHeight !== "undefined" && height > generationInfo.maxHeight) return false;
@@ -48,10 +49,10 @@ const matchesBiomeRequirements = (generationInfo: BiomeGenerationInfo, height: n
    return true;
 }
 
-const getBiome = (height: number, temperature: number, humidity: number): Biome => {
-   for (const biome of BIOMES) {
-      if (typeof biome.generationInfo !== "undefined" && matchesBiomeRequirements(biome.generationInfo, height, temperature, humidity)) {
-         return biome;
+const getBiome = (height: number, temperature: number, humidity: number): BiomeName => {
+   for (const [name, generationInfo] of Object.entries(BIOME_GENERATION_INFO) as Array<[BiomeName, BiomeGenerationInfo]>) {
+      if (generationInfo.spawnRequirements !== null && matchesBiomeRequirements(generationInfo.spawnRequirements, height, temperature, humidity)) {
+         return name;
       }
    }
 
@@ -60,13 +61,13 @@ const getBiome = (height: number, temperature: number, humidity: number): Biome 
 
 const generateBiomeInfo = (tileArray: Array<Array<Partial<TileInfo>>>): void => {
    // Generate the noise
-   const heightMap = generateOctavePerlinNoise(SETTINGS.DIMENSIONS, SETTINGS.DIMENSIONS, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
-   const temperatureMap = generatePerlinNoise(SETTINGS.DIMENSIONS, SETTINGS.DIMENSIONS, TEMPERATURE_NOISE_SCALE);
-   const humidityMap = generatePerlinNoise(SETTINGS.DIMENSIONS, SETTINGS.DIMENSIONS, HUMIDITY_NOISE_SCALE);
+   const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
+   const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TEMPERATURE_NOISE_SCALE);
+   const humidityMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, HUMIDITY_NOISE_SCALE);
    
-   for (let y = 0; y < SETTINGS.DIMENSIONS; y++) {
+   for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       // Fill the tile array using the noise
-      for (let x = 0; x < SETTINGS.DIMENSIONS; x++) {
+      for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const height = heightMap[x][y];
          const temperature = temperatureMap[x][y];
          const humidity = humidityMap[x][y];
@@ -87,14 +88,15 @@ const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: num
    return true;
 }
 
-const getTileInfo = (biome: Biome, weight: number, dist: number): Omit<TileInfo, "biome" | "fogAmount"> => {
-   for (const generationInfo of biome.tiles) {
-      if (matchesTileRequirements(generationInfo, weight, dist)) {
-         return generationInfo.info;
+const getTileInfo = (biomeName: BiomeName, weight: number, dist: number): Omit<TileInfo, "biome" | "fogAmount"> => {
+   const biomeGenerationInfo = BIOME_GENERATION_INFO[biomeName];
+   for (const tileGenerationInfo of biomeGenerationInfo.tiles) {
+      if (matchesTileRequirements(tileGenerationInfo, weight, dist)) {
+         return tileGenerationInfo.info;
       }
    }
 
-   throw new Error(`Couldn't find a valid tile info! Biome: ${biome}, weight: ${weight}`);
+   throw new Error(`Couldn't find a valid tile info! Biome: ${biomeName}, weight: ${weight}`);
 }
 
 const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: number, tileY: number): number => {
@@ -113,7 +115,7 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
          tileCoords.push([tileX - i, tileY - dist + i]); // Top left
 
          for (const [x, y] of tileCoords) {
-            if (x < 0 || x >= SETTINGS.DIMENSIONS || y <= 0 || y >= SETTINGS.DIMENSIONS) continue;
+            if (x < 0 || x >= SETTINGS.BOARD_DIMENSIONS || y <= 0 || y >= SETTINGS.BOARD_DIMENSIONS) continue;
 
             const tile = tileInfoArray[x][y];
 
@@ -128,10 +130,10 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 /** Generate the tile array's tile types based on their biomes */
 const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void => {
    // Generate the noise
-   const noise = generatePerlinNoise(SETTINGS.DIMENSIONS, SETTINGS.DIMENSIONS, TILE_TYPE_NOISE_SCALE);
+   const noise = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TILE_TYPE_NOISE_SCALE);
 
-   for (let y = 0; y < SETTINGS.DIMENSIONS; y++) {
-      for (let x = 0; x < SETTINGS.DIMENSIONS; x++) {
+   for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
+      for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const tileInfo = tileInfoArray[x][y];
          const weight = noise[x][y];
 
@@ -144,11 +146,11 @@ const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void 
 
 function generateTerrain(): Array<Array<Tile>> {
    // Initialise the tile info array
-   const tileInfoArray = new Array<Array<Partial<TileInfo>>>(SETTINGS.DIMENSIONS);
-   for (let x = 0; x < SETTINGS.DIMENSIONS; x++) {
-      tileInfoArray[x] = new Array<TileInfo>(SETTINGS.DIMENSIONS);
+   const tileInfoArray = new Array<Array<Partial<TileInfo>>>(SETTINGS.BOARD_DIMENSIONS);
+   for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
+      tileInfoArray[x] = new Array<TileInfo>(SETTINGS.BOARD_DIMENSIONS);
 
-      for (let y = 0; y < SETTINGS.DIMENSIONS; y++) {
+      for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          tileInfoArray[x][y] = {};
       }
    }

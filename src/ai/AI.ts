@@ -5,16 +5,16 @@ import { SERVER } from "../server";
 const MAX_TILE_RANGE_CALCULATE_DEPTH = 9;
 // don't ask
 const TILE_RANGE_RECORD: Record<number, Record<number, Record<number, Array<[number, number]>>>> = {};
-for (let x = 0; x < SETTINGS.DIMENSIONS; x++) {
+for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
    TILE_RANGE_RECORD[x] = {};
-   for (let y = 0; y < SETTINGS.DIMENSIONS; y++) {
+   for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       TILE_RANGE_RECORD[x][y] = {};
 
       for (let depth = 0; depth <= MAX_TILE_RANGE_CALCULATE_DEPTH; depth++) {
          const minX = Math.max(x - depth, 0);
-         const maxX = Math.min(x + depth, SETTINGS.DIMENSIONS - 1);
+         const maxX = Math.min(x + depth, SETTINGS.BOARD_DIMENSIONS - 1);
          const minY = Math.max(y - depth, 0);
-         const maxY = Math.min(y + depth, SETTINGS.DIMENSIONS - 1);
+         const maxY = Math.min(y + depth, SETTINGS.BOARD_DIMENSIONS - 1);
 
          const nearbyTiles = new Array<[number, number]>();
          for (let currentX = minX; currentX <= maxX; currentX++) {
@@ -79,6 +79,7 @@ abstract class AI {
 
       this.entity.acceleration = new Vector(acceleration, angle);
       this.entity.terminalVelocity = terminalVelocity;
+      this.entity.rotation = angle;
 
       this.targetPosition = targetPosition;
    }
@@ -90,6 +91,7 @@ abstract class AI {
    protected moveInDirection(direction: number, acceleration: number, terminalVelocity: number): void {
       this.entity.acceleration = new Vector(direction, acceleration);
       this.entity.terminalVelocity = terminalVelocity;
+      this.entity.rotation = direction;
 
       this.targetPosition = null;
    }
