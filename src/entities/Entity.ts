@@ -137,6 +137,23 @@ abstract class Entity<T extends EntityType> {
          this.position = this.position.add(velocity.convertToPoint());
       }
    }
+
+   private stopXVelocity(): void {
+      if (this.velocity !== null) {
+         const pointVelocity = this.velocity.convertToPoint();
+         pointVelocity.x = 0;
+         this.velocity = pointVelocity.convertToVector();
+      }
+   }
+
+   private stopYVelocity(): void {
+      if (this.velocity !== null) {
+         // Stop y velocity
+         const pointVelocity = this.velocity.convertToPoint();
+         pointVelocity.y = 0;
+         this.velocity = pointVelocity.convertToVector();
+      }
+   }
    
    private resolveWallCollisions(): void {
       // Calculate the size of the entity
@@ -165,38 +182,18 @@ abstract class Entity<T extends EntityType> {
 
       if (this.position.x - halfWidth < 0) {
          this.position.x = halfWidth;
-
-         if (this.velocity !== null) {
-            const pointVelocity = this.velocity.convertToPoint();
-            pointVelocity.x = 0;
-            this.velocity = pointVelocity.convertToVector();
-         }
+         this.stopXVelocity();
       } else if (this.position.x + halfWidth > boardUnits) {
          this.position.x = boardUnits - halfWidth;
-         
-         if (this.velocity !== null) {
-            const pointVelocity = this.velocity.convertToPoint();
-            pointVelocity.x = 0;
-            this.velocity = pointVelocity.convertToVector();
-         }
+         this.stopXVelocity();
       }
 
       if (this.position.y - halfHeight < 0) {
          this.position.y = halfHeight;
-         
-         if (this.velocity !== null) {
-            const pointVelocity = this.velocity.convertToPoint();
-            pointVelocity.y = 0;
-            this.velocity = pointVelocity.convertToVector();
-         }
+         this.stopYVelocity();
       } else if (this.position.y + halfHeight > boardUnits) {
          this.position.y = boardUnits - halfHeight;
-         
-         if (this.velocity !== null) {
-            const pointVelocity = this.velocity.convertToPoint();
-            pointVelocity.y = 0;
-            this.velocity = pointVelocity.convertToVector();
-         }
+         this.stopYVelocity();
       }
    }
 }

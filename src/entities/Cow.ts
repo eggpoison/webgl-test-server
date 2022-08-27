@@ -12,8 +12,11 @@ class Cow extends Mob<"cow"> {
    private static readonly WANDER_CHANCE = 0.6;
    private static readonly WANDER_ACCELERATION = 100;
    private static readonly WANDER_TERMINAL_VELOCITY = 50;
-   private static readonly VISION_RANGE = 64;
-   private static readonly ESCAPE_RANGE = 96;
+   private static readonly VISION_RANGE = 200;
+   private static readonly ESCAPE_RANGE = 300;
+   private static readonly STARE_LOCK_TIME = 2;
+   private static readonly STARE_TIME = 7;
+   private static readonly STARE_COOLDOWN = 10;
    protected readonly ai: PassiveMobAI;
 
    private static readonly HITBOX: Hitbox = {
@@ -27,7 +30,16 @@ class Cow extends Mob<"cow"> {
          new HitboxComponent(Cow.HITBOX)
       ]);
 
-      this.ai = new PassiveMobAI(this, Cow.WANDER_CHANCE, Cow.WANDER_ACCELERATION, Cow.WANDER_TERMINAL_VELOCITY, Cow.VISION_RANGE, Cow.ESCAPE_RANGE);
+      this.ai = new PassiveMobAI(this, {
+         wanderChance: Cow.WANDER_CHANCE,
+         wanderAcceleration: Cow.WANDER_ACCELERATION,
+         wanderTerminalVelocity: Cow.WANDER_TERMINAL_VELOCITY,
+         visionRange: Cow.VISION_RANGE,
+         escapeRange: Cow.ESCAPE_RANGE,
+         stareLockTime: Cow.STARE_LOCK_TIME,
+         stareTime: Cow.STARE_TIME,
+         stareCooldown: Cow.STARE_COOLDOWN
+      });
    }
 
    public getClientArgs(): [] {

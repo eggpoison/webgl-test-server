@@ -41,9 +41,9 @@ abstract class AI {
 
    protected getEntitiesInRadius(radius: number): Array<Entity<EntityType>> {
       const minChunkX = Math.max(Math.floor((this.entity.position.x - radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), 0);
-      const maxChunkX = Math.min(Math.floor((this.entity.position.x + radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), SETTINGS.BOARD_SIZE - 1);
+      const maxChunkX = Math.min(Math.ceil((this.entity.position.x + radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), SETTINGS.BOARD_SIZE - 1);
       const minChunkY = Math.max(Math.floor((this.entity.position.y - radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), 0);
-      const maxChunkY = Math.min(Math.floor((this.entity.position.y + radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), SETTINGS.BOARD_SIZE - 1);
+      const maxChunkY = Math.min(Math.ceil((this.entity.position.y + radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), SETTINGS.BOARD_SIZE - 1);
 
       const entities = new Array<Entity<EntityType>>();
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
@@ -51,7 +51,10 @@ abstract class AI {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
             for (const entity of chunk.getEntities()) {
-               if (entity !== this.entity) entities.push(entity);
+               if (entity === this.entity) continue;
+
+               const dist = this.entity.position.distanceFrom(entity.position);
+               if (dist <= radius) entities.push(entity);
             }
          }
       }
@@ -79,7 +82,6 @@ abstract class AI {
 
       this.entity.acceleration = new Vector(acceleration, angle);
       this.entity.terminalVelocity = terminalVelocity;
-      if (this.entity.id === 0) console.log(angle);
       this.entity.rotation = angle;
 
       this.targetPosition = targetPosition;

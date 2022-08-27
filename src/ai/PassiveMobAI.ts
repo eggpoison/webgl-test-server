@@ -9,7 +9,28 @@ Passive Mob AI:
 - If a different entity comes near, stare at them
 - If hit by entity, start running away from them until out of escape range
 
+Staring:
+- If an entity comes close and the mob wants to stare, then the mob will stop moving and stare at the entity
+- An entity wants to stare if:
+   - Their stare time hasn't expired
+
 */
+
+interface PassiveMobAIInfo {
+   /** Chance that the mob wanders in a second */
+   readonly wanderChance: number;
+   readonly wanderAcceleration: number;
+   readonly wanderTerminalVelocity: number;
+   readonly visionRange: number;
+   /** Distance that the mob will try to put between them and an attacker before being unstartled */
+   readonly escapeRange: number;
+   /** Expected number of seconds before the mob chooses an entity to stare at */
+   readonly stareLockTime: number;
+   /** Max duration of a stare */
+   readonly stareTime: number;
+   /** Cooldown between stares */
+   readonly stareCooldown: number;
+}
 
 class PassiveMobAI extends AI {
    /** Chance that the mob wanders in a second */
@@ -19,31 +40,111 @@ class PassiveMobAI extends AI {
    private readonly visionRange: number;
    /** Distance that the mob will try to put between them and an attacker before being unstartled */
    private readonly escapeRange: number;
+   /** Expected number of seconds before the mob chooses an entity to stare at */
+   readonly stareLockTime: number;
+   /** Max duration of a stare */
+   private readonly stareTime: number;
+   /** Cooldown between stares */
+   private readonly stareCooldown: number;
 
-   constructor(entity: Entity<EntityType>, moveChance: number, wanderAcceleration: number, wanderTerminalVelocity: number, visionRange: number, escapeRange: number) {
+   /**
+    * If this is greater than 0, the entity will want to stare.
+    * While staring, this timer will decrease by 1 each second
+    * When not staring, this timer will increase by 1 each second
+    * When this timer reaches 0, it will immediately go to -stareCooldown (to make the cooldown work)
+    */
+   private stareTimer = 0;
+
+   /** Entity the mob is staring at */
+   private stareTarget: Entity<EntityType> | null = null;
+
+   constructor(entity: Entity<EntityType>, { wanderChance, wanderAcceleration, wanderTerminalVelocity, visionRange, escapeRange, stareLockTime, stareTime, stareCooldown }: PassiveMobAIInfo) {
       super(entity);
 
-      this.wanderChance = moveChance;
+      this.wanderChance = wanderChance;
       this.wanderAcceleration = wanderAcceleration;
       this.wanderTerminalVelocity = wanderTerminalVelocity;
       this.visionRange = visionRange;
       this.escapeRange = escapeRange;
+      this.stareLockTime = stareLockTime;
+      this.stareTime = stareTime;
+      this.stareCooldown = stareCooldown;
    }
 
    public tick(): void {
       super.tick();
 
-      const nearbyEntities = super.getEntitiesInRadius(this.visionRange);
+      let nearbyEntities = super.getEntitiesInRadius(this.visionRange);
       // Remove the same type of entity
-      const otherEntities = this.filterEntities(nearbyEntities);
+      nearbyEntities = this.filterEntities(nearbyEntities);
 
       // If there are nearby entities, stare at them/run away from them
-      if (otherEntities.length > 0) {
+      let canWander = true;
+      if (nearbyEntities.length > 0) {
+         // Find a stare target
+         if (this.stareTarget === null) {
+            if (Math.random() < 1 / (this.stareLockTime + Number.EPSILON) / SETTINGS.TPS) {
+               const closestEntity = this.calculateClosestEntity(nearbyEntities);
+               this.stareTarget = closestEntity;
+            }
+         }
 
-      // Otherwise try to wander around
+         if (this.stareTarget !== null && this.wantsToStare()) {
+            // Stare at the target
+            this.stare(this.stareTarget);
+
+            this.stareTimer -= 1 / SETTINGS.TPS;
+            if (this.stareTimer <= 0) {
+               this.stareTarget = null;
+               this.stareTimer = -this.stareCooldown;
+            }
+   
+            canWander = false;
+         // If the mob doesn't want to stare, increase the timer
+         } else {
+            this.stareTimer += 1 / SETTINGS.TPS;
+            if (this.stareTimer + 1 / SETTINGS.TPS >= 0) {
+               this.stareTimer = this.stareTime;
+            }
+         }
+      // If there are no nearby entities, slowly increase the stare timer
       } else {
+         this.stareTarget = null;
+         this.stareTimer += 1 / SETTINGS.TPS;
+         if (this.stareTimer > this.stareTime) this.stareTimer = this.stareTime;
+      }
+      
+      // Otherwise try to wander around
+      if (canWander) {
          this.wanderAttempt();
       }
+   }
+
+   private calculateClosestEntity(entities: Array<Entity<EntityType>>): Entity<EntityType> {
+      let minDist: number = Number.MAX_SAFE_INTEGER;
+      let closestEntity!: Entity<EntityType>;
+      for (const entity of entities) {
+         const dist = this.entity.position.distanceFrom(entity.position);
+         if (dist < minDist) {
+            closestEntity = entity;
+         }
+      }
+
+      return closestEntity;
+   }
+
+   private wantsToStare(): boolean {
+      return this.stareTimer > 0;
+   }
+
+   /**
+    * Rotates the mob to stare at an entity
+    * @param entity The entity to stare at
+    */
+   private stare(entity: Entity<EntityType>): void {
+      const angle = this.entity.position.angleBetween(entity.position);
+
+      this.entity.rotation = angle;
    }
 
    private wanderAttempt(): void {
