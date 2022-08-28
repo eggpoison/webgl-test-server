@@ -17,7 +17,7 @@ abstract class Entity<T extends EntityType> {
    /** Unique identifier for every entity */
    public readonly id: number = findAvailableID();
    /** Type of the entity (e.g. "cow") */
-   public abstract readonly type: EntityType;
+   public abstract readonly type: T;
 
    /** Position of the entity */
    public position: Point;
@@ -102,6 +102,7 @@ abstract class Entity<T extends EntityType> {
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[tile.type];
 
       const terminalVelocity = this.terminalVelocity * (tileTypeInfo.moveSpeedMultiplier || 1);
+      
       // Apply acceleration
       if (this.acceleration !== null) {
          const acceleration = this.acceleration.copy();
