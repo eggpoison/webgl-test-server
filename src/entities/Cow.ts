@@ -1,7 +1,7 @@
-import { Point } from "webgl-test-shared";
+import { ENTITY_INFO_RECORD, Hitbox, Point } from "webgl-test-shared";
 import PassiveMobAI from "../ai/PassiveMobAI";
 import HealthComponent from "../entity-components/HealthComponent";
-import HitboxComponent, { Hitbox } from "../entity-components/HitboxComponent";
+import HitboxComponent from "../entity-components/HitboxComponent";
 import Mob from "./Mob";
 
 class Cow extends Mob<"cow"> {
@@ -14,20 +14,17 @@ class Cow extends Mob<"cow"> {
    private static readonly WANDER_TERMINAL_VELOCITY = 50;
    private static readonly VISION_RANGE = 200;
    private static readonly ESCAPE_RANGE = 300;
-   private static readonly STARE_LOCK_TIME = 2;
+   private static readonly STARE_LOCK_TIME = 3;
    private static readonly STARE_TIME = 7;
    private static readonly STARE_COOLDOWN = 10;
    protected readonly ai: PassiveMobAI;
 
-   private static readonly HITBOX: Hitbox = {
-      type: "circular",
-      radius: 64
-   };
+   public readonly hitbox = ENTITY_INFO_RECORD.cow.hitbox;
 
    constructor(position: Point) {
       super(position, null, null, 2 * Math.PI * Math.random(), [
          new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0),
-         new HitboxComponent(Cow.HITBOX)
+         new HitboxComponent()
       ]);
 
       this.ai = new PassiveMobAI(this, {

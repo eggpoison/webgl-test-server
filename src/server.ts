@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { EntityData, EntityType, GameDataPacket, Point, SETTINGS, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -101,8 +101,8 @@ class GameServer {
             this.handlePlayerDisconnect(socket);
          });
 
-         socket.on("playerMovement", (position: [number, number], movementHash: number) => {
-            this.sendPlayerMovementPacket(socket, position, movementHash);
+         socket.on("playerDataPacket", (playerDataPacket: PlayerDataPacket) => {
+            this.processPlayerDataPacket(socket, playerDataPacket);
          })
       });
    }
@@ -160,11 +160,14 @@ class GameServer {
       }
    }
 
-   private sendPlayerMovementPacket(socket: ISocket, position: [number, number], movementHash: number): void {
+   private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
       const playerData = this.playerData[socket.id];
 
-      playerData.instance.position = Point.unpackage(position);
-      playerData.instance.updateMovementFromHash(movementHash);
+      playerData.instance.position = Point.unpackage(playerDataPacket.position);
+      playerData.instance.velocity = playerDataPacket.velocity !== null ? Vector.unpackage(playerDataPacket.velocity) : null;
+      playerData.instance.acceleration = playerDataPacket.acceleration !== null ? Vector.unpackage(playerDataPacket.acceleration) : null;
+      playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
+      playerData.instance.rotation = playerDataPacket.rotation;
    }
 
    private updatePlayerVisibleChunkBounds(socket: ISocket, visibleChunkBounds: VisibleChunkBounds): void {

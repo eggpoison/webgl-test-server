@@ -101,6 +101,7 @@ abstract class AI {
 
    protected stopMoving(): void {
       this.entity.acceleration = null;
+      this.entity.terminalVelocity = 0;
 
       this.targetPosition = null;
    }

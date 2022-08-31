@@ -84,6 +84,9 @@ class Board {
       const chunk = entity.findContainingChunk();
       chunk.addEntity(entity);
 
+      if (typeof entity.onLoad !== "undefined") entity.onLoad();
+      entity.loadComponents();
+      
       entity.previousChunk = chunk;
    }
 
