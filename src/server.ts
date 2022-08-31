@@ -142,7 +142,8 @@ class GameServer {
                acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
                rotation: entity.rotation,
                terminalVelocity: entity.terminalVelocity,
-               clientArgs: entity.getClientArgs()
+               clientArgs: entity.getClientArgs(),
+               chunkCoords: entity.getChunkCoords()
             };
 
             gameDataPacket.nearbyEntities.push(entityData);

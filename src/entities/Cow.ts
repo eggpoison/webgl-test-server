@@ -1,7 +1,6 @@
 import { ENTITY_INFO_RECORD, Hitbox, Point } from "webgl-test-shared";
 import PassiveMobAI from "../ai/PassiveMobAI";
 import HealthComponent from "../entity-components/HealthComponent";
-import HitboxComponent from "../entity-components/HitboxComponent";
 import Mob from "./Mob";
 
 class Cow extends Mob<"cow"> {
@@ -23,8 +22,7 @@ class Cow extends Mob<"cow"> {
 
    constructor(position: Point) {
       super(position, null, null, 2 * Math.PI * Math.random(), [
-         new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0),
-         new HitboxComponent()
+         new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0)
       ]);
 
       this.ai = new PassiveMobAI(this, {

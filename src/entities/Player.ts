@@ -1,6 +1,5 @@
 import { ENTITY_INFO_RECORD, Point } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
-import HitboxComponent from "../entity-components/HitboxComponent";
 import Entity from "./Entity";
 
 class Player extends Entity<"player"> {
@@ -15,8 +14,7 @@ class Player extends Entity<"player"> {
 
    constructor(position: Point, name: string) {
       super(position, null, null, 0, [
-         new HealthComponent(Player.MAX_HEALTH, Player.MAX_HEALTH, 0),
-         new HitboxComponent()
+         new HealthComponent(Player.MAX_HEALTH, Player.MAX_HEALTH, 0)
       ]);
 
       this.displayName = name;

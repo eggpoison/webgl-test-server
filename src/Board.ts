@@ -44,7 +44,6 @@ class Board {
          for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
             const chunk = this.chunks[x][y];
 
-            if (typeof chunk === "undefined") console.log(x, y);
             const entities = chunk.getEntities().slice();
             for (const entity of entities) {
                entity.tick();
