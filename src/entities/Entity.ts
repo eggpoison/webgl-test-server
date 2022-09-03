@@ -142,8 +142,8 @@ abstract class Entity<T extends EntityType> {
       this.applyPhysics();
 
       const hitboxBounds = this.calculateHitboxBounds();
-      this.resolveWallCollisions(hitboxBounds);
       this.handleEntityCollisions(hitboxBounds);
+      this.resolveWallCollisions(hitboxBounds);
 
       this.components.forEach(component => {
          if (typeof component.tick !== "undefined") {
