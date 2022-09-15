@@ -103,7 +103,7 @@ abstract class Entity<T extends EntityType> {
    /** Limit to how many units the entity can move in a second */
    public terminalVelocity: number = 0;
 
-   /** Direction the entity is facing (radians). Used in client side rendering */
+   /** Direction the entity is facing (radians) */
    public rotation: number;
 
    private entityCollisions: Array<number> = [];
@@ -283,11 +283,10 @@ abstract class Entity<T extends EntityType> {
             let bottomLeft = new Point(x1, y1);
 
             // Rotate the points to match the entity's rotation
-            const rotation = -this.rotation + Math.PI/2;
-            topLeft = rotatePoint(topLeft, this.position, rotation);
-            topRight = rotatePoint(topRight, this.position, rotation);
-            bottomRight = rotatePoint(bottomRight, this.position, rotation);
-            bottomLeft = rotatePoint(bottomLeft, this.position, rotation);
+            topLeft = rotatePoint(topLeft, this.position, this.rotation);
+            topRight = rotatePoint(topRight, this.position, this.rotation);
+            bottomRight = rotatePoint(bottomRight, this.position, this.rotation);
+            bottomLeft = rotatePoint(bottomLeft, this.position, this.rotation);
 
             minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
             maxX = Math.max(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);

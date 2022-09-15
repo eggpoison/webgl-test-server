@@ -16,7 +16,7 @@ Staring:
 
 */
 
-interface PassiveMobAIInfo {
+export interface PassiveMobAIInfo {
    /** Chance that the mob wanders in a second */
    readonly wanderChance: number;
    readonly wanderAcceleration: number;
@@ -34,18 +34,18 @@ interface PassiveMobAIInfo {
 
 class PassiveMobAI extends AI {
    /** Chance that the mob wanders in a second */
-   private readonly wanderChance: number;
-   private readonly wanderAcceleration: number;
-   private readonly wanderTerminalVelocity: number;
-   private readonly visionRange: number;
+   protected readonly wanderChance: number;
+   protected readonly wanderAcceleration: number;
+   protected readonly wanderTerminalVelocity: number;
+   protected readonly visionRange: number;
    /** Distance that the mob will try to put between them and an attacker before being unstartled */
-   private readonly escapeRange: number;
+   protected readonly escapeRange: number;
    /** Expected number of seconds before the mob chooses an entity to stare at */
-   readonly stareLockTime: number;
+   protected readonly stareLockTime: number;
    /** Max duration of a stare */
-   private readonly stareTime: number;
+   protected readonly stareTime: number;
    /** Cooldown between stares */
-   private readonly stareCooldown: number;
+   protected readonly stareCooldown: number;
 
    /**
     * If this is greater than 0, the entity will want to stare.

@@ -13,7 +13,7 @@ const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
    cow: {
       spawnableBiomes: ["grasslands"],
       packSize: [1, 4],
-      packSpawnRange: 3
+      packSpawnRange: 2
    }
 };
 

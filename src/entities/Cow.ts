@@ -1,4 +1,4 @@
-import { ENTITY_INFO_RECORD, Hitbox, Point } from "webgl-test-shared";
+import { CowSpecies, ENTITY_INFO_RECORD, Point } from "webgl-test-shared";
 import PassiveMobAI from "../ai/PassiveMobAI";
 import HealthComponent from "../entity-components/HealthComponent";
 import Mob from "./Mob";
@@ -17,6 +17,8 @@ class Cow extends Mob<"cow"> {
    private static readonly STARE_TIME = 7;
    private static readonly STARE_COOLDOWN = 10;
    protected readonly ai: PassiveMobAI;
+
+   private readonly species: CowSpecies = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
    public readonly hitbox = ENTITY_INFO_RECORD.cow.hitbox;
 
@@ -37,8 +39,8 @@ class Cow extends Mob<"cow"> {
       });
    }
 
-   public getClientArgs(): [] {
-      return [];
+   public getClientArgs(): [species: CowSpecies] {
+      return [this.species];
    }
 }
 
