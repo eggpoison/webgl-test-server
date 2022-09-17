@@ -92,7 +92,7 @@ abstract class AI {
     * @param direction - The angle that the mob will move at (radians)
     */
    protected moveInDirection(direction: number, acceleration: number, terminalVelocity: number): void {
-      this.entity.acceleration = new Vector(direction, acceleration);
+      this.entity.acceleration = new Vector(acceleration, direction);
       this.entity.terminalVelocity = terminalVelocity;
       this.entity.rotation = direction;
 

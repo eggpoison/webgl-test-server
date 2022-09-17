@@ -63,6 +63,7 @@ export function spawnPassiveMobs(passiveMobCount: number): void {
       const originTileCoords = randItem(eligibleSpawnTileCooordinates);
       
       const mobClass = ENTITY_CLASS_RECORD[mobType]();
+      const classParams = typeof spawnInfo.classParams !== "undefined" ? spawnInfo.classParams() : [];
 
       const spawnCount = typeof spawnInfo.packSize === "number" ? spawnInfo.packSize : randInt(...spawnInfo.packSize);
       for (let i = 0; i < spawnCount; i++) {
@@ -77,7 +78,7 @@ export function spawnPassiveMobs(passiveMobCount: number): void {
          const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
 
          // Spawn the mob
-         const entity = new mobClass(new Point(x, y));
+         const entity = new mobClass(new Point(x, y), ...classParams);
          SERVER.board.addEntity(entity);
       }
 

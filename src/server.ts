@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { CowSpecies, EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -74,9 +74,11 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       setTimeout(() => {
-         const cow = new Cow(new Point(60, 60));
-         this.board.addEntity(cow);
-      }, 1);
+         for (let i = 0; i < 20; i++) {
+            const cow = new Cow(new Point(60, 60), CowSpecies.brown);
+            this.board.addEntity(cow);
+         }
+      }, 5000);
    }
 
    private handlePlayerConnections(): void {

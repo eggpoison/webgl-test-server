@@ -1,4 +1,4 @@
-import { BiomeName, EntityType } from "webgl-test-shared";
+import { BiomeName, CowSpecies, EntityType } from "webgl-test-shared";
 import { getTilesByBiome } from "../terrain-generation/terrain-generation";
 
 export type EntitySpawnInfo = {
@@ -7,13 +7,18 @@ export type EntitySpawnInfo = {
    readonly packSize: number | [number, number];
    /** Number of tiles the entities can spawn from the spawn origin */
    readonly packSpawnRange: number;
+   readonly classParams?: () => ReadonlyArray<unknown>;
 }
 
 const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
    cow: {
       spawnableBiomes: ["grasslands"],
       packSize: [1, 4],
-      packSpawnRange: 2
+      packSpawnRange: 2,
+      classParams: () => {
+         const species: CowSpecies = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+         return [species];
+      }
    }
 };
 
