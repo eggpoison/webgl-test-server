@@ -74,7 +74,7 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       setTimeout(() => {
-         for (let i = 0; i < 20; i++) {
+         for (let i = 0; i < 200; i++) {
             const cow = new Cow(new Point(60, 60), CowSpecies.brown);
             this.board.addEntity(cow);
          }

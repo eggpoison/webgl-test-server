@@ -1,32 +1,20 @@
-import { EntityType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { EntityType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import PassiveMobAI, { PassiveMobAIInfo } from "./PassiveMobAI";
 
-/*
-
-(effectively just a modified boid system) (why did i reinvent the wheel)
-
-Herd Passive Mob AI:
-   - Herd members try not to stray too far from each other
-   - Try to orientate themselves in the direction of nearby herd members
-   - If too close to another herd member, will change direction to move away
-*/
-
 interface HerdPassiveMobAIInfo extends PassiveMobAIInfo {
    readonly minHerdMemberDistance: number;
-   readonly maxHerdMemberDistance: number;
    /** Amount of radians that the entity can turn in a second */
    readonly turnSpeed: number;
    readonly herdValidationFunction: (entity: Entity<EntityType>) => boolean;
 }
 
 class HerdPassiveMobAI extends PassiveMobAI {
-   private static readonly SEPARATION_WEIGHT = 1;
+   private static readonly SEPARATION_WEIGHT = 0.7;
    private static readonly ALIGNMENT_WEIGHT = 0.5;
    private static readonly COHESION_WEIGHT = 0.8;
 
    private readonly minHerdMemberDistance: number;
-   private readonly maxHerdMemberDistance: number;
    private readonly turnSpeed: number;
    private readonly herdValidationFunction: (entity: Entity<EntityType>) => boolean;
 
@@ -36,7 +24,6 @@ class HerdPassiveMobAI extends PassiveMobAI {
       super(entity, info);
 
       this.minHerdMemberDistance = info.minHerdMemberDistance;
-      this.maxHerdMemberDistance = info.maxHerdMemberDistance;
       this.turnSpeed = info.turnSpeed;
       this.herdValidationFunction = info.herdValidationFunction;
 
@@ -64,49 +51,19 @@ class HerdPassiveMobAI extends PassiveMobAI {
 
       const [closestHerdMember, minHerdMemberDistance] = this.findClosestHerdMember(nearbyHerdMembers);
       if (minHerdMemberDistance < this.minHerdMemberDistance) {
-            const distanceVector = closestHerdMember.position.convertToVector(this.entity.position);
-   
-            const clockwiseDist = (distanceVector.direction - this.entity.rotation + Math.PI * 2) % (Math.PI * 2);
-            const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
-   
-            // // Don't rotate if already turn away enough
-            // const LENIANCY = Math.PI / 4;
-            // if (Math.abs(clockwiseDist - counterclockwiseDist) <= LENIANCY) {
-            //    return;
-            // }
-   
-            if (clockwiseDist > counterclockwiseDist) {
-               // Turn clockwise
-               this.entity.rotation += this.TURN_CONSTANT * HerdPassiveMobAI.SEPARATION_WEIGHT;
-            } else {
-               // Turn counterclockwise
-               this.entity.rotation -= this.TURN_CONSTANT * HerdPassiveMobAI.SEPARATION_WEIGHT;
-            }
+         const distanceVector = closestHerdMember.position.convertToVector(this.entity.position);
+
+         const clockwiseDist = (distanceVector.direction - this.entity.rotation + Math.PI * 2) % (Math.PI * 2);
+         const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
+
+         if (clockwiseDist > counterclockwiseDist) {
+            // Turn clockwise
+            this.entity.rotation += this.TURN_CONSTANT * HerdPassiveMobAI.SEPARATION_WEIGHT;
+         } else {
+            // Turn counterclockwise
+            this.entity.rotation -= this.TURN_CONSTANT * HerdPassiveMobAI.SEPARATION_WEIGHT;
+         }
       }
-
-      // if (minHerdMemberDistance < this.minHerdMemberDistance) {
-      //    const distanceVector = closestHerdMember.position.convertToVector(this.entity.position);
-
-      //    const clockwiseDist = (distanceVector.direction - this.entity.rotation + Math.PI * 2) % (Math.PI * 2);
-      //    const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
-
-      //    // // Don't rotate if already turn away enough
-      //    // const LENIANCY = Math.PI / 4;
-      //    // if (Math.abs(clockwiseDist - counterclockwiseDist) <= LENIANCY) {
-      //    //    return;
-      //    // }
-
-      //    let rotation = this.entity.rotation;
-      //    if (clockwiseDist > counterclockwiseDist) {
-      //       // Turn clockwise
-      //       rotation += this.turnSpeed * Math.PI / SETTINGS.TPS;
-      //    } else {
-      //       // Turn counterclockwise
-      //       rotation -= this.turnSpeed * Math.PI / SETTINGS.TPS;
-      //    }
-
-      //    super.moveInDirection(rotation, this.wanderAcceleration, this.wanderTerminalVelocity);
-      // }
 
       // ALIGNMENT
       // Orientate to nearby herd members' headings
@@ -158,6 +115,8 @@ class HerdPassiveMobAI extends PassiveMobAI {
       }
 
       super.moveInDirection(this.entity.rotation, this.wanderAcceleration, this.wanderTerminalVelocity);
+
+      this.entity.rotation = ((this.entity.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
    }
 
    private filterHerdMembers(entities: ReadonlyArray<Entity<EntityType>>): ReadonlyArray<Entity<EntityType>> {

@@ -18,8 +18,7 @@ class Cow extends Mob<"cow"> {
    private static readonly STARE_LOCK_TIME = 3;
    private static readonly STARE_TIME = 7;
    private static readonly STARE_COOLDOWN = 10;
-   private static readonly MIN_HERD_MEMBER_DISTANCE = 160;
-   private static readonly MAX_HERD_MEMBER_DISTANCE = 240;
+   private static readonly MIN_HERD_MEMBER_DISTANCE = 120;
    private static readonly TURN_SPEED = 0.2;
    protected readonly ai: PassiveMobAI;
 
@@ -54,7 +53,6 @@ class Cow extends Mob<"cow"> {
          stareTime: Cow.STARE_TIME,
          stareCooldown: Cow.STARE_COOLDOWN,
          minHerdMemberDistance: Cow.MIN_HERD_MEMBER_DISTANCE,
-         maxHerdMemberDistance: Cow.MAX_HERD_MEMBER_DISTANCE,
          turnSpeed: Cow.TURN_SPEED,
          herdValidationFunction: (entity: Entity<EntityType>) => this.herdValidationFunction(entity)
       });

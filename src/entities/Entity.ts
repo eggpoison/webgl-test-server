@@ -294,8 +294,8 @@ abstract class Entity<T extends EntityType> {
          const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS;
          const angle = this.position.angleBetween(entity.position);
 
+         // No need to apply force to other entity as they will do it themselves
          this.addVelocity(force, angle + Math.PI);
-         entity.addVelocity(force, angle);
       }
    }
 
