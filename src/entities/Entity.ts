@@ -1,5 +1,5 @@
 import Chunk from "../Chunk";
-import { circleAndRectangleDoIntersect, circlesDoIntersect, CircularHitbox, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, Hitbox, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rectanglesDoIntersect, RectangularHitbox, rotatePoint, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, CircularHitboxInfo, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxInfo, HitboxVertexPositions, Point, rectanglePointsDoIntersect, RectangularHitboxInfo, rotatePoint, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
 import { EntityHitboxInfo } from "../Board";
@@ -28,10 +28,15 @@ const isColliding = (entity1: Entity, entity2: Entity, entityHitboxInfoRecord: {
          circleEntity = entity2;
       }
 
-      return circleAndRectangleDoIntersect(circleEntity.position, (circleEntity.hitbox as CircularHitbox).radius, rectEntity.position, (rectEntity.hitbox as RectangularHitbox).width, (rectEntity.hitbox as RectangularHitbox).height, rectEntity.rotation);
+      return circleAndRectangleDoIntersect(circleEntity.position, (circleEntity.hitbox as CircularHitboxInfo).radius, rectEntity.position, (rectEntity.hitbox as RectangularHitboxInfo).width, (rectEntity.hitbox as RectangularHitboxInfo).height, rectEntity.rotation);
    }
    // Rectangle-rectangle collisions
    else if (entity1.hitbox.type === "rectangular" && entity2.hitbox.type === "rectangular") {
+      const distance = entity1.position.distanceFrom(entity2.position);
+      if (distance > entity1.hitboxHalfDiagonalLength! + entity2.hitboxHalfDiagonalLength!) {
+         return false;
+      }
+      
       const entity1HitboxInfo = entityHitboxInfoRecord[entity1.id];
       const entity2HitboxInfo = entityHitboxInfoRecord[entity2.id];
       return rectanglePointsDoIntersect(...entity1HitboxInfo.vertexPositions, ...entity2HitboxInfo.vertexPositions, entity1HitboxInfo.sideAxes, entity2HitboxInfo.sideAxes);
@@ -51,7 +56,8 @@ abstract class Entity {
    /** Type of the entity (e.g. "cow") */
    public readonly type: EntityType;
 
-   public readonly hitbox: Hitbox;
+   public readonly hitbox: HitboxInfo;
+   public readonly hitboxHalfDiagonalLength?: number;
 
    /** Position of the entity */
    public position: Point;
@@ -83,6 +89,9 @@ abstract class Entity {
       this.rotation = rotation;
 
       this.hitbox = ENTITY_INFO_RECORD[type].hitbox;
+      if (this.hitbox.type === "rectangular") {
+         this.hitboxHalfDiagonalLength = Math.sqrt(Math.pow(this.hitbox.width / 2, 2) + Math.pow(this.hitbox.height / 2, 2));
+      }
 
       // Add entity to the ID record
       SERVER.board.entities[this.id] = this;

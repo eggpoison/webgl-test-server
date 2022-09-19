@@ -75,10 +75,12 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       setTimeout(() => {
-         for (let i = 0; i < 200; i++) {
+         for (let i = 0; i < 1000; i++) {
             const x = randFloat(60, 200);
             const y = randFloat(60, 200);
-            new Cow(new Point(x, y), CowSpecies.brown);
+            // const species = CowSpecies.brown;
+            const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+            new Cow(new Point(x, y), species);
          }
       }, 5000);
    }
