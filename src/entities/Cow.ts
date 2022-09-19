@@ -5,10 +5,8 @@ import HealthComponent from "../entity-components/HealthComponent";
 import Entity from "./Entity";
 import Mob from "./Mob";
 
-class Cow extends Mob<"cow"> {
+class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
-
-   public readonly type = "cow";
 
    private static readonly WANDER_CHANCE = 0.6;
    private static readonly WANDER_ACCELERATION = 100;
@@ -24,25 +22,13 @@ class Cow extends Mob<"cow"> {
 
    public readonly species: CowSpecies;
 
-   public readonly hitbox = ENTITY_INFO_RECORD.cow.hitbox;
-
    constructor(position: Point, species: CowSpecies) {
-      super(position, null, null, 2 * Math.PI * Math.random(), [
+      super("cow", position, null, null, 2 * Math.PI * Math.random(), [
          new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0)
       ]);
 
       this.species = species;
 
-      // this.ai = new PassiveMobAI(this, {
-      //    wanderChance: Cow.WANDER_CHANCE,
-      //    wanderAcceleration: Cow.WANDER_ACCELERATION,
-      //    wanderTerminalVelocity: Cow.WANDER_TERMINAL_VELOCITY,
-      //    visionRange: Cow.VISION_RANGE,
-      //    escapeRange: Cow.ESCAPE_RANGE,
-      //    stareLockTime: Cow.STARE_LOCK_TIME,
-      //    stareTime: Cow.STARE_TIME,
-      //    stareCooldown: Cow.STARE_COOLDOWN
-      // });
       this.ai = new HerdPassiveMobAI(this, {
          wanderChance: Cow.WANDER_CHANCE,
          wanderAcceleration: Cow.WANDER_ACCELERATION,
@@ -54,7 +40,7 @@ class Cow extends Mob<"cow"> {
          stareCooldown: Cow.STARE_COOLDOWN,
          minHerdMemberDistance: Cow.MIN_HERD_MEMBER_DISTANCE,
          turnSpeed: Cow.TURN_SPEED,
-         herdValidationFunction: (entity: Entity<EntityType>) => this.herdValidationFunction(entity)
+         herdValidationFunction: (entity: Entity) => this.herdValidationFunction(entity)
       });
    }
 
@@ -62,7 +48,7 @@ class Cow extends Mob<"cow"> {
       return [this.species];
    }
 
-   private herdValidationFunction(entity: Entity<EntityType>): boolean {
+   private herdValidationFunction(entity: Entity): boolean {
       return entity instanceof Cow && entity.species === this.species;
    }
 }

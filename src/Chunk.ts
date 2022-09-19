@@ -2,7 +2,7 @@ import { EntityType } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 
 class Chunk {
-   private readonly entities = new Array<Entity<EntityType>>();
+   private readonly entities = new Array<Entity>();
 
    public readonly x: number;
    public readonly y: number;
@@ -12,16 +12,16 @@ class Chunk {
       this.y = y;
    }
 
-   public addEntity(entity: Entity<EntityType>): void {
+   public addEntity(entity: Entity): void {
       this.entities.push(entity);
    }
 
-   public removeEntity(entity: Entity<EntityType>): void {
+   public removeEntity(entity: Entity): void {
       const idx = this.entities.indexOf(entity);
       this.entities.splice(idx, 1);
    }
 
-   public getEntities(): Array<Entity<EntityType>> {
+   public getEntities(): Array<Entity> {
       return this.entities;
    }
 }

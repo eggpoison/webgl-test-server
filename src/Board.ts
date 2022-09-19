@@ -1,11 +1,19 @@
-import { EntityType, ENTITY_INFO_RECORD, Mutable, SETTINGS, Tile, VisibleChunkBounds } from "webgl-test-shared";
+import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, SETTINGS, Tile, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
 import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation/terrain-generation";
 
+export type EntityHitboxInfo = {
+   readonly vertexPositions: readonly [Point, Point, Point, Point];
+   readonly sideAxes: ReadonlyArray<Vector>
+}
+
 class Board {
+   /** Stores entities indexed by the IDs */
+   public readonly entities: { [id: number]: Entity } = {};
+   
    public readonly tiles: Array<Array<Tile>>;
    public readonly chunks: Array<Array<Chunk>>;
 
@@ -34,84 +42,78 @@ class Board {
    }
 
    public tickEntities(): EntityCensus {
-      const entityChunkChanges = new Array<[entity: Entity<EntityType>, previousChunk: Chunk, newChunk: Chunk]>();
-
       const census: Mutable<EntityCensus> = {
          passiveMobCount: 0
       };
 
-      for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
-         for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
-            const chunk = this.chunks[x][y];
+      const entityHitboxInfoRecord: Record<number, EntityHitboxInfo> = {};
 
-            const entities = chunk.getEntities().slice();
-            for (const entity of entities) {
-               entity.tick();
+      for (const entity of Object.values(this.entities)) {
+         entity.applyPhysics();
+         entity.tickComponents();
 
-               // Add the entity to the census
-               const entityInfo = ENTITY_INFO_RECORD[entity.type];
-               if (entityInfo.category === "mob" && entityInfo.behaviour === "passive") census.passiveMobCount++;
+         // Calculate the entity's new info
+         const hitboxVertexPositons = entity.calculateHitboxVertexPositions();
+         const hitboxBounds = entity.calculateHitboxBounds(hitboxVertexPositons !== null ? hitboxVertexPositons : undefined);
+         const newChunks = entity.calculateContainingChunks(hitboxBounds);
 
-               // Find the entity's current chunk
-               const newChunk = entity.findContainingChunk();
+         // Update the entities' containing chunks
+         entity.updateChunks(newChunks);
 
-               // Handle removed entities
-               if (entity.isRemoved) {
-                  this.removeEntity(entity, newChunk);
-               }
+         if (hitboxVertexPositons !== null) {
+            const sideAxes = [
+               computeSideAxis(hitboxVertexPositons[0], hitboxVertexPositons[1]),
+               computeSideAxis(hitboxVertexPositons[0], hitboxVertexPositons[2])
+            ];
 
-               // If the entity has changed chunks, add it to the list
-               if (newChunk !== entity.previousChunk) {
-                  entityChunkChanges.push([entity, entity.previousChunk, newChunk]);
-               }
-            }
+            entityHitboxInfoRecord[entity.id] = {
+               vertexPositions: hitboxVertexPositons,
+               sideAxes: sideAxes
+            };
          }
+
+         // Add the entity to the census
+         const entityInfo = ENTITY_INFO_RECORD[entity.type];
+         if (entityInfo.category === "mob" && entityInfo.behaviour === "passive") census.passiveMobCount++;
       }
 
-      // Apply entity chunk changes
-      for (const [entity, previousChunk, newChunk] of entityChunkChanges) {
-         previousChunk.removeEntity(entity);
-         newChunk.addEntity(entity);
-
-         entity.previousChunk = newChunk;
+      // Handle entity collisions
+      for (const entity of Object.values(this.entities)) {
+         entity.resolveCollisions(entityHitboxInfoRecord);
       }
 
       return census as EntityCensus;
    }
 
-   public addEntity(entity: Entity<EntityType>): void {
-      const chunk = entity.findContainingChunk();
-      chunk.addEntity(entity);
-
+   public loadEntity(entity: Entity): void {
       if (typeof entity.onLoad !== "undefined") entity.onLoad();
       entity.loadComponents();
-      
-      entity.previousChunk = chunk;
    }
 
-   public removeEntity(entity: Entity<EntityType>, chunk?: Chunk): void {
-      (chunk || entity.previousChunk).removeEntity(entity);
+   /** Removes the entity from the game */
+   public removeEntity(entity: Entity): void {
+      delete this.entities[entity.id];
+
+      // Remove the entity from its chunks
+      for (const chunk of entity.chunks) {
+         chunk.removeEntity(entity);
+      }
    }
 
-   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity<EntityType>> {
-      const playerChunk = player.previousChunk;
-
+   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity> {
       // Find the chunks nearby to the player and all entities inside them
-      let nearbyEntities = new Array<Entity<EntityType>>();
+      let nearbyEntities = new Array<Entity>();
       for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
          for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
             const chunk = SERVER.board.chunks[chunkX][chunkY];
 
-            // Remove the player from the list
-            const chunkEntities = chunk.getEntities().slice();
-
-            if (chunk === playerChunk) {
-               chunkEntities.splice(chunkEntities.indexOf(player), 1);
-            }
-
-            nearbyEntities = nearbyEntities.concat(chunkEntities);
+            const entities = chunk.getEntities().slice();
+            nearbyEntities = nearbyEntities.concat(entities);
          }
       }
+
+      // Remove the player
+      nearbyEntities.splice(nearbyEntities.indexOf(player), 1);
 
       return nearbyEntities;
    }

@@ -56,9 +56,9 @@ class PassiveMobAI extends AI {
    private stareTimer = 0;
 
    /** Entity the mob is staring at */
-   private stareTarget: Entity<EntityType> | null = null;
+   private stareTarget: Entity | null = null;
 
-   constructor(entity: Entity<EntityType>, { wanderChance, wanderAcceleration, wanderTerminalVelocity, visionRange, escapeRange, stareLockTime, stareTime, stareCooldown }: PassiveMobAIInfo) {
+   constructor(entity: Entity, { wanderChance, wanderAcceleration, wanderTerminalVelocity, visionRange, escapeRange, stareLockTime, stareTime, stareCooldown }: PassiveMobAIInfo) {
       super(entity);
 
       this.wanderChance = wanderChance;
@@ -120,9 +120,9 @@ class PassiveMobAI extends AI {
       }
    }
 
-   private calculateClosestEntity(entities: Array<Entity<EntityType>>): Entity<EntityType> {
+   private calculateClosestEntity(entities: Array<Entity>): Entity {
       let minDist: number = Number.MAX_SAFE_INTEGER;
-      let closestEntity!: Entity<EntityType>;
+      let closestEntity!: Entity;
       for (const entity of entities) {
          const dist = this.entity.position.distanceFrom(entity.position);
          if (dist < minDist) {
@@ -141,7 +141,7 @@ class PassiveMobAI extends AI {
     * Rotates the mob to stare at an entity
     * @param entity The entity to stare at
     */
-   private stare(entity: Entity<EntityType>): void {
+   private stare(entity: Entity): void {
       const angle = this.entity.position.angleBetween(entity.position);
 
       this.entity.rotation = angle;
@@ -173,7 +173,7 @@ class PassiveMobAI extends AI {
    /**
     * Removes entities of a different type from an array of entities
     */
-   private filterEntities(entities: Array<Entity<EntityType>>): Array<Entity<EntityType>> {
+   private filterEntities(entities: Array<Entity>): Array<Entity> {
       const filteredEntities = entities.slice();
 
       // Remove entities of a different type

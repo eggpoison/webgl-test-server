@@ -1,10 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { CowSpecies, EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
-import Cow from "./entities/Cow";
 
 /*
 
@@ -73,12 +72,14 @@ class GameServer {
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
-      setTimeout(() => {
-         for (let i = 0; i < 200; i++) {
-            const cow = new Cow(new Point(60, 60), CowSpecies.brown);
-            this.board.addEntity(cow);
-         }
-      }, 5000);
+      // setTimeout(() => {
+      //    for (let i = 0; i < 200; i++) {
+      //       const x = randFloat(60, 600);
+      //       const y = randFloat(60, 600);
+      //       const cow = new Cow(new Point(x, y), CowSpecies.brown);
+      //       this.board.addEntity(cow);
+      //    }
+      // }, 5000);
    }
 
    private handlePlayerConnections(): void {
@@ -182,7 +183,7 @@ class GameServer {
       // Create the player entity
       const pointPosition = new Point(...position);
       const player = new Player(pointPosition, name);
-      this.board.addEntity(player);
+      this.board.loadEntity(player);
 
       // Initialise the player's gamedata record
       this.playerData[socket.id] = {

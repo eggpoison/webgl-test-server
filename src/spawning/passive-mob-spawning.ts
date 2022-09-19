@@ -79,7 +79,7 @@ export function spawnPassiveMobs(passiveMobCount: number): void {
 
          // Spawn the mob
          const entity = new mobClass(new Point(x, y), ...classParams);
-         SERVER.board.addEntity(entity);
+         SERVER.board.loadEntity(entity);
       }
 
       remainingSpawnCount -= spawnCount;

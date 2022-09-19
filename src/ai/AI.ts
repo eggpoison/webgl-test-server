@@ -30,22 +30,22 @@ for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
 }
 
 abstract class AI {
-   protected readonly entity: Entity<EntityType>;
+   protected readonly entity: Entity;
 
    /** Mob's target position. Not supposed to be modified in child classes. */
    protected targetPosition: Point | null = null;
 
-   constructor(entity: Entity<EntityType>) {
+   constructor(entity: Entity) {
       this.entity = entity;
    }
 
-   protected getEntitiesInRadius(radius: number): Array<Entity<EntityType>> {
+   protected getEntitiesInRadius(radius: number): Array<Entity> {
       const minChunkX = Math.max(Math.floor((this.entity.position.x - radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), 0);
       const maxChunkX = Math.min(Math.ceil((this.entity.position.x + radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), SETTINGS.BOARD_SIZE - 1);
       const minChunkY = Math.max(Math.floor((this.entity.position.y - radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), 0);
       const maxChunkY = Math.min(Math.ceil((this.entity.position.y + radius) / SETTINGS.TILE_SIZE / SETTINGS.BOARD_SIZE), SETTINGS.BOARD_SIZE - 1);
 
-      const entities = new Array<Entity<EntityType>>();
+      const entities = new Array<Entity>();
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);

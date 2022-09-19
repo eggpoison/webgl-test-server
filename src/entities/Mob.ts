@@ -2,12 +2,10 @@ import { EntityType } from "webgl-test-shared";
 import AI from "../ai/AI";
 import Entity from "./Entity";
 
-abstract class Mob<T extends EntityType> extends Entity<T> {
+abstract class Mob extends Entity {
    protected abstract readonly ai: AI;
 
    public tick(): void {
-      super.tick();
-
       this.ai.tick();
    }
 }

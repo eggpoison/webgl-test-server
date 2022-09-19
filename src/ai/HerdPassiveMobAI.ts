@@ -6,7 +6,7 @@ interface HerdPassiveMobAIInfo extends PassiveMobAIInfo {
    readonly minHerdMemberDistance: number;
    /** Amount of radians that the entity can turn in a second */
    readonly turnSpeed: number;
-   readonly herdValidationFunction: (entity: Entity<EntityType>) => boolean;
+   readonly herdValidationFunction: (entity: Entity) => boolean;
 }
 
 class HerdPassiveMobAI extends PassiveMobAI {
@@ -16,11 +16,11 @@ class HerdPassiveMobAI extends PassiveMobAI {
 
    private readonly minHerdMemberDistance: number;
    private readonly turnSpeed: number;
-   private readonly herdValidationFunction: (entity: Entity<EntityType>) => boolean;
+   private readonly herdValidationFunction: (entity: Entity) => boolean;
 
    private readonly TURN_CONSTANT: number;
 
-   constructor(entity: Entity<EntityType>, info: HerdPassiveMobAIInfo) {
+   constructor(entity: Entity, info: HerdPassiveMobAIInfo) {
       super(entity, info);
 
       this.minHerdMemberDistance = info.minHerdMemberDistance;
@@ -119,12 +119,12 @@ class HerdPassiveMobAI extends PassiveMobAI {
       this.entity.rotation = ((this.entity.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
    }
 
-   private filterHerdMembers(entities: ReadonlyArray<Entity<EntityType>>): ReadonlyArray<Entity<EntityType>> {
+   private filterHerdMembers(entities: ReadonlyArray<Entity>): ReadonlyArray<Entity> {
       return entities.filter(entity => this.herdValidationFunction(entity));
    }
 
-   private findClosestHerdMember(entities: ReadonlyArray<Entity<EntityType>>): [closestHerdMember: Entity<EntityType>, minHerdMemberDistance: number] {
-      let closestHerdMember!: Entity<EntityType>;
+   private findClosestHerdMember(entities: ReadonlyArray<Entity>): [closestHerdMember: Entity, minHerdMemberDistance: number] {
+      let closestHerdMember!: Entity;
       let minDistance = Number.MAX_SAFE_INTEGER;
 
       for (const entity of entities) {
