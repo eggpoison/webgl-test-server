@@ -7,7 +7,7 @@ import generateTerrain from "./terrain-generation/terrain-generation";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
-   readonly sideAxes: ReadonlyArray<Vector>
+   readonly sideAxes: ReadonlyArray<Vector>;
 }
 
 class Board {
@@ -41,7 +41,7 @@ class Board {
       return this.chunks[x][y];
    }
 
-   public tickEntities(): EntityCensus {
+   public update(): EntityCensus {
       const census: Mutable<EntityCensus> = {
          passiveMobCount: 0
       };
@@ -50,6 +50,9 @@ class Board {
 
       for (const entity of Object.values(this.entities)) {
          entity.applyPhysics();
+
+         // Tick entity
+         if (typeof entity.tick !== "undefined") entity.tick();
          entity.tickComponents();
 
          // Calculate the entity's new info
@@ -80,6 +83,11 @@ class Board {
       // Handle entity collisions
       for (const entity of Object.values(this.entities)) {
          entity.resolveCollisions(entityHitboxInfoRecord);
+
+         // Resolve wall collisions
+         const hitboxVertexPositons = entity.calculateHitboxVertexPositions();
+         const hitboxBounds = entity.calculateHitboxBounds(hitboxVertexPositons !== null ? hitboxVertexPositons : undefined);
+         entity.resolveWallCollisions(hitboxBounds);
       }
 
       return census as EntityCensus;
@@ -105,10 +113,16 @@ class Board {
       let nearbyEntities = new Array<Entity>();
       for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
          for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-            const chunk = SERVER.board.chunks[chunkX][chunkY];
+            const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
             const entities = chunk.getEntities().slice();
-            nearbyEntities = nearbyEntities.concat(entities);
+
+            // Add all entities which aren't already in the array
+            for (const entity of entities) {
+               if (!nearbyEntities.includes(entity)) {
+                  nearbyEntities.push(entity);
+               }
+            }
          }
       }
 

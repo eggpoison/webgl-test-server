@@ -1,9 +1,11 @@
 import { Server, Socket } from "socket.io";
-import { EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { CowSpecies, EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, randFloat, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
+import { findAvailableEntityID } from "./entities/Entity";
+import Cow from "./entities/Cow";
 
 /*
 
@@ -72,26 +74,27 @@ class GameServer {
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
-      // setTimeout(() => {
-      //    for (let i = 0; i < 200; i++) {
-      //       const x = randFloat(60, 600);
-      //       const y = randFloat(60, 600);
-      //       const cow = new Cow(new Point(x, y), CowSpecies.brown);
-      //       this.board.addEntity(cow);
-      //    }
-      // }, 5000);
+      setTimeout(() => {
+         for (let i = 0; i < 200; i++) {
+            const x = randFloat(60, 200);
+            const y = randFloat(60, 200);
+            new Cow(new Point(x, y), CowSpecies.brown);
+         }
+      }, 5000);
    }
 
    private handlePlayerConnections(): void {
       this.io.on("connection", (socket: ISocket) => {
          console.log("New client connected: " + socket.id);
 
+         const playerID = findAvailableEntityID();
+
          // Send initial game data
-         socket.emit("initialGameData", this.ticks, this.board.tiles);
+         socket.emit("initialGameData", this.ticks, this.board.tiles, playerID);
 
          // Receive initial player data
          socket.on("initialPlayerData", (name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds) => {
-            this.addPlayer(socket, name, position, visibleChunkBounds);
+            this.addPlayer(socket, name, playerID, position, visibleChunkBounds);
          });
 
          socket.on("newVisibleChunkBounds", (visibleChunkBounds: VisibleChunkBounds) => {
@@ -113,7 +116,7 @@ class GameServer {
    private async tick(): Promise<void> {
       this.ticks++;
 
-      const entityCensus = this.board.tickEntities();
+      const entityCensus = this.board.update();
 
       this.entitySpawner.tick(entityCensus);
 
@@ -121,6 +124,7 @@ class GameServer {
       this.sendGameDataPackets();
    }
 
+   /** Send data about the server to all players */
    private async sendGameDataPackets(): Promise<void> {
       const sockets = await this.io.fetchSockets();
       for (const socket of sockets) {
@@ -146,7 +150,7 @@ class GameServer {
                rotation: entity.rotation,
                terminalVelocity: entity.terminalVelocity,
                clientArgs: entity.getClientArgs(),
-               chunkCoords: entity.getChunkCoords()
+               chunks: entity.chunks.map(chunk => [chunk.x, chunk.y])
             };
 
             gameDataPacket.nearbyEntities.push(entityData);
@@ -179,10 +183,10 @@ class GameServer {
       playerData.visibleChunkBounds = visibleChunkBounds;
    }
 
-   private addPlayer(socket: ISocket, name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds): void {
+   private addPlayer(socket: ISocket, name: string, playerID: number, position: [number, number], visibleChunkBounds: VisibleChunkBounds): void {
       // Create the player entity
       const pointPosition = new Point(...position);
-      const player = new Player(pointPosition, name);
+      const player = new Player(pointPosition, name, playerID);
       this.board.loadEntity(player);
 
       // Initialise the player's gamedata record

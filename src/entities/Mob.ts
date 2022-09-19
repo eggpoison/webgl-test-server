@@ -1,4 +1,3 @@
-import { EntityType } from "webgl-test-shared";
 import AI from "../ai/AI";
 import Entity from "./Entity";
 

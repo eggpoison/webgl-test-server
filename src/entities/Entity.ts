@@ -7,7 +7,7 @@ import { EntityHitboxInfo } from "../Board";
 let idCounter = 0;
 
 /** Finds a unique available ID for an entity */
-const findAvailableID = (): number => {
+export function findAvailableEntityID(): number {
    return idCounter++;
 }
 
@@ -47,7 +47,7 @@ abstract class Entity {
    private readonly tickableComponents: ReadonlyArray<Component>;
 
    /** Unique identifier for every entity */
-   public readonly id: number = findAvailableID();
+   public readonly id: number;
    /** Type of the entity (e.g. "cow") */
    public readonly type: EntityType;
 
@@ -67,7 +67,13 @@ abstract class Entity {
 
    public chunks: Array<Chunk>;
 
-   constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Array<Component>) {
+   constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Array<Component>, id?: number) {
+      if (typeof id === "undefined") {
+         this.id = findAvailableEntityID();
+      } else {
+         this.id = id;
+      }
+
       this.type = type;
       
       this.position = position;
@@ -93,9 +99,9 @@ abstract class Entity {
 
       // Set components
       this.tickableComponents = components.filter(component => typeof component.tick !== "undefined");
+      // console.log(this.type, components, this.tickableComponents);
       for (const component of components) {
          this.components.set(component.constructor as (new (...args: any[]) => any), component);
-
          component.setEntity(this);
       }
    }
@@ -143,15 +149,17 @@ abstract class Entity {
 
    public updateChunks(newChunks: ReadonlyArray<Chunk>): void {
       // Find all chunks which aren't present in the new chunks and remove them
-      const removedChunks = this.chunks.filter(chunk => newChunks.indexOf(chunk) === -1);
+      const removedChunks = this.chunks.filter(chunk => !newChunks.includes(chunk));
       for (const chunk of removedChunks) {
          chunk.removeEntity(this);
+         this.chunks.splice(this.chunks.indexOf(chunk), 1);
       }
 
       // Add all new chunks
-      const addedChunks = newChunks.filter(chunk => this.chunks.indexOf(chunk) === -1);
+      const addedChunks = newChunks.filter(chunk => !this.chunks.includes(chunk));
       for (const chunk of addedChunks) {
          chunk.addEntity(this);
+         this.chunks.push(chunk);
       }
    }
 

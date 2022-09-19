@@ -51,7 +51,7 @@ abstract class AI {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
             for (const entity of chunk.getEntities()) {
-               if (entity === this.entity) continue;
+               if (entity === this.entity || entities.includes(entity)) continue;
 
                const dist = this.entity.position.distanceFrom(entity.position);
                if (dist <= radius) entities.push(entity);

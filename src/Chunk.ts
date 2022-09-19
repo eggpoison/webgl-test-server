@@ -21,6 +21,10 @@ class Chunk {
       this.entities.splice(idx, 1);
    }
 
+   public hasEntity(entity: Entity): boolean {
+      return this.entities.includes(entity);
+   }
+
    public getEntities(): Array<Entity> {
       return this.entities;
    }

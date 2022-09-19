@@ -8,10 +8,10 @@ class Player extends Entity {
    /** Player nametag. Used when sending player data to the client */
    private readonly displayName: string;
 
-   constructor(position: Point, name: string) {
+   constructor(position: Point, name: string, id: number) {
       super("player", position, null, null, 0, [
          new HealthComponent(Player.MAX_HEALTH, Player.MAX_HEALTH, 0)
-      ]);
+      ], id);
 
       this.displayName = name;
    }
