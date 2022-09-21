@@ -1,4 +1,4 @@
-import { EntityType, Point, SETTINGS } from "webgl-test-shared";
+import { Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import PassiveMobAI, { PassiveMobAIInfo } from "./PassiveMobAI";
 

@@ -73,6 +73,8 @@ abstract class Entity {
 
    public chunks: Array<Chunk>;
 
+   public currentTile: Tile;
+
    constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Array<Component>, id?: number) {
       if (typeof id === "undefined") {
          this.id = findAvailableEntityID();
@@ -101,6 +103,9 @@ abstract class Entity {
       const hitboxBounds = this.calculateHitboxBounds(hitboxVertexPositions !== null ? hitboxVertexPositions : undefined);
       this.chunks = this.calculateContainingChunks(hitboxBounds);
 
+      // Find inital tile
+      this.currentTile = this.findCurrentTile();
+
       // Add entity to chunks
       for (const chunk of this.chunks) {
          chunk.addEntity(this);
@@ -108,7 +113,6 @@ abstract class Entity {
 
       // Set components
       this.tickableComponents = components.filter(component => typeof component.tick !== "undefined");
-      // console.log(this.type, components, this.tickableComponents);
       for (const component of components) {
          this.components.set(component.constructor as (new (...args: any[]) => any), component);
          component.setEntity(this);
@@ -136,7 +140,7 @@ abstract class Entity {
 
    public findCurrentTile(): Tile {
       const [x, y] = this.findCurrentTileCoordinates();
-      return SERVER.board.tiles[x][y];
+      return SERVER.board.getTile(x, y);
    }
 
    public findCurrentTileCoordinates(): [number, number] {
@@ -189,14 +193,18 @@ abstract class Entity {
       return chunks;
    }
 
+   public applyForce(force: Vector): void {
+      this.velocity = this.velocity?.add(force) || force;
+   }
+
    public addVelocity(magnitude: number, direction: number): void {
       const velocity = new Vector(magnitude, direction);
       this.velocity = this.velocity?.add(velocity) || velocity;
    }
 
    public applyPhysics(): void {
-      const tile = this.findCurrentTile();
-      const tileTypeInfo = TILE_TYPE_INFO_RECORD[tile.type];
+      this.currentTile = this.findCurrentTile();
+      const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.currentTile.type];
 
       const terminalVelocity = this.terminalVelocity * (tileTypeInfo.moveSpeedMultiplier || 1);
       
@@ -235,13 +243,13 @@ abstract class Entity {
          }
       }
 
-      // Restrict the entity's velocity to their terminal velocity
-      if (this.velocity !== null && terminalVelocity > 0) {
-         const mach = Math.abs(this.velocity.magnitude / terminalVelocity);
-         if (mach > 1) {
-            this.velocity.magnitude /= 1 + (mach - 1) / SETTINGS.TPS;
-         }
-      }
+      // // Restrict the entity's velocity to their terminal velocity
+      // if (this.velocity !== null && terminalVelocity > 0) {
+      //    const mach = Math.abs(this.velocity.magnitude / terminalVelocity);
+      //    if (mach > 1) {
+      //       this.velocity.magnitude /= 1 + (mach - 1) / SETTINGS.TPS;
+      //    }
+      // }
 
       // Apply velocity
       if (this.velocity !== null) {
@@ -373,6 +381,13 @@ abstract class Entity {
       }
 
       return collidingEntities;
+   }
+
+   public registerHit(attackingEntity: Entity, distance: number, angle: number, damage: number): void {
+      const PUSH_FORCE = 700;
+      const force = new Vector(PUSH_FORCE, angle);
+      this.applyForce(force);
+      console.log(`register hit on entity #${this.id}`);
    }
 }
 

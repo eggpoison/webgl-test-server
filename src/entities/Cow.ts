@@ -10,7 +10,9 @@ class Cow extends Mob {
 
    private static readonly WANDER_CHANCE = 0.6;
    private static readonly WANDER_ACCELERATION = 100;
+   // private static readonly WANDER_ACCELERATION = 0.04;
    private static readonly WANDER_TERMINAL_VELOCITY = 50;
+   // private static readonly WANDER_TERMINAL_VELOCITY = 5000;
    private static readonly VISION_RANGE = 300;
    private static readonly ESCAPE_RANGE = 300;
    private static readonly STARE_LOCK_TIME = 3;
@@ -18,6 +20,8 @@ class Cow extends Mob {
    private static readonly STARE_COOLDOWN = 10;
    private static readonly MIN_HERD_MEMBER_DISTANCE = 120;
    private static readonly TURN_SPEED = 0.2;
+   // private static readonly TURN_SPEED = 0.01;
+   // private static readonly TURN_SPEED = 0.05;
    protected readonly ai: PassiveMobAI;
 
    public readonly species: CowSpecies;
@@ -38,6 +42,11 @@ class Cow extends Mob {
          stareLockTime: Cow.STARE_LOCK_TIME,
          stareTime: Cow.STARE_TIME,
          stareCooldown: Cow.STARE_COOLDOWN,
+         grazingBehaviour: {
+            targetTile: "grass",
+            grazingTime: 1,
+            cooldown: 5
+         },
          minHerdMemberDistance: Cow.MIN_HERD_MEMBER_DISTANCE,
          turnSpeed: Cow.TURN_SPEED,
          herdValidationFunction: (entity: Entity) => this.herdValidationFunction(entity)

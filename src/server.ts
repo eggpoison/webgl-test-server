@@ -1,10 +1,10 @@
 import { Server, Socket } from "socket.io";
-import { CowSpecies, EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, randFloat, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { AttackPacket, CowSpecies, EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, randFloat, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
-import { findAvailableEntityID } from "./entities/Entity";
+import Entity, { findAvailableEntityID } from "./entities/Entity";
 import Cow from "./entities/Cow";
 
 /*
@@ -36,6 +36,32 @@ Tasks:
 * Start the server
 
 */
+
+type PlayerAttackInfo = {
+   readonly target: Entity;
+   readonly distance: number;
+   readonly angle: number;
+}
+
+const calculateAttackedEntity = (player: Entity, entities: ReadonlyArray<Entity>): PlayerAttackInfo | null => {
+   let closestEntity: Entity | null = null;
+   let minDistance = Number.MAX_SAFE_INTEGER;
+   for (const entity of entities) {
+      const dist = player.position.distanceFrom(entity.position);
+      if (dist < minDistance) {
+         closestEntity = entity;
+         minDistance = dist;
+      }
+   }
+
+   if (closestEntity === null) return null;
+
+   return {
+      target: closestEntity,
+      distance: minDistance,
+      angle: player.position.angleBetween(closestEntity.position)
+   };
+}
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -75,11 +101,14 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       setTimeout(() => {
-         for (let i = 0; i < 1000; i++) {
-            const x = randFloat(60, 200);
-            const y = randFloat(60, 200);
-            // const species = CowSpecies.brown;
-            const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+         for (let i = 0; i < 100; i++) {
+            const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+            const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+            // const x = randFloat(60, 200);
+            // const y = randFloat(60, 200);
+            const species = CowSpecies.brown;
+            // const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+            // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
             new Cow(new Point(x, y), species);
          }
       }, 5000);
@@ -92,7 +121,7 @@ class GameServer {
          const playerID = findAvailableEntityID();
 
          // Send initial game data
-         socket.emit("initialGameData", this.ticks, this.board.tiles, playerID);
+         socket.emit("initialGameData", this.ticks, this.board.getTiles(), playerID);
 
          // Receive initial player data
          socket.on("initialPlayerData", (name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds) => {
@@ -111,7 +140,11 @@ class GameServer {
 
          socket.on("playerDataPacket", (playerDataPacket: PlayerDataPacket) => {
             this.processPlayerDataPacket(socket, playerDataPacket);
-         })
+         });
+
+         socket.on("attackPacket", (attackPacket: AttackPacket) => {
+            this.processAttackPacket(socket, attackPacket);
+         });
       });
    }
 
@@ -135,10 +168,14 @@ class GameServer {
 
          // Get the player data for the current client
          const playerData = this.playerData[socket.id];
+
+         const tileUpdates = this.board.getTileUpdates();
          
          // Initialise the game data packet
          const gameDataPacket = {
-            nearbyEntities: new Array<EntityData<EntityType>>()
+            nearbyEntities: new Array<EntityData<EntityType>>(),
+            tileUpdates: tileUpdates,
+            attackEntities: []
          };
          
          const nearbyEntities = this.board.getPlayerNearbyEntities(playerData.instance, playerData.visibleChunkBounds);
@@ -168,6 +205,34 @@ class GameServer {
          const playerData = this.playerData[socket.id];
          this.board.removeEntity(playerData.instance);
       }
+   }
+
+   private async processAttackPacket(sendingSocket: ISocket, attackPacket: AttackPacket): Promise<void> {
+      const player = this.playerData[sendingSocket.id].instance;
+
+      // Calculate the attack's target entity
+      const targetEntities = attackPacket.targetEntites.map(id => this.board.entities[id]);
+      const targetInfo = calculateAttackedEntity(player, targetEntities);
+
+      if (targetInfo !== null) {
+         // Register the hit
+         targetInfo.target.registerHit(player, targetInfo.distance, targetInfo.angle, 1);
+      }
+
+      // const player = this.playerData[sendingSocket.id].instance;
+      // const serverAttackPacket: ServerAttackPacket = {
+      //    senderID: player.id,
+      //    targetID: attackPacket.targetID,
+      //    distance: attackPacket.distance,
+      //    angle: attackPacket.angle,
+      //    heldItem: attackPacket.heldItem
+      // }
+      
+      // // Forward the attack packet to all players
+      // const sockets = await this.io.fetchSockets();
+      // for (const socket of sockets) {
+      //    socket.emit("attackPacket", serverAttackPacket);
+      // }
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {

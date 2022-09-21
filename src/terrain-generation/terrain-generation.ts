@@ -159,11 +159,13 @@ function generateTerrain(): Array<Array<Tile>> {
    generateTileInfo(tileInfoArray);
 
    // Make an array of tiles from the tile info array
-   const tiles = tileInfoArray.map(tileInfoRow => {
-      return tileInfoRow.map(info => {
-         return new Tile(info as TileInfo);
-      });
-   });
+   const tiles = new Array<Array<Tile>>();
+   for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
+      tiles[x] = new Array<Tile>();
+      for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
+         tiles[x][y] = new Tile(x, y, tileInfoArray[x][y] as TileInfo);
+      }
+   }
 
    // Categorise the tiles for later use
    categoriseTiles(tiles);

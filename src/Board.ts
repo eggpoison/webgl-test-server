@@ -1,4 +1,4 @@
-import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, SETTINGS, Tile, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, SETTINGS, Tile, TileUpdate, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
@@ -14,12 +14,16 @@ class Board {
    /** Stores entities indexed by the IDs */
    public readonly entities: { [id: number]: Entity } = {};
    
-   public readonly tiles: Array<Array<Tile>>;
-   public readonly chunks: Array<Array<Chunk>>;
+   private readonly tiles: Array<Array<Tile>>;
+   private readonly chunks: Array<Array<Chunk>>;
+
+   private tileUpdateCoordinates: Array<[x: number, y: number]>;
 
    constructor() {
       this.tiles = generateTerrain();
       console.log("Terrain generated");
+
+      this.tileUpdateCoordinates = new Array<[number, number]>();
 
       this.chunks = this.initialiseChunks();
    }
@@ -37,8 +41,17 @@ class Board {
       return chunks;
    }
 
+   public getTile(x: number, y: number): Tile {
+      return this.tiles[x][y];
+   }
+
    public getChunk(x: number, y: number): Chunk {
       return this.chunks[x][y];
+   }
+
+   /** Returns a reference to the tiles array */
+   public getTiles(): Array<Array<Tile>> {
+      return this.tiles;
    }
 
    public update(): EntityCensus {
@@ -106,6 +119,30 @@ class Board {
       for (const chunk of entity.chunks) {
          chunk.removeEntity(entity);
       }
+   }
+
+   /** Registers a tile update to be sent to the clients */
+   public updateTile(x: number, y: number): void {
+      this.tileUpdateCoordinates.push([x, y]);
+   }
+
+   /** Get all tile updates and reset them */
+   public getTileUpdates(): ReadonlyArray<TileUpdate> {
+      // Generate the tile updates array
+      const tileUpdates: ReadonlyArray<TileUpdate> = this.tileUpdateCoordinates.map(([x, y]) => {
+         const tile = this.getTile(x, y);
+         return {
+            x: x,
+            y: y,
+            type: tile.type,
+            isWall: tile.isWall
+         };
+      });
+
+      // reset the tile update coordiantes
+      this.tileUpdateCoordinates = new Array<[number, number]>();
+
+      return tileUpdates;
    }
 
    public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity> {

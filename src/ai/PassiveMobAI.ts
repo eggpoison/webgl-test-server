@@ -1,4 +1,4 @@
-import { EntityType, Point, randItem, SETTINGS } from "webgl-test-shared";
+import { Point, randItem, SETTINGS, TileType } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import AI from "./AI";
 
@@ -16,6 +16,14 @@ Staring:
 
 */
 
+type GrazingBehaviour = {
+   readonly targetTile: TileType;
+   /** Time it takes to graze */
+   readonly grazingTime: number;
+   /** Cooldown between eating food */
+   readonly cooldown: number;
+}
+
 export interface PassiveMobAIInfo {
    /** Chance that the mob wanders in a second */
    readonly wanderChance: number;
@@ -30,6 +38,7 @@ export interface PassiveMobAIInfo {
    readonly stareTime: number;
    /** Cooldown between stares */
    readonly stareCooldown: number;
+   readonly grazingBehaviour?: GrazingBehaviour
 }
 
 class PassiveMobAI extends AI {
@@ -46,6 +55,13 @@ class PassiveMobAI extends AI {
    protected readonly stareTime: number;
    /** Cooldown between stares */
    protected readonly stareCooldown: number;
+   private readonly grazingBehaviour?: GrazingBehaviour;
+
+   private grazingCooldownTimer = 0;
+   /** Time that it takes to graze */
+   private grazeTimer = 0;
+
+   private isGrazing: boolean = false;
 
    /**
     * If this is greater than 0, the entity will want to stare.
@@ -58,7 +74,7 @@ class PassiveMobAI extends AI {
    /** Entity the mob is staring at */
    private stareTarget: Entity | null = null;
 
-   constructor(entity: Entity, { wanderChance, wanderAcceleration, wanderTerminalVelocity, visionRange, escapeRange, stareLockTime, stareTime, stareCooldown }: PassiveMobAIInfo) {
+   constructor(entity: Entity, { wanderChance, wanderAcceleration, wanderTerminalVelocity, visionRange, escapeRange, stareLockTime, stareTime, stareCooldown, grazingBehaviour }: PassiveMobAIInfo) {
       super(entity);
 
       this.wanderChance = wanderChance;
@@ -69,10 +85,32 @@ class PassiveMobAI extends AI {
       this.stareLockTime = stareLockTime;
       this.stareTime = stareTime;
       this.stareCooldown = stareCooldown;
+      this.grazingBehaviour = grazingBehaviour;
+
+      // Set initial grazing cooldown
+      if (typeof this.grazingBehaviour !== "undefined") {
+         this.grazingCooldownTimer = this.grazingBehaviour.cooldown;
+      }
    }
 
    public tick(): void {
       super.tick();
+
+      if (this.isGrazing) {
+         this.grazeTimer -= 1 / SETTINGS.TPS;
+
+         if (this.grazeTimer <= 0) {
+            
+            this.isGrazing = false;
+         }
+
+         return;
+      }
+
+      // If the mob is able to graze, then do so
+      if (this.canGraze()) {
+         this.startGrazing();
+      }
 
       let nearbyEntities = super.getEntitiesInRadius(this.visionRange);
       // Remove the same type of entity
@@ -118,6 +156,29 @@ class PassiveMobAI extends AI {
       if (canWander) {
          this.wanderAttempt();
       }
+   }
+
+   private canGraze(): boolean {
+      if (typeof this.grazingBehaviour === "undefined") return false;
+
+      this.grazingCooldownTimer -= 1 / SETTINGS.TPS;
+
+      // Don't graze if on cooldown
+      if (this.grazingCooldownTimer > 0) return false;
+
+      // Only graze if standing on correct tile type
+      return this.entity.currentTile.type === this.grazingBehaviour.targetTile;
+   }
+
+   private startGrazing(): void {
+      this.isGrazing = true;
+
+      // Reset cooldown
+      this.grazingCooldownTimer = this.grazingBehaviour!.cooldown;
+   }
+
+   private graze(): void {
+      const { x, y } = this.entity.currentTile;
    }
 
    private calculateClosestEntity(entities: Array<Entity>): Entity {
