@@ -1,13 +1,21 @@
-import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, SETTINGS, Tile, TileUpdate, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemData, SETTINGS, Tile, TileUpdateData, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
+import Item from "./items/Item";
 import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation/terrain-generation";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
    readonly sideAxes: ReadonlyArray<Vector>;
+}
+
+export type AttackInfo = {
+   readonly attackingEntity: Entity;
+   readonly targetEntity: Entity;
+   /** How far into being hit the entity is (0 = just began, 1 = ended) */
+   progress: number;
 }
 
 class Board {
@@ -18,6 +26,8 @@ class Board {
    private readonly chunks: Array<Array<Chunk>>;
 
    private tileUpdateCoordinates: Array<[x: number, y: number]>;
+
+   public readonly attackInfoRecord: { [id: number]: AttackInfo } = {};
 
    constructor() {
       this.tiles = generateTerrain();
@@ -54,7 +64,26 @@ class Board {
       return this.tiles;
    }
 
+   public addNewAttack(attackInfo: AttackInfo): void {
+      this.attackInfoRecord[attackInfo.targetEntity.id] = attackInfo;
+   }
+
+   public removeAttack(target: Entity): void {
+      delete this.attackInfoRecord[target.id];
+   }
+
+   public getAttackInfoArray(): ReadonlyArray<AttackInfo> {
+      return Object.values(this.attackInfoRecord);
+   }
+
    public update(): EntityCensus {
+      // Remove entities flagged for deletion
+      for (const entity of Object.values(this.entities)) {
+         if (entity.isRemoved) {
+            this.removeEntity(entity);
+         }
+      }
+
       const census: Mutable<EntityCensus> = {
          passiveMobCount: 0
       };
@@ -112,7 +141,7 @@ class Board {
    }
 
    /** Removes the entity from the game */
-   public removeEntity(entity: Entity): void {
+   private removeEntity(entity: Entity): void {
       delete this.entities[entity.id];
 
       // Remove the entity from its chunks
@@ -127,9 +156,9 @@ class Board {
    }
 
    /** Get all tile updates and reset them */
-   public getTileUpdates(): ReadonlyArray<TileUpdate> {
+   public getTileUpdates(): ReadonlyArray<TileUpdateData> {
       // Generate the tile updates array
-      const tileUpdates: ReadonlyArray<TileUpdate> = this.tileUpdateCoordinates.map(([x, y]) => {
+      const tileUpdates: ReadonlyArray<TileUpdateData> = this.tileUpdateCoordinates.map(([x, y]) => {
          const tile = this.getTile(x, y);
          return {
             x: x,
@@ -152,10 +181,8 @@ class Board {
          for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
-            const entities = chunk.getEntities().slice();
-
             // Add all entities which aren't already in the array
-            for (const entity of entities) {
+            for (const entity of chunk.getEntities()) {
                if (!nearbyEntities.includes(entity)) {
                   nearbyEntities.push(entity);
                }
@@ -167,6 +194,36 @@ class Board {
       nearbyEntities.splice(nearbyEntities.indexOf(player), 1);
 
       return nearbyEntities;
+   }
+
+   public calculatePlayerItemInfoArray(player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ServerItemData> {
+      // Find the chunks nearby to the player and all items inside them
+      let nearbyItems = new Array<Item>();
+      for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
+         for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+            const chunk = SERVER.board.getChunk(chunkX, chunkY);
+
+            // Add all entities which aren't already in the array
+            for (const item of chunk.getItems()) {
+               if (!nearbyItems.includes(item)) {
+                  nearbyItems.push(item);
+               }
+            }
+         }
+      }
+
+      const serverItemDataArray: ReadonlyArray<ServerItemData> = nearbyItems.map(item => {
+         return {
+            id: item.id,
+            itemID: item.itemID,
+            count: item.count,
+            position: item.position.package(),
+            chunkCoordinates: item.chunks.map(chunk => [chunk.x, chunk.y]),
+            rotation: item.rotation
+         };
+      });
+
+      return serverItemDataArray;
    }
 }
 

@@ -3,7 +3,7 @@
 PASSIVE MOB SPAWNING:
 
 Goals:
-- Passive mobs should be fairly scarce, max count based on the number of chunks
+- Passive mobs should be fairly scar ce, max count based on the number of chunks
 
 Every tick has a random chance to run a passive mob spawn attempt for a random passive mob type
 
@@ -35,7 +35,7 @@ const getRandomEntityType = (behaviour: EntityBehaviour): EntityType => {
 }
 
 /** Max number of passive mobs that can exist */
-const PASSIVE_MOB_CAP = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * 0.5;
+const PASSIVE_MOB_CAP = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * 1.5;
 
 /** Increase to make mobs spawn faster. 0 = no spawn, 1 = max spawn rate */
 const PASSIVE_MOB_SPAWN_RATE = 0.3;

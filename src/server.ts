@@ -1,8 +1,8 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, CowSpecies, EntityData, EntityType, GameDataPacket, PlayerDataPacket, Point, randFloat, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
-import Board from "./Board";
+import Board, { AttackInfo } from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
 import Entity, { findAvailableEntityID } from "./entities/Entity";
 import Cow from "./entities/Cow";
@@ -37,32 +37,6 @@ Tasks:
 
 */
 
-type PlayerAttackInfo = {
-   readonly target: Entity;
-   readonly distance: number;
-   readonly angle: number;
-}
-
-const calculateAttackedEntity = (player: Entity, entities: ReadonlyArray<Entity>): PlayerAttackInfo | null => {
-   let closestEntity: Entity | null = null;
-   let minDistance = Number.MAX_SAFE_INTEGER;
-   for (const entity of entities) {
-      const dist = player.position.distanceFrom(entity.position);
-      if (dist < minDistance) {
-         closestEntity = entity;
-         minDistance = dist;
-      }
-   }
-
-   if (closestEntity === null) return null;
-
-   return {
-      target: closestEntity,
-      distance: minDistance,
-      angle: player.position.angleBetween(closestEntity.position)
-   };
-}
-
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 type PlayerData = {
@@ -74,6 +48,15 @@ type PlayerData = {
 
 export type EntityCensus = {
    readonly passiveMobCount: number;
+}
+
+const formatAttackInfoArray = (attackInfoArray: ReadonlyArray<AttackInfo>): ReadonlyArray<ServerAttackData> => {
+   return attackInfoArray.map(attackInfo => {
+      return {
+         targetEntityID: attackInfo.targetEntity.id,
+         progress: attackInfo.progress
+      };
+   });
 }
 
 class GameServer {
@@ -100,18 +83,23 @@ class GameServer {
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
-      setTimeout(() => {
-         for (let i = 0; i < 100; i++) {
-            const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-            const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-            // const x = randFloat(60, 200);
-            // const y = randFloat(60, 200);
-            const species = CowSpecies.brown;
-            // const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
-            // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
-            new Cow(new Point(x, y), species);
-         }
-      }, 5000);
+      // setTimeout(() => {
+      //    for (let i = 0; i < 1000; i++) {
+      //       // const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //       // const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //       const x = randFloat(60, 200);
+      //       const y = randFloat(60, 200);
+      //       // const species = CowSpecies.brown;
+      //       const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+      //       // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
+      //       new Cow(new Point(x, y), species);
+      //    }
+      // }, 5000);
+
+      // setTimeout(() => {
+      //    const pos = new Point(100, 100);
+      //    new Cow(pos, CowSpecies.brown);
+      // }, 2000);
    }
 
    private handlePlayerConnections(): void {
@@ -168,42 +156,48 @@ class GameServer {
 
          // Get the player data for the current client
          const playerData = this.playerData[socket.id];
-
-         const tileUpdates = this.board.getTileUpdates();
+         const player = playerData.instance;
          
-         // Initialise the game data packet
-         const gameDataPacket = {
-            nearbyEntities: new Array<EntityData<EntityType>>(),
-            tileUpdates: tileUpdates,
-            attackEntities: []
-         };
-         
-         const nearbyEntities = this.board.getPlayerNearbyEntities(playerData.instance, playerData.visibleChunkBounds);
+         // Create the visible entity info array
+         const visibleEntityInfoArray = new Array<ServerEntityData>();
+         const nearbyEntities = this.board.getPlayerNearbyEntities(player, playerData.visibleChunkBounds);
          for (const entity of nearbyEntities) {
-            const entityData: EntityData<EntityType> = {
+            const entityData: ServerEntityData = {
                id: entity.id,
                type: entity.type,
                position: entity.position.package(),
                velocity: entity.velocity !== null ? entity.velocity.package() : null,
                acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
-               rotation: entity.rotation,
                terminalVelocity: entity.terminalVelocity,
+               rotation: entity.rotation,
                clientArgs: entity.getClientArgs(),
-               chunks: entity.chunks.map(chunk => [chunk.x, chunk.y])
+               chunkCoordinates: entity.chunks.map(chunk => [chunk.x, chunk.y])
             };
-
-            gameDataPacket.nearbyEntities.push(entityData);
+            visibleEntityInfoArray.push(entityData);
          }
 
+         const tileUpdates = this.board.getTileUpdates();
+         const serverAttackDataArray = formatAttackInfoArray(this.board.getAttackInfoArray());
+
+         const serverItemDataArray = this.board.calculatePlayerItemInfoArray(player, playerData.visibleChunkBounds);
+         
+         // Initialise the game data packet
+         const gameDataPacket: GameDataPacket = {
+            serverEntityDataArray: visibleEntityInfoArray,
+            serverItemDataArray: serverItemDataArray,
+            tileUpdates: tileUpdates,
+            serverAttackDataArray: serverAttackDataArray
+         };
+
          // Send the game data to the player
-         socket.emit("gameDataPacket", gameDataPacket as GameDataPacket);
+         socket.emit("gameDataPacket", gameDataPacket);
       }
    }
 
    private handlePlayerDisconnect(socket: ISocket): void {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const playerData = this.playerData[socket.id];
-         this.board.removeEntity(playerData.instance);
+         playerData.instance.isRemoved = true;
       }
    }
 
@@ -211,28 +205,13 @@ class GameServer {
       const player = this.playerData[sendingSocket.id].instance;
 
       // Calculate the attack's target entity
-      const targetEntities = attackPacket.targetEntites.map(id => this.board.entities[id]);
-      const targetInfo = calculateAttackedEntity(player, targetEntities);
+      const targetEntities = attackPacket.targetEntities.map(id => this.board.entities[id]);
+      const targetInfo = player.calculateAttackedEntity(targetEntities);
 
       if (targetInfo !== null) {
          // Register the hit
          targetInfo.target.registerHit(player, targetInfo.distance, targetInfo.angle, 1);
       }
-
-      // const player = this.playerData[sendingSocket.id].instance;
-      // const serverAttackPacket: ServerAttackPacket = {
-      //    senderID: player.id,
-      //    targetID: attackPacket.targetID,
-      //    distance: attackPacket.distance,
-      //    angle: attackPacket.angle,
-      //    heldItem: attackPacket.heldItem
-      // }
-      
-      // // Forward the attack packet to all players
-      // const sockets = await this.io.fetchSockets();
-      // for (const socket of sockets) {
-      //    socket.emit("attackPacket", serverAttackPacket);
-      // }
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {

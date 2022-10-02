@@ -2,6 +2,12 @@ import { Point } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import Entity from "./Entity";
 
+type PlayerAttackInfo = {
+   readonly target: Entity;
+   readonly distance: number;
+   readonly angle: number;
+}
+
 class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
 
@@ -19,6 +25,29 @@ class Player extends Entity {
    public getClientArgs(): [displayName: string] {
       return [this.displayName];
    }
+
+   public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): PlayerAttackInfo | null {
+   let closestEntity: Entity | null = null;
+   let minDistance = Number.MAX_SAFE_INTEGER;
+   for (const entity of targetEntities) {
+      // Don't attack entities without health components
+      if (entity.getComponent(HealthComponent) === null) continue;
+
+      const dist = this.position.distanceFrom(entity.position);
+      if (dist < minDistance) {
+         closestEntity = entity;
+         minDistance = dist;
+      }
+   }
+
+   if (closestEntity === null) return null;
+
+   return {
+      target: closestEntity,
+      distance: minDistance,
+      angle: this.position.angleBetween(closestEntity.position)
+   };
+}
 }
 
 export default Player;

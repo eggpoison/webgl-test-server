@@ -1,8 +1,11 @@
 import Chunk from "../Chunk";
-import { circleAndRectangleDoIntersect, circlesDoIntersect, CircularHitboxInfo, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxInfo, HitboxVertexPositions, Point, rectanglePointsDoIntersect, RectangularHitboxInfo, rotatePoint, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, CircularHitboxInfo, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxInfo, HitboxVertexPositions, Point, rectanglePointsDoIntersect, RectangularHitboxInfo, rotatePoint, ServerAttackData, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
-import { EntityHitboxInfo } from "../Board";
+import { AttackInfo, EntityHitboxInfo } from "../Board";
+import HealthComponent from "../entity-components/HealthComponent";
+
+type EventType = "death";
 
 let idCounter = 0;
 
@@ -59,6 +62,10 @@ abstract class Entity {
    public readonly hitbox: HitboxInfo;
    public readonly hitboxHalfDiagonalLength?: number;
 
+   public readonly events: Record<EventType, Array<() => void>> = {
+      death: []
+   };
+
    /** Position of the entity */
    public position: Point;
    /** Velocity of the entity */
@@ -74,6 +81,9 @@ abstract class Entity {
    public chunks: Array<Chunk>;
 
    public currentTile: Tile;
+
+   /** If true, the entity is flagged for deletion at the beginning of the next tick */
+   public isRemoved: boolean = false;
 
    constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Array<Component>, id?: number) {
       if (typeof id === "undefined") {
@@ -159,7 +169,6 @@ abstract class Entity {
       const y = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
       return [x, y];
    }
-
    public updateChunks(newChunks: ReadonlyArray<Chunk>): void {
       // Find all chunks which aren't present in the new chunks and remove them
       const removedChunks = this.chunks.filter(chunk => !newChunks.includes(chunk));
@@ -193,63 +202,51 @@ abstract class Entity {
       return chunks;
    }
 
-   public applyForce(force: Vector): void {
+   public addVelocity(magnitude: number, direction: number): void {
+      const force = new Vector(magnitude, direction);
       this.velocity = this.velocity?.add(force) || force;
    }
+   public addForceVector(force: Vector): void {
+      this.velocity = this.velocity?.add(force) || force;
 
-   public addVelocity(magnitude: number, direction: number): void {
-      const velocity = new Vector(magnitude, direction);
-      this.velocity = this.velocity?.add(velocity) || velocity;
    }
 
    public applyPhysics(): void {
-      this.currentTile = this.findCurrentTile();
-      const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.currentTile.type];
+      const tile = this.findCurrentTile();
+      const tileTypeInfo = TILE_TYPE_INFO_RECORD[tile.type];
 
-      const terminalVelocity = this.terminalVelocity * (tileTypeInfo.moveSpeedMultiplier || 1);
+      const tileMoveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
+
+      const terminalVelocity = this.terminalVelocity * tileMoveSpeedMultiplier;
+
+      // Friction
+      if (this.velocity !== null) {
+         this.velocity.magnitude /= 1 + 1 / SETTINGS.TPS;
+      }
       
-      // Apply acceleration
+      // Accelerate
       if (this.acceleration !== null) {
          const acceleration = this.acceleration.copy();
-         acceleration.magnitude /= SETTINGS.TPS;
-
-         // Reduce acceleration due to friction
-         const friction = tileTypeInfo.friction;
-         acceleration.magnitude *= friction;
-          
-         // Apply tile speed multiplier
-         if (typeof tileTypeInfo.moveSpeedMultiplier !== "undefined") {
-            acceleration.magnitude *= tileTypeInfo.moveSpeedMultiplier;
-         }
+         acceleration.magnitude *= tileTypeInfo.friction * tileMoveSpeedMultiplier / SETTINGS.TPS;
 
          const magnitudeBeforeAdd = this.velocity?.magnitude || 0;
-         
          // Add acceleration to velocity
          this.velocity = this.velocity !== null ? this.velocity.add(acceleration) : acceleration;
-
          // Don't accelerate past terminal velocity
          if (this.velocity.magnitude > terminalVelocity && this.velocity.magnitude > magnitudeBeforeAdd) {
-            this.velocity.magnitude = terminalVelocity;
+            if (magnitudeBeforeAdd < terminalVelocity) {
+               this.velocity.magnitude = terminalVelocity;
+            } else {
+               this.velocity.magnitude = magnitudeBeforeAdd;
+            }
          }
-      }
-      // Apply friction if the entity isn't accelerating
-      else if (this.velocity !== null) { 
-         const friction = tileTypeInfo.friction * SETTINGS.GLOBAL_FRICTION_CONSTANT / SETTINGS.TPS;
-         this.velocity.magnitude /= 1 + friction;
-
-         this.velocity.magnitude -= 3 / SETTINGS.TPS;
-         if (this.velocity.magnitude < 0) {
+      // Friction
+      } else if (this.velocity !== null) {
+         this.velocity.magnitude -= 50 * tileTypeInfo.friction / SETTINGS.TPS;
+         if (this.velocity.magnitude <= 0) {
             this.velocity = null;
          }
       }
-
-      // // Restrict the entity's velocity to their terminal velocity
-      // if (this.velocity !== null && terminalVelocity > 0) {
-      //    const mach = Math.abs(this.velocity.magnitude / terminalVelocity);
-      //    if (mach > 1) {
-      //       this.velocity.magnitude /= 1 + (mach - 1) / SETTINGS.TPS;
-      //    }
-      // }
 
       // Apply velocity
       if (this.velocity !== null) {
@@ -384,10 +381,32 @@ abstract class Entity {
    }
 
    public registerHit(attackingEntity: Entity, distance: number, angle: number, damage: number): void {
-      const PUSH_FORCE = 700;
-      const force = new Vector(PUSH_FORCE, angle);
-      this.applyForce(force);
-      console.log(`register hit on entity #${this.id}`);
+      if (!this.getComponent(HealthComponent)!.receiveDamage(damage)) return;
+
+      const PUSH_FORCE = 150;
+      this.addVelocity(PUSH_FORCE, angle);
+
+      const attackInfo: AttackInfo = {
+         attackingEntity: attackingEntity,
+         targetEntity: this,
+         progress: 0
+      };
+      SERVER.board.addNewAttack(attackInfo);
+   }
+
+   public kill(causeOfDeath: null): void {
+      this.callEvents("death");
+      this.isRemoved = true;
+   }
+
+   public callEvents(type: EventType): void {
+      for (const event of this.events[type]) {
+         event();
+      }
+   }
+
+   public createEvent(type: EventType, event: () => void): void {
+      this.events[type].push(event);
    }
 }
 
