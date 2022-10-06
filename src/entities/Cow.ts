@@ -43,9 +43,10 @@ class Cow extends Mob {
          stareTime: Cow.STARE_TIME,
          stareCooldown: Cow.STARE_COOLDOWN,
          grazingBehaviour: {
-            targetTile: "grass",
-            grazingTime: 1,
-            cooldown: 5
+            targetTileType: "grass",
+            grazingTime: 3,
+            digestionTime: 1,
+            cooldown: 10
          },
          minHerdMemberDistance: Cow.MIN_HERD_MEMBER_DISTANCE,
          turnSpeed: Cow.TURN_SPEED,

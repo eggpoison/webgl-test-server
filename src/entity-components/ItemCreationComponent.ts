@@ -4,7 +4,7 @@ import Component from "./Component";
 
 class ItemCreationComponent extends Component {
    /** Max units that an item can spawn away from the entity when dead */
-   private static readonly ITEM_SPAWN_RANGE = 32;
+   private static readonly ITEM_SPAWN_RANGE = 48;
 
    public createItemOnDeath(itemID: ItemID, count: number): void {
       this.entity.createEvent("death", () => {

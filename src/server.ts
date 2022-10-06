@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board, { AttackInfo } from "./Board";
@@ -96,10 +96,10 @@ class GameServer {
       //    }
       // }, 5000);
 
-      // setTimeout(() => {
-      //    const pos = new Point(100, 100);
-      //    new Cow(pos, CowSpecies.brown);
-      // }, 2000);
+      setTimeout(() => {
+         const pos = new Point(100, 100);
+         new Cow(pos, CowSpecies.brown);
+      }, 2000);
    }
 
    private handlePlayerConnections(): void {
@@ -112,12 +112,8 @@ class GameServer {
          socket.emit("initialGameData", this.ticks, this.board.getTiles(), playerID);
 
          // Receive initial player data
-         socket.on("initialPlayerData", (name: string, position: [number, number], visibleChunkBounds: VisibleChunkBounds) => {
-            this.addPlayer(socket, name, playerID, position, visibleChunkBounds);
-         });
-
-         socket.on("newVisibleChunkBounds", (visibleChunkBounds: VisibleChunkBounds) => {
-            this.updatePlayerVisibleChunkBounds(socket, visibleChunkBounds);
+         socket.on("initialPlayerDataPacket", (initialPlayerDataPacket: InitialPlayerDataPacket) => {
+            this.addPlayer(socket, playerID, initialPlayerDataPacket);
          });
 
          // Handle player disconnects
@@ -139,9 +135,11 @@ class GameServer {
    private async tick(): Promise<void> {
       this.ticks++;
 
-      const entityCensus = this.board.update();
+      const entityCensus = this.board.tickEntities();
 
-      this.entitySpawner.tick(entityCensus);
+      this.entitySpawner.runSpawnAttempt(entityCensus);
+
+      this.board.runRandomTickAttempt();
 
       // Send game data packets to all players
       this.sendGameDataPackets();
@@ -176,7 +174,7 @@ class GameServer {
             visibleEntityInfoArray.push(entityData);
          }
 
-         const tileUpdates = this.board.getTileUpdates();
+         const tileUpdates = this.board.popTileUpdates();
          const serverAttackDataArray = formatAttackInfoArray(this.board.getAttackInfoArray());
 
          const serverItemDataArray = this.board.calculatePlayerItemInfoArray(player, playerData.visibleChunkBounds);
@@ -222,33 +220,24 @@ class GameServer {
       playerData.instance.acceleration = playerDataPacket.acceleration !== null ? Vector.unpackage(playerDataPacket.acceleration) : null;
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
+
+      playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
    }
 
-   private updatePlayerVisibleChunkBounds(socket: ISocket, visibleChunkBounds: VisibleChunkBounds): void {
-      const playerData = this.playerData[socket.id];
-      playerData.visibleChunkBounds = visibleChunkBounds;
-   }
-
-   private addPlayer(socket: ISocket, name: string, playerID: number, position: [number, number], visibleChunkBounds: VisibleChunkBounds): void {
+   private addPlayer(socket: ISocket, playerID: number, initialPlayerDataPacket: InitialPlayerDataPacket): void {
       // Create the player entity
-      const pointPosition = new Point(...position);
-      const player = new Player(pointPosition, name, playerID);
+      const position = new Point(...initialPlayerDataPacket.position);
+      const player = new Player(position, initialPlayerDataPacket.username, playerID);
       this.board.loadEntity(player);
 
       // Initialise the player's gamedata record
       this.playerData[socket.id] = {
          clientEntityIDs: new Array<number>(),
          instance: player,
-         visibleChunkBounds: visibleChunkBounds
+         visibleChunkBounds: initialPlayerDataPacket.visibleChunkBounds
       };
    }
 }
 
-export let SERVER: GameServer;
-
-/** Starts the game server */
-const startServer = (): void => {
-   // Create the gmae server
-   SERVER = new GameServer();
-}
-startServer();
+// Start the game server
+export const SERVER = new GameServer();

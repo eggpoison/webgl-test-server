@@ -8,7 +8,7 @@ abstract class Component {
       this.entity = entity;
    }
 
-   public tick?(): void;
+   public update?(): void;
 
    public onLoad?(): void;
 }

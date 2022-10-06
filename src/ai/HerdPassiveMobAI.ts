@@ -30,7 +30,7 @@ class HerdPassiveMobAI extends PassiveMobAI {
       this.TURN_CONSTANT = Math.PI * this.turnSpeed / SETTINGS.TPS;
    }
 
-   public tick(): void {
+   public update(): void {
       // 
       // Prioritise the herd AI first, then wandering second
       // 
@@ -40,7 +40,7 @@ class HerdPassiveMobAI extends PassiveMobAI {
 
       // If there are no herd members nearby then default to the regular passive mob AI
       if (nearbyHerdMembers.length === 0) {
-         super.tick();
+         super.update();
          return;
       }
 
@@ -67,6 +67,7 @@ class HerdPassiveMobAI extends PassiveMobAI {
 
       // ALIGNMENT
       // Orientate to nearby herd members' headings
+      
       const rotations = nearbyHerdMembers.map(entity => entity.rotation);
       const rotationY = rotations.reduce((previousValue, currentValue) => previousValue + Math.sin(currentValue), 0);
       const rotationX = rotations.reduce((previousValue, currentValue) => previousValue + Math.cos(currentValue), 0);

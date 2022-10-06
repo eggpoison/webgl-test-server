@@ -5,7 +5,7 @@ PASSIVE MOB SPAWNING:
 Goals:
 - Passive mobs should be fairly scar ce, max count based on the number of chunks
 
-Every tick has a random chance to run a passive mob spawn attempt for a random passive mob type
+Every call has a random chance to run a passive mob spawn attempt for a random passive mob type
 
 When a spawn attempt occurs, various random tiles will be picked throughout the map.
 Each eligible tile has a small chance to run a spawn

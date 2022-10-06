@@ -1,10 +1,12 @@
-import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemData, SETTINGS, Tile, TileUpdateData, Vector, VisibleChunkBounds } from "webgl-test-shared";
+import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemData, SETTINGS, ServerTileUpdateData, Vector, VisibleChunkBounds, TileInfo, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
 import Item from "./items/Item";
 import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation/terrain-generation";
+import Tile from "./tiles/Tile";
+import TILE_CLASS_RECORD from "./tiles/tile-class-record";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -19,6 +21,9 @@ export type AttackInfo = {
 }
 
 class Board {
+   /** Average number of random ticks done in a chunk a second */
+   private static readonly RANDOM_TICK_RATE = 1;
+
    /** Stores entities indexed by the IDs */
    public readonly entities: { [id: number]: Entity } = {};
    
@@ -31,7 +36,7 @@ class Board {
 
    constructor() {
       this.tiles = generateTerrain();
-      console.log("Terrain generated");
+      console.log("Terrain generated successfully");
 
       this.tileUpdateCoordinates = new Array<[number, number]>();
 
@@ -76,7 +81,7 @@ class Board {
       return Object.values(this.attackInfoRecord);
    }
 
-   public update(): EntityCensus {
+   public tickEntities(): EntityCensus {
       // Remove entities flagged for deletion
       for (const entity of Object.values(this.entities)) {
          if (entity.isRemoved) {
@@ -93,9 +98,9 @@ class Board {
       for (const entity of Object.values(this.entities)) {
          entity.applyPhysics();
 
-         // Tick entity
-         if (typeof entity.tick !== "undefined") entity.tick();
-         entity.tickComponents();
+         // Update entity
+         if (typeof entity.update !== "undefined") entity.update();
+         entity.updateComponents();
 
          // Calculate the entity's new info
          const hitboxVertexPositons = entity.calculateHitboxVertexPositions();
@@ -150,15 +155,21 @@ class Board {
       }
    }
 
+   public changeTile(x: number, y: number, newTileInfo: TileInfo): void {
+      const tileClass = TILE_CLASS_RECORD[newTileInfo.type];
+      this.tiles[x][y] = new tileClass(x, y, newTileInfo);
+      this.registerNewTileUpdate(x, y);
+   }
+
    /** Registers a tile update to be sent to the clients */
-   public updateTile(x: number, y: number): void {
+   private registerNewTileUpdate(x: number, y: number): void {
       this.tileUpdateCoordinates.push([x, y]);
    }
 
    /** Get all tile updates and reset them */
-   public getTileUpdates(): ReadonlyArray<TileUpdateData> {
+   public popTileUpdates(): ReadonlyArray<ServerTileUpdateData> {
       // Generate the tile updates array
-      const tileUpdates: ReadonlyArray<TileUpdateData> = this.tileUpdateCoordinates.map(([x, y]) => {
+      const tileUpdates: ReadonlyArray<ServerTileUpdateData> = this.tileUpdateCoordinates.map(([x, y]) => {
          const tile = this.getTile(x, y);
          return {
             x: x,
@@ -224,6 +235,20 @@ class Board {
       });
 
       return serverItemDataArray;
+   }
+
+   public runRandomTickAttempt(): void {
+      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+            if (Math.random() * SETTINGS.TPS < Board.RANDOM_TICK_RATE) {
+               const tileX = chunkX * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
+               const tileY = chunkY * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
+
+               const tile = this.getTile(tileX, tileY);
+               if (typeof tile.onRandomTick !== "undefined") tile.onRandomTick();
+            }
+         }
+      }
    }
 }
 

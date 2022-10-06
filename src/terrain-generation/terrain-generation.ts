@@ -4,6 +4,7 @@ import { generateOctavePerlinNoise, generatePerlinNoise } from "../perlin-noise"
 import { BiomeName } from "webgl-test-shared/lib/biomes";
 import { generateEntitySpawnableTiles } from "../spawning/spawn-data";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./biome-generation-info";
+import TILE_CLASS_RECORD from "../tiles/tile-class-record";
 
 const tilesByBiome: Record<BiomeName, Array<[number, number]>> = {
    grasslands: [],
@@ -163,7 +164,9 @@ function generateTerrain(): Array<Array<Tile>> {
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
       tiles[x] = new Array<Tile>();
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-         tiles[x][y] = new Tile(x, y, tileInfoArray[x][y] as TileInfo);
+         const tileInfo = tileInfoArray[x][y];
+         const tileClass = TILE_CLASS_RECORD[tileInfo.type!];
+         tiles[x][y] = new tileClass(x, y, tileInfoArray[x][y] as TileInfo);
       }
    }
 

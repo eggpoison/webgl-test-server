@@ -27,7 +27,7 @@ class HealthComponent extends Component {
       this.armour = armour;
    }
 
-   public tick(): void {
+   public update(): void {
       if (this.invulnerabilityTimer > 0) {
          this.invulnerabilityTimer -= 1 / SETTINGS.TPS;
 

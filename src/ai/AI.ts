@@ -62,7 +62,7 @@ abstract class AI {
       return entities;
    }
 
-   public tick(): void {
+   public update(): void {
       // If the entity has a reached its target position, stop moving
       if (this.hasReachedTargetPosition()) {
          this.stopMoving();

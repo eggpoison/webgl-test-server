@@ -1,9 +1,10 @@
 import Chunk from "../Chunk";
-import { circleAndRectangleDoIntersect, circlesDoIntersect, CircularHitboxInfo, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxInfo, HitboxVertexPositions, Point, rectanglePointsDoIntersect, RectangularHitboxInfo, rotatePoint, ServerAttackData, SETTINGS, Tile, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, CircularHitboxInfo, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxInfo, HitboxVertexPositions, Point, rectanglePointsDoIntersect, RectangularHitboxInfo, rotatePoint, ServerAttackData, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
 import { AttackInfo, EntityHitboxInfo } from "../Board";
 import HealthComponent from "../entity-components/HealthComponent";
+import Tile from "../tiles/Tile";
 
 type EventType = "death";
 
@@ -52,7 +53,7 @@ abstract class Entity {
    private static readonly MAX_ENTITY_COLLISION_PUSH_FORCE = 200;
    
    private readonly components = new Map<(abstract new (...args: any[]) => any), Component>();
-   private readonly tickableComponents: ReadonlyArray<Component>;
+   private readonly updateableComponents: ReadonlyArray<Component>;
 
    /** Unique identifier for every entity */
    public readonly id: number;
@@ -122,7 +123,7 @@ abstract class Entity {
       }
 
       // Set components
-      this.tickableComponents = components.filter(component => typeof component.tick !== "undefined");
+      this.updateableComponents = components.filter(component => typeof component.update !== "undefined");
       for (const component of components) {
          this.components.set(component.constructor as (new (...args: any[]) => any), component);
          component.setEntity(this);
@@ -139,14 +140,14 @@ abstract class Entity {
 
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
 
-   public tickComponents(): void {
-      for (const component of this.tickableComponents) {
-         component.tick!();
+   public updateComponents(): void {
+      for (const component of this.updateableComponents) {
+         component.update!();
       }
    }
 
-   /** Called every tick after a physics update. */
-   public tick?(): void;
+   /** Called immediately after every physics update. */
+   public update?(): void;
 
    public findCurrentTile(): Tile {
       const [x, y] = this.findCurrentTileCoordinates();
@@ -212,8 +213,8 @@ abstract class Entity {
    }
 
    public applyPhysics(): void {
-      const tile = this.findCurrentTile();
-      const tileTypeInfo = TILE_TYPE_INFO_RECORD[tile.type];
+      this.currentTile = this.findCurrentTile();
+      const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.currentTile.type];
 
       const tileMoveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
 

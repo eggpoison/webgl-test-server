@@ -1,5 +1,6 @@
-import { Point, randItem, SETTINGS, TileType } from "webgl-test-shared";
+import { Point, randItem, SETTINGS, TileInfo, TileType } from "webgl-test-shared";
 import Entity from "../entities/Entity";
+import { SERVER } from "../server";
 import AI from "./AI";
 
 /*
@@ -17,9 +18,11 @@ Staring:
 */
 
 type GrazingBehaviour = {
-   readonly targetTile: TileType;
+   readonly targetTileType: TileType;
    /** Time it takes to graze */
    readonly grazingTime: number;
+   /** Time the mob will wait after grazing */
+   readonly digestionTime: number;
    /** Cooldown between eating food */
    readonly cooldown: number;
 }
@@ -60,6 +63,7 @@ class PassiveMobAI extends AI {
    private grazingCooldownTimer = 0;
    /** Time that it takes to graze */
    private grazeTimer = 0;
+   private grazeDigestionTimer = 0;
 
    private isGrazing: boolean = false;
 
@@ -93,15 +97,27 @@ class PassiveMobAI extends AI {
       }
    }
 
-   public tick(): void {
-      super.tick();
+   public update(): void {
+      super.update();
 
       if (this.isGrazing) {
-         this.grazeTimer -= 1 / SETTINGS.TPS;
+         if (this.grazeTimer > 0) {
+            // If the entity has moved off a grazable block, then cancel the grazing
+            if (this.entity.currentTile.type !== this.grazingBehaviour!.targetTileType) {
+               this.cancelGraze();
+               return;
+            }
 
-         if (this.grazeTimer <= 0) {
-            
-            this.isGrazing = false;
+            this.grazeTimer -= 1 / SETTINGS.TPS;
+            if (this.grazeTimer <= 0) {
+               this.graze();
+            }
+         } else {
+            // Digesting
+            this.grazeDigestionTimer -= 1 / SETTINGS.TPS;
+            if (this.grazeDigestionTimer <= 0) {
+               this.finishDigestion();
+            }
          }
 
          return;
@@ -110,6 +126,7 @@ class PassiveMobAI extends AI {
       // If the mob is able to graze, then do so
       if (this.canGraze()) {
          this.startGrazing();
+         return;
       }
 
       let nearbyEntities = super.getEntitiesInRadius(this.visionRange);
@@ -166,19 +183,46 @@ class PassiveMobAI extends AI {
       // Don't graze if on cooldown
       if (this.grazingCooldownTimer > 0) return false;
 
+      /** Average chance of a graze being run in a second */
+      const GRAZE_CHANCE = 0.5;
+
       // Only graze if standing on correct tile type
-      return this.entity.currentTile.type === this.grazingBehaviour.targetTile;
+      return this.entity.currentTile.type === this.grazingBehaviour.targetTileType && Math.random() / SETTINGS.TPS < GRAZE_CHANCE;
    }
 
    private startGrazing(): void {
       this.isGrazing = true;
 
+      super.stopMoving();
+
+      // Reset cooldown
+      this.grazeTimer = this.grazingBehaviour!.grazingTime;
+   }
+
+   private graze(): void {
+      this.grazeDigestionTimer = this.grazingBehaviour!.digestionTime;
+
+      const previousTile = this.entity.currentTile;
+      const newTileInfo: TileInfo = {
+         type: "dirt",
+         biome: previousTile.biome,
+         isWall: previousTile.isWall
+      };
+      SERVER.board.changeTile(previousTile.x, previousTile.y, newTileInfo);
+   }
+
+   private finishDigestion(): void {
+      this.isGrazing = false;
+
       // Reset cooldown
       this.grazingCooldownTimer = this.grazingBehaviour!.cooldown;
    }
 
-   private graze(): void {
-      const { x, y } = this.entity.currentTile;
+   private cancelGraze(): void {
+      this.isGrazing = false;
+
+      // Reset cooldown
+      this.grazingCooldownTimer = this.grazingBehaviour!.cooldown;
    }
 
    private calculateClosestEntity(entities: Array<Entity>): Entity {
