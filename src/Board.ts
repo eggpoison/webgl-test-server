@@ -1,8 +1,8 @@
-import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemData, SETTINGS, ServerTileUpdateData, Vector, VisibleChunkBounds, TileInfo, randInt } from "webgl-test-shared";
+import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemEntityData, SETTINGS, ServerTileUpdateData, Vector, VisibleChunkBounds, TileInfo, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
-import Item from "./items/Item";
+import ItemEntity from "./items/ItemEntity";
 import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation/terrain-generation";
 import Tile from "./tiles/Tile";
@@ -207,30 +207,30 @@ class Board {
       return nearbyEntities;
    }
 
-   public calculatePlayerItemInfoArray(player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ServerItemData> {
+   public calculatePlayerItemInfoArray(visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ServerItemEntityData> {
       // Find the chunks nearby to the player and all items inside them
-      let nearbyItems = new Array<Item>();
+      let nearbyItemEntities = new Array<ItemEntity>();
       for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
          for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
             // Add all entities which aren't already in the array
             for (const item of chunk.getItems()) {
-               if (!nearbyItems.includes(item)) {
-                  nearbyItems.push(item);
+               if (!nearbyItemEntities.includes(item)) {
+                  nearbyItemEntities.push(item);
                }
             }
          }
       }
 
-      const serverItemDataArray: ReadonlyArray<ServerItemData> = nearbyItems.map(item => {
+      const serverItemDataArray: ReadonlyArray<ServerItemEntityData> = nearbyItemEntities.map(itemEntity => {
          return {
-            id: item.id,
-            itemID: item.itemID,
-            count: item.count,
-            position: item.position.package(),
-            chunkCoordinates: item.chunks.map(chunk => [chunk.x, chunk.y]),
-            rotation: item.rotation
+            id: itemEntity.id,
+            itemID: itemEntity.item.itemID,
+            count: itemEntity.item.count,
+            position: itemEntity.position.package(),
+            chunkCoordinates: itemEntity.chunks.map(chunk => [chunk.x, chunk.y]),
+            rotation: itemEntity.rotation
          };
       });
 

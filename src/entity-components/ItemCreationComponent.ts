@@ -1,5 +1,6 @@
 import { ItemID, Vector } from "webgl-test-shared";
 import Item from "../items/Item";
+import ItemEntity from "../items/ItemEntity";
 import Component from "./Component";
 
 class ItemCreationComponent extends Component {
@@ -13,7 +14,8 @@ class ItemCreationComponent extends Component {
             const direction = 2 * Math.PI * Math.random();
             const position = this.entity.position.add(new Vector(magnitude, direction).convertToPoint());
 
-            new Item(position, itemID, 1);
+            const item = new Item(itemID, 1);
+            new ItemEntity(position, item);
          }
       });
    }

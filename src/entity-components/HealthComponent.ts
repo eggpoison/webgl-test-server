@@ -19,11 +19,11 @@ class HealthComponent extends Component {
 
    private invulnerabilityTimer = 0;
 
-   constructor(maxHealth: number, health: number, armour: number) {
+   constructor(maxHealth: number, armour: number) {
       super();
 
       this.maxHealth = maxHealth;
-      this.health = health;
+      this.health = maxHealth;
       this.armour = armour;
    }
 

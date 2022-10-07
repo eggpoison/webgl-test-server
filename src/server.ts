@@ -4,7 +4,7 @@ import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketDa
 import Player from "./entities/Player";
 import Board, { AttackInfo } from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
-import Entity, { findAvailableEntityID } from "./entities/Entity";
+import { findAvailableEntityID } from "./entities/Entity";
 import Cow from "./entities/Cow";
 
 /*
@@ -109,10 +109,10 @@ class GameServer {
          const playerID = findAvailableEntityID();
 
          // Send initial game data
-         socket.emit("initialGameData", this.ticks, this.board.getTiles(), playerID);
+         socket.emit("initial_game_data", this.ticks, this.board.getTiles(), playerID);
 
          // Receive initial player data
-         socket.on("initialPlayerDataPacket", (initialPlayerDataPacket: InitialPlayerDataPacket) => {
+         socket.on("initial_player_data_packet", (initialPlayerDataPacket: InitialPlayerDataPacket) => {
             this.addPlayer(socket, playerID, initialPlayerDataPacket);
          });
 
@@ -122,11 +122,11 @@ class GameServer {
             this.handlePlayerDisconnect(socket);
          });
 
-         socket.on("playerDataPacket", (playerDataPacket: PlayerDataPacket) => {
+         socket.on("player_data_packet", (playerDataPacket: PlayerDataPacket) => {
             this.processPlayerDataPacket(socket, playerDataPacket);
          });
 
-         socket.on("attackPacket", (attackPacket: AttackPacket) => {
+         socket.on("attack_packet", (attackPacket: AttackPacket) => {
             this.processAttackPacket(socket, attackPacket);
          });
       });
@@ -177,7 +177,7 @@ class GameServer {
          const tileUpdates = this.board.popTileUpdates();
          const serverAttackDataArray = formatAttackInfoArray(this.board.getAttackInfoArray());
 
-         const serverItemDataArray = this.board.calculatePlayerItemInfoArray(player, playerData.visibleChunkBounds);
+         const serverItemDataArray = this.board.calculatePlayerItemInfoArray(playerData.visibleChunkBounds);
          
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
@@ -188,7 +188,7 @@ class GameServer {
          };
 
          // Send the game data to the player
-         socket.emit("gameDataPacket", gameDataPacket);
+         socket.emit("game_data_packet", gameDataPacket);
       }
    }
 

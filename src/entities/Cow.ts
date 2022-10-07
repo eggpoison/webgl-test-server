@@ -27,7 +27,7 @@ class Cow extends Mob {
       const itemCreationComponent = new ItemCreationComponent();
 
       super("cow", position, null, null, 2 * Math.PI * Math.random(), [
-         new HealthComponent(Cow.MAX_HEALTH, Cow.MAX_HEALTH, 0),
+         new HealthComponent(Cow.MAX_HEALTH, 0),
          itemCreationComponent
       ]);
 
