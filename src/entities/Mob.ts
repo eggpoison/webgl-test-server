@@ -4,7 +4,9 @@ import Entity from "./Entity";
 abstract class Mob extends Entity {
    protected abstract readonly ai: AI;
 
-   public update(): void {
+   public tick(): void {
+      super.tick();
+
       this.ai.update();
    }
 }

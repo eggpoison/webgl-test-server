@@ -2,6 +2,7 @@ import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemEntityDa
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
+import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import ItemEntity from "./items/ItemEntity";
 import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation/terrain-generation";
@@ -14,7 +15,6 @@ export type EntityHitboxInfo = {
 }
 
 export type AttackInfo = {
-   readonly attackingEntity: Entity;
    readonly targetEntity: Entity;
    /** How far into being hit the entity is (0 = just began, 1 = ended) */
    progress: number;
@@ -33,6 +33,11 @@ class Board {
    private tileUpdateCoordinates: Array<[x: number, y: number]>;
 
    public readonly attackInfoRecord: { [id: number]: AttackInfo } = {};
+
+   /** Array of all entities to be removed at the beginning of the next tick */
+   private removedEntities = new Array<Entity>();
+   /** All entities to join the board */
+   private entityJoinBuffer = new Array<Entity>();
 
    constructor() {
       this.tiles = generateTerrain();
@@ -81,68 +86,58 @@ class Board {
       return Object.values(this.attackInfoRecord);
    }
 
-   public tickEntities(): EntityCensus {
-      // Remove entities flagged for deletion
-      for (const entity of Object.values(this.entities)) {
-         if (entity.isRemoved) {
-            this.removeEntity(entity);
-         }
+   /** Removes entities flagged for deletion */
+   public removeEntities(): void {
+      for (const entity of this.removedEntities) {
+         this.removeEntity(entity);
       }
 
+      this.removedEntities = [];
+   }
+
+   public tickEntities(): void {
+      for (const entity of Object.values(this.entities)) {
+         entity.applyPhysics();
+
+         // Calculate the entity's new info
+         if (entity.hitbox.info.type === "rectangular") {
+            (entity.hitbox as RectangularHitbox).computeVertexPositions();
+            (entity.hitbox as RectangularHitbox).calculateSideAxes();
+         }
+         entity.hitbox.updateHitboxBounds();
+         entity.updateContainingChunks();
+
+         // Tick entity
+         entity.tick();
+
+         if (entity.isRemoved) {
+            this.removedEntities.push(entity);
+         }
+      }
+   }
+
+   public resolveCollisions(): void {
+      for (const entity of Object.values(this.entities)) {
+         entity.resolveEntityCollisions();
+         entity.resolveWallCollisions();
+
+         entity.calculateCurrentTile();
+      }
+   }
+   
+   public holdCensus(): EntityCensus {
       const census: Mutable<EntityCensus> = {
          passiveMobCount: 0
       };
 
-      const entityHitboxInfoRecord: Record<number, EntityHitboxInfo> = {};
-
       for (const entity of Object.values(this.entities)) {
-         entity.applyPhysics();
-
-         // Update entity
-         if (typeof entity.update !== "undefined") entity.update();
-         entity.updateComponents();
-
-         // Calculate the entity's new info
-         const hitboxVertexPositons = entity.calculateHitboxVertexPositions();
-         const hitboxBounds = entity.calculateHitboxBounds(hitboxVertexPositons !== null ? hitboxVertexPositons : undefined);
-         const newChunks = entity.calculateContainingChunks(hitboxBounds);
-
-         // Update the entities' containing chunks
-         entity.updateChunks(newChunks);
-
-         if (hitboxVertexPositons !== null) {
-            const sideAxes = [
-               computeSideAxis(hitboxVertexPositons[0], hitboxVertexPositons[1]),
-               computeSideAxis(hitboxVertexPositons[0], hitboxVertexPositons[2])
-            ];
-
-            entityHitboxInfoRecord[entity.id] = {
-               vertexPositions: hitboxVertexPositons,
-               sideAxes: sideAxes
-            };
-         }
-
-         // Add the entity to the census
          const entityInfo = ENTITY_INFO_RECORD[entity.type];
-         if (entityInfo.category === "mob" && entityInfo.behaviour === "passive") census.passiveMobCount++;
+         if (entityInfo.category === "mob" && entityInfo.behaviour === "passive") {
+            census.passiveMobCount++;
+         }
       }
 
-      // Handle entity collisions
-      for (const entity of Object.values(this.entities)) {
-         entity.resolveCollisions(entityHitboxInfoRecord);
-
-         // Resolve wall collisions
-         const hitboxVertexPositons = entity.calculateHitboxVertexPositions();
-         const hitboxBounds = entity.calculateHitboxBounds(hitboxVertexPositons !== null ? hitboxVertexPositons : undefined);
-         entity.resolveWallCollisions(hitboxBounds);
-      }
-
-      return census as EntityCensus;
-   }
-
-   public loadEntity(entity: Entity): void {
-      if (typeof entity.onLoad !== "undefined") entity.onLoad();
-      entity.loadComponents();
+      return census;
    }
 
    /** Removes the entity from the game */
@@ -249,6 +244,33 @@ class Board {
             }
          }
       }
+   }
+
+   public addEntityToJoinBuffer(entity: Entity): void {
+      this.entityJoinBuffer.push(entity);
+   }
+
+   /** Creates all of the entities in the join buffer and adds them to the board */
+   public addEntitiesFromJoinBuffer(): void {
+      for (const entity of this.entityJoinBuffer) {
+         // Add entity to the ID record
+         this.entities[entity.id] = entity;
+
+         entity.isAdded = true;
+
+         // // Calculate initial containing chunks
+         // if (entity.hitbox.info.type === "rectangular") {
+         //    (entity.hitbox as RectangularHitbox).calculateVertexPositions();
+         // }
+         // entity.hitbox.updateHitboxBounds();
+         // entity.updateContainingChunks();
+   
+         // // Find inital tile
+         // entity.currentTile = entity.findCurrentTile();
+      }
+
+      // Clear the join buffer
+      this.entityJoinBuffer = new Array<Entity>();
    }
 }
 

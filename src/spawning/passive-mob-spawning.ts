@@ -78,8 +78,7 @@ export function spawnPassiveMobs(passiveMobCount: number): void {
          const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
 
          // Spawn the mob
-         const entity = new mobClass(new Point(x, y), ...classParams);
-         SERVER.board.loadEntity(entity);
+         new mobClass(new Point(x, y), ...classParams);
       }
 
       remainingSpawnCount -= spawnCount;

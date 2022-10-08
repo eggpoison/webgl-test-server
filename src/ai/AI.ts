@@ -106,7 +106,7 @@ abstract class AI {
    }
 
    protected findNearbyTileCoordinates(range: number): Array<[number, number]> {
-      const [ x, y ] = this.entity.findCurrentTileCoordinates();
+      const { x, y } = this.entity.currentTile;
       const nearbyTiles = TILE_RANGE_RECORD[x][y][range];
       return nearbyTiles;
    }

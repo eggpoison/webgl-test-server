@@ -7,6 +7,7 @@ class EntitySpawner {
    private static readonly PASSIVE_MOB_SPAWN_ATTEMPT_CHANCE: number = 0.3;
 
    public runSpawnAttempt(entityCensus: EntityCensus): void {
+      if (1+1===2)return;
       // Passive mob spawning
       if (Math.random() < EntitySpawner.PASSIVE_MOB_SPAWN_ATTEMPT_CHANCE / SETTINGS.TPS) {
          spawnPassiveMobs(entityCensus.passiveMobCount);

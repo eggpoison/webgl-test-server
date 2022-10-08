@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, HitboxType, HitboxVertexPositions, Point, rectanglesDoIntersect, RectangularHitboxInfo, rotatePoint } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, computeSideAxis, HitboxType, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rectanglesDoIntersect, RectangularHitboxInfo, rotatePoint, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Hitbox, { HitboxBounds } from "./Hitbox";
 
@@ -6,7 +6,8 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
    /** Length of half of the diagonal of the rectangle */
    public readonly halfDiagonalLength: number;
 
-   public vertexPositions: HitboxVertexPositions;
+   public vertexPositions!: HitboxVertexPositions;
+   public sideAxes!: [axis1: Vector, axis2: Vector];
 
    constructor(hitboxInfo: RectangularHitboxInfo, entity: Entity) {
       super(hitboxInfo, entity);
@@ -14,7 +15,7 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
       this.halfDiagonalLength = Math.sqrt(Math.pow(this.info.width / 2, 2) + Math.pow(this.info.height / 2, 2));
    }
 
-   public calculateVertexPositions(): HitboxVertexPositions {
+   public computeVertexPositions(): void {
       const x1 = this.entity.position.x - this.info.width / 2;
       const x2 = this.entity.position.x + this.info.width / 2;
       const y1 = this.entity.position.y - this.info.height / 2;
@@ -31,7 +32,14 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
       bottomLeft = rotatePoint(bottomLeft, this.entity.position, this.entity.rotation);
       bottomRight = rotatePoint(bottomRight, this.entity.position, this.entity.rotation);
 
-      return [topLeft, topRight, bottomLeft, bottomRight];
+      this.vertexPositions = [topLeft, topRight, bottomLeft, bottomRight];
+   }
+
+   public calculateSideAxes(): void {
+      this.sideAxes = [
+         computeSideAxis(this.vertexPositions[0], this.vertexPositions[1]),
+         computeSideAxis(this.vertexPositions[0], this.vertexPositions[2])
+      ];
    }
 
    public calculateHitboxBounds(): HitboxBounds {
@@ -48,12 +56,13 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
             return circleAndRectangleDoIntersect(otherHitbox.entity.position, otherHitbox.info.radius, this.entity.position, this.info.width, this.info.height, this.entity.rotation);
          }
          case "rectangular": {
+            // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
             const distance = this.entity.position.distanceFrom(otherHitbox.entity.position);
             if (distance > this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength) {
                return false;
             }
             
-            return rectanglesDoIntersect(this.entity.position, this.info.width, this.info.height, this.info.height, otherHitbox.entity.position, otherHitbox.info.width, otherHitbox.info.height, otherHitbox.entity.rotation);
+            return rectanglePointsDoIntersect(this.vertexPositions, (otherHitbox as RectangularHitbox).vertexPositions, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
          }
       }
    }

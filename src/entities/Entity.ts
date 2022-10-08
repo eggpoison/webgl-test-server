@@ -1,15 +1,16 @@
 import Chunk from "../Chunk";
-import { EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxType, HitboxVertexPositions, Point, rotatePoint, ServerAttackData, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
-import { AttackInfo, EntityHitboxInfo } from "../Board";
+import { AttackInfo } from "../Board";
 import HealthComponent from "../entity-components/HealthComponent";
 import Tile from "../tiles/Tile";
 import Hitbox from "../hitboxes/Hitbox";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-
-type EventType = "death";
+import { Event, EventParams, EventType } from "../events";
+import InventoryComponent from "../entity-components/InventoryComponent";
+import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 
 let idCounter = 0;
 
@@ -18,11 +19,27 @@ export function findAvailableEntityID(): number {
    return idCounter++;
 }
 
+interface Components {
+   readonly health: HealthComponent;
+   readonly inventory: InventoryComponent;
+   readonly item_creation: ItemCreationComponent;
+}
+
+const filterTickableComponents = (components: Partial<Components>): ReadonlyArray<Component> => {
+   const tickableComponents = new Array<Component>();
+   for (const component of Object.values(components) as Array<Component>) {
+      if (typeof component.tick !== "undefined") {
+         tickableComponents.push(component);
+      }
+   }
+   return tickableComponents;
+}
+
 abstract class Entity {
    private static readonly MAX_ENTITY_COLLISION_PUSH_FORCE = 200;
    
-   private readonly components = new Map<(abstract new (...args: any[]) => any), Component>();
-   private readonly updateableComponents: ReadonlyArray<Component>;
+   private readonly components: Partial<{ [key in keyof Components]: Components[key] }> = {};
+   private readonly tickableComponents: ReadonlyArray<Component>;
 
    /** Unique identifier for every entity */
    public readonly id: number;
@@ -31,8 +48,9 @@ abstract class Entity {
 
    public readonly hitbox: Hitbox<HitboxType>;
 
-   public readonly events: Record<EventType, Array<() => void>> = {
-      death: []
+   public readonly events: { [E in EventType]: Array<Event<E>> } = {
+      death: [],
+      item_pickup: []
    };
 
    /** Position of the entity */
@@ -47,22 +65,17 @@ abstract class Entity {
    /** Direction the entity is facing (radians) */
    public rotation: number;
 
-   public chunks: Array<Chunk>;
+   public chunks = new Array<Chunk>();
 
-   public currentTile: Tile;
+   public currentTile!: Tile;
 
-   /** Whether the entity has been  */
+   /** Whether the entity has been added to the game */
    public isAdded: boolean = false;
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
 
-   constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Array<Component>, id?: number) {
-      if (typeof id === "undefined") {
-         this.id = findAvailableEntityID();
-      } else {
-         this.id = id;
-      }
-
+   constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Partial<Components>, id?: number) {
+      this.id = typeof id !== "undefined" ? id : findAvailableEntityID();
       this.type = type;
       
       this.position = position;
@@ -71,6 +84,9 @@ abstract class Entity {
 
       this.rotation = rotation;
 
+      this.calculateCurrentTile();
+
+      // Create hitbox using hitbox info
       const hitboxInfo = ENTITY_INFO_RECORD[type].hitbox;
       switch (hitboxInfo.type) {
          case "circular": {
@@ -83,90 +99,41 @@ abstract class Entity {
          }
       }
 
-      // Add entity to the ID record
-      SERVER.board.entities[this.id] = this;
+      this.components = components;
+      this.tickableComponents = filterTickableComponents(components);
 
-      // Calculate initial containing chunks
-      if (this.hitbox.info.type === "rectangular") {
-         (this.hitbox as RectangularHitbox).calculateVertexPositions();
-      }
-      const hitboxBounds = this.hitbox.calculateHitboxBounds();
-      this.chunks = this.calculateContainingChunks(hitboxBounds);
-
-      // Find inital tile
-      this.currentTile = this.findCurrentTile();
-
-      // Add entity to chunks
-      for (const chunk of this.chunks) {
-         chunk.addEntity(this);
-      }
-
-      // Set components
-      this.updateableComponents = components.filter(component => typeof component.update !== "undefined");
-      for (const component of components) {
-         this.components.set(component.constructor as (new (...args: any[]) => any), component);
+      for (const component of Object.values(components) as Array<Component>) {
          component.setEntity(this);
       }
-   }
 
-   public onLoad?(): void;
-
-   public loadComponents(): void {
-      this.components.forEach(component => {
+      // Load components. Must be done after all of them set their entity as the components might reference each other
+      for (const component of Object.values(components) as Array<Component>) {
          if (typeof component.onLoad !== "undefined") component.onLoad();
-      });
+      }
+
+      // Add the entity to the join buffer
+      SERVER.board.addEntityToJoinBuffer(this);
    }
 
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
 
-   public updateComponents(): void {
-      for (const component of this.updateableComponents) {
-         component.update!();
+   /** Called after every physics update. */
+   public tick(): void {   
+      // Tick components
+      for (const component of this.tickableComponents) {
+         component.tick!();
       }
    }
 
-   /** Called immediately after every physics update. */
-   public update?(): void;
-
-   public findCurrentTile(): Tile {
-      const [x, y] = this.findCurrentTileCoordinates();
-      return SERVER.board.getTile(x, y);
-   }
-
-   public findCurrentTileCoordinates(): [number, number] {
-      const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
-      const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
-      return [tileX, tileY];
-   }
-
-   public getComponent<C extends Component>(constr: { new(...args: any[]): C }): C | null {
-      const component = this.components.get(constr);
-      return typeof component !== "undefined" ? (component as C) : null;
-   }
-
-   public getChunkCoords(): [number, number] {
-      const x = Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-      const y = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-      return [x, y];
-   }
-   public updateChunks(newChunks: ReadonlyArray<Chunk>): void {
-      // Find all chunks which aren't present in the new chunks and remove them
-      const removedChunks = this.chunks.filter(chunk => !newChunks.includes(chunk));
-      for (const chunk of removedChunks) {
-         chunk.removeEntity(this);
-         this.chunks.splice(this.chunks.indexOf(chunk), 1);
+   public getComponent<C extends keyof Components>(name: C): Components[C] | null {
+      if (this.components.hasOwnProperty(name)) {
+         return this.components[name] as Components[C];
       }
-
-      // Add all new chunks
-      const addedChunks = newChunks.filter(chunk => !this.chunks.includes(chunk));
-      for (const chunk of addedChunks) {
-         chunk.addEntity(this);
-         this.chunks.push(chunk);
-      }
+      return null;
    }
 
-   /** Calculates the chunks that contain the entity. Called after calculating the entity's hitbox bounds */
-   public calculateContainingChunks(): Array<Chunk> {
+   /** Calculates the chunks that contain the entity.  */
+   private calculateContainingChunks(): Array<Chunk> {
       const minChunkX = Math.max(Math.min(Math.floor(this.hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor(this.hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const minChunkY = Math.max(Math.min(Math.floor(this.hitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
@@ -183,17 +150,39 @@ abstract class Entity {
       return chunks;
    }
 
+   /** Called after calculating the entity's hitbox bounds */
+   public updateContainingChunks(): void {
+      const containingChunks = this.calculateContainingChunks();
+
+      // Find all chunks which aren't present in the new chunks and remove them
+      const removedChunks = this.chunks.filter(chunk => !containingChunks.includes(chunk));
+      for (const chunk of removedChunks) {
+         chunk.removeEntity(this);
+         this.chunks.splice(this.chunks.indexOf(chunk), 1);
+      }
+
+      // Add all new chunks
+      const addedChunks = containingChunks.filter(chunk => !this.chunks.includes(chunk));
+      for (const chunk of addedChunks) {
+         chunk.addEntity(this);
+         this.chunks.push(chunk);
+      }
+   }
+
    public addVelocity(magnitude: number, direction: number): void {
       const force = new Vector(magnitude, direction);
       this.velocity = this.velocity?.add(force) || force;
    }
-   public addForceVector(force: Vector): void {
-      this.velocity = this.velocity?.add(force) || force;
 
+   /** Calculates the tile the entity is currently in using its position */
+   public calculateCurrentTile(): void {
+      const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
+      const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
+
+      this.currentTile = SERVER.board.getTile(tileX, tileY);
    }
 
    public applyPhysics(): void {
-      this.currentTile = this.findCurrentTile();
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.currentTile.type];
 
       const tileMoveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
@@ -260,31 +249,31 @@ abstract class Entity {
       const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
 
       // Left wall
-      if (minX < 0) {
+      if (this.hitbox.bounds[0] < 0) {
          this.stopXVelocity();
          this.position.x -= minX;
       // Right wall
-      } else if (maxX > boardUnits) {
+      } else if (this.hitbox.bounds[1] > boardUnits) {
          this.position.x -= maxX - boardUnits;
          this.stopXVelocity();
       }
 
       // Bottom wall
-      if (minY < 0) {
+      if (this.hitbox.bounds[2] < 0) {
          this.position.y -= minY;
          this.stopYVelocity();
       // Top wall
-      } else if (maxY > boardUnits) {
+      } else if (this.hitbox.bounds[3] > boardUnits) {
          this.position.y -= maxY - boardUnits;
          this.stopYVelocity();
       }
    }
 
-   public resolveCollisions(entityHitboxInfoRecord: { [id: number]: EntityHitboxInfo }): void {
-      const collidingEntities = this.getCollidingEntities(entityHitboxInfoRecord);
+   public resolveEntityCollisions(): void {
+      const collidingEntities = this.getCollidingEntities();
 
+      // Push away from all colliding entities
       for (const entity of collidingEntities) {
-         // Push both entities away from each other
          const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS;
          const angle = this.position.angleBetween(entity.position);
 
@@ -293,14 +282,14 @@ abstract class Entity {
       }
    }
 
-   private getCollidingEntities(entityHitboxInfoRecord: { [id: number]: EntityHitboxInfo }): ReadonlyArray<Entity> {
+   private getCollidingEntities(): ReadonlyArray<Entity> {
       const collidingEntities = new Array<Entity>();
 
       for (const chunk of this.chunks) {
          for (const entity of chunk.getEntities()) {
             if (entity === this) continue;
 
-            if (isColliding(this, entity, entityHitboxInfoRecord)) {
+            if (this.hitbox.isColliding(entity.hitbox)) {
                collidingEntities.push(entity);
             }
          }
@@ -309,32 +298,34 @@ abstract class Entity {
       return collidingEntities;
    }
 
-   public registerHit(attackingEntity: Entity, distance: number, angle: number, damage: number): void {
-      if (!this.getComponent(HealthComponent)!.receiveDamage(damage)) return;
+   public registerHit(angle: number, damage: number): void {
+      this.getComponent("health")!.receiveDamage(damage);
 
-      const PUSH_FORCE = 150;
-      this.addVelocity(PUSH_FORCE, angle);
-
-      const attackInfo: AttackInfo = {
-         attackingEntity: attackingEntity,
-         targetEntity: this,
-         progress: 0
-      };
-      SERVER.board.addNewAttack(attackInfo);
+      if (!this.isRemoved) {
+         const PUSH_FORCE = 150;
+         this.addVelocity(PUSH_FORCE, angle);
+         
+         const attackInfo: AttackInfo = {
+            targetEntity: this,
+            progress: 0
+         };
+         SERVER.board.addNewAttack(attackInfo);
+      }
    }
 
-   public kill(causeOfDeath: null): void {
+   public destroy(): void {
       this.callEvents("death");
       this.isRemoved = true;
    }
 
-   public callEvents(type: EventType): void {
+   public callEvents<E extends EventType>(type: E, ...params: EventParams<E>): void {
       for (const event of this.events[type]) {
-         event();
+         // Unfortunate that this unsafe solution is used, but I couldn't find an alternative
+         (event as any)(...params);
       }
    }
 
-   public createEvent(type: EventType, event: () => void): void {
+   public createEvent<E extends EventType>(type: E, event: Event<E>): void {
       this.events[type].push(event);
    }
 }

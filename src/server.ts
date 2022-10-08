@@ -1,41 +1,11 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board, { AttackInfo } from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
 import { findAvailableEntityID } from "./entities/Entity";
 import Cow from "./entities/Cow";
-
-/*
-
-Server is responsible for:
-- Entities
-   - Entity spawning
-   - Entity AI
-- RNG, randomness
-
-When a client connects, send:
-- Game ticks
-- Tiles
-
-Components:
-- Render component (client)
-- AI component (server)
-- Health component (server)
-- Hitbox component (server)
-
-Each tick, send game data:
-- Nearby entities
-
-- Player needs to handle its own wall and tile collisions
-- Server needs to handle wall and tile collisions for all entities
-
-Tasks:
-* Start game instance
-* Start the server
-
-*/
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -84,7 +54,7 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       // setTimeout(() => {
-      //    for (let i = 0; i < 1000; i++) {
+      //    for (let i = 0; i < 500; i++) {
       //       // const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
       //       // const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
       //       const x = randFloat(60, 200);
@@ -135,9 +105,13 @@ class GameServer {
    private async tick(): Promise<void> {
       this.ticks++;
 
-      const entityCensus = this.board.tickEntities();
+      this.board.removeEntities();
+      this.board.addEntitiesFromJoinBuffer();
+      this.board.tickEntities();
+      this.board.resolveCollisions();
 
-      this.entitySpawner.runSpawnAttempt(entityCensus);
+      const census = this.board.holdCensus();
+      this.entitySpawner.runSpawnAttempt(census);
 
       this.board.runRandomTickAttempt();
 
@@ -179,13 +153,18 @@ class GameServer {
 
          const serverItemDataArray = this.board.calculatePlayerItemInfoArray(playerData.visibleChunkBounds);
          
+         const playerEvents = player.getPlayerEvents();
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             serverEntityDataArray: visibleEntityInfoArray,
             serverItemDataArray: serverItemDataArray,
             tileUpdates: tileUpdates,
-            serverAttackDataArray: serverAttackDataArray
+            serverAttackDataArray: serverAttackDataArray,
+            pickedUpItems: playerEvents.pickedUpItemEntities
          };
+
+         player.clearPlayerEvents();
 
          // Send the game data to the player
          socket.emit("game_data_packet", gameDataPacket);
@@ -205,11 +184,18 @@ class GameServer {
       // Calculate the attack's target entity
       const targetEntities = attackPacket.targetEntities.map(id => this.board.entities[id]);
       const targetInfo = player.calculateAttackedEntity(targetEntities);
+      // Don't attack if the attack didn't hit anything on the serverside
+      if (targetInfo === null) return;
 
-      if (targetInfo !== null) {
-         // Register the hit
-         targetInfo.target.registerHit(player, targetInfo.distance, targetInfo.angle, 1);
+      let damage: number;
+      if (attackPacket.heldItem !== null) {
+         damage = 1; // Placeholder
+      } else {
+         damage = 1;
       }
+
+      // Register the hit
+      targetInfo.target.registerHit(targetInfo.angle, damage);
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
@@ -228,7 +214,6 @@ class GameServer {
       // Create the player entity
       const position = new Point(...initialPlayerDataPacket.position);
       const player = new Player(position, initialPlayerDataPacket.username, playerID);
-      this.board.loadEntity(player);
 
       // Initialise the player's gamedata record
       this.playerData[socket.id] = {

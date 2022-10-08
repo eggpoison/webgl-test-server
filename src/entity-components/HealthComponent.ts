@@ -27,7 +27,7 @@ class HealthComponent extends Component {
       this.armour = armour;
    }
 
-   public update(): void {
+   public tick(): void {
       if (this.invulnerabilityTimer > 0) {
          this.invulnerabilityTimer -= 1 / SETTINGS.TPS;
 
@@ -43,21 +43,18 @@ class HealthComponent extends Component {
    /**
     * Attempts to apply damage to an entity
     * @param damage The amount of damage given
-    * @returns If an attack should be started
     */
-   public receiveDamage(damage: number): boolean {
+   public receiveDamage(damage: number): void {
       // Don't receive damage if invulnerable
-      if (this.isInvulnerable()) return false;
+      if (this.isInvulnerable()) return;
 
       this.health -= damage;
       if (this.health <= 0) {
-         this.entity.kill(null);
-         return false;
+         this.entity.destroy();
+         return;
       }
 
       this.invulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
-
-      return true;
    }
 
    public getHealth(): number {

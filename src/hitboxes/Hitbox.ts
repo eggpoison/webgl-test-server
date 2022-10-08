@@ -8,14 +8,18 @@ abstract class Hitbox<T extends HitboxType> {
    public entity: Entity;
 
    /** The bounds of the hitbox since the last physics update */
-   public bounds: HitboxBounds;
+   public bounds!: HitboxBounds;
 
    constructor(hitboxInfo: HitboxInfo<T>, entity: Entity) {
       this.info = hitboxInfo;
       this.entity = entity;
    }
 
-   public abstract calculateHitboxBounds(): HitboxBounds;
+   protected abstract calculateHitboxBounds(): HitboxBounds;
+
+   public updateHitboxBounds(): void {
+      this.bounds = this.calculateHitboxBounds();
+   }
 
    public abstract isColliding(otherHitbox: Hitbox<HitboxType>): boolean;
 }

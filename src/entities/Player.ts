@@ -1,10 +1,10 @@
 import { Point } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
+import ItemEntity from "../items/ItemEntity";
 import Entity from "./Entity";
 
 type PlayerAttackInfo = {
    readonly target: Entity;
-   readonly distance: number;
    readonly angle: number;
 }
 
@@ -25,11 +25,15 @@ class Player extends Entity {
    };
 
    constructor(position: Point, name: string, id: number) {
-      super("player", position, null, null, 0, [
-         new HealthComponent(Player.MAX_HEALTH, 0)
-      ], id);
+      super("player", position, null, null, 0, {
+         health: new HealthComponent(Player.MAX_HEALTH, 0)
+      }, id);
 
       this.displayName = name;
+
+      this.createEvent("item_pickup", (itemEntity: ItemEntity): void => {
+         this.playerEvents.pickedUpItemEntities.push(itemEntity.id);
+      });
    }
 
    public getClientArgs(): [displayName: string] {
@@ -41,7 +45,7 @@ class Player extends Entity {
       let minDistance = Number.MAX_SAFE_INTEGER;
       for (const entity of targetEntities) {
          // Don't attack entities without health components
-         if (entity.getComponent(HealthComponent) === null) continue;
+         if (entity.getComponent("health") === null) continue;
 
          const dist = this.position.distanceFrom(entity.position);
          if (dist < minDistance) {
@@ -54,7 +58,6 @@ class Player extends Entity {
 
       return {
          target: closestEntity,
-         distance: minDistance,
          angle: this.position.angleBetween(closestEntity.position)
       };
    }
