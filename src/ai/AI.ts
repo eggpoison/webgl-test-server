@@ -43,6 +43,14 @@ abstract class AI {
 
    protected targetPosition: Point | null = null;
 
+   // Notes to future self:
+
+   // Make "entitiesInVisionRange" public and then don't bother doing distance check
+   // if self is already in the test entity's entitiesInVisionRange array
+
+   // Also skip check if entity isn't moving (make sure this works and the velocity
+   // property isn't lagging behind
+
    constructor(mob: Mob, { aiWeightMultiplier }: BaseAIParams) {
       this.mob = mob;
       this.aiWeightMultiplier = aiWeightMultiplier;
@@ -74,13 +82,8 @@ abstract class AI {
       this.targetPosition = targetPosition;
       this.mob.acceleration = new Vector(acceleration, _direction);
       this.mob.terminalVelocity = terminalVelocity;
-      // this.mob.rotation = -_direction + Math.PI/2;
       this.mob.rotation = _direction;
    }
-
-   // protected stopMoving(): void {
-      
-   // }
 }
 
 export default AI;
