@@ -19,7 +19,7 @@ export function findAvailableEntityID(): number {
    return idCounter++;
 }
 
-interface Components {
+export interface Components {
    readonly health: HealthComponent;
    readonly inventory: InventoryComponent;
    readonly item_creation: ItemCreationComponent;
@@ -245,26 +245,25 @@ abstract class Entity {
    }
    
    public resolveWallCollisions(): void {
-      const [minX, maxX, minY, maxY] = this.hitbox.bounds;
       const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
 
       // Left wall
       if (this.hitbox.bounds[0] < 0) {
          this.stopXVelocity();
-         this.position.x -= minX;
+         this.position.x -= this.hitbox.bounds[0];
       // Right wall
       } else if (this.hitbox.bounds[1] > boardUnits) {
-         this.position.x -= maxX - boardUnits;
+         this.position.x -= this.hitbox.bounds[1] - boardUnits;
          this.stopXVelocity();
       }
 
       // Bottom wall
       if (this.hitbox.bounds[2] < 0) {
-         this.position.y -= minY;
+         this.position.y -= this.hitbox.bounds[2];
          this.stopYVelocity();
       // Top wall
       } else if (this.hitbox.bounds[3] > boardUnits) {
-         this.position.y -= maxY - boardUnits;
+         this.position.y -= this.hitbox.bounds[3] - boardUnits;
          this.stopYVelocity();
       }
    }
@@ -299,9 +298,9 @@ abstract class Entity {
    }
 
    public registerHit(angle: number, damage: number): void {
-      this.getComponent("health")!.receiveDamage(damage);
+      const hitWasReceived = this.getComponent("health")!.receiveDamage(damage);
 
-      if (!this.isRemoved) {
+      if (hitWasReceived && !this.isRemoved) {
          const PUSH_FORCE = 150;
          this.addVelocity(PUSH_FORCE, angle);
          

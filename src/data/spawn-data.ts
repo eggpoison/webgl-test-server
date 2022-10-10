@@ -1,4 +1,5 @@
-import { BiomeName, CowSpecies, EntityType } from "webgl-test-shared";
+import { BiomeName, CowSpecies } from "webgl-test-shared";
+import { MobType } from "../entities/Mob";
 import { getTilesByBiome } from "../terrain-generation/terrain-generation";
 
 export type EntitySpawnInfo = {
@@ -10,7 +11,7 @@ export type EntitySpawnInfo = {
    readonly classParams?: () => ReadonlyArray<unknown>;
 }
 
-const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
+const ENTITY_SPAWN_INFO_RECORD: Partial<Record<MobType, EntitySpawnInfo>> = {
    cow: {
       spawnableBiomes: ["grasslands"],
       packSize: [1, 4],
@@ -24,7 +25,7 @@ const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
 
 /** Called once the tiles have been generated */
 export function generateEntitySpawnableTiles(): void {
-   for (const [type, spawnInfo] of Object.entries(ENTITY_SPAWN_INFO_RECORD) as Array<[EntityType, EntitySpawnInfo]>) {
+   for (const [type, spawnInfo] of Object.entries(ENTITY_SPAWN_INFO_RECORD) as Array<[MobType, EntitySpawnInfo]>) {
       // Populate the spawnable tiles
       let spawnableTiles = new Array<[number, number]>();
       for (const biome of spawnInfo.spawnableBiomes) {

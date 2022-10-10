@@ -53,22 +53,17 @@ class GameServer {
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
-      // setTimeout(() => {
-      //    for (let i = 0; i < 500; i++) {
-      //       // const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //       // const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //       const x = randFloat(60, 200);
-      //       const y = randFloat(60, 200);
-      //       // const species = CowSpecies.brown;
-      //       const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
-      //       // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
-      //       new Cow(new Point(x, y), species);
-      //    }
-      // }, 5000);
-
       setTimeout(() => {
-         const pos = new Point(100, 100);
-         new Cow(pos, CowSpecies.brown);
+         for (let i = 0; i < 100; i++) {
+            const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+            const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+            // const x = randFloat(60, 200);
+            // const y = randFloat(60, 200);
+            // const species = CowSpecies.brown;
+            const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+            // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
+            new Cow(new Point(x, y), species);
+         }
       }, 2000);
    }
 

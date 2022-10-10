@@ -1,5 +1,6 @@
-import { Point, SETTINGS } from "webgl-test-shared";
+import { Point, RectangularHitboxInfo, SETTINGS } from "webgl-test-shared";
 import Chunk from "../Chunk";
+import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { SERVER } from "../server";
 import Item from "./Item";
 
@@ -19,14 +20,24 @@ class ItemEntity {
    /** Chunks the item entity is contained in */
    public readonly chunks: ReadonlyArray<Chunk>;
 
-   /** Rotation of the item entity (only used in client-side rendering) */
+   /** Rotation of the item entity */
    public readonly rotation = 2 * Math.PI * Math.random();
+
+   public readonly hitbox: RectangularHitbox;
 
    constructor(position: Point, item: Item) {
       this.id = findAvailableItemID();
 
       this.position = position;
       this.item = item;
+
+      // Create the hitbox
+      const hitboxInfo: RectangularHitboxInfo = {
+         type: "rectangular",
+         width: SETTINGS.ITEM_SIZE,
+         height: SETTINGS.ITEM_SIZE
+      }
+      this.hitbox = new RectangularHitbox(hitboxInfo, this);
 
       // Add to containing chunks
       this.chunks = this.calculateContainingChunks();

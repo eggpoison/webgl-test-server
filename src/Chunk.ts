@@ -2,8 +2,8 @@ import Entity from "./entities/Entity";
 import ItemEntity from "./items/ItemEntity";
 
 class Chunk {
-   private readonly entities = new Array<Entity>();
-   private readonly items = new Array<ItemEntity>();
+   private readonly entities = new Set<Entity>();
+   private readonly itemEntities = new Set<ItemEntity>();
 
    public readonly x: number;
    public readonly y: number;
@@ -14,32 +14,31 @@ class Chunk {
    }
 
    public addEntity(entity: Entity): void {
-      this.entities.push(entity);
+      this.entities.add(entity);
    }
 
    public removeEntity(entity: Entity): void {
-      const idx = this.entities.indexOf(entity);
-      this.entities.splice(idx, 1);
+      this.entities.delete(entity);
    }
 
    public hasEntity(entity: Entity): boolean {
-      return this.entities.includes(entity);
+      return this.entities.has(entity);
    }
 
-   public getEntities(): Array<Entity> {
+   public getEntities(): Set<Entity> {
       return this.entities;
    }
 
    public addItem(item: ItemEntity): void {
-      this.items.push(item);
+      this.itemEntities.add(item);
    }
 
    public removeItem(item: ItemEntity): void {
-      this.items.splice(this.items.indexOf(item), 1);
+      this.itemEntities.delete(item);
    }
 
-   public getItems(): Array<ItemEntity> {
-      return this.items;
+   public getItemEntities(): Set<ItemEntity> {
+      return this.itemEntities;
    }
 }
 

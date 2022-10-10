@@ -30,20 +30,20 @@ class Board {
    private readonly tiles: Array<Array<Tile>>;
    private readonly chunks: Array<Array<Chunk>>;
 
-   private tileUpdateCoordinates: Array<[x: number, y: number]>;
+   private tileUpdateCoordinates: Set<[x: number, y: number]>;
 
    public readonly attackInfoRecord: { [id: number]: AttackInfo } = {};
 
-   /** Array of all entities to be removed at the beginning of the next tick */
-   private removedEntities = new Array<Entity>();
+   /** Array of all entities' IDs to be removed at the beginning of the next tick */
+   private removedEntities = new Set<number>();
    /** All entities to join the board */
-   private entityJoinBuffer = new Array<Entity>();
+   private entityJoinBuffer = new Set<Entity>();
 
    constructor() {
       this.tiles = generateTerrain();
       console.log("Terrain generated successfully");
 
-      this.tileUpdateCoordinates = new Array<[number, number]>();
+      this.tileUpdateCoordinates = new Set<[number, number]>();
 
       this.chunks = this.initialiseChunks();
    }
@@ -88,11 +88,12 @@ class Board {
 
    /** Removes entities flagged for deletion */
    public removeEntities(): void {
-      for (const entity of this.removedEntities) {
+      for (const id of this.removedEntities) {
+         const entity = this.entities[id];
          this.removeEntity(entity);
       }
 
-      this.removedEntities = [];
+      this.removedEntities.clear();
    }
 
    public tickEntities(): void {
@@ -111,7 +112,7 @@ class Board {
          entity.tick();
 
          if (entity.isRemoved) {
-            this.removedEntities.push(entity);
+            this.removedEntities.add(entity.id);
          }
       }
    }
@@ -158,24 +159,25 @@ class Board {
 
    /** Registers a tile update to be sent to the clients */
    private registerNewTileUpdate(x: number, y: number): void {
-      this.tileUpdateCoordinates.push([x, y]);
+      this.tileUpdateCoordinates.add([x, y]);
    }
 
    /** Get all tile updates and reset them */
    public popTileUpdates(): ReadonlyArray<ServerTileUpdateData> {
       // Generate the tile updates array
-      const tileUpdates: ReadonlyArray<ServerTileUpdateData> = this.tileUpdateCoordinates.map(([x, y]) => {
+      const tileUpdates = new Array<ServerTileUpdateData>();
+      for (const [x, y] of this.tileUpdateCoordinates) {
          const tile = this.getTile(x, y);
-         return {
+         tileUpdates.push({
             x: x,
             y: y,
             type: tile.type,
             isWall: tile.isWall
-         };
-      });
+         });
+      }
 
       // reset the tile update coordiantes
-      this.tileUpdateCoordinates = new Array<[number, number]>();
+      this.tileUpdateCoordinates.clear();
 
       return tileUpdates;
    }
@@ -210,7 +212,7 @@ class Board {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
             // Add all entities which aren't already in the array
-            for (const item of chunk.getItems()) {
+            for (const item of chunk.getItemEntities()) {
                if (!nearbyItemEntities.includes(item)) {
                   nearbyItemEntities.push(item);
                }
@@ -247,7 +249,7 @@ class Board {
    }
 
    public addEntityToJoinBuffer(entity: Entity): void {
-      this.entityJoinBuffer.push(entity);
+      this.entityJoinBuffer.add(entity);
    }
 
    /** Creates all of the entities in the join buffer and adds them to the board */
@@ -257,20 +259,9 @@ class Board {
          this.entities[entity.id] = entity;
 
          entity.isAdded = true;
-
-         // // Calculate initial containing chunks
-         // if (entity.hitbox.info.type === "rectangular") {
-         //    (entity.hitbox as RectangularHitbox).calculateVertexPositions();
-         // }
-         // entity.hitbox.updateHitboxBounds();
-         // entity.updateContainingChunks();
-   
-         // // Find inital tile
-         // entity.currentTile = entity.findCurrentTile();
       }
 
-      // Clear the join buffer
-      this.entityJoinBuffer = new Array<Entity>();
+      this.entityJoinBuffer.clear();
    }
 }
 

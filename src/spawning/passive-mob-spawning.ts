@@ -1,3 +1,8 @@
+import { ENTITY_INFO_RECORD, SETTINGS, Point, EntityBehaviour, EntityInfo, EntityType, randItem, randInt } from "webgl-test-shared";
+import ENTITY_CLASS_RECORD from "../entity-class-record";
+import ENTITY_SPAWN_INFO_RECORD from "../data/spawn-data";
+import { MobType } from "../entities/Mob";
+
 /*
 
 PASSIVE MOB SPAWNING:
@@ -12,24 +17,19 @@ Each eligible tile has a small chance to run a spawn
 
 */
 
-import { ENTITY_INFO_RECORD, SETTINGS, Point, EntityBehaviour, EntityInfo, EntityType, randItem, randInt } from "webgl-test-shared";
-import ENTITY_CLASS_RECORD from "../entity-class-record";
-import { SERVER } from "../server";
-import ENTITY_SPAWN_INFO_RECORD from "./spawn-data";
-
 // Categorise all entity info
-const ENTITY_BEHAVIOUR_RECORD: Record<EntityBehaviour, Array<EntityType>> = {
+const ENTITY_BEHAVIOUR_RECORD: Record<EntityBehaviour, Array<MobType>> = {
    passive: [],
    neutral: [],
    hostile: []
 };
 for (const [type, info] of Object.entries(ENTITY_INFO_RECORD) as Array<[EntityType, EntityInfo]>) {
    if (info.category === "mob") {
-      ENTITY_BEHAVIOUR_RECORD[info.behaviour].push(type);
+      ENTITY_BEHAVIOUR_RECORD[info.behaviour].push(type as MobType);
    }
 }
 
-const getRandomEntityType = (behaviour: EntityBehaviour): EntityType => {
+const getRandomEntityType = (behaviour: EntityBehaviour): MobType => {
    const entityInfos = ENTITY_BEHAVIOUR_RECORD[behaviour];
    return entityInfos[Math.floor(Math.random() * entityInfos.length)];
 }

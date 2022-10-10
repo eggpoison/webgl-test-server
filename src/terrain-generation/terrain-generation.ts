@@ -2,7 +2,7 @@ import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
 import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise } from "../perlin-noise";
 import { BiomeName } from "webgl-test-shared/lib/biomes";
-import { generateEntitySpawnableTiles } from "../spawning/spawn-data";
+import { generateEntitySpawnableTiles } from "../data/spawn-data";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./biome-generation-info";
 import TILE_CLASS_RECORD from "../tiles/tile-class-record";
 

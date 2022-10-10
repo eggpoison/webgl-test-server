@@ -1,7 +1,8 @@
 {
    "license": "UNLICENSED",
    "scripts": {
-      "start": "nodemon"
+      "start": "nodemon",
+      "test": "node -r ts-node/register --prof myapp.ts"
    },
    "dependencies": {
       "@types/ws": "^8.5.3",

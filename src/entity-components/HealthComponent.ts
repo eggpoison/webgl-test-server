@@ -43,18 +43,21 @@ class HealthComponent extends Component {
    /**
     * Attempts to apply damage to an entity
     * @param damage The amount of damage given
+    * @returns Whether the damage was received
     */
-   public receiveDamage(damage: number): void {
+   public receiveDamage(damage: number): boolean {
       // Don't receive damage if invulnerable
-      if (this.isInvulnerable()) return;
+      if (this.isInvulnerable()) return false;
 
       this.health -= damage;
       if (this.health <= 0) {
          this.entity.destroy();
-         return;
+         return true;
       }
 
       this.invulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
+
+      return true;
    }
 
    public getHealth(): number {

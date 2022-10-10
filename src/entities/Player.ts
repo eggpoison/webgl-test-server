@@ -1,5 +1,6 @@
 import { Point } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
+import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemEntity from "../items/ItemEntity";
 import Entity from "./Entity";
 
@@ -26,7 +27,8 @@ class Player extends Entity {
 
    constructor(position: Point, name: string, id: number) {
       super("player", position, null, null, 0, {
-         health: new HealthComponent(Player.MAX_HEALTH, 0)
+         health: new HealthComponent(Player.MAX_HEALTH, 0),
+         inventory: new InventoryComponent(10)
       }, id);
 
       this.displayName = name;
