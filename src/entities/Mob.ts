@@ -1,4 +1,4 @@
-import { EntityType, Point, Vector } from "webgl-test-shared";
+import { EntityType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import AI from "../ai/AI";
 import EscapeAI from "../ai/EscapeAI";
 import FollowAI from "../ai/FollowAI";
@@ -7,6 +7,7 @@ import HerdAI from "../ai/HerdAI";
 import WanderAI from "../ai/WanderAI";
 import MOB_AI_DATA_RECORD, { MobAICreationInfo } from "../data/mob-ai-data";
 import Entity, { Components } from "./Entity";
+import { SERVER } from "../server";
 
 type NarrowEntityType<E extends EntityType> = E;
 export type MobType = NarrowEntityType<"cow">;
@@ -27,7 +28,7 @@ export interface MobInfo {
 
 abstract class Mob extends Entity implements MobInfo {
    /** Number of ticks between AI refreshes */
-   private static readonly AI_REFRESH_TIME = 4;
+   public static readonly AI_REFRESH_TIME = 4;
    
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
@@ -39,7 +40,7 @@ abstract class Mob extends Entity implements MobInfo {
    public readonly herdMemberHash?: number;
 
    private aiRefreshTicker = 0;
-
+   
    constructor(type: MobType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Partial<Components>, id?: number) {
       super(type, position, velocity, acceleration, rotation, components, id);
 
@@ -77,21 +78,61 @@ abstract class Mob extends Entity implements MobInfo {
    }
 
    public refreshAI(): void {
-      this.currentAI = this.calculateCurrentAI();
-   }
+      const entitiesInVisionRange = this.calculateEntitiesInVisionRange();
 
-   /** Finds the AI with highest weight */
-   private calculateCurrentAI(): AI {
-      let currentAI!: AI;
+      // Find the AI with highest weight
+      let newAI!: AI;
       let maxWeight = -1;
       for (const ai of this.ais) {
+         // Update their values
+         ai.updateValues(entitiesInVisionRange);
+
          const weight = ai.getWeight();
          if (weight > maxWeight) {
             maxWeight = weight;
-            currentAI = ai;
+            newAI = ai;
          }
       }
-      return currentAI;
+
+      // If the AI is new, activate the AI
+      if (newAI !== this.currentAI) {
+         newAI.activate();
+         if (typeof this.currentAI !== "undefined") {
+            this.currentAI.deactivate();
+         }
+      }
+      
+      if (typeof newAI.onRefresh !== "undefined") newAI.onRefresh();
+      
+      this.currentAI = newAI;
+   }
+
+   /** Finds all entities within the range of the mob's vision */
+   private calculateEntitiesInVisionRange(): Set<Entity> {
+      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+      const entitiesInVisionRange = new Set<Entity>();
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = SERVER.board.getChunk(chunkX, chunkY);
+            for (const entity of chunk.getEntities()) {
+               // Don't add existing entities
+               if (entitiesInVisionRange.has(entity)) continue;
+
+               if (Math.pow(this.position.x - entity.position.x, 2) + Math.pow(this.position.y - entity.position.y, 2) <= Math.pow(this.visionRange, 2)) {
+                  entitiesInVisionRange.add(entity);
+               }
+            }
+         }  
+      }
+
+      // Remove self from entities in vision
+      entitiesInVisionRange.delete(this);
+
+      return entitiesInVisionRange;
    }
 }
 

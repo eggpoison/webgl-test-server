@@ -10,27 +10,33 @@ type MobData = {
 const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
    cow: {
       info: {
-         visionRange: 200
+         visionRange: 250
       },
       aiCreationInfo: {
          wander: {
-            aiWeightMultiplier: 1,
+            aiWeightMultiplier: 0.5,
             wanderRate: 0.6,
             acceleration: 100,
             terminalVelocity: 50
          },
          follow: {
             aiWeightMultiplier: 1,
-            maxDistance: 100
+            acceleration: 50,
+            terminalVelocity: 25,
+            minDistanceFromFollowTarget: 150,
+            weightBuildupTime: 10,
+            interestDuration: 7,
+            chanceToGainInterest: 0.2,
+            entityTypesToExclude: new Set(["cow"])
          },
-         herd: { 
-            aiWeightMultiplier: 1,
+         herd: {
+            aiWeightMultiplier: 0,
             minSeperationDistance: 120,
             turnRate: 0.2,
             validHerdMembers: new Set(["cow"])
          },
          graze: {
-            aiWeightMultiplier: 1,
+            aiWeightMultiplier: 0,
             stomachCapacity: 100,
             metabolism: 1,
             tileTargets: new Set([
@@ -43,7 +49,7 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             ])
          },
          escape: {
-            aiWeightMultiplier: 1,
+            aiWeightMultiplier: 0,
             acceleration: 150,
             terminalVelocity: 100
          }

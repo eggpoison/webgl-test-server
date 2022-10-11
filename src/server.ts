@@ -54,7 +54,7 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       setTimeout(() => {
-         for (let i = 0; i < 100; i++) {
+         for (let i = 0; i < 50; i++) {
             const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
             const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
             // const x = randFloat(60, 200);

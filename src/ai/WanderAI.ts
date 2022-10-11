@@ -35,7 +35,7 @@ class WanderAI extends AI implements WanderAIParams {
    }
 
    protected _getWeight(): number {
-      return 1.1;
+      return 1;
    }
 }
 
