@@ -10,6 +10,8 @@ interface WanderAIParams extends BaseAIParams {
 }
 
 class WanderAI extends AI implements WanderAIParams {
+   public readonly type = "wander";
+   
    public readonly wanderRate: number;
    public readonly acceleration: number;
    public readonly terminalVelocity: number;

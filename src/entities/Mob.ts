@@ -1,8 +1,8 @@
-import { EntityType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { EntityType, Point, randInt, SETTINGS, Vector } from "webgl-test-shared";
 import AI from "../ai/AI";
 import EscapeAI from "../ai/EscapeAI";
 import FollowAI from "../ai/FollowAI";
-import GrazeAI from "../ai/StarveAI";
+import StarveAI from "../ai/StarveAI";
 import HerdAI from "../ai/HerdAI";
 import WanderAI from "../ai/WanderAI";
 import MOB_AI_DATA_RECORD, { MobAICreationInfo } from "../data/mob-ai-data";
@@ -16,7 +16,7 @@ export const MobAIs = {
    wander: WanderAI,
    follow: FollowAI,
    herd: HerdAI,
-   graze: GrazeAI,
+   starve: StarveAI,
    escape: EscapeAI
 }
 
@@ -39,7 +39,7 @@ abstract class Mob extends Entity implements MobInfo {
    /** Used to further distinguish between herd members in the HerdAI AI component */
    public readonly herdMemberHash?: number;
 
-   private aiRefreshTicker = 0;
+   private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
    constructor(type: MobType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Partial<Components>, id?: number) {
       super(type, position, velocity, acceleration, rotation, components, id);
@@ -99,6 +99,7 @@ abstract class Mob extends Entity implements MobInfo {
          newAI.activate();
          if (typeof this.currentAI !== "undefined") {
             this.currentAI.deactivate();
+            if (typeof this.currentAI.onDeactivation !== "undefined") this.currentAI.onDeactivation();
          }
       }
       
@@ -133,6 +134,10 @@ abstract class Mob extends Entity implements MobInfo {
       entitiesInVisionRange.delete(this);
 
       return entitiesInVisionRange;
+   }
+
+   public getCurrentAIType(): keyof typeof MobAIs {
+      return this.currentAI.type;
    }
 }
 

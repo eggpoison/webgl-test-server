@@ -19,6 +19,8 @@ interface HerdAIParams extends BaseAIParams {
 }
 
 class FollowAI extends AI implements HerdAIParams {
+   public readonly type = "follow";
+   
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
    public readonly minDistanceFromFollowTarget: number;

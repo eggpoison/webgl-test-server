@@ -1,6 +1,6 @@
 import { Point, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
-import Mob from "../entities/Mob";
+import Mob, { MobAIs } from "../entities/Mob";
 
 export type BaseAIParams = {
    readonly aiWeightMultiplier: number;
@@ -11,6 +11,7 @@ abstract class AI {
    
    public readonly aiWeightMultiplier: number;
 
+   public abstract readonly type: keyof typeof MobAIs;
    protected abstract _getWeight(): number;
 
    protected isActive: boolean = false;
@@ -50,6 +51,7 @@ abstract class AI {
    }
 
    protected onActivation?(): void;
+   public onDeactivation?(): void;
    public onRefresh?(): void;
 
    protected filterEntitiesInVisionRange?(visibleEntities: ReadonlySet<Entity>): Set<Entity>;

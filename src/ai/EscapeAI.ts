@@ -7,6 +7,8 @@ interface EscapeAIParams extends BaseAIParams {
 }
 
 class EscapeAI extends AI implements EscapeAIParams {
+   public readonly type = "escape";
+   
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
 

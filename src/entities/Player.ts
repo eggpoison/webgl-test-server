@@ -46,6 +46,8 @@ class Player extends Entity {
       let closestEntity: Entity | null = null;
       let minDistance = Number.MAX_SAFE_INTEGER;
       for (const entity of targetEntities) {
+         if (typeof entity === "undefined") continue;
+         
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
 

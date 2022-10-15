@@ -20,7 +20,7 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             terminalVelocity: 50
          },
          follow: {
-            aiWeightMultiplier: 1,
+            aiWeightMultiplier: 0.75,
             acceleration: 50,
             terminalVelocity: 25,
             minDistanceFromFollowTarget: 150,
@@ -30,22 +30,33 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             entityTypesToExclude: new Set(["cow"])
          },
          herd: {
-            aiWeightMultiplier: 0,
+            aiWeightMultiplier: 1,
+            acceleration: 100,
+            terminalVelocity: 50,
             minSeperationDistance: 120,
-            turnRate: 0.2,
-            validHerdMembers: new Set(["cow"])
+            turnRate: 0.04,
+            maxWeightInflenceCount: 3,
+            weightInfluenceFalloff: {
+               start: 5,
+               duration: 2
+            },
+            validHerdMembers: new Set(["cow"]),
+            seperationWeight: 0.7,
+            alignmentWeight: 0.5,
+            cohesionWeight: 0.8
          },
-         graze: {
-            aiWeightMultiplier: 0,
-            stomachCapacity: 100,
+         starve: {
+            aiWeightMultiplier: 1,
+            acceleration: 100,
+            terminalVelocity: 50,
             metabolism: 1,
-            tileTargets: new Set([
-               {
-                  targetTileType: "grass",
+            traitVariance: 0.3,
+            tileTargets: new Map([
+               ["grass", {
                   resultingTileType: "dirt",
                   foodUnits: 100,
-                  digestTime: 5
-               }
+                  grazeTime: 5
+               }]
             ])
          },
          escape: {

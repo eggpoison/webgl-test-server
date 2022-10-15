@@ -1,11 +1,12 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board, { AttackInfo } from "./Board";
 import EntitySpawner from "./spawning/EntitySpawner";
 import { findAvailableEntityID } from "./entities/Entity";
 import Cow from "./entities/Cow";
+import Mob from "./entities/Mob";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -54,7 +55,7 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       setTimeout(() => {
-         for (let i = 0; i < 50; i++) {
+         for (let i = 0; i < 200; i++) {
             const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
             const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
             // const x = randFloat(60, 200);
@@ -129,7 +130,7 @@ class GameServer {
          const visibleEntityInfoArray = new Array<ServerEntityData>();
          const nearbyEntities = this.board.getPlayerNearbyEntities(player, playerData.visibleChunkBounds);
          for (const entity of nearbyEntities) {
-            const entityData: ServerEntityData = {
+            const entityData: Mutable<ServerEntityData> = {
                id: entity.id,
                type: entity.type,
                position: entity.position.package(),
@@ -140,6 +141,12 @@ class GameServer {
                clientArgs: entity.getClientArgs(),
                chunkCoordinates: entity.chunks.map(chunk => [chunk.x, chunk.y])
             };
+            if (entity.hasOwnProperty("herdMemberHash")) {
+               entityData.special = {
+                  mobAIType: (entity as Mob).getCurrentAIType()
+               }
+            }
+
             visibleEntityInfoArray.push(entityData);
          }
 
