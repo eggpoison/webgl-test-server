@@ -41,8 +41,8 @@ abstract class Mob extends Entity implements MobInfo {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
-   constructor(type: MobType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Partial<Components>, id?: number) {
-      super(type, position, velocity, acceleration, rotation, components, id);
+   constructor(position: Point, type: MobType, components: Partial<Components>, id?: number) {
+      super(position, type, components, id);
 
       const mobData = MOB_AI_DATA_RECORD[type];
 

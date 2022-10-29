@@ -7,10 +7,6 @@ class ItemCreationComponent extends Component {
    /** Max units that an item can spawn away from the entity when dead */
    private static readonly ITEM_SPAWN_RANGE = 48;
 
-   public tick(): void {
-      
-   }
-
    public createItemOnDeath(itemID: ItemID, count: number): void {
       this.entity.createEvent("death", () => {
          for (let i = 0; i < count; i++) {

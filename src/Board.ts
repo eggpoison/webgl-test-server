@@ -263,6 +263,17 @@ class Board {
 
       this.entityJoinBuffer.clear();
    }
+
+   public ageItems(): void {
+      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+            const chunk = this.getChunk(chunkX, chunkY);
+            for (const itemEntity of chunk.getItemEntities()) {
+               itemEntity.ageItem();
+            }
+         }  
+      }
+   }
 }
 
 export default Board;

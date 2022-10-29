@@ -23,6 +23,10 @@ class WanderAI extends AI implements WanderAIParams {
       this.acceleration = acceleration;
       this.terminalVelocity = terminalVelocity;
    }
+   
+   protected onActivation(): void {
+      this.mob.acceleration = null;
+   }
 
    public tick(): void {
       super.tick();

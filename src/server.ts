@@ -54,18 +54,18 @@ class GameServer {
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
-      setTimeout(() => {
-         for (let i = 0; i < 200; i++) {
-            const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-            const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-            // const x = randFloat(60, 200);
-            // const y = randFloat(60, 200);
-            // const species = CowSpecies.brown;
-            const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
-            // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
-            new Cow(new Point(x, y), species);
-         }
-      }, 2000);
+      // setTimeout(() => {
+      //    for (let i = 0; i < 200; i++) {
+      //       const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //       const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //       // const x = randFloat(60, 200);
+      //       // const y = randFloat(60, 200);
+      //       // const species = CowSpecies.brown;
+      //       const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+      //       // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
+      //       new Cow(new Point(x, y), species);
+      //    }
+      // }, 2000);
    }
 
    private handlePlayerConnections(): void {
@@ -75,7 +75,9 @@ class GameServer {
          const playerID = findAvailableEntityID();
 
          // Send initial game data
-         socket.emit("initial_game_data", this.ticks, this.board.getTiles(), playerID);
+         socket.on("initial_game_data_request", () => {
+            socket.emit("initial_game_data", this.ticks, this.board.getTiles(), playerID);
+         });
 
          // Receive initial player data
          socket.on("initial_player_data_packet", (initialPlayerDataPacket: InitialPlayerDataPacket) => {
@@ -105,6 +107,11 @@ class GameServer {
       this.board.addEntitiesFromJoinBuffer();
       this.board.tickEntities();
       this.board.resolveCollisions();
+
+      // Age items
+      if (this.ticks % SETTINGS.TPS === 0) {
+         this.board.ageItems();
+      }
 
       const census = this.board.holdCensus();
       this.entitySpawner.runSpawnAttempt(census);
@@ -197,7 +204,7 @@ class GameServer {
       }
 
       // Register the hit
-      targetInfo.target.registerHit(targetInfo.angle, damage);
+      targetInfo.target.registerHit(player, targetInfo.angle, damage);
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {

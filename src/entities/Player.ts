@@ -26,7 +26,7 @@ class Player extends Entity {
    };
 
    constructor(position: Point, name: string, id: number) {
-      super("player", position, null, null, 0, {
+      super(position, "player", {
          health: new HealthComponent(Player.MAX_HEALTH, 0),
          inventory: new InventoryComponent(10)
       }, id);
@@ -47,7 +47,7 @@ class Player extends Entity {
       let minDistance = Number.MAX_SAFE_INTEGER;
       for (const entity of targetEntities) {
          if (typeof entity === "undefined") continue;
-         
+
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
 

@@ -37,7 +37,7 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             turnRate: 0.04,
             maxWeightInflenceCount: 3,
             weightInfluenceFalloff: {
-               start: 5,
+               start: 4,
                duration: 2
             },
             validHerdMembers: new Set(["cow"]),
@@ -46,7 +46,7 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             cohesionWeight: 0.8
          },
          starve: {
-            aiWeightMultiplier: 1,
+            aiWeightMultiplier: 1.25,
             acceleration: 100,
             terminalVelocity: 50,
             metabolism: 1,
@@ -60,9 +60,10 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             ])
          },
          escape: {
-            aiWeightMultiplier: 0,
+            aiWeightMultiplier: 1.5,
             acceleration: 150,
-            terminalVelocity: 100
+            terminalVelocity: 100,
+            attackSubsideTime: 5
          }
       }
    }

@@ -49,6 +49,7 @@ abstract class Entity {
    public readonly hitbox: Hitbox<HitboxType>;
 
    public readonly events: { [E in EventType]: Array<Event<E>> } = {
+      hurt: [],
       death: [],
       item_pickup: []
    };
@@ -63,7 +64,7 @@ abstract class Entity {
    public terminalVelocity: number = 0;
 
    /** Direction the entity is facing (radians) */
-   public rotation: number;
+   public rotation: number = 0;
 
    public chunks = new Array<Chunk>();
 
@@ -74,15 +75,11 @@ abstract class Entity {
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
 
-   constructor(type: EntityType, position: Point, velocity: Vector | null, acceleration: Vector | null, rotation: number, components: Partial<Components>, id?: number) {
+   constructor(position: Point, type: EntityType, components: Partial<Components>, id?: number) {
       this.id = typeof id !== "undefined" ? id : findAvailableEntityID();
       this.type = type;
       
       this.position = position;
-      this.velocity = velocity;
-      this.acceleration = acceleration;
-
-      this.rotation = rotation;
 
       this.calculateCurrentTile();
 
@@ -297,10 +294,12 @@ abstract class Entity {
       return collidingEntities;
    }
 
-   public registerHit(angle: number, damage: number): void {
+   public registerHit(attackingEntity: Entity, angle: number, damage: number): void {
       const hitWasReceived = this.getComponent("health")!.receiveDamage(damage);
 
       if (hitWasReceived && !this.isRemoved) {
+         this.callEvents("hurt", attackingEntity);
+
          const PUSH_FORCE = 150;
          this.addVelocity(PUSH_FORCE, angle);
          

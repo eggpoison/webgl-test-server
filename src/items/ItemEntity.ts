@@ -11,8 +11,14 @@ const findAvailableItemID = (): number => {
 }
 
 class ItemEntity {
+   /** ROUGHLY how long an item will take to despawn */
+   private static readonly SECONDS_TO_DESPAWN = 300;
+   
    /** Unique identifier for the item entity */
    public readonly id: number;
+
+   /** How long the item has existed in seconds */
+   private age: number = 0;
 
    public readonly item: Item;
 
@@ -43,6 +49,13 @@ class ItemEntity {
       this.chunks = this.calculateContainingChunks();
       for (const chunk of this.chunks) {
          chunk.addItem(this);
+      }
+   }
+
+   // Only run once every second
+   public ageItem(): void {
+      if (++this.age >= ItemEntity.SECONDS_TO_DESPAWN) {
+         this.destroy();
       }
    }
 

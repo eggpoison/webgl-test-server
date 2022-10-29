@@ -12,10 +12,11 @@ class Cow extends Mob {
    constructor(position: Point, species: CowSpecies) {
       const itemCreationComponent = new ItemCreationComponent();
 
-      super("cow", position, null, null, 2 * Math.PI * Math.random(), {
+      super(position, "cow", {
          health: new HealthComponent(Cow.MAX_HEALTH, 0),
          item_creation: itemCreationComponent
       });
+      this.rotation = 2 * Math.PI * Math.random();
 
       this.species = species;
       this.herdMemberHash = species === CowSpecies.brown ? 0 : 1;
