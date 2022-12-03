@@ -3,10 +3,10 @@ import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board, { AttackInfo } from "./Board";
-import EntitySpawner from "./spawning/EntitySpawner";
 import { findAvailableEntityID } from "./entities/Entity";
-import Cow from "./entities/Cow";
 import Mob from "./entities/Mob";
+import { startReadingInput } from "./command-input";
+import { precomputeSpawnData, runSpawnAttempt } from "./entity-spawning";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -33,8 +33,10 @@ const formatAttackInfoArray = (attackInfoArray: ReadonlyArray<AttackInfo>): Read
 class GameServer {
    private ticks: number = 0;
 
+   /** The time of day the server is currently in (from 0 to 23) */
+   private time: number = 0;
+
    public readonly board: Board;
-   private readonly entitySpawner: EntitySpawner;
 
    private readonly io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -44,8 +46,7 @@ class GameServer {
       // Create the board
       this.board = new Board();
 
-      // Create the entity spawner
-      this.entitySpawner = new EntitySpawner();
+      precomputeSpawnData();
 
       // Start the server
       this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
@@ -55,12 +56,11 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       // setTimeout(() => {
-      //    for (let i = 0; i < 200; i++) {
+      //    for (let i = 0; i < 500; i++) {
       //       const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
       //       const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
       //       // const x = randFloat(60, 200);
       //       // const y = randFloat(60, 200);
-      //       // const species = CowSpecies.brown;
       //       const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       //       // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
       //       new Cow(new Point(x, y), species);
@@ -70,7 +70,7 @@ class GameServer {
 
    private handlePlayerConnections(): void {
       this.io.on("connection", (socket: ISocket) => {
-         console.log("New client connected: " + socket.id);
+         // console.log("New client connected: " + socket.id);
 
          const playerID = findAvailableEntityID();
 
@@ -86,7 +86,7 @@ class GameServer {
 
          // Handle player disconnects
          socket.on("disconnect", () => {
-            console.log("Client disconnected: " + socket.id);
+            // console.log("Client disconnected: " + socket.id);
             this.handlePlayerDisconnect(socket);
          });
 
@@ -101,7 +101,9 @@ class GameServer {
    }
 
    private async tick(): Promise<void> {
+      // Update server ticks and time
       this.ticks++;
+      this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 60) % 24;
 
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
@@ -113,8 +115,7 @@ class GameServer {
          this.board.ageItems();
       }
 
-      const census = this.board.holdCensus();
-      this.entitySpawner.runSpawnAttempt(census);
+      runSpawnAttempt();
 
       this.board.runRandomTickAttempt();
 
@@ -170,7 +171,8 @@ class GameServer {
             serverItemDataArray: serverItemDataArray,
             tileUpdates: tileUpdates,
             serverAttackDataArray: serverAttackDataArray,
-            pickedUpItems: playerEvents.pickedUpItemEntities
+            pickedUpItems: playerEvents.pickedUpItemEntities,
+            serverTicks: this.ticks
          };
 
          player.clearPlayerEvents();
@@ -204,7 +206,7 @@ class GameServer {
       }
 
       // Register the hit
-      targetInfo.target.registerHit(player, targetInfo.angle, damage);
+      targetInfo.target.takeDamage(damage, targetInfo.angle, player);
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
@@ -231,7 +233,17 @@ class GameServer {
          visibleChunkBounds: initialPlayerDataPacket.visibleChunkBounds
       };
    }
+
+   /** Gets the current time of the server */
+   public getTime(): number {
+      return this.time;
+   }
+
+   public isNight(): boolean {
+      return this.time < 6 || this.time >= 18;
+   }
 }
 
 // Start the game server
 export const SERVER = new GameServer();
+startReadingInput();

@@ -8,16 +8,18 @@ import WanderAI from "../ai/WanderAI";
 import MOB_AI_DATA_RECORD, { MobAICreationInfo } from "../data/mob-ai-data";
 import Entity, { Components } from "./Entity";
 import { SERVER } from "../server";
+import ChaseAI from "../ai/ChaseAI";
 
 type NarrowEntityType<E extends EntityType> = E;
-export type MobType = NarrowEntityType<"cow">;
+export type MobType = NarrowEntityType<"cow" | "zombie">;
 
 export const MobAIs = {
    wander: WanderAI,
    follow: FollowAI,
    herd: HerdAI,
    starve: StarveAI,
-   escape: EscapeAI
+   escape: EscapeAI,
+   chase: ChaseAI
 }
 
 type MobAIEntry<T extends keyof typeof MobAIs> = [T, ConstructorParameters<typeof MobAIs[T]>[1]];

@@ -1,16 +1,17 @@
+import { SETTINGS } from "webgl-test-shared";
 import { MobAIs, MobInfo, MobType } from "../entities/Mob";
 
 export type MobAICreationInfo = Partial<{ [T in keyof typeof MobAIs]: ConstructorParameters<typeof MobAIs[T]>[1] }>;
 
-type MobData = {
+type MobAIData = {
    readonly info: MobInfo;
    readonly aiCreationInfo: MobAICreationInfo;
 }
 
-const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
+const MOB_AI_DATA_RECORD: Record<MobType, MobAIData> = {
    cow: {
       info: {
-         visionRange: 250
+         visionRange: SETTINGS.TILE_SIZE * 4
       },
       aiCreationInfo: {
          wander: {
@@ -33,7 +34,7 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             aiWeightMultiplier: 1,
             acceleration: 100,
             terminalVelocity: 50,
-            minSeperationDistance: 120,
+            minSeperationDistance: 150,
             turnRate: 0.04,
             maxWeightInflenceCount: 3,
             weightInfluenceFalloff: {
@@ -64,6 +65,41 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobData> = {
             acceleration: 150,
             terminalVelocity: 100,
             attackSubsideTime: 5
+         }
+      }
+   },
+   zombie: {
+      info: {
+         visionRange: SETTINGS.TILE_SIZE * 5
+      },
+      aiCreationInfo: {
+         wander: {
+            aiWeightMultiplier: 0.5,
+            wanderRate: 0.4,
+            acceleration: 100,
+            terminalVelocity: 50
+         },
+         herd: {
+            aiWeightMultiplier: 0.8,
+            acceleration: 100,
+            terminalVelocity: 50,
+            minSeperationDistance: 50,
+            turnRate: 0.05,
+            maxWeightInflenceCount: 3,
+            weightInfluenceFalloff: {
+               start: 4,
+               duration: 2
+            },
+            validHerdMembers: new Set(["zombie"]),
+            seperationWeight: 0.4,
+            alignmentWeight: 0.5,
+            cohesionWeight: 0.8
+         },
+         chase: {
+            aiWeightMultiplier: 1,
+            acceleration: 200,
+            terminalVelocity: 100,
+            targetEntityTypes: new Set(["player"])
          }
       }
    }

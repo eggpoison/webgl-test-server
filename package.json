@@ -7,6 +7,7 @@
    "dependencies": {
       "@types/ws": "^8.5.3",
       "socket.io": "^4.5.1",
+      "webgl-test-shared": "../webgl-test-shared",
       "ws": "^8.8.0"
    },
    "devDependencies": {

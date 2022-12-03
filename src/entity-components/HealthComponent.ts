@@ -15,16 +15,14 @@ class HealthComponent extends Component {
    private readonly maxHealth: number;
 
    private health: number;
-   private armour: number;
 
    private invulnerabilityTimer = 0;
 
-   constructor(maxHealth: number, armour: number) {
+   constructor(maxHealth: number) {
       super();
 
       this.maxHealth = maxHealth;
       this.health = maxHealth;
-      this.armour = armour;
    }
 
    public tick(): void {
@@ -45,7 +43,7 @@ class HealthComponent extends Component {
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
-   public receiveDamage(damage: number): boolean {
+   public takeDamage(damage: number): boolean {
       // Don't receive damage if invulnerable
       if (this.isInvulnerable()) return false;
 

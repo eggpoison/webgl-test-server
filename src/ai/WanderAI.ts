@@ -31,7 +31,7 @@ class WanderAI extends AI implements WanderAIParams {
    public tick(): void {
       super.tick();
 
-      // Only wander if not moving
+      // Only try to wander if not moving
       if (this.mob.velocity === null && Math.random() < this.wanderRate / SETTINGS.TPS) {
          const dist = this.mob.visionRange * Math.random();
          const angle = 2 * Math.PI * Math.random();

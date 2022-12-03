@@ -35,6 +35,14 @@ const filterTickableComponents = (components: Partial<Components>): ReadonlyArra
    return tickableComponents;
 }
 
+type StatusEffectType = "fire";
+
+type StatusEffect = {
+   durationSeconds: number;
+   secondsRemaining: number;
+   ticksElapsed: number;
+}
+
 abstract class Entity {
    private static readonly MAX_ENTITY_COLLISION_PUSH_FORCE = 200;
    
@@ -74,6 +82,8 @@ abstract class Entity {
    public isAdded: boolean = false;
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
+
+   public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
    constructor(position: Point, type: EntityType, components: Partial<Components>, id?: number) {
       this.id = typeof id !== "undefined" ? id : findAvailableEntityID();
@@ -115,11 +125,13 @@ abstract class Entity {
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
 
    /** Called after every physics update. */
-   public tick(): void {   
+   public tick(): void {
       // Tick components
       for (const component of this.tickableComponents) {
          component.tick!();
       }
+      
+      this.tickStatusEffects();
    }
 
    public getComponent<C extends keyof Components>(name: C): Components[C] | null {
@@ -294,14 +306,15 @@ abstract class Entity {
       return collidingEntities;
    }
 
-   public registerHit(attackingEntity: Entity, angle: number, damage: number): void {
-      const hitWasReceived = this.getComponent("health")!.receiveDamage(damage);
-
+   public takeDamage(damage: number, angle: number | null, attackingEntity: Entity | null): void {
+      const hitWasReceived = this.getComponent("health")!.takeDamage(damage);
+ 
       if (hitWasReceived && !this.isRemoved) {
          this.callEvents("hurt", attackingEntity);
 
-         const PUSH_FORCE = 150;
-         this.addVelocity(PUSH_FORCE, angle);
+         if (angle !== null) {
+            this.addVelocity(150, angle);
+         }
          
          const attackInfo: AttackInfo = {
             targetEntity: this,
@@ -318,13 +331,53 @@ abstract class Entity {
 
    public callEvents<E extends EventType>(type: E, ...params: EventParams<E>): void {
       for (const event of this.events[type]) {
-         // Unfortunate that this unsafe solution is used, but I couldn't find an alternative
+         // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
          (event as any)(...params);
       }
    }
 
    public createEvent<E extends EventType>(type: E, event: Event<E>): void {
       this.events[type].push(event);
+   }
+
+   private tickStatusEffects(): void {
+      const statusEffectTypes = Object.keys(this.statusEffects) as ReadonlyArray<StatusEffectType>;
+
+      for (const statusEffectType of statusEffectTypes as ReadonlyArray<StatusEffectType>) {
+         const statusEffect = this.statusEffects[statusEffectType]!
+         statusEffect.secondsRemaining -= 1 / SETTINGS.TPS;
+         statusEffect.ticksElapsed++;
+         if (statusEffect.secondsRemaining <= 0) {
+            // Remove the status effect
+            this.removeStatusEffect(statusEffectType);
+         }    
+      }
+
+      if (statusEffectTypes.includes("fire")) {
+         if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
+            // Fire tick
+            this.takeDamage(1, null, null);
+         }
+      }
+   }
+
+   public applyStatusEffect(type: StatusEffectType, durationSeconds: number): void {
+      if (!this.statusEffects.hasOwnProperty(type)) {
+         this.statusEffects[type] = {
+            durationSeconds: durationSeconds,
+            secondsRemaining: durationSeconds,
+            ticksElapsed: 0
+         };
+      } else {
+         if (durationSeconds > this.statusEffects[type]!.durationSeconds) {
+            this.statusEffects[type]!.durationSeconds = durationSeconds;
+         }
+         this.statusEffects[type]!.secondsRemaining = this.statusEffects[type]!.durationSeconds;
+      }
+   }
+
+   public removeStatusEffect(type: StatusEffectType): void {
+      delete this.statusEffects[type];
    }
 }
 

@@ -27,7 +27,7 @@ class Player extends Entity {
 
    constructor(position: Point, name: string, id: number) {
       super(position, "player", {
-         health: new HealthComponent(Player.MAX_HEALTH, 0),
+         health: new HealthComponent(Player.MAX_HEALTH),
          inventory: new InventoryComponent(10)
       }, id);
 

@@ -13,7 +13,7 @@ class Cow extends Mob {
       const itemCreationComponent = new ItemCreationComponent();
 
       super(position, "cow", {
-         health: new HealthComponent(Cow.MAX_HEALTH, 0),
+         health: new HealthComponent(Cow.MAX_HEALTH),
          item_creation: itemCreationComponent
       });
       this.rotation = 2 * Math.PI * Math.random();
