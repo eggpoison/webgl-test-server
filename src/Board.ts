@@ -1,4 +1,4 @@
-import { computeSideAxis, ENTITY_INFO_RECORD, Mutable, Point, ServerItemEntityData, SETTINGS, ServerTileUpdateData, Vector, VisibleChunkBounds, TileInfo, randInt } from "webgl-test-shared";
+import { ENTITY_INFO_RECORD, Mutable, Point, ServerItemEntityData, SETTINGS, ServerTileUpdateData, Vector, VisibleChunkBounds, TileInfo, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
@@ -14,12 +14,6 @@ export type EntityHitboxInfo = {
    readonly sideAxes: ReadonlyArray<Vector>;
 }
 
-export type AttackInfo = {
-   readonly targetEntity: Entity;
-   /** How far into being hit the entity is (0 = just began, 1 = ended) */
-   progress: number;
-}
-
 class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
@@ -31,8 +25,6 @@ class Board {
    private readonly chunks: Array<Array<Chunk>>;
 
    private tileUpdateCoordinates: Set<[x: number, y: number]>;
-
-   public readonly attackInfoRecord: { [id: number]: AttackInfo } = {};
 
    /** Array of all entities' IDs to be removed at the beginning of the next tick */
    private removedEntities = new Set<number>();
@@ -72,18 +64,6 @@ class Board {
    /** Returns a reference to the tiles array */
    public getTiles(): Array<Array<Tile>> {
       return this.tiles;
-   }
-
-   public addNewAttack(attackInfo: AttackInfo): void {
-      this.attackInfoRecord[attackInfo.targetEntity.id] = attackInfo;
-   }
-
-   public removeAttack(target: Entity): void {
-      delete this.attackInfoRecord[target.id];
-   }
-
-   public getAttackInfoArray(): ReadonlyArray<AttackInfo> {
-      return Object.values(this.attackInfoRecord);
    }
 
    /** Removes entities flagged for deletion */
@@ -223,7 +203,7 @@ class Board {
       const serverItemDataArray: ReadonlyArray<ServerItemEntityData> = nearbyItemEntities.map(itemEntity => {
          return {
             id: itemEntity.id,
-            itemID: itemEntity.item.itemID,
+            itemID: itemEntity.item.itemType,
             count: itemEntity.item.count,
             position: itemEntity.position.package(),
             chunkCoordinates: itemEntity.chunks.map(chunk => [chunk.x, chunk.y]),

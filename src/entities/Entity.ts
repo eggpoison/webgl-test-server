@@ -2,7 +2,6 @@ import Chunk from "../Chunk";
 import { EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
-import { AttackInfo } from "../Board";
 import HealthComponent from "../entity-components/HealthComponent";
 import Tile from "../tiles/Tile";
 import Hitbox from "../hitboxes/Hitbox";
@@ -59,7 +58,8 @@ abstract class Entity {
    public readonly events: { [E in EventType]: Array<Event<E>> } = {
       hurt: [],
       death: [],
-      item_pickup: []
+      item_pickup: [],
+      enter_collision: []
    };
 
    /** Position of the entity */
@@ -82,6 +82,8 @@ abstract class Entity {
    public isAdded: boolean = false;
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
+
+   private collidingEntities = new Set<Entity>();
 
    public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
@@ -277,11 +279,21 @@ abstract class Entity {
       }
    }
 
-   public resolveEntityCollisions(): void {
-      const collidingEntities = this.getCollidingEntities();
+   public updateCollidingEntities(): void {
+      const previousCollidingEntities = new Set(this.collidingEntities);
+      this.collidingEntities = this.getCollidingEntities();
 
+      // Check for new collisions
+      for (const collidingEntity of this.collidingEntities) {
+         if (!previousCollidingEntities.has(collidingEntity)) {
+            this.callEvents("enter_collision", collidingEntity);
+         }
+      }
+   }
+
+   public resolveEntityCollisions(): void {
       // Push away from all colliding entities
-      for (const entity of collidingEntities) {
+      for (const entity of this.collidingEntities) {
          const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS;
          const angle = this.position.angleBetween(entity.position);
 
@@ -290,15 +302,15 @@ abstract class Entity {
       }
    }
 
-   private getCollidingEntities(): ReadonlyArray<Entity> {
-      const collidingEntities = new Array<Entity>();
+   private getCollidingEntities(): Set<Entity> {
+      const collidingEntities = new Set<Entity>();
 
       for (const chunk of this.chunks) {
          for (const entity of chunk.getEntities()) {
             if (entity === this) continue;
 
             if (this.hitbox.isColliding(entity.hitbox)) {
-               collidingEntities.push(entity);
+               collidingEntities.add(entity);
             }
          }
       }
@@ -306,21 +318,22 @@ abstract class Entity {
       return collidingEntities;
    }
 
-   public takeDamage(damage: number, angle: number | null, attackingEntity: Entity | null): void {
+   public takeDamage(damage: number, attackingEntity: Entity | null, attackHash?: string): void {
+      // Don't attack during invulnerability
+      if (this.getComponent("health")!.isInvulnerable(attackHash)) {
+         return;
+      }
+      
       const hitWasReceived = this.getComponent("health")!.takeDamage(damage);
  
       if (hitWasReceived && !this.isRemoved) {
          this.callEvents("hurt", attackingEntity);
 
-         if (angle !== null) {
+         // Push away from the source of damage
+         if (attackingEntity !== null) {
+            const angle = this.position.angleBetween(attackingEntity.position);
             this.addVelocity(150, angle);
          }
-         
-         const attackInfo: AttackInfo = {
-            targetEntity: this,
-            progress: 0
-         };
-         SERVER.board.addNewAttack(attackInfo);
       }
    }
 
@@ -356,7 +369,7 @@ abstract class Entity {
       if (statusEffectTypes.includes("fire")) {
          if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
             // Fire tick
-            this.takeDamage(1, null, null);
+            this.takeDamage(1, null);
          }
       }
    }

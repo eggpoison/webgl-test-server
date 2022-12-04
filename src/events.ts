@@ -5,6 +5,7 @@ export interface Events {
    hurt: (attackingEntity: Entity | null) => void;
    death: () => void;
    item_pickup: (itemEntity: ItemEntity) => void;
+   enter_collision: (collidingEntity: Entity) => void;
 }
 
 export type EventType = keyof Events;

@@ -27,7 +27,7 @@ class Player extends Entity {
 
    constructor(position: Point, name: string, id: number) {
       super(position, "player", {
-         health: new HealthComponent(Player.MAX_HEALTH),
+         health: new HealthComponent(Player.MAX_HEALTH, true),
          inventory: new InventoryComponent(10)
       }, id);
 
@@ -35,6 +35,10 @@ class Player extends Entity {
 
       this.createEvent("item_pickup", (itemEntity: ItemEntity): void => {
          this.playerEvents.pickedUpItemEntities.push(itemEntity.id);
+      });
+
+      this.createEvent("hurt", (attackingEntity: Entity | null) => {
+         
       });
    }
 

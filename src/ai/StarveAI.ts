@@ -1,4 +1,4 @@
-import { ItemID, randFloat, SETTINGS, TileInfo, TileType } from "webgl-test-shared";
+import { ItemType, randFloat, SETTINGS, TileInfo, TileType } from "webgl-test-shared";
 import Mob from "../entities/Mob";
 import ItemEntity from "../items/ItemEntity";
 import { SERVER } from "../server";
@@ -29,7 +29,7 @@ interface HerdAIParams extends BaseAIParams {
    /** Amount of randomness applied to traits like metabolism */
    readonly traitVariance?: number;
    readonly tileTargets?: ReadonlyMap<TileType, TileFoodSource>;
-   readonly itemTargets?: ReadonlyMap<ItemID, ItemFoodSource>;
+   readonly itemTargets?: ReadonlyMap<ItemType, ItemFoodSource>;
 }
 
 class StarveAI extends AI implements HerdAIParams {
@@ -42,7 +42,7 @@ class StarveAI extends AI implements HerdAIParams {
    public readonly metabolism: number;
    public readonly traitVariance: number;
    public readonly tileTargets: ReadonlyMap<TileType, TileFoodSource>;
-   public readonly itemTargets: ReadonlyMap<ItemID, ItemFoodSource>;
+   public readonly itemTargets: ReadonlyMap<ItemType, ItemFoodSource>;
 
    private readonly itemEntitiesInRange = new Set<ItemEntity>();
 
@@ -75,7 +75,7 @@ class StarveAI extends AI implements HerdAIParams {
       let mostNutritiousFoodSource: ItemEntity | Tile | undefined;
       let highestFoodValue: number = 0;
       for (const itemEntity of this.itemEntitiesInRange) {
-         const itemEntityFoodInfo = this.itemTargets.get(itemEntity.item.itemID)!;
+         const itemEntityFoodInfo = this.itemTargets.get(itemEntity.item.itemType)!;
          if (itemEntityFoodInfo.foodUnits > highestFoodValue) {
             mostNutritiousFoodSource = itemEntity;
             highestFoodValue = itemEntityFoodInfo.foodUnits;
@@ -159,7 +159,7 @@ class StarveAI extends AI implements HerdAIParams {
       for (let chunkX = minX; chunkX <= maxX; chunkX++) {
          for (let chunkY = minY; chunkY <= maxY; chunkY++) {
             for (const itemEntity of SERVER.board.getChunk(chunkX, chunkY).getItemEntities()) {
-               if (!this.itemTargets.has(itemEntity.item.itemID)) {
+               if (!this.itemTargets.has(itemEntity.item.itemType)) {
                   continue;
                }
                

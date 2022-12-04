@@ -90,7 +90,14 @@ const getWeightedRandomMobType = (mobTypes: ReadonlyArray<MobType>): EntityType 
 
 /** Holds a census to count the total entities and their categories for use in mob spawning */
 const holdCensus = (): void => {
+   passiveMobCount = 0;
+   hostileMobCount = 0;
+
+   const countedMobIDs = new Set<number>();
+
    for (const entity of Object.values(SERVER.board.entities)) {
+      if (countedMobIDs.has(entity.id)) continue;
+
       const entityInfo = ENTITY_INFO_RECORD[entity.type];
       if (entityInfo.category === "mob") {
          switch (entityInfo.behaviour) {
@@ -104,6 +111,8 @@ const holdCensus = (): void => {
             }
          }
       }
+
+      countedMobIDs.add(entity.id);
    }
 }
 
@@ -148,9 +157,11 @@ const spawnMobs = (mobSpawnType: "passive" | "hostile"): void => {
          }
       } 
    }
+
+   // If no mob types are able to be spawned, don't bother trying to spawn nothing
    if (spawnableMobTypes.length === 0) return;
 
-   let remainingSpawnCount = calculatePassiveMobSpawnCount(mobSpawnType);
+   let remainingSpawnCount = Math.floor(calculatePassiveMobSpawnCount(mobSpawnType));
    while (remainingSpawnCount > 0) {
       // Choose a random passive mob type to spawn
       const mobType = getWeightedRandomMobType(spawnableMobTypes);
@@ -160,10 +171,11 @@ const spawnMobs = (mobSpawnType: "passive" | "hostile"): void => {
       const originTileCoords = randItem(spawnInfo.spawnableTiles);
       
       const mobClass = ENTITY_CLASS_RECORD[mobType]();
-      const classParams = ENTITY_CLASS_PARAMS_RECORD[mobType]!();
 
       const spawnCount = typeof spawnInfo.packSize === "number" ? spawnInfo.packSize : randInt(...spawnInfo.packSize);
       for (let i = 0; i < spawnCount; i++) {
+         const classParams = ENTITY_CLASS_PARAMS_RECORD[mobType]!();
+
          // Find a random tile to spawn in
          const xOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
          const yOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
@@ -192,7 +204,7 @@ export function runSpawnAttempt(): void {
    }
 
    // Hostile mob spawning
-   if (hostileMobCount < HOSTILE_MOB_CAP && Math.random() < HOSTILE_MOB_SPAWN_ATTEMPT_CHANCE / SETTINGS.TPS) {
+   if (Math.random() < HOSTILE_MOB_SPAWN_ATTEMPT_CHANCE / SETTINGS.TPS) {
       spawnMobs("hostile");
    }
 }

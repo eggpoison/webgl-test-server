@@ -1,8 +1,8 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, ServerAttackData, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
-import Board, { AttackInfo } from "./Board";
+import Board from "./Board";
 import { findAvailableEntityID } from "./entities/Entity";
 import Mob from "./entities/Mob";
 import { startReadingInput } from "./command-input";
@@ -19,15 +19,6 @@ type PlayerData = {
 
 export type EntityCensus = {
    readonly passiveMobCount: number;
-}
-
-const formatAttackInfoArray = (attackInfoArray: ReadonlyArray<AttackInfo>): ReadonlyArray<ServerAttackData> => {
-   return attackInfoArray.map(attackInfo => {
-      return {
-         targetEntityID: attackInfo.targetEntity.id,
-         progress: attackInfo.progress
-      };
-   });
 }
 
 class GameServer {
@@ -138,6 +129,8 @@ class GameServer {
          const visibleEntityInfoArray = new Array<ServerEntityData>();
          const nearbyEntities = this.board.getPlayerNearbyEntities(player, playerData.visibleChunkBounds);
          for (const entity of nearbyEntities) {
+            const healthComponent = entity.getComponent("health");
+
             const entityData: Mutable<ServerEntityData> = {
                id: entity.id,
                type: entity.type,
@@ -147,6 +140,7 @@ class GameServer {
                terminalVelocity: entity.terminalVelocity,
                rotation: entity.rotation,
                clientArgs: entity.getClientArgs(),
+               secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
                chunkCoordinates: entity.chunks.map(chunk => [chunk.x, chunk.y])
             };
             if (entity.hasOwnProperty("herdMemberHash")) {
@@ -159,7 +153,6 @@ class GameServer {
          }
 
          const tileUpdates = this.board.popTileUpdates();
-         const serverAttackDataArray = formatAttackInfoArray(this.board.getAttackInfoArray());
 
          const serverItemDataArray = this.board.calculatePlayerItemInfoArray(playerData.visibleChunkBounds);
          
@@ -170,7 +163,6 @@ class GameServer {
             serverEntityDataArray: visibleEntityInfoArray,
             serverItemDataArray: serverItemDataArray,
             tileUpdates: tileUpdates,
-            serverAttackDataArray: serverAttackDataArray,
             pickedUpItems: playerEvents.pickedUpItemEntities,
             serverTicks: this.ticks
          };
@@ -206,7 +198,9 @@ class GameServer {
       }
 
       // Register the hit
-      targetInfo.target.takeDamage(damage, targetInfo.angle, player);
+      const attackHash = player.id.toString();
+      targetInfo.target.takeDamage(damage, player, attackHash);
+      targetInfo.target.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {

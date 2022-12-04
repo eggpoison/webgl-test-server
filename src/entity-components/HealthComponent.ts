@@ -13,28 +13,41 @@ class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
 
    private readonly maxHealth: number;
-
    private health: number;
 
-   private invulnerabilityTimer = 0;
+   private readonly localInvulnerabilityHashes: { [immunityHash: string]: number } = {};
 
-   constructor(maxHealth: number) {
+   private readonly hasGlobalInvulnerability: boolean;
+   private globalInvulnerabilityTimer = 0;
+
+   /** Amount of seconds that has passed since the entity was last hit */
+   private secondsSinceLastHit: number | null = null;
+
+   constructor(maxHealth: number, hasGlobalInvulnerability: boolean) {
       super();
 
       this.maxHealth = maxHealth;
       this.health = maxHealth;
+
+      this.hasGlobalInvulnerability = hasGlobalInvulnerability;
    }
 
    public tick(): void {
-      if (this.invulnerabilityTimer > 0) {
-         this.invulnerabilityTimer -= 1 / SETTINGS.TPS;
+      if (this.secondsSinceLastHit !== null) {
+         this.secondsSinceLastHit += 1 / SETTINGS.TPS;
+      }
 
-         if (this.invulnerabilityTimer <= 0) {
-            SERVER.board.removeAttack(this.entity);
-         } else {
-            const progress = 1 - this.invulnerabilityTimer / HealthComponent.INVULNERABILITY_DURATION;
-            SERVER.board.attackInfoRecord[this.entity.id].progress = progress;
+      // Update local invulnerability hashes
+      for (const hash of Object.keys(this.localInvulnerabilityHashes)) {
+         this.localInvulnerabilityHashes[hash] -= 1 / SETTINGS.TPS;
+         if (this.localInvulnerabilityHashes[hash] <= 0) {
+            delete this.localInvulnerabilityHashes[hash];
          }
+      }
+
+      // Update global invulnerability
+      if (this.globalInvulnerabilityTimer > 0) {
+         this.globalInvulnerabilityTimer -= 1 / SETTINGS.TPS;
       }
    }
 
@@ -43,9 +56,11 @@ class HealthComponent extends Component {
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
-   public takeDamage(damage: number): boolean {
+   public takeDamage(damage: number, attackHash?: string): boolean {
       // Don't receive damage if invulnerable
-      if (this.isInvulnerable()) return false;
+      if (this.isInvulnerable(attackHash)) return false;
+
+      this.secondsSinceLastHit = 0;
 
       this.health -= damage;
       if (this.health <= 0) {
@@ -53,7 +68,9 @@ class HealthComponent extends Component {
          return true;
       }
 
-      this.invulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
+      if (this.hasGlobalInvulnerability){
+         this.globalInvulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
+      }
 
       return true;
    }
@@ -62,8 +79,28 @@ class HealthComponent extends Component {
       return this.health;
    }
 
-   public isInvulnerable(): boolean {
-      return this.invulnerabilityTimer > 0;
+   public addLocalInvulnerabilityHash(hash: string, invulnerabiityDurationSeconds: number): void {
+      if (!this.localInvulnerabilityHashes.hasOwnProperty(hash)) {
+         this.localInvulnerabilityHashes[hash] = invulnerabiityDurationSeconds;
+      }
+   }
+
+   public isInvulnerable(attackHash?: string): boolean {
+      // Local invulnerability
+      if (typeof attackHash !== "undefined" && this.localInvulnerabilityHashes.hasOwnProperty(attackHash)) {
+         return true;
+      }
+      
+      // Global invulnerability
+      if (this.hasGlobalInvulnerability) {
+         return this.globalInvulnerabilityTimer > 0;
+      }
+
+      return false;
+   }
+
+   public getSecondsSinceLastHit(): number | null {
+      return this.secondsSinceLastHit;
    }
 }
 
