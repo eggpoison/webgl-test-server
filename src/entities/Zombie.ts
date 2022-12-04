@@ -23,6 +23,10 @@ class Zombie extends Mob {
       this.createEvent("enter_collision", (collidingEntity: Entity) => {
          if (collidingEntity.type === "player") {
             collidingEntity.takeDamage(Zombie.DAMAGE, this);
+
+            // Push away from the entity on collision
+            const angle = this.position.angleBetween(collidingEntity.position) + Math.PI;
+            this.addVelocity(75, angle);
          }
       });
    }

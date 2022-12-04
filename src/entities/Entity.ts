@@ -326,12 +326,13 @@ abstract class Entity {
       
       const hitWasReceived = this.getComponent("health")!.takeDamage(damage);
  
+      if (hitWasReceived) this.callEvents("hurt", damage, attackingEntity);
+
       if (hitWasReceived && !this.isRemoved) {
-         this.callEvents("hurt", attackingEntity);
 
          // Push away from the source of damage
          if (attackingEntity !== null) {
-            const angle = this.position.angleBetween(attackingEntity.position);
+            const angle = this.position.angleBetween(attackingEntity.position) + Math.PI;
             this.addVelocity(150, angle);
          }
       }
@@ -366,7 +367,7 @@ abstract class Entity {
          }    
       }
 
-      if (statusEffectTypes.includes("fire")) {
+      if (this.statusEffects.hasOwnProperty("fire")) {
          if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
             // Fire tick
             this.takeDamage(1, null);

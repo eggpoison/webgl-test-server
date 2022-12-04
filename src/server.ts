@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType, randInt } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -7,6 +7,7 @@ import { findAvailableEntityID } from "./entities/Entity";
 import Mob from "./entities/Mob";
 import { startReadingInput } from "./command-input";
 import { precomputeSpawnData, runSpawnAttempt } from "./entity-spawning";
+import Zombie from "./entities/Zombie";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -47,11 +48,11 @@ class GameServer {
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
 
       // setTimeout(() => {
-      //    for (let i = 0; i < 500; i++) {
-      //       const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //       const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //       // const x = randFloat(60, 200);
-      //       // const y = randFloat(60, 200);
+      //    for (let i = 0; i < 1000; i++) {
+      //       // const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //       // const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //       const x = randFloat(60, 200);
+      //       const y = randFloat(60, 200);
       //       const species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       //       // const species = Math.random() < 0.8 ? CowSpecies.brown : CowSpecies.black;
       //       new Cow(new Point(x, y), species);
@@ -100,6 +101,16 @@ class GameServer {
       this.board.addEntitiesFromJoinBuffer();
       this.board.tickEntities();
       this.board.resolveCollisions();
+
+      if (this.ticks % (14 * SETTINGS.TPS) === 0 && this.ticks <= 14 *SETTINGS.TPS) {
+         for (let i = 0; i < 50; i++) {
+            // const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE / 2 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
+            // const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE / 2 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
+            const x = 1000 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
+            const y = 500 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
+            new Zombie(new Point(x, y), randInt(0, 2));
+         }
+      }
 
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
@@ -158,13 +169,17 @@ class GameServer {
          
          const playerEvents = player.getPlayerEvents();
 
+         const hitsTaken = player.getHitsTaken();
+         player.clearHitsTaken();
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             serverEntityDataArray: visibleEntityInfoArray,
             serverItemDataArray: serverItemDataArray,
             tileUpdates: tileUpdates,
             pickedUpItems: playerEvents.pickedUpItemEntities,
-            serverTicks: this.ticks
+            serverTicks: this.ticks,
+            hitsTaken: hitsTaken
          };
 
          player.clearPlayerEvents();

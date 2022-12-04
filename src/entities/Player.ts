@@ -1,4 +1,4 @@
-import { Point } from "webgl-test-shared";
+import { HitData, Point } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemEntity from "../items/ItemEntity";
@@ -25,6 +25,8 @@ class Player extends Entity {
       pickedUpItemEntities: []
    };
 
+   private hitsTaken = new Array<HitData>();
+
    constructor(position: Point, name: string, id: number) {
       super(position, "player", {
          health: new HealthComponent(Player.MAX_HEALTH, true),
@@ -37,8 +39,12 @@ class Player extends Entity {
          this.playerEvents.pickedUpItemEntities.push(itemEntity.id);
       });
 
-      this.createEvent("hurt", (attackingEntity: Entity | null) => {
-         
+      this.createEvent("hurt", (damage: number, attackingEntity: Entity | null) => {
+         const hitData: HitData = {
+            damage: damage,
+            angleFromDamageSource: attackingEntity !== null ? this.position.angleBetween(attackingEntity.position) + Math.PI : null
+         };
+         this.hitsTaken.push(hitData);
       });
    }
 
@@ -78,6 +84,14 @@ class Player extends Entity {
       this.playerEvents = {
          pickedUpItemEntities: []
       };
+   }
+
+   public getHitsTaken(): ReadonlyArray<HitData> {
+      return this.hitsTaken;
+   }
+
+   public clearHitsTaken(): void {
+      this.hitsTaken = new Array<HitData>();
    }
 }
 

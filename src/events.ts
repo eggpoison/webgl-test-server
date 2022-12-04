@@ -2,7 +2,7 @@ import Entity from "./entities/Entity";
 import ItemEntity from "./items/ItemEntity";
 
 export interface Events {
-   hurt: (attackingEntity: Entity | null) => void;
+   hurt: (damage: number, attackingEntity: Entity | null) => void;
    death: () => void;
    item_pickup: (itemEntity: ItemEntity) => void;
    enter_collision: (collidingEntity: Entity) => void;

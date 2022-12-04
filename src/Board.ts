@@ -99,6 +99,7 @@ class Board {
 
    public resolveCollisions(): void {
       for (const entity of Object.values(this.entities)) {
+         entity.updateCollidingEntities();
          entity.resolveEntityCollisions();
          entity.resolveWallCollisions();
 
