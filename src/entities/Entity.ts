@@ -83,6 +83,9 @@ abstract class Entity {
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
 
+   /** If this flag is set to true, then the entity will not move */
+   private isStatic: boolean = false;
+
    private collidingEntities = new Set<Entity>();
 
    public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
@@ -136,6 +139,10 @@ abstract class Entity {
       this.tickStatusEffects();
    }
 
+   public setIsStatic(isStatic: boolean): void {
+      this.isStatic = isStatic;
+   }
+
    public getComponent<C extends keyof Components>(name: C): Components[C] | null {
       if (this.components.hasOwnProperty(name)) {
          return this.components[name] as Components[C];
@@ -181,6 +188,8 @@ abstract class Entity {
    }
 
    public addVelocity(magnitude: number, direction: number): void {
+      if (this.isStatic) return;
+
       const force = new Vector(magnitude, direction);
       this.velocity = this.velocity?.add(force) || force;
    }
@@ -292,6 +301,8 @@ abstract class Entity {
    }
 
    public resolveEntityCollisions(): void {
+      if (this.isStatic) return;
+      
       // Push away from all colliding entities
       for (const entity of this.collidingEntities) {
          const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS;

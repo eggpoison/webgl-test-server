@@ -12,12 +12,12 @@ class Zombie extends Mob {
    /** The type of the zombie, 0-2 */
    private readonly zombieType: number;
 
-   constructor(position: Point, zombieType: number) {
+   constructor(position: Point) {
       super(position, "zombie", {
          health: new HealthComponent(Zombie.MAX_HEALTH, false)
       });
       
-      this.zombieType = zombieType;
+      this.zombieType = Math.floor(Math.random() * 3);
 
       // Hurt players on collision
       this.createEvent("enter_collision", (collidingEntity: Entity) => {

@@ -6,7 +6,7 @@ import Board from "./Board";
 import { findAvailableEntityID } from "./entities/Entity";
 import Mob from "./entities/Mob";
 import { startReadingInput } from "./command-input";
-import { precomputeSpawnData, runSpawnAttempt } from "./entity-spawning";
+import { precomputeSpawnLocations, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Zombie from "./entities/Zombie";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -38,8 +38,6 @@ class GameServer {
       // Create the board
       this.board = new Board();
 
-      precomputeSpawnData();
-
       // Start the server
       this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
       this.handlePlayerConnections();
@@ -58,6 +56,12 @@ class GameServer {
       //       new Cow(new Point(x, y), species);
       //    }
       // }, 2000);
+   }
+
+   /** Sets up the various stuff */
+   public setup(): void {
+      precomputeSpawnLocations();
+      spawnInitialEntities();
    }
 
    private handlePlayerConnections(): void {
@@ -101,16 +105,6 @@ class GameServer {
       this.board.addEntitiesFromJoinBuffer();
       this.board.tickEntities();
       this.board.resolveCollisions();
-
-      if (this.ticks % (14 * SETTINGS.TPS) === 0 && this.ticks <= 14 *SETTINGS.TPS) {
-         for (let i = 0; i < 50; i++) {
-            // const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE / 2 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
-            // const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE / 2 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
-            const x = 1000 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
-            const y = 500 + randFloat(-1, 1) * SETTINGS.TILE_SIZE * 3;
-            new Zombie(new Point(x, y), randInt(0, 2));
-         }
-      }
 
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
@@ -255,4 +249,5 @@ class GameServer {
 
 // Start the game server
 export const SERVER = new GameServer();
+SERVER.setup();
 startReadingInput();

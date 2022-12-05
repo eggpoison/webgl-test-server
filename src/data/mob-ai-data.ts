@@ -1,5 +1,5 @@
-import { SETTINGS } from "webgl-test-shared";
-import { MobAIs, MobInfo, MobType } from "../entities/Mob";
+import { MobType, SETTINGS } from "webgl-test-shared";
+import { MobAIs, MobInfo } from "../entities/Mob";
 
 export type MobAICreationInfo = Partial<{ [T in keyof typeof MobAIs]: ConstructorParameters<typeof MobAIs[T]>[1] }>;
 
@@ -87,8 +87,8 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobAIData> = {
             turnRate: 0.05,
             maxWeightInflenceCount: 3,
             weightInfluenceFalloff: {
-               start: 4,
-               duration: 2
+               start: 6,
+               duration: 3
             },
             validHerdMembers: new Set(["zombie"]),
             seperationWeight: 0.4,

@@ -1,210 +1,295 @@
-import { CowSpecies, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, Point, randInt, randItem, SETTINGS } from "webgl-test-shared";
-import ENTITY_SPAWN_INFO_RECORD, { EntitySpawnInfo } from "./data/entity-spawn-data";
-import { MobType } from "./entities/Mob";
+import { EntityType, Point, randFloat, randInt, randItem, SETTINGS } from "webgl-test-shared";
+import { TOMBSTONE_SPAWN_INFO_RECORD, EntitySpawnInfo, HOSTILE_MOB_SPAWN_INFO_RECORD, PASSIVE_MOB_SPAWN_INFO_RECORD, RESOURCE_SPAWN_INFO_RECORD, SpawnInfoRecord } from "./data/entity-spawn-data";
 import ENTITY_CLASS_RECORD from "./entity-class-record";
 import { SERVER } from "./server";
 import { getTilesByBiome } from "./terrain-generation/terrain-generation";
 
-// Expected number of times that a spawn attempt will occur in a second
-const PASSIVE_MOB_SPAWN_ATTEMPT_CHANCE = 0.3;
-const HOSTILE_MOB_SPAWN_ATTEMPT_CHANCE = 0.3;
+/*
+Goals of the spawning system:
+- Keep entities and resources at a specific 'density' (not too many or too little entities per area in space)
+- No abrupt spawning - when an entity dies it shouldn't be immediately replaced
+- Passive mobs have to be rarer than hostile mobs
+- Flexible system to easily allow for changes to spawn criteria or new entities being spawned
 
-// Mob rate of spawn. 0 = no spawns, 1 = maximum spawn rate
-const PASSIVE_MOB_SPAWN_RATE = 0.3;
-const HOSTILE_MOB_SPAWN_RATE = 0.3;
+Passive mobs being rare than hostile mobs is achieved by having passive mobs less likely to be spawned than hostile mobs in an entity spawn attempt
+*/
 
-// Maximum number of mobs that can be in existence. Accounts for entity "density"
-const PASSIVE_MOB_CAP = 0.0001 * SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * SETTINGS.TILE_SIZE * SETTINGS.TILE_SIZE;
-const HOSTILE_MOB_CAP = 0.00015 * SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * SETTINGS.TILE_SIZE * SETTINGS.TILE_SIZE;
-
-let passiveMobCount: number = 0;
-let hostileMobCount: number = 0;
-
-const ENTITY_CLASS_PARAMS_RECORD: Partial<{ [T in EntityType]: () => Parameters<EntityInfoClientArgs[T]> }> = {
-   cow: (): [species: CowSpecies] => {
-      const species: CowSpecies = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
-      return [species];
-   },
-   zombie: (): [zombieType: number] => {
-      const zombieType = Math.floor(Math.random() * 3);
-      return [zombieType];
-   }
+type SpawnerObjectInfo = {
+   readonly spawnInfoRecord: SpawnInfoRecord;
+   /** The average number of times that a spawn attempt will succeed in a second */
+   readonly spawnAttemptSuccessRate: number;
+   /** The target density of its entity types in the world (number of entities that should be present per chunk) */
+   readonly targetWorldEntityDensity?: number;
 }
 
-let passiveSpawnableMobTypes = new Array<MobType>();
-let hostileSpawnableMobTypes = new Array<MobType>();
+class SpawnerObject {
+   private readonly spawnInfoRecord: SpawnInfoRecord;
+   private readonly spawnAttemptSuccessRate: number;
+   private readonly targetWorldEntityDensity: number | null;
 
-/** Organises the spawn data into a more usable form to improve performance (realistically this won't affect performance in the slightest but it feels like a sin not to) */
-export function precomputeSpawnData(): void {
-   // Precompute spawnable mob types
-   for (const entityType of Object.keys(ENTITY_SPAWN_INFO_RECORD) as ReadonlyArray<EntityType>) {
-      const entityInfo = ENTITY_INFO_RECORD[entityType];
-      if (entityInfo.category === "mob") {
-         switch (entityInfo.behaviour) {
-            case "passive": {
-               passiveSpawnableMobTypes.push(entityType as MobType);
-               break;
-            }
-            case "hostile": {
-               hostileSpawnableMobTypes.push(entityType as MobType);
-               break;
-            }
+   /** Current amount of entities that the spawner is able to spawn */
+   private currentEntityCount: number = 0;
+   /** Maximum number of entities, based on the target world entity density */
+   private readonly entityCap: number | null = null;
+
+   private readonly countedEntityTypes: ReadonlySet<EntityType>;
+
+   constructor({ spawnInfoRecord, spawnAttemptSuccessRate, targetWorldEntityDensity }: SpawnerObjectInfo) {
+      this.spawnInfoRecord = spawnInfoRecord;
+      this.spawnAttemptSuccessRate = spawnAttemptSuccessRate;
+
+      if (typeof targetWorldEntityDensity !== "undefined") {
+         this.targetWorldEntityDensity = targetWorldEntityDensity;
+         this.entityCap = targetWorldEntityDensity * SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
+      } else {
+         this.targetWorldEntityDensity = null;
+      }
+
+      // Get the counted entity types
+      const countedEntityTypes = new Set<EntityType>();
+      for (const entityType of Object.keys(spawnInfoRecord) as ReadonlyArray<EntityType>) {
+         countedEntityTypes.add(entityType);
+      }
+      this.countedEntityTypes = countedEntityTypes;
+   }
+
+   public updateEntityCount(entityTypeCounts: Partial<{ [T in EntityType]: number }>): void {
+      this.currentEntityCount = 0;
+      for (const [entityType, count] of Object.entries(entityTypeCounts) as ReadonlyArray<[EntityType, number]>) {
+         if (this.countedEntityTypes.has(entityType)) {
+            this.currentEntityCount += count;
          }
       }
    }
 
-   // Precompute spawn locations
-   const entries = Object.entries(ENTITY_SPAWN_INFO_RECORD) as ReadonlyArray<[EntityType, EntitySpawnInfo]>;
-   for (const [entityType, spawnInfo] of entries) {
-      for (const biome of spawnInfo.spawnableBiomes) {
-         const spawnableTiles = getTilesByBiome(biome);
-         for (const tileCoords of spawnableTiles) {
-            ENTITY_SPAWN_INFO_RECORD[entityType]!.spawnableTiles.push(tileCoords);   
-         }
-      }
-   }
-}
-
-const getWeightedRandomMobType = (mobTypes: ReadonlyArray<MobType>): EntityType => {
-   let totalWeight = 0;
-   for (const entityType of mobTypes) {
-      const spawnInfo = ENTITY_SPAWN_INFO_RECORD[entityType]!;
-      totalWeight += spawnInfo.weight;
-   }
-
-   const selectedWeight = randInt(1, totalWeight);
-
-   totalWeight = 0;
-   let selectedEntityType!: EntityType;
-   for (const entityType of mobTypes) {
-      const spawnInfo = ENTITY_SPAWN_INFO_RECORD[entityType]!;
-      totalWeight += spawnInfo.weight;
-      if (selectedWeight <= totalWeight) {
-         selectedEntityType = entityType;
-         break;
-      }
-   }
-
-   return selectedEntityType;
-}
-
-/** Holds a census to count the total entities and their categories for use in mob spawning */
-const holdCensus = (): void => {
-   passiveMobCount = 0;
-   hostileMobCount = 0;
-
-   const countedMobIDs = new Set<number>();
-
-   for (const entity of Object.values(SERVER.board.entities)) {
-      if (countedMobIDs.has(entity.id)) continue;
-
-      const entityInfo = ENTITY_INFO_RECORD[entity.type];
-      if (entityInfo.category === "mob") {
-         switch (entityInfo.behaviour) {
-            case "passive": {
-               passiveMobCount++;
-               break;
-            }
-            case "hostile": {
-               hostileMobCount++;
-               break;
-            }
+   public runSpawnAttempt(): void {
+      // If there is a world entity density limit, make sure it is accounted for
+      if (this.targetWorldEntityDensity !== null) {
+         const entityDensity = this.currentEntityCount / SETTINGS.BOARD_SIZE / SETTINGS.BOARD_SIZE;
+         if (entityDensity > this.targetWorldEntityDensity) {
+            return;
          }
       }
 
-      countedMobIDs.add(entity.id);
-   }
-}
-
-const calculatePassiveMobSpawnCount = (mobSpawnType: "passive" | "hostile"): number => {
-   let mobCount: number;
-   let mobCap: number;
-   let mobSpawnRate: number;
-   switch (mobSpawnType) {
-      case "passive": {
-         mobCount = passiveMobCount;
-         mobCap = PASSIVE_MOB_CAP;
-         mobSpawnRate = PASSIVE_MOB_SPAWN_RATE;
-         break;
+      // Make sure entity cap isn't exceeded
+      if (!(this.entityCap === null || this.currentEntityCount < this.entityCap)) {
+         return;
       }
-      case "hostile": {
-         mobCount = hostileMobCount;
-         mobCap = HOSTILE_MOB_CAP;
-         mobSpawnRate = HOSTILE_MOB_SPAWN_RATE;
-         break;
+
+      if (Math.random() < this.spawnAttemptSuccessRate / SETTINGS.TPS) {
+         this.spawnEntities();
       }
    }
 
-   const capFullness = mobCount / mobCap;
-   const spawnCount = -((capFullness * capFullness - 1) / (1 / mobSpawnRate)) * mobCap;
-   return spawnCount;
-}
+   protected spawnEntities(): void {
+      // Find which entity types are able to be spawned
+      let spawnableEntityTypes = new Set<EntityType>();
+      for (const [entityType, spawnInfo] of Object.entries(this.spawnInfoRecord) as ReadonlyArray<[EntityType, EntitySpawnInfo]>) {
 
-const spawnMobs = (mobSpawnType: "passive" | "hostile"): void => {
-   // Calculate mob types able to spawn
-   let spawnableMobTypes: Array<MobType>;
-   if (mobSpawnType === "passive") {
-      spawnableMobTypes = passiveSpawnableMobTypes.slice();
-   } else {
-      spawnableMobTypes = hostileSpawnableMobTypes.slice();
+         if (this.entityTypeCanBeSpawned(entityType)) {
+            spawnableEntityTypes.add(entityType);
+         }
+      }
+
+      // Don't spawn anything if there's nothing to spawn
+      if (spawnableEntityTypes.size === 0) {
+         return;
+      }
+
+      // Pick a (weighted) random entity type based on those available to spawn
+      const entityTypeToSpawn = this.getWeightedRandomEntityType(spawnableEntityTypes);
+
+      this.spawnEntity(entityTypeToSpawn);
    }
-   for (let idx = spawnableMobTypes.length - 1; idx >= 0; idx--) {
-      const mobType = spawnableMobTypes[idx];
-      const spawnInfo = ENTITY_SPAWN_INFO_RECORD[mobType]!;
+
+   /** Picks a random entity type based off their weights */
+   private getWeightedRandomEntityType(entityTypes: ReadonlySet<EntityType>): EntityType {
+      let totalWeight = 0;
+      for (const entityType of entityTypes) {
+         const spawnInfo = this.spawnInfoRecord[entityType]!;
+         totalWeight += spawnInfo.weight;
+      }
+   
+      const selectedWeight = randInt(1, totalWeight);
+   
+      totalWeight = 0;
+      let selectedEntityType!: EntityType;
+      for (const entityType of entityTypes) {
+         const spawnInfo = this.spawnInfoRecord[entityType]!;
+         totalWeight += spawnInfo.weight;
+         if (selectedWeight <= totalWeight) {
+            selectedEntityType = entityType;
+            break;
+         }
+      }
+   
+      return selectedEntityType;
+   }
+
+   /**
+    * Spawns a given entity type in a random position
+    * @returns The number of entities spawned
+    */
+   private spawnEntity(entityType: EntityType): number {
+      const spawnInfo = this.spawnInfoRecord[entityType]!;
+
+      // Pick a random location to spawn the entity at
+      const tileSpawnLocation = randItem(spawnInfo.spawnableTiles);
+      const originSpawnPosition = new Point((tileSpawnLocation[0] + 0.5) * SETTINGS.TILE_SIZE, (tileSpawnLocation[1] + 0.5) * SETTINGS.TILE_SIZE);
+
+      let packAmount = 1;
+
+      if (typeof spawnInfo.packSpawningInfo === "undefined") {
+         const entityClass = ENTITY_CLASS_RECORD[entityType]();
+         new entityClass(originSpawnPosition);
+      } else {
+         packAmount = typeof spawnInfo.packSpawningInfo.size === "number" ? spawnInfo.packSpawningInfo.size : randInt(...spawnInfo.packSpawningInfo.size);
+         
+         // Generate spawn positions
+         const spawnPositions = new Set<Point>();
+
+         // The origin spawn position is always a spawn position
+         spawnPositions.add(originSpawnPosition);
+
+         while (spawnPositions.size < packAmount) {
+            const xOffset = spawnInfo.packSpawningInfo.spawnRange * SETTINGS.TILE_SIZE * randFloat(-1, 1);
+            const yOffset = spawnInfo.packSpawningInfo.spawnRange * SETTINGS.TILE_SIZE * randFloat(-1, 1);
+            const testPosition = originSpawnPosition.add(new Point(xOffset, yOffset));
+
+            // If the position is valid, add it to the spawn positions
+            if (testPosition.x >= 0 && testPosition.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE && testPosition.y >= 0 && testPosition.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
+               spawnPositions.add(testPosition);
+            }
+         }
+
+         // Spawn the entities
+         const entityClass = ENTITY_CLASS_RECORD[entityType]();
+         for (const spawnPosition of spawnPositions) {
+            new entityClass(spawnPosition);
+         }
+      }
+
+      return packAmount;
+   }
+
+   public spawnInitialEntities(): void {
+      let spawnableEntityTypes = new Set<EntityType>();
+
+      for (const entityType of Object.keys(this.spawnInfoRecord) as ReadonlyArray<EntityType>) {
+         if (this.entityTypeCanBeSpawned(entityType)) {
+            spawnableEntityTypes.add(entityType);
+         }
+      }
+
+      const MAX_SPAWN_ATTEMPTS = 500;
+      let spawnAttempts = 0;
+
+      let spawnCount = 0;
+      while (spawnableEntityTypes.size > 0 && (this.entityCap === null || spawnCount < this.entityCap)) {
+         const entityTypeToSpawn = this.getWeightedRandomEntityType(spawnableEntityTypes);
+
+         spawnCount += this.spawnEntity(entityTypeToSpawn);
+
+         // Check if the entity type can't be spawned anymore
+         if (!this.entityTypeCanBeSpawned(entityTypeToSpawn)) {
+            spawnableEntityTypes.delete(entityTypeToSpawn);
+         }
+         
+         if (++spawnAttempts >= MAX_SPAWN_ATTEMPTS) {
+            throw new Error("we may have an infinite loop on our hands");
+         }
+      }
+   }
+
+   private entityTypeCanBeSpawned(entityType: EntityType): boolean {
+      const spawnInfo = this.spawnInfoRecord[entityType]!;
+      
       if (typeof spawnInfo.time !== "undefined") {
          if ((spawnInfo.time === "day" && SERVER.isNight()) || (spawnInfo.time === "night" && !SERVER.isNight())) {
-            spawnableMobTypes.splice(idx, 1);
+            return false;
          }
-      } 
-   }
-
-   // If no mob types are able to be spawned, don't bother trying to spawn nothing
-   if (spawnableMobTypes.length === 0) return;
-
-   let remainingSpawnCount = Math.floor(calculatePassiveMobSpawnCount(mobSpawnType));
-   while (remainingSpawnCount > 0) {
-      // Choose a random passive mob type to spawn
-      const mobType = getWeightedRandomMobType(spawnableMobTypes);
-      const spawnInfo = ENTITY_SPAWN_INFO_RECORD[mobType]!;
-      
-      // Pick a random tile to be the origin
-      const originTileCoords = randItem(spawnInfo.spawnableTiles);
-      
-      const mobClass = ENTITY_CLASS_RECORD[mobType]();
-
-      const spawnCount = typeof spawnInfo.packSize === "number" ? spawnInfo.packSize : randInt(...spawnInfo.packSize);
-      for (let i = 0; i < spawnCount; i++) {
-         const classParams = ENTITY_CLASS_PARAMS_RECORD[mobType]!();
-
-         // Find a random tile to spawn in
-         const xOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
-         const yOffset = randInt(-spawnInfo.packSpawnRange, spawnInfo.packSpawnRange);
-         const tileX = Math.min(Math.max(originTileCoords[0] + xOffset, 0), SETTINGS.BOARD_DIMENSIONS - 1);
-         const tileY = Math.min(Math.max(originTileCoords[1] + yOffset, 0), SETTINGS.BOARD_DIMENSIONS - 1);
-
-         // Find a random position in that tiles
-         const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
-
-         // Spawn the mob
-         new mobClass(new Point(x, y), ...classParams);
       }
 
-      remainingSpawnCount -= spawnCount;
+      return true;
+   }
+}
+
+const spawners = new Set<SpawnerObject>();
+// Passive mob spawner
+spawners.add(new SpawnerObject({
+   spawnInfoRecord: PASSIVE_MOB_SPAWN_INFO_RECORD,
+   spawnAttemptSuccessRate: 0.3,
+   targetWorldEntityDensity: 0.5
+}));
+// Hostile mob spawner
+spawners.add(new SpawnerObject({
+   spawnInfoRecord: HOSTILE_MOB_SPAWN_INFO_RECORD,
+   spawnAttemptSuccessRate: 0.3,
+   targetWorldEntityDensity: 1
+}));
+// Resource spawner
+spawners.add(new SpawnerObject({
+   spawnInfoRecord: RESOURCE_SPAWN_INFO_RECORD,
+   spawnAttemptSuccessRate: 0.3
+}));
+// Tombstone spawner
+spawners.add(new SpawnerObject({
+   spawnInfoRecord: TOMBSTONE_SPAWN_INFO_RECORD,
+   spawnAttemptSuccessRate: 0.3,
+   targetWorldEntityDensity: 0.3
+}));
+
+/** Spawns initial entities until no more can be spawned */
+export function spawnInitialEntities(): void {
+   for (const spawner of spawners) {
+      spawner.spawnInitialEntities();
    }
 }
 
 /** Attempts to spawn entities */
 export function runSpawnAttempt(): void {
-   holdCensus();
+   // Count the amounts of each entity type
+   const entityTypeCounts: Partial<{ [T in EntityType]: number }> = {};
+   const countedMobIDs = new Set<number>();
+   for (const entity of Object.values(SERVER.board.entities)) {
+      // If the entity has already been accounted for, skip it
+      if (countedMobIDs.has(entity.id)) continue;
 
-   // Passive mob spawning
-   if (passiveMobCount < PASSIVE_MOB_CAP && Math.random() < PASSIVE_MOB_SPAWN_ATTEMPT_CHANCE / SETTINGS.TPS) {
-      spawnMobs("passive");
+      // If the entity type hasn't been counted yet, add it to the record
+      if (!entityTypeCounts.hasOwnProperty(entity.type)) {
+         entityTypeCounts[entity.type] = 1;
+      } else {
+         // Otherwise add to the existing count
+         entityTypeCounts[entity.type]!++;
+      }
+
+      countedMobIDs.add(entity.id);
    }
 
-   // Hostile mob spawning
-   if (Math.random() < HOSTILE_MOB_SPAWN_ATTEMPT_CHANCE / SETTINGS.TPS) {
-      spawnMobs("hostile");
+   for (const spawner of spawners) {
+      // Send the new entity counts to the spawner
+      spawner.updateEntityCount(entityTypeCounts);
+      // Run spawn attempt
+      spawner.runSpawnAttempt();
    }
+}
+
+const precomputeSpawnInfoRecordSpawnLocations = (spawnInfoRecord: SpawnInfoRecord): void => {
+   const entries = Object.entries(spawnInfoRecord) as ReadonlyArray<[EntityType, EntitySpawnInfo]>;
+   for (const [entityType, spawnInfo] of entries) {
+      for (const biome of spawnInfo.spawnableBiomes) {
+         const spawnableTiles = getTilesByBiome(biome);
+         for (const tileCoords of spawnableTiles) {
+            spawnInfoRecord[entityType]!.spawnableTiles.push(tileCoords);   
+         }
+      }
+   }
+}
+
+/** Precomputes the potential spawn locations of different entity types to improve performance (realistically this won't affect performance in the slightest but it feels like a sin not to) */
+export function precomputeSpawnLocations(): void {
+   precomputeSpawnInfoRecordSpawnLocations(PASSIVE_MOB_SPAWN_INFO_RECORD);
+   precomputeSpawnInfoRecordSpawnLocations(HOSTILE_MOB_SPAWN_INFO_RECORD);
+   precomputeSpawnInfoRecordSpawnLocations(RESOURCE_SPAWN_INFO_RECORD);
+   precomputeSpawnInfoRecordSpawnLocations(TOMBSTONE_SPAWN_INFO_RECORD);
 }

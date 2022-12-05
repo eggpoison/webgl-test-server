@@ -1,4 +1,4 @@
-import { EntityType, Point, randInt, SETTINGS, Vector } from "webgl-test-shared";
+import { MobType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../ai/AI";
 import EscapeAI from "../ai/EscapeAI";
 import FollowAI from "../ai/FollowAI";
@@ -9,9 +9,6 @@ import MOB_AI_DATA_RECORD, { MobAICreationInfo } from "../data/mob-ai-data";
 import Entity, { Components } from "./Entity";
 import { SERVER } from "../server";
 import ChaseAI from "../ai/ChaseAI";
-
-type NarrowEntityType<E extends EntityType> = E;
-export type MobType = NarrowEntityType<"cow" | "zombie">;
 
 export const MobAIs = {
    wander: WanderAI,

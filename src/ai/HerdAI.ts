@@ -1,6 +1,6 @@
-import { Point, SETTINGS, Vector } from "webgl-test-shared";
+import { MobType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
-import Mob, { MobType } from "../entities/Mob";
+import Mob from "../entities/Mob";
 import AI, { BaseAIParams } from "./AI";
 
 type InfluenceFalloff = {
@@ -34,7 +34,7 @@ class HerdAI extends AI implements HerdAIParams {
    
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly minSeperationDistance: number;
+   public readonly minSeperationDistance : number;
    public readonly turnRate: number;
    public readonly validHerdMembers: ReadonlySet<MobType>;
    public readonly maxWeightInflenceCount: number;

@@ -1,33 +1,42 @@
 import { BiomeName, EntityType } from "webgl-test-shared";
-import { getTilesByBiome } from "../terrain-generation/terrain-generation";
 
 export type EntitySpawnInfo = {
    readonly spawnableBiomes: ReadonlyArray<BiomeName>;
    readonly spawnableTiles: Array<[number, number]>;
-   readonly packSize: number | [number, number];
-   /** Number of tiles the entities can spawn from the spawn origin */
-   readonly packSpawnRange: number;
    /** Affects the chance of the mob type being chosen to spawn */
    readonly weight: number;
+   readonly packSpawningInfo?: {
+      readonly size: number | [number, number];
+      /** Number of tiles the entities can spawn from the spawn origin */
+      readonly spawnRange: number;
+   }
+   /** If present, specifies when the entity is able to be spawned */
    readonly time?: "night" | "day";
 }
 
-const ENTITY_SPAWN_INFO_RECORD: Partial<Record<EntityType, EntitySpawnInfo>> = {
+export type SpawnInfoRecord = Partial<Record<EntityType, EntitySpawnInfo>>;
+
+export const PASSIVE_MOB_SPAWN_INFO_RECORD: SpawnInfoRecord = {
    cow: {
       spawnableBiomes: ["grasslands"],
       spawnableTiles: [],
-      packSize: [1, 4],
-      packSpawnRange: 4,
+      packSpawningInfo: {
+         size: [1, 4],
+         spawnRange: 4,
+      },
       weight: 1
-   },
-   zombie: {
+   }
+};
+
+export const HOSTILE_MOB_SPAWN_INFO_RECORD: SpawnInfoRecord = {};
+
+export const RESOURCE_SPAWN_INFO_RECORD: SpawnInfoRecord = {};
+
+export const TOMBSTONE_SPAWN_INFO_RECORD: SpawnInfoRecord = {
+   tombstone: {
       spawnableBiomes: ["grasslands"],
       spawnableTiles: [],
-      packSize: [2, 3],
-      packSpawnRange: 3,
       weight: 1,
       time: "night"
    }
 };
-
-export default ENTITY_SPAWN_INFO_RECORD;

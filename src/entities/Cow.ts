@@ -9,7 +9,7 @@ class Cow extends Mob {
    public readonly species: CowSpecies;
    public readonly herdMemberHash: number;
 
-   constructor(position: Point, species: CowSpecies) {
+   constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent();
 
       super(position, "cow", {
@@ -18,8 +18,8 @@ class Cow extends Mob {
       });
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.species = species;
-      this.herdMemberHash = species === CowSpecies.brown ? 0 : 1;
+      this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+      this.herdMemberHash = this.species === CowSpecies.brown ? 0 : 1;
 
       itemCreationComponent.createItemOnDeath("raw_beef", 3);
    }
