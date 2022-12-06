@@ -7,7 +7,6 @@ import { findAvailableEntityID } from "./entities/Entity";
 import Mob from "./entities/Mob";
 import { startReadingInput } from "./command-input";
 import { precomputeSpawnLocations, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
-import Zombie from "./entities/Zombie";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -26,7 +25,7 @@ class GameServer {
    private ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   private time: number = 0;
+   public time: number = 0;
 
    public readonly board: Board;
 
@@ -99,7 +98,7 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
-      this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 60) % 24;
+      this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
@@ -235,11 +234,6 @@ class GameServer {
          instance: player,
          visibleChunkBounds: initialPlayerDataPacket.visibleChunkBounds
       };
-   }
-
-   /** Gets the current time of the server */
-   public getTime(): number {
-      return this.time;
    }
 
    public isNight(): boolean {

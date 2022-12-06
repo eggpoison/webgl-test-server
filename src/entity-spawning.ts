@@ -235,8 +235,8 @@ spawners.add(new SpawnerObject({
 // Tombstone spawner
 spawners.add(new SpawnerObject({
    spawnInfoRecord: TOMBSTONE_SPAWN_INFO_RECORD,
-   spawnAttemptSuccessRate: 0.3,
-   targetWorldEntityDensity: 0.3
+   spawnAttemptSuccessRate: 0.1,
+   targetWorldEntityDensity: 0.2
 }));
 
 /** Spawns initial entities until no more can be spawned */
