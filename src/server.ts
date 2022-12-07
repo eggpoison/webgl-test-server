@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType, randInt } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType, randInt, ENTITY_INFO_RECORD } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -7,6 +7,8 @@ import { findAvailableEntityID } from "./entities/Entity";
 import Mob from "./entities/Mob";
 import { startReadingInput } from "./command-input";
 import { precomputeSpawnLocations, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
+import Cow from "./entities/Cow";
+import Tombstone from "./entities/Tombstone";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -98,7 +100,8 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
-      this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+      // this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+      this.time = 0;
 
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
@@ -147,10 +150,12 @@ class GameServer {
                secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
                chunkCoordinates: entity.chunks.map(chunk => [chunk.x, chunk.y])
             };
-            if (entity.hasOwnProperty("herdMemberHash")) {
+
+            const entityInfo = ENTITY_INFO_RECORD[entity.type];
+            if (entityInfo.category === "mob") {
                entityData.special = {
                   mobAIType: (entity as Mob).getCurrentAIType()
-               }
+               };
             }
 
             visibleEntityInfoArray.push(entityData);

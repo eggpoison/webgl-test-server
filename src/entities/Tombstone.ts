@@ -3,16 +3,20 @@ import { SERVER } from "../server";
 import Entity from "./Entity";
 import Zombie from "./Zombie";
 
-
 class Tombstone extends Entity {
    /** Average number of zombies that are created by the tombstone in a second */
    private static readonly ZOMBIE_SPAWN_RATE = 0.1;
    /** Distance the zombies spawn from the tombstone */
    private static readonly ZOMBIE_SPAWN_DISTANCE = 48;
+   /** Maximum amount of zombies that can be spawned by one tombstone */
+   private static readonly MAX_SPAWNED_ZOMBIES = 5;
    
    private readonly tombstoneType: number;
 
    private readonly zombieSpawnPositions: ReadonlyArray<Point>;
+
+   /** Amount of spawned zombies that are alive currently */
+   private currentSpawnedZombieCount = 0;
    
    constructor(position: Point) {
       super(position, "tombstone", {});
@@ -53,10 +57,17 @@ class Tombstone extends Entity {
          }
       }
 
+      // Don't spawn zombies past the max spawn limit
+      if (this.currentSpawnedZombieCount >= Tombstone.MAX_SPAWNED_ZOMBIES) return;
+
       if (Math.random() < Tombstone.ZOMBIE_SPAWN_RATE / SETTINGS.TPS) {
          // Spawn zombie
          const spawnPosition = randItem(this.zombieSpawnPositions);
-         new Zombie(spawnPosition);
+         const zombie = new Zombie(spawnPosition);
+
+         // Keep track of the zombie
+         this.currentSpawnedZombieCount++;
+         zombie.createEvent("death", () => this.currentSpawnedZombieCount--);
       }
    }
 

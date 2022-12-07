@@ -1,4 +1,4 @@
-import { CowSpecies, Point } from "webgl-test-shared";
+import { CowSpecies, Point, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import Mob from "./Mob";

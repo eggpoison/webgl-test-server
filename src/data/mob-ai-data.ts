@@ -98,7 +98,7 @@ const MOB_AI_DATA_RECORD: Record<MobType, MobAIData> = {
          chase: {
             aiWeightMultiplier: 1,
             acceleration: 200,
-            terminalVelocity: 100,
+            terminalVelocity: 125,
             targetEntityTypes: new Set(["player"])
          }
       }
