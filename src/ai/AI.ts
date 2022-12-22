@@ -18,14 +18,6 @@ abstract class AI {
    protected targetPosition: Point | null = null;
    protected entitiesInVisionRange!: Set<Entity>;
 
-   // Notes to future self:
-
-   // Make "entitiesInVisionRange" public and then don't bother doing distance check
-   // if self is already in the test entity's entitiesInVisionRange array
-
-   // Also skip check if entity isn't moving (make sure this works and the velocity
-   // property isn't lagging behind
-
    constructor(mob: Mob, { aiWeightMultiplier }: BaseAIParams) {
       this.mob = mob;
       this.aiWeightMultiplier = aiWeightMultiplier;
@@ -65,19 +57,23 @@ abstract class AI {
    }
 
    public getWeight(): number {
-      return this._getWeight() * this.aiWeightMultiplier;
+      const baseWeight = this._getWeight();
+      if (baseWeight > 1) throw new Error(`$'{this.type}' type AI returned a weight above 1!`);
+      return baseWeight * this.aiWeightMultiplier;
    }
 
    private hasReachedTargetPosition(): boolean {
       if (this.targetPosition === null || this.mob.velocity === null) return false;
 
-      const relativeTargetPosition = this.mob.position.subtract(this.targetPosition);
-      const dotProduct = this.mob.velocity.convertToPoint().dot(relativeTargetPosition);
+      const relativeTargetPosition = this.mob.position.copy();
+      relativeTargetPosition.subtract(this.targetPosition);
+
+      const dotProduct = this.mob.velocity.convertToPoint().calculateDotProduct(relativeTargetPosition);
       return dotProduct > 0;
    }
 
    protected moveToPosition(targetPosition: Point, acceleration: number, terminalVelocity: number, direction?: number): void {
-      const _direction = typeof direction === "undefined" ? this.mob.position.angleBetween(targetPosition) : direction;
+      const _direction = typeof direction === "undefined" ? this.mob.position.calculateAngleBetween(targetPosition) : direction;
       
       this.targetPosition = targetPosition;
       this.mob.acceleration = new Vector(acceleration, _direction);

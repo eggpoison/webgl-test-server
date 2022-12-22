@@ -1,26 +1,29 @@
-import { ItemType, ItemInfo, ITEM_INFO_RECORD } from "webgl-test-shared";
+import { ItemType, ITEM_INFO_RECORD, BaseItemInfo, ItemClassifications } from "webgl-test-shared";
+import FoodItem from "./FoodItem";
+import MaterialItem from "./MaterialItem";
+import WeaponItem from "./WeaponItem";
 
 let nextAvailableID = 0;
 const getUniqueID = (): number => {
    return nextAvailableID++;
 }
 
-class Item {
+abstract class Item implements BaseItemInfo {
    /** Unique identifier for the item */
    public readonly id: number;
 
-   public readonly itemType: ItemType;
+   public readonly type: ItemType;
    public count: number;
 
-   public readonly itemInfo: ItemInfo;
+   public readonly name: string;
 
-   constructor(itemType: ItemType, count: number) {
+   constructor(itemType: ItemType, count: number, itemInfo: BaseItemInfo) {
       this.id = getUniqueID();
 
-      this.itemType = itemType;
+      this.type = itemType;
       this.count = count;
 
-      this.itemInfo = ITEM_INFO_RECORD[itemType];
+      this.name = itemInfo.name;
    }
 }
 

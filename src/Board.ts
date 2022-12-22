@@ -5,7 +5,7 @@ import Player from "./entities/Player";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import ItemEntity from "./items/ItemEntity";
 import { EntityCensus, SERVER } from "./server";
-import generateTerrain from "./terrain-generation/terrain-generation";
+import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
 import TILE_CLASS_RECORD from "./tiles/tile-class-record";
 
@@ -81,11 +81,13 @@ class Board {
          entity.applyPhysics();
 
          // Calculate the entity's new info
-         if (entity.hitbox.info.type === "rectangular") {
-            (entity.hitbox as RectangularHitbox).computeVertexPositions();
-            (entity.hitbox as RectangularHitbox).calculateSideAxes();
+         for (const hitbox of entity.hitboxes) {
+            if (hitbox.info.type === "rectangular") {
+               (hitbox as RectangularHitbox).computeVertexPositions();
+               (hitbox as RectangularHitbox).calculateSideAxes();
+            }
+            hitbox.updateHitboxBounds();
          }
-         entity.hitbox.updateHitboxBounds();
          entity.updateContainingChunks();
 
          // Tick entity
@@ -163,24 +165,24 @@ class Board {
       return tileUpdates;
    }
 
-   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): Array<Entity> {
+   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlySet<Entity> {
       // Find the chunks nearby to the player and all entities inside them
-      let nearbyEntities = new Array<Entity>();
+      let nearbyEntities = new Set<Entity>();
       for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
          for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
             const chunk = SERVER.board.getChunk(chunkX, chunkY);
 
             // Add all entities which aren't already in the array
             for (const entity of chunk.getEntities()) {
-               if (!nearbyEntities.includes(entity)) {
-                  nearbyEntities.push(entity);
+               if (!nearbyEntities.has(entity)) {
+                  nearbyEntities.add(entity);
                }
             }
          }
       }
 
       // Remove the player
-      nearbyEntities.splice(nearbyEntities.indexOf(player), 1);
+      nearbyEntities.delete(player);
 
       return nearbyEntities;
    }
@@ -204,7 +206,7 @@ class Board {
       const serverItemDataArray: ReadonlyArray<ServerItemEntityData> = nearbyItemEntities.map(itemEntity => {
          return {
             id: itemEntity.id,
-            itemID: itemEntity.item.itemType,
+            itemID: itemEntity.item.type,
             count: itemEntity.item.count,
             position: itemEntity.position.package(),
             chunkCoordinates: itemEntity.chunks.map(chunk => [chunk.x, chunk.y]),

@@ -1,11 +1,11 @@
 import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
 import { SETTINGS } from "webgl-test-shared/lib/settings";
-import { generateOctavePerlinNoise, generatePerlinNoise } from "../perlin-noise";
+import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
 import { BiomeName } from "webgl-test-shared/lib/biomes";
-import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./biome-generation-info";
-import TILE_CLASS_RECORD from "../tiles/tile-class-record";
+import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./data/biome-generation-info";
+import TILE_CLASS_RECORD from "./tiles/tile-class-record";
 
-const tilesByBiome: Record<BiomeName, Array<[number, number]>> = {
+const TILES_BY_BIOME_RECORD: Record<BiomeName, Array<[x: number, y: number]>> = {
    grasslands: [],
    desert: [],
    tundra: [],
@@ -15,7 +15,7 @@ const tilesByBiome: Record<BiomeName, Array<[number, number]>> = {
 };
 
 export function getTilesByBiome(biomeName: BiomeName): Array<[number, number]> {
-   return tilesByBiome[biomeName];
+   return TILES_BY_BIOME_RECORD[biomeName];
 }
 
 const categoriseTiles = (tiles: Array<Array<Tile>>): void => {
@@ -23,7 +23,7 @@ const categoriseTiles = (tiles: Array<Array<Tile>>): void => {
       for (let y = 0; y < SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE; y++) {
          const tile = tiles[x][y];
 
-         tilesByBiome[tile.biome].push([x, y]);
+         TILES_BY_BIOME_RECORD[tile.biome].push([x, y]);
       }
    }
 }

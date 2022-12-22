@@ -75,7 +75,7 @@ class StarveAI extends AI implements HerdAIParams {
       let mostNutritiousFoodSource: ItemEntity | Tile | undefined;
       let highestFoodValue: number = 0;
       for (const itemEntity of this.itemEntitiesInRange) {
-         const itemEntityFoodInfo = this.itemTargets.get(itemEntity.item.itemType)!;
+         const itemEntityFoodInfo = this.itemTargets.get(itemEntity.item.type)!;
          if (itemEntityFoodInfo.foodUnits > highestFoodValue) {
             mostNutritiousFoodSource = itemEntity;
             highestFoodValue = itemEntityFoodInfo.foodUnits;
@@ -159,7 +159,7 @@ class StarveAI extends AI implements HerdAIParams {
       for (let chunkX = minX; chunkX <= maxX; chunkX++) {
          for (let chunkY = minY; chunkY <= maxY; chunkY++) {
             for (const itemEntity of SERVER.board.getChunk(chunkX, chunkY).getItemEntities()) {
-               if (!this.itemTargets.has(itemEntity.item.itemType)) {
+               if (!this.itemTargets.has(itemEntity.item.type)) {
                   continue;
                }
                

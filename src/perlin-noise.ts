@@ -48,8 +48,11 @@ export function generatePerlinNoise(width: number, height: number, scale: number
             const corner = grid[coords[0]][coords[1]];
             const cornerPos = new Point(coords[1], coords[0]);
             const offsetVector = samplePoint.convertToVector(cornerPos);
-            const dot = corner.convertToPoint().dot(offsetVector.convertToPoint());
-            dotProducts.push(dot);
+
+            // Calculate the dot product
+            const cornerCartesian = corner.convertToPoint();
+            const dotProduct = cornerCartesian.calculateDotProduct(offsetVector.convertToPoint());
+            dotProducts.push(dotProduct);
          }
 
          const u = fade(sampleX % 1);

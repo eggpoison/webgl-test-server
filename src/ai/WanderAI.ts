@@ -35,7 +35,9 @@ class WanderAI extends AI implements WanderAIParams {
       if (this.mob.velocity === null && Math.random() < this.wanderRate / SETTINGS.TPS) {
          const dist = this.mob.visionRange * Math.random();
          const angle = 2 * Math.PI * Math.random();
-         const targetPosition = this.mob.position.add(new Vector(dist, angle).convertToPoint());
+
+         const targetPosition = this.mob.position.copy();
+         targetPosition.add(new Vector(dist, angle).convertToPoint());
          super.moveToPosition(targetPosition, this.acceleration, this.terminalVelocity, angle);
       }
    }

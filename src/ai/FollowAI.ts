@@ -49,8 +49,8 @@ class FollowAI extends AI implements HerdAIParams {
       super.tick();
 
       if (this.followTarget !== null) {
-         const distanceFromTarget = this.mob.position.distanceFrom(this.followTarget.position);
-         const dir = this.mob.position.angleBetween(this.followTarget.position);
+         const distanceFromTarget = this.mob.position.calculateDistanceBetween(this.followTarget.position);
+         const dir = this.mob.position.calculateAngleBetween(this.followTarget.position);
 
          if (distanceFromTarget > this.minDistanceFromFollowTarget) {
             // Follow the target if far away enough

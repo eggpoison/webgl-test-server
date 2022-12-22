@@ -1,5 +1,5 @@
 import Chunk from "../Chunk";
-import { EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { curveWeight, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
 import HealthComponent from "../entity-components/HealthComponent";
@@ -51,9 +51,9 @@ abstract class Entity {
    /** Unique identifier for every entity */
    public readonly id: number;
    /** Type of the entity (e.g. "cow") */
-   public readonly type: EntityType;
+   public abstract readonly type: EntityType;
 
-   public readonly hitbox: Hitbox<HitboxType>;
+   public hitboxes:Set<Hitbox<HitboxType>>;
 
    public readonly events: { [E in EventType]: Array<Event<E>> } = {
       hurt: [],
@@ -74,7 +74,7 @@ abstract class Entity {
    /** Direction the entity is facing (radians) */
    public rotation: number = 0;
 
-   public chunks = new Array<Chunk>();
+   public chunks = new Set<Chunk>();
 
    public currentTile!: Tile;
 
@@ -83,6 +83,8 @@ abstract class Entity {
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
 
+   private canBePushed = true;
+
    /** If this flag is set to true, then the entity will not move */
    private isStatic: boolean = false;
 
@@ -90,29 +92,20 @@ abstract class Entity {
 
    public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
-   constructor(position: Point, type: EntityType, components: Partial<Components>, id?: number) {
-      this.id = typeof id !== "undefined" ? id : findAvailableEntityID();
-      this.type = type;
+   constructor(position: Point, hitboxes: Set<Hitbox<HitboxType>>, components: Partial<Components>) {
+      this.id = findAvailableEntityID();
       
       this.position = position;
+      this.hitboxes = hitboxes;
+      this.components = components;
 
       this.calculateCurrentTile();
 
-      // Create hitbox using hitbox info
-      const hitboxInfo = ENTITY_INFO_RECORD[type].hitbox;
-      switch (hitboxInfo.type) {
-         case "circular": {
-            this.hitbox = new CircularHitbox(hitboxInfo, this);
-            break;
-         }
-         case "rectangular": {
-            this.hitbox = new RectangularHitbox(hitboxInfo, this);
-            break;
-         }
-      }
-
-      this.components = components;
       this.tickableComponents = filterTickableComponents(components);
+
+      for (const hitbox of this.hitboxes) {
+         hitbox.setHitboxObject(this);
+      }
 
       for (const component of Object.values(components) as Array<Component>) {
          component.setEntity(this);
@@ -139,6 +132,10 @@ abstract class Entity {
       this.tickStatusEffects();
    }
 
+   public setCanBePushed(canBePushed: boolean): void {
+      this.canBePushed = canBePushed;
+   }
+
    public setIsStatic(isStatic: boolean): void {
       this.isStatic = isStatic;
    }
@@ -151,21 +148,26 @@ abstract class Entity {
    }
 
    /** Calculates the chunks that contain the entity.  */
-   private calculateContainingChunks(): Array<Chunk> {
-      const minChunkX = Math.max(Math.min(Math.floor(this.hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor(this.hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor(this.hitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor(this.hitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   private calculateContainingChunks(): Set<Chunk> {
+      const containingChunks = new Set<Chunk>();
 
-      const chunks = new Array<Chunk>();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
-            chunks.push(chunk);
+      for (const hitbox of this.hitboxes) {
+         const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+         for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+               const chunk = SERVER.board.getChunk(chunkX, chunkY);
+               if (!containingChunks.has(chunk)) {
+                  containingChunks.add(chunk);
+               }
+            }
          }
       }
 
-      return chunks;
+      return containingChunks;
    }
 
    /** Called after calculating the entity's hitbox bounds */
@@ -173,25 +175,20 @@ abstract class Entity {
       const containingChunks = this.calculateContainingChunks();
 
       // Find all chunks which aren't present in the new chunks and remove them
-      const removedChunks = this.chunks.filter(chunk => !containingChunks.includes(chunk));
-      for (const chunk of removedChunks) {
-         chunk.removeEntity(this);
-         this.chunks.splice(this.chunks.indexOf(chunk), 1);
+      for (const chunk of this.chunks) {
+         if (!containingChunks.has(chunk)) {
+            chunk.removeEntity(this);
+            this.chunks.delete(chunk);
+         }
       }
 
       // Add all new chunks
-      const addedChunks = containingChunks.filter(chunk => !this.chunks.includes(chunk));
-      for (const chunk of addedChunks) {
-         chunk.addEntity(this);
-         this.chunks.push(chunk);
+      for (const chunk of containingChunks) {
+         if (!this.chunks.has(chunk)) {
+            chunk.addEntity(this);
+            this.chunks.add(chunk);
+         }
       }
-   }
-
-   public addVelocity(magnitude: number, direction: number): void {
-      if (this.isStatic) return;
-
-      const force = new Vector(magnitude, direction);
-      this.velocity = this.velocity?.add(force) || force;
    }
 
    /** Calculates the tile the entity is currently in using its position */
@@ -221,7 +218,12 @@ abstract class Entity {
 
          const magnitudeBeforeAdd = this.velocity?.magnitude || 0;
          // Add acceleration to velocity
-         this.velocity = this.velocity !== null ? this.velocity.add(acceleration) : acceleration;
+         if (this.velocity !== null) {
+            this.velocity.add(acceleration);
+         } else {
+            this.velocity = acceleration;
+         }
+
          // Don't accelerate past terminal velocity
          if (this.velocity.magnitude > terminalVelocity && this.velocity.magnitude > magnitudeBeforeAdd) {
             if (magnitudeBeforeAdd < terminalVelocity) {
@@ -243,7 +245,7 @@ abstract class Entity {
          const velocity = this.velocity.copy();
          velocity.magnitude /= SETTINGS.TPS;
          
-         this.position = this.position.add(velocity.convertToPoint());
+         this.position.add(velocity.convertToPoint());
       }
    }
 
@@ -267,24 +269,26 @@ abstract class Entity {
    public resolveWallCollisions(): void {
       const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
 
-      // Left wall
-      if (this.hitbox.bounds[0] < 0) {
-         this.stopXVelocity();
-         this.position.x -= this.hitbox.bounds[0];
-      // Right wall
-      } else if (this.hitbox.bounds[1] > boardUnits) {
-         this.position.x -= this.hitbox.bounds[1] - boardUnits;
-         this.stopXVelocity();
-      }
+      for (const hitbox of this.hitboxes) {
+         // Left wall
+         if (hitbox.bounds[0] < 0) {
+            this.stopXVelocity();
+            this.position.x -= hitbox.bounds[0];
+         // Right wall
+         } else if (hitbox.bounds[1] > boardUnits) {
+            this.position.x -= hitbox.bounds[1] - boardUnits;
+            this.stopXVelocity();
+         }
 
-      // Bottom wall
-      if (this.hitbox.bounds[2] < 0) {
-         this.position.y -= this.hitbox.bounds[2];
-         this.stopYVelocity();
-      // Top wall
-      } else if (this.hitbox.bounds[3] > boardUnits) {
-         this.position.y -= this.hitbox.bounds[3] - boardUnits;
-         this.stopYVelocity();
+         // Bottom wall
+         if (hitbox.bounds[2] < 0) {
+            this.position.y -= hitbox.bounds[2];
+            this.stopYVelocity();
+         // Top wall
+         } else if (hitbox.bounds[3] > boardUnits) {
+            this.position.y -= hitbox.bounds[3] - boardUnits;
+            this.stopYVelocity();
+         }
       }
    }
 
@@ -301,27 +305,79 @@ abstract class Entity {
    }
 
    public resolveEntityCollisions(): void {
-      if (this.isStatic) return;
+      if (this.isStatic || !this.canBePushed) return;
       
       // Push away from all colliding entities
       for (const entity of this.collidingEntities) {
-         const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS;
-         const angle = this.position.angleBetween(entity.position);
+         // If the two entities are exactly on top of each other, don't do anything
+         if (entity.position.x === this.position.x && entity.position.y === this.position.y) {
+            continue;
+         }
 
+         // Calculate the force of the push
+         // Force gets greater the closer together the entities are
+         const distanceBetweenEntities = this.position.calculateDistanceBetween(entity.position);
+         const maxDistanceBetweenEntities = this.calculateMaxDistanceFromEntity(entity);
+         let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
+         forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
+         
+         const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
+         const pushAngle = this.position.calculateAngleBetween(entity.position) + Math.PI;
          // No need to apply force to other entity as they will do it themselves
-         this.addVelocity(force, angle + Math.PI);
+         const pushForce = new Vector(force, pushAngle);
+         if (this.velocity !== null) {
+            this.velocity.add(pushForce);
+         } else {
+            this.velocity = pushForce;
+         }
       }
    }
 
+   private calculateMaxDistanceFromEntity(entity: Entity): number {
+      let maxDist = 0;
+      // Account for this entity's hitboxes
+      for (const hitbox of this.hitboxes) {
+         switch (hitbox.info.type) {
+            case "circular": {
+               maxDist += hitbox.info.radius;
+               break;
+            }
+            case "rectangular": {
+               maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
+               break;
+            }
+         }
+      }
+      // Account for the other entity's hitboxes
+      for (const hitbox of entity.hitboxes) {
+         switch (hitbox.info.type) {
+            case "circular": {
+               maxDist += hitbox.info.radius;
+               break;
+            }
+            case "rectangular": {
+               maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
+               break;
+            }
+         }
+      }
+      return maxDist;
+   }
+   
    private getCollidingEntities(): Set<Entity> {
       const collidingEntities = new Set<Entity>();
 
       for (const chunk of this.chunks) {
-         for (const entity of chunk.getEntities()) {
+         entityLoop: for (const entity of chunk.getEntities()) {
             if (entity === this) continue;
 
-            if (this.hitbox.isColliding(entity.hitbox)) {
-               collidingEntities.add(entity);
+            for (const hitbox of this.hitboxes) {
+               for (const otherHitbox of entity.hitboxes) {
+                  if (hitbox.isColliding(otherHitbox)) {
+                     collidingEntities.add(entity);
+                     continue entityLoop;
+                  }
+               }
             }
          }
       }
@@ -330,12 +386,14 @@ abstract class Entity {
    }
 
    public takeDamage(damage: number, attackingEntity: Entity | null, attackHash?: string): void {
+      const healthComponent = this.getComponent("health")!;
+      
       // Don't attack during invulnerability
-      if (this.getComponent("health")!.isInvulnerable(attackHash)) {
+      if (healthComponent.isInvulnerable(attackHash)) {
          return;
       }
       
-      const hitWasReceived = this.getComponent("health")!.takeDamage(damage);
+      const hitWasReceived = healthComponent.takeDamage(damage);
  
       if (hitWasReceived) this.callEvents("hurt", damage, attackingEntity);
 
@@ -343,8 +401,13 @@ abstract class Entity {
 
          // Push away from the source of damage
          if (attackingEntity !== null) {
-            const angle = this.position.angleBetween(attackingEntity.position) + Math.PI;
-            this.addVelocity(150, angle);
+            const angle = this.position.calculateAngleBetween(attackingEntity.position) + Math.PI;
+            const force = new Vector(150 * healthComponent.getKnockbackMultiplier(), angle);
+            if (this.velocity !== null) {
+               this.velocity.add(force);
+            } else {
+               this.velocity = force;
+            }
          }
       }
    }
@@ -399,6 +462,10 @@ abstract class Entity {
          }
          this.statusEffects[type]!.secondsRemaining = this.statusEffects[type]!.durationSeconds;
       }
+   }
+
+   public hasStatusEffect(type: StatusEffectType): boolean {
+      return this.statusEffects.hasOwnProperty(type);
    }
 
    public removeStatusEffect(type: StatusEffectType): void {

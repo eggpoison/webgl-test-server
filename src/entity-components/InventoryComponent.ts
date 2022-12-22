@@ -1,11 +1,11 @@
-import { circleAndRectangleDoIntersect, rectanglePointsDoIntersect, SETTINGS } from "webgl-test-shared";
-import RectangularHitbox from "../hitboxes/RectangularHitbox";
+import { ItemType } from "webgl-test-shared";
 import Item from "../items/Item";
+import { createItem } from "../items/item-creation";
 import ItemEntity from "../items/ItemEntity";
-import { SERVER } from "../server";
+import StackableItem from "../items/StackableItem";
 import Component from "./Component";
 
-type Inventory = { [itemSlot: number]: Item | null };
+type Inventory = { [itemSlot: number]: Item };
 
 class InventoryComponent extends Component {
    private readonly inventorySize: number;
@@ -21,7 +21,7 @@ class InventoryComponent extends Component {
    private createInventory(): Inventory {
       const inventory: Inventory = {};
       for (let i = 1; i <= this.inventorySize; i++) {
-         inventory[i] = null;
+         delete inventory[i];
       }
       return inventory;
    }
@@ -36,35 +36,32 @@ class InventoryComponent extends Component {
       }
    }
 
-   private getNearbyItemEntities(): Set<ItemEntity> {
-      // Calculate chunk bounds
-      const bounds = this.entity.hitbox.bounds;
-      const minChunkX = Math.max(Math.min(Math.floor(bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor(bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor(bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor(bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   public getInventory(): Inventory {
+      return this.inventory;
+   }
 
+   private getNearbyItemEntities(): Set<ItemEntity> {
       const nearbyItemEntities = new Set<ItemEntity>();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
-            for (const itemEntity of chunk.getItemEntities()) {
-               if (!nearbyItemEntities.has(itemEntity)) {
-                  nearbyItemEntities.add(itemEntity);
-               }
+      for (const chunk of this.entity.chunks) {
+         for (const itemEntity of chunk.getItemEntities()) {
+            if (!nearbyItemEntities.has(itemEntity)) {
+               nearbyItemEntities.add(itemEntity);
             }
          }
       }
-
       return nearbyItemEntities;
+
    }
 
    private getCollidingItemEntities(nearbyItemEntities: Set<ItemEntity>): Set<ItemEntity> {
       const collidingItemEntities = new Set<ItemEntity>();
 
-      for (const itemEntity of nearbyItemEntities) {
-         if (this.entity.hitbox.isColliding(itemEntity.hitbox)) {
-            collidingItemEntities.add(itemEntity);
+      itemLoop: for (const itemEntity of nearbyItemEntities) {
+         for (const hitbox of this.entity.hitboxes) {
+            if (hitbox.isColliding(itemEntity.hitbox)) {
+               collidingItemEntities.add(itemEntity);
+               continue itemLoop;
+            }
          }
       }
 
@@ -77,27 +74,53 @@ class InventoryComponent extends Component {
     * @returns Whether the item was picked up or not
     */
    private pickupItemEntity(itemEntity: ItemEntity): void {
-      const availableSlot = this.findFirstAvailableSlot();
-      if (availableSlot === null) return;
-
-      this.addItemToSlot(itemEntity.item, availableSlot);
+      const amountAdded = this.addItem(itemEntity.item);
 
       this.entity.callEvents("item_pickup", itemEntity);
       
-      itemEntity.destroy();
+      // If all of the item was added, destroy the item entity
+      if (amountAdded === itemEntity.item.count) {
+         itemEntity.destroy();
+      } else {
+         // Otherwise subtract the amount of items added from the item entity
+         itemEntity.item.count -= amountAdded;
+      }
    }
 
-   private findFirstAvailableSlot(): number | null {
+   /**
+    * Adds an item to the inventory
+    * @returns The number of items added to the inventory
+    */
+   private addItem(item: Item): number {
+      let remainingAmountToAdd = item.count;
+      let amountAdded = 0;
+      
       for (let i = 1; i <= this.inventorySize; i++) {
-         if (this.inventory[i] !== null) return i;
+         // If the slot is empty then add the rest of the item
+         if (!this.inventory.hasOwnProperty(i)) {
+            this.inventory[i] = createItem(item.type, remainingAmountToAdd);
+            amountAdded = item.count;
+            break;
+         }
+
+         // If the slot contains an item of the same type, add as much of the item as possible
+         if (!item.hasOwnProperty("stackSize")) {
+            // If the item can't be stacked then nothing can be added to the slot
+            continue;
+         } else {
+            const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
+            this.inventory[i].count += maxAddAmount;
+            amountAdded += maxAddAmount;
+            remainingAmountToAdd -= maxAddAmount;
+
+            // If there is none of the item left to add, exit
+            if (remainingAmountToAdd === 0) {
+               break;
+            }
+         }
       }
 
-      return null;
-   }
-
-   /** Adds an item to a slot. Overrides any item previously there */
-   private addItemToSlot(item: Item, slotNum: number): void {
-      this.inventory[slotNum] = item;
+      return amountAdded;
    }
 }
 

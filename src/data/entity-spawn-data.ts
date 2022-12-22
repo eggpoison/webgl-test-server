@@ -10,6 +10,8 @@ export type EntitySpawnInfo = {
       /** Number of tiles the entities can spawn from the spawn origin */
       readonly spawnRange: number;
    }
+   /** Maximum density the entity can have in its biome */
+   readonly maxBiomeDensityPerTile?: number;
    /** If present, specifies when the entity is able to be spawned */
    readonly time?: "night" | "day";
 }
@@ -30,7 +32,14 @@ export const PASSIVE_MOB_SPAWN_INFO_RECORD: SpawnInfoRecord = {
 
 export const HOSTILE_MOB_SPAWN_INFO_RECORD: SpawnInfoRecord = {};
 
-export const RESOURCE_SPAWN_INFO_RECORD: SpawnInfoRecord = {};
+export const RESOURCE_SPAWN_INFO_RECORD: SpawnInfoRecord = {
+   tree: {
+      spawnableBiomes: ["grasslands"],
+      spawnableTiles: [],
+      maxBiomeDensityPerTile: 0.015,
+      weight: 1
+   }
+};
 
 export const TOMBSTONE_SPAWN_INFO_RECORD: SpawnInfoRecord = {
    tombstone: {

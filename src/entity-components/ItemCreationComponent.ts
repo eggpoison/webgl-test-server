@@ -1,5 +1,5 @@
 import { ItemType, Vector } from "webgl-test-shared";
-import Item from "../items/Item";
+import { createItem } from "../items/item-creation";
 import ItemEntity from "../items/ItemEntity";
 import Component from "./Component";
 
@@ -12,9 +12,11 @@ class ItemCreationComponent extends Component {
          for (let i = 0; i < count; i++) {
             const magnitude = Math.random() * ItemCreationComponent.ITEM_SPAWN_RANGE;
             const direction = 2 * Math.PI * Math.random();
-            const position = this.entity.position.add(new Vector(magnitude, direction).convertToPoint());
 
-            const item = new Item(itemType, 1);
+            const position = this.entity.position.copy();
+            position.add(new Vector(magnitude, direction).convertToPoint());
+
+            const item = createItem(itemType, 1);
             new ItemEntity(position, item);
          }
       });

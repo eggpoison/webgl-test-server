@@ -43,7 +43,8 @@ class ItemEntity {
          width: SETTINGS.ITEM_SIZE,
          height: SETTINGS.ITEM_SIZE
       }
-      this.hitbox = new RectangularHitbox(hitboxInfo, this);
+      this.hitbox = new RectangularHitbox(hitboxInfo);
+      this.hitbox.setHitboxObject(this);
 
       // Add to containing chunks
       this.chunks = this.calculateContainingChunks();

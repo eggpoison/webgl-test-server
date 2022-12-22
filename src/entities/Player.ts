@@ -1,6 +1,8 @@
-import { HitData, Point } from "webgl-test-shared";
+import { HitboxType, HitData, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
+import CircularHitbox from "../hitboxes/CircularHitbox";
+import Hitbox from "../hitboxes/Hitbox";
 import ItemEntity from "../items/ItemEntity";
 import Entity from "./Entity";
 
@@ -17,32 +19,30 @@ type PlayerEvents = {
 class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
 
+   public readonly type = "player";
+
    /** Player nametag. Used when sending player data to the client */
    private readonly displayName: string;
 
-   /** All player events that have occurred since the start of the tick */
-   private playerEvents: PlayerEvents = {
-      pickedUpItemEntities: []
-   };
-
    private hitsTaken = new Array<HitData>();
 
-   constructor(position: Point, name: string, id: number) {
-      super(position, "player", {
+   constructor(position: Point, name: string) {
+      super(position, new Set<Hitbox<HitboxType>>([
+         new CircularHitbox({
+            type: "circular",
+            radius: 32
+         })
+      ]), {
          health: new HealthComponent(Player.MAX_HEALTH, true),
-         inventory: new InventoryComponent(10)
-      }, id);
+         inventory: new InventoryComponent(SETTINGS.PLAYER_ITEM_SLOTS)
+      });
 
       this.displayName = name;
-
-      this.createEvent("item_pickup", (itemEntity: ItemEntity): void => {
-         this.playerEvents.pickedUpItemEntities.push(itemEntity.id);
-      });
 
       this.createEvent("hurt", (damage: number, attackingEntity: Entity | null) => {
          const hitData: HitData = {
             damage: damage,
-            angleFromDamageSource: attackingEntity !== null ? this.position.angleBetween(attackingEntity.position) + Math.PI : null
+            angleFromDamageSource: attackingEntity !== null ? this.position.calculateAngleBetween(attackingEntity.position) + Math.PI : null
          };
          this.hitsTaken.push(hitData);
       });
@@ -61,7 +61,7 @@ class Player extends Entity {
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
 
-         const dist = this.position.distanceFrom(entity.position);
+         const dist = this.position.calculateDistanceBetween(entity.position);
          if (dist < minDistance) {
             closestEntity = entity;
             minDistance = dist;
@@ -72,17 +72,7 @@ class Player extends Entity {
 
       return {
          target: closestEntity,
-         angle: this.position.angleBetween(closestEntity.position)
-      };
-   }
-
-   public getPlayerEvents(): PlayerEvents {
-      return this.playerEvents;   
-   }
-
-   public clearPlayerEvents(): void {
-      this.playerEvents = {
-         pickedUpItemEntities: []
+         angle: this.position.calculateDistanceBetween(closestEntity.position)
       };
    }
 

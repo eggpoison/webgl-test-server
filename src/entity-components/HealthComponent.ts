@@ -1,13 +1,5 @@
 import { SETTINGS } from "webgl-test-shared";
-import { SERVER } from "../server";
 import Component from "./Component";
-
-/*
-
-Damage calculations:
-
-
-*/
 
 class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
@@ -22,6 +14,8 @@ class HealthComponent extends Component {
 
    /** Amount of seconds that has passed since the entity was last hit */
    private secondsSinceLastHit: number | null = null;
+
+   private knockbackMultiplier = 1;
 
    constructor(maxHealth: number, hasGlobalInvulnerability: boolean) {
       super();
@@ -49,6 +43,14 @@ class HealthComponent extends Component {
       if (this.globalInvulnerabilityTimer > 0) {
          this.globalInvulnerabilityTimer -= 1 / SETTINGS.TPS;
       }
+   }
+   
+   public setKnockbackMultiplier(knockbackMultiplier: number): void {
+      this.knockbackMultiplier = knockbackMultiplier;
+   }
+
+   public getKnockbackMultiplier(): number {
+      return this.knockbackMultiplier;
    }
 
    /**

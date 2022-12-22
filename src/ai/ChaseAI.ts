@@ -31,9 +31,9 @@ class ChaseAI extends AI implements ChaseAIParams {
 
       // Find closest target
       let closestEntity = entitiesInVisionRangeIterator.next().value as Entity;
-      let minDistance = this.mob.position.distanceFrom(closestEntity.position);
+      let minDistance = this.mob.position.calculateDistanceBetween(closestEntity.position);
       for (var currentEntity: Entity; currentEntity = entitiesInVisionRangeIterator.next().value;) {
-         const distance = this.mob.position.distanceFrom(currentEntity.position);
+         const distance = this.mob.position.calculateDistanceBetween(currentEntity.position);
          if (distance < minDistance) {
             closestEntity = currentEntity;
             minDistance = distance;
@@ -41,7 +41,7 @@ class ChaseAI extends AI implements ChaseAIParams {
       }
 
       // Move to target
-      const angle = this.mob.position.angleBetween(closestEntity.position);
+      const angle = this.mob.position.calculateAngleBetween(closestEntity.position);
       this.mob.rotation = angle;
       this.mob.acceleration = new Vector(this.acceleration, this.mob.rotation);
       this.mob.terminalVelocity = this.terminalVelocity;

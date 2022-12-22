@@ -8,8 +8,8 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
    public vertexPositions!: HitboxVertexPositions;
    public sideAxes!: [axis1: Vector, axis2: Vector];
 
-   constructor(hitboxInfo: RectangularHitboxInfo, hitboxObject: HitboxObject<unknown>) {
-      super(hitboxInfo, hitboxObject);
+   constructor(hitboxInfo: RectangularHitboxInfo) {
+      super(hitboxInfo);
 
       this.halfDiagonalLength = Math.sqrt(Math.pow(this.info.width / 2, 2) + Math.pow(this.info.height / 2, 2));
    }
@@ -56,7 +56,7 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
          }
          case "rectangular": {
             // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
-            const distance = this.hitboxObject.position.distanceFrom(otherHitbox.hitboxObject.position);
+            const distance = this.hitboxObject.position.calculateDistanceBetween(otherHitbox.hitboxObject.position);
             if (distance > this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength) {
                return false;
             }

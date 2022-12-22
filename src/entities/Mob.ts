@@ -1,14 +1,14 @@
-import { MobType, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { HitboxType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../ai/AI";
 import EscapeAI from "../ai/EscapeAI";
 import FollowAI from "../ai/FollowAI";
 import StarveAI from "../ai/StarveAI";
 import HerdAI from "../ai/HerdAI";
 import WanderAI from "../ai/WanderAI";
-import MOB_AI_DATA_RECORD, { MobAICreationInfo } from "../data/mob-ai-data";
 import Entity, { Components } from "./Entity";
 import { SERVER } from "../server";
 import ChaseAI from "../ai/ChaseAI";
+import Hitbox from "../hitboxes/Hitbox";
 
 export const MobAIs = {
    wander: WanderAI,
@@ -25,6 +25,12 @@ export interface MobInfo {
    readonly visionRange: number;
 }
 
+export type MobAICreationInfo = Partial<{ [T in keyof typeof MobAIs]: ConstructorParameters<typeof MobAIs[T]>[1] }>;
+
+export type MobAIData = {
+   readonly info: MobInfo;
+   readonly aiCreationInfo: MobAICreationInfo;
+}
 abstract class Mob extends Entity implements MobInfo {
    /** Number of ticks between AI refreshes */
    public static readonly AI_REFRESH_TIME = 4;
@@ -40,14 +46,12 @@ abstract class Mob extends Entity implements MobInfo {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
-   constructor(position: Point, type: MobType, components: Partial<Components>, id?: number) {
-      super(position, type, components, id);
+   constructor(position: Point, hitboxes: Set<Hitbox<HitboxType>>, components: Partial<Components>, aiData: MobAIData) {
+      super(position, hitboxes, components);
 
-      const mobData = MOB_AI_DATA_RECORD[type];
-
-      this.visionRange = mobData.info.visionRange;
+      this.visionRange = aiData.info.visionRange;
       
-      this.ais = this.createAIs(mobData.aiCreationInfo);
+      this.ais = this.createAIs(aiData.aiCreationInfo);
       this.refreshAI();
    }
 
@@ -79,7 +83,7 @@ abstract class Mob extends Entity implements MobInfo {
    public refreshAI(): void {
       const entitiesInVisionRange = this.calculateEntitiesInVisionRange();
 
-      // Find the AI with highest weight
+      // Update all AI's values, and the AI with highest weight
       let newAI!: AI;
       let maxWeight = -1;
       for (const ai of this.ais) {

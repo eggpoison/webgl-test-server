@@ -1,4 +1,6 @@
-import { Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { HitboxType, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import Hitbox from "../hitboxes/Hitbox";
+import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 import Zombie from "./Zombie";
@@ -11,6 +13,8 @@ class Tombstone extends Entity {
    /** Maximum amount of zombies that can be spawned by one tombstone */
    private static readonly MAX_SPAWNED_ZOMBIES = 5;
    
+   public readonly type = "tombstone";
+
    private readonly tombstoneType: number;
 
    private readonly zombieSpawnPositions: ReadonlyArray<Point>;
@@ -19,7 +23,13 @@ class Tombstone extends Entity {
    private currentSpawnedZombieCount = 0;
    
    constructor(position: Point) {
-      super(position, "tombstone", {});
+      super(position, new Set<Hitbox<HitboxType>>([
+         new RectangularHitbox({
+            type: "rectangular",
+            width: 64,
+            height: 64
+         })
+      ]), {});
 
       this.tombstoneType = Math.floor(Math.random() * 3);
 
@@ -31,7 +41,8 @@ class Tombstone extends Entity {
       const zombieSpawnPositions = new Array<Point>();
       for (let i = 0, angleFromTombstone = this.rotation; i < 4; i++, angleFromTombstone += Math.PI / 2) {
          const offset = new Vector(Tombstone.ZOMBIE_SPAWN_DISTANCE, angleFromTombstone).convertToPoint();
-         const spawnPosition = this.position.add(offset);
+         const spawnPosition = this.position.copy();
+         spawnPosition.add(offset);
 
          // Make sure the spawn position is valid
          if (spawnPosition.x < 0 || spawnPosition.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || spawnPosition.y < 0 || spawnPosition.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
@@ -62,7 +73,8 @@ class Tombstone extends Entity {
 
       if (Math.random() < Tombstone.ZOMBIE_SPAWN_RATE / SETTINGS.TPS) {
          // Spawn zombie
-         const spawnPosition = randItem(this.zombieSpawnPositions);
+         // Copy the position to avoid having multiple zombies quantum entangled together
+         const spawnPosition = randItem(this.zombieSpawnPositions).copy();
          const zombie = new Zombie(spawnPosition);
 
          // Keep track of the zombie

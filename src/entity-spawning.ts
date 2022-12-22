@@ -2,7 +2,7 @@ import { EntityType, Point, randFloat, randInt, randItem, SETTINGS } from "webgl
 import { TOMBSTONE_SPAWN_INFO_RECORD, EntitySpawnInfo, HOSTILE_MOB_SPAWN_INFO_RECORD, PASSIVE_MOB_SPAWN_INFO_RECORD, RESOURCE_SPAWN_INFO_RECORD, SpawnInfoRecord } from "./data/entity-spawn-data";
 import ENTITY_CLASS_RECORD from "./entity-class-record";
 import { SERVER } from "./server";
-import { getTilesByBiome } from "./terrain-generation/terrain-generation";
+import { getTilesByBiome } from "./terrain-generation";
 
 /*
 Goals of the spawning system:
@@ -154,7 +154,9 @@ class SpawnerObject {
          while (spawnPositions.size < packAmount) {
             const xOffset = spawnInfo.packSpawningInfo.spawnRange * SETTINGS.TILE_SIZE * randFloat(-1, 1);
             const yOffset = spawnInfo.packSpawningInfo.spawnRange * SETTINGS.TILE_SIZE * randFloat(-1, 1);
-            const testPosition = originSpawnPosition.add(new Point(xOffset, yOffset));
+            const testPosition = originSpawnPosition.copy();
+            testPosition.x += xOffset;
+            testPosition.y += yOffset;
 
             // If the position is valid, add it to the spawn positions
             if (testPosition.x >= 0 && testPosition.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE && testPosition.y >= 0 && testPosition.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
@@ -181,14 +183,14 @@ class SpawnerObject {
          }
       }
 
-      const MAX_SPAWN_ATTEMPTS = 500;
+      const MAX_SPAWN_ATTEMPTS = 999;
       let spawnAttempts = 0;
 
-      let spawnCount = 0;
-      while (spawnableEntityTypes.size > 0 && (this.entityCap === null || spawnCount < this.entityCap)) {
+      this.currentEntityCount = 0;
+      while (spawnableEntityTypes.size > 0 && (this.entityCap === null || this.currentEntityCount < this.entityCap)) {
          const entityTypeToSpawn = this.getWeightedRandomEntityType(spawnableEntityTypes);
 
-         spawnCount += this.spawnEntity(entityTypeToSpawn);
+         this.currentEntityCount += this.spawnEntity(entityTypeToSpawn);
 
          // Check if the entity type can't be spawned anymore
          if (!this.entityTypeCanBeSpawned(entityTypeToSpawn)) {
@@ -196,7 +198,8 @@ class SpawnerObject {
          }
          
          if (++spawnAttempts >= MAX_SPAWN_ATTEMPTS) {
-            throw new Error("we may have an infinite loop on our hands");
+            console.log("Spawnable entity types: " + Array.from(spawnableEntityTypes).join(" "));
+            throw new Error("We may have an infinite loop on our hands");
          }
       }
    }
@@ -204,8 +207,18 @@ class SpawnerObject {
    private entityTypeCanBeSpawned(entityType: EntityType): boolean {
       const spawnInfo = this.spawnInfoRecord[entityType]!;
       
+      // If it is the right time of day to spawn the entity
       if (typeof spawnInfo.time !== "undefined") {
-         if ((spawnInfo.time === "day" && SERVER.isNight()) || (spawnInfo.time === "night" && !SERVER.isNight())) {
+         if ((spawnInfo.time === "day" && SERVER.time < 6 || SERVER.time >= 18) || (spawnInfo.time === "night" && (SERVER.time >= 6 && SERVER.time < 18))) {
+            return false;
+         }
+      }
+
+      // If the max biome density hasn't been exceeded
+      if (typeof spawnInfo.maxBiomeDensityPerTile !== "undefined") {
+         const numSpawnableTiles = spawnInfo.spawnableTiles.length;
+         const spawnableTilesDensity = this.currentEntityCount / numSpawnableTiles;
+         if (spawnableTilesDensity > spawnInfo.maxBiomeDensityPerTile) {
             return false;
          }
       }
@@ -219,7 +232,7 @@ const spawners = new Set<SpawnerObject>();
 spawners.add(new SpawnerObject({
    spawnInfoRecord: PASSIVE_MOB_SPAWN_INFO_RECORD,
    spawnAttemptSuccessRate: 0.3,
-   targetWorldEntityDensity: 0.5
+   targetWorldEntityDensity: 0.3
 }));
 // Hostile mob spawner
 spawners.add(new SpawnerObject({
