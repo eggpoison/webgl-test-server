@@ -1,11 +1,12 @@
-import { canCraftRecipe, CraftingRecipe, HitboxType, HitData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryType, Point, ServerItemData, SETTINGS } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitboxType, HitData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryType, Point, ServerItemData, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import Hitbox from "../hitboxes/Hitbox";
-import Item from "../items/Item";
+import Item from "../items/generic/Item";
+import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
-import StackableItem from "../items/StackableItem";
+import { SERVER } from "../server";
 import Entity from "./Entity";
 
 type PlayerAttackInfo = {
@@ -160,6 +161,38 @@ class Player extends Entity {
 
       // Clear the held item
       this.heldItem = null;
+   }
+
+   public processAttackPacket(attackPacket: AttackPacket): void {
+      // Calculate the attack's target entity
+      const targetEntities = attackPacket.targetEntities.map(id => SERVER.board.entities[id]);
+      const targetInfo = this.calculateAttackedEntity(targetEntities);
+      // Don't attack if the attack didn't hit anything
+      if (targetInfo === null) return;
+
+      // Find the selected item
+      const selectedItem = this.getComponent("inventory")!.getItem(attackPacket.itemSlot);
+
+      let damage: number;
+      if (selectedItem !== null) {
+         damage = selectedItem.getAttackDamage();
+      } else {
+         damage = 1;
+      }
+
+      // Register the hit
+      const attackHash = this.id.toString();
+      targetInfo.target.takeDamage(damage, this, attackHash);
+      targetInfo.target.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+   }
+
+   public processItemUsePacket(itemSlot: number): void {
+      const item = this.getComponent("inventory")!.getItem(itemSlot);
+      if (item === null) return;
+
+      if (typeof item.use !== "undefined") {
+         item.use(this);
+      }
    }
 }
 

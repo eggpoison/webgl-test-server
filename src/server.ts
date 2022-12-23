@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -7,10 +7,7 @@ import Entity from "./entities/Entity";
 import Mob from "./entities/Mob";
 import { startReadingInput } from "./command-input";
 import { precomputeSpawnLocations, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
-import Cow from "./entities/Cow";
-import Zombie from "./entities/Zombie";
-import Tombstone from "./entities/Tombstone";
-import Item from "./items/Item";
+import Item from "./items/generic/Item";
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -164,6 +161,10 @@ class GameServer {
          socket.on("item_release_packet", (inventoryType: PlaceablePlayerInventoryType, itemSlot: number) => {
             this.processItemReleasePacket(socket, inventoryType, itemSlot);
          });
+
+         socket.on("item_use_packet", (itemSlot: number) => {
+            this.processItemUsePacket(socket, itemSlot);
+         });
       });
    }
 
@@ -311,27 +312,17 @@ class GameServer {
          playerData.instance.processItemReleasePacket(inventoryType, itemSlot);
       }
    }
-   
-   private async processAttackPacket(sendingSocket: ISocket, attackPacket: AttackPacket): Promise<void> {
-      const player = this.playerData[sendingSocket.id].instance;
 
-      // Calculate the attack's target entity
-      const targetEntities = attackPacket.targetEntities.map(id => this.board.entities[id]);
-      const targetInfo = player.calculateAttackedEntity(targetEntities);
-      // Don't attack if the attack didn't hit anything on the serverside
-      if (targetInfo === null) return;
-
-      let damage: number;
-      if (attackPacket.heldItem !== null) {
-         damage = 1; // Placeholder
-      } else {
-         damage = 1;
+   private processItemUsePacket(socket: ISocket, itemSlot: number): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const player = this.playerData[socket.id].instance;
+         player.processItemUsePacket(itemSlot);
       }
-
-      // Register the hit
-      const attackHash = player.id.toString();
-      targetInfo.target.takeDamage(damage, player, attackHash);
-      targetInfo.target.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+   }
+   
+   private async processAttackPacket(socket: ISocket, attackPacket: AttackPacket): Promise<void> {
+      const player = this.playerData[socket.id].instance;
+      player.processAttackPacket(attackPacket);
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {

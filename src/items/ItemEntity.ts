@@ -2,7 +2,7 @@ import { Point, RectangularHitboxInfo, SETTINGS } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { SERVER } from "../server";
-import Item from "./Item";
+import Item from "./generic/Item";
 
 let nextAvailableItemID = 0;
 

@@ -1,8 +1,8 @@
 import { ItemType } from "webgl-test-shared";
-import Item from "../items/Item";
+import Item from "../items/generic/Item";
+import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
 import ItemEntity from "../items/ItemEntity";
-import StackableItem from "../items/StackableItem";
 import Component from "./Component";
 
 type Inventory = { [itemSlot: number]: Item };
@@ -141,8 +141,8 @@ class InventoryComponent extends Component {
       return amountAdded;
    }
 
-   public consumeItemType(itemType: ItemType, count: number): void {
-      let remainingAmountToConsume = count;
+   public consumeItemType(itemType: ItemType, amount: number): void {
+      let remainingAmountToConsume = amount;
       for (const [itemSlot, item] of Object.entries(this.inventory) as unknown as ReadonlyArray<[number, Item]>) {
          if (item.type !== itemType) continue;
 
@@ -152,6 +152,16 @@ class InventoryComponent extends Component {
          if (item.count === 0) {
             delete this.inventory[itemSlot];
          }
+      }
+   }
+
+   public consumeItem(itemSlot: number, amount: number): void {
+      const item = this.inventory[itemSlot];
+      if (typeof item === "undefined") return;
+
+      item.count -= amount;
+      if (item.count <= 0) {
+         delete this.inventory[itemSlot];
       }
    }
 }

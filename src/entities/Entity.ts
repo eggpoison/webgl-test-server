@@ -83,12 +83,13 @@ abstract class Entity {
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
 
-   private canBePushed = true;
-
    /** If this flag is set to true, then the entity will not move */
    private isStatic: boolean = false;
 
    private collidingEntities = new Set<Entity>();
+
+   /** Impacts how much force an entity experiences which pushing away from another entity */
+   private pushForceMultiplier = 1;
 
    public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
@@ -132,8 +133,8 @@ abstract class Entity {
       this.tickStatusEffects();
    }
 
-   public setCanBePushed(canBePushed: boolean): void {
-      this.canBePushed = canBePushed;
+   public setPushForceMultiplier(pushForceMultiplier: number): void {
+      this.pushForceMultiplier = pushForceMultiplier;
    }
 
    public setIsStatic(isStatic: boolean): void {
@@ -305,7 +306,7 @@ abstract class Entity {
    }
 
    public resolveEntityCollisions(): void {
-      if (this.isStatic || !this.canBePushed) return;
+      if (this.isStatic) return;
       
       // Push away from all colliding entities
       for (const entity of this.collidingEntities) {
@@ -321,7 +322,7 @@ abstract class Entity {
          let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
          forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
          
-         const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
+         const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
          const pushAngle = this.position.calculateAngleBetween(entity.position) + Math.PI;
          // No need to apply force to other entity as they will do it themselves
          const pushForce = new Vector(force, pushAngle);
@@ -397,9 +398,8 @@ abstract class Entity {
  
       if (hitWasReceived) this.callEvents("hurt", damage, attackingEntity);
 
-      if (hitWasReceived && !this.isRemoved) {
-
-         // Push away from the source of damage
+      // Push away from the source of damage
+      if (hitWasReceived && !this.isRemoved && !this.isStatic) {
          if (attackingEntity !== null) {
             const angle = this.position.calculateAngleBetween(attackingEntity.position) + Math.PI;
             const force = new Vector(150 * healthComponent.getKnockbackMultiplier(), angle);

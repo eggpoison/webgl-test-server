@@ -33,7 +33,7 @@ class Tree extends Entity {
          item_creation: new ItemCreationComponent()
       });
 
-      this.setCanBePushed(false);
+      this.setIsStatic(true);
 
       this.getComponent("health")!.setKnockbackMultiplier(Tree.KNOCKBACK_MULTIPLIER);
 
