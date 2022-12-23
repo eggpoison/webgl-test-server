@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, CowSpecies, InitialPlayerDataPacket, randFloat, Mutable, EntityType, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -129,7 +129,9 @@ class GameServer {
                spawnPosition: [xSpawnPosition, ySpawnPosition],
                serverEntityDataArray: visibleEntityDataArray,
                serverItemEntityDataArray: serverItemDataArray,
-               playerInventory: {},
+               hotbarInventory: {},
+               craftingOutputItem: null,
+               heldItem: null,
                tileUpdates: [],
                serverTicks: this.ticks,
                hitsTaken: []
@@ -149,6 +151,18 @@ class GameServer {
 
          socket.on("attack_packet", (attackPacket: AttackPacket) => {
             this.processAttackPacket(socket, attackPacket);
+         });
+
+         socket.on("crafting_packet", (craftingRecipe: CraftingRecipe) => {
+            this.processCraftingPacket(socket, craftingRecipe);
+         });
+
+         socket.on("item_hold_packet", (inventoryType: PlayerInventoryType, itemSlot: number) => {
+            this.processItemHoldPacket(socket, inventoryType, itemSlot);
+         });
+
+         socket.on("item_release_packet", (inventoryType: PlaceablePlayerInventoryType, itemSlot: number) => {
+            this.processItemReleasePacket(socket, inventoryType, itemSlot);
          });
       });
    }
@@ -228,15 +242,27 @@ class GameServer {
 
          const serverItemEntityDataArray = this.board.calculatePlayerItemInfoArray(playerData.visibleChunkBounds);
             
-         // Calculate the player inventory data
-         const playerInventoryData: ServerInventoryData = {};
+         // Calculate the hotbar inventory data
+         const hotbarInventoryData: ServerInventoryData = {};
          const inventory = player.getComponent("inventory")!.getInventory();
          for (const [itemSlot, item] of Object.entries(inventory) as unknown as ReadonlyArray<[number, Item]>) {
-            playerInventoryData[itemSlot] = {
+            hotbarInventoryData[itemSlot] = {
                type: item.type,
                count: item.count
             };
          }
+
+         // Format the crafting output item
+         const craftingOutputItem: ServerItemData | null = player.craftingOutputItem !== null ? {
+            type: player.craftingOutputItem.type,
+            count: player.craftingOutputItem.count
+         } : null;
+
+         // Format the crafting held item
+         const heldItem: ServerItemData | null = player.heldItem !== null ? {
+            type: player.heldItem.type,
+            count: player.heldItem.count
+         } : null;
          
          const hitsTaken = player.getHitsTaken();
          player.clearHitsTaken();
@@ -245,7 +271,9 @@ class GameServer {
          const gameDataPacket: GameDataPacket = {
             serverEntityDataArray: visibleEntityInfoArray,
             serverItemEntityDataArray: serverItemEntityDataArray,
-            playerInventory: playerInventoryData,
+            hotbarInventory: hotbarInventoryData,
+            craftingOutputItem: craftingOutputItem,
+            heldItem: heldItem,
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
             hitsTaken: hitsTaken
@@ -263,6 +291,27 @@ class GameServer {
       }
    }
 
+   private processCraftingPacket(socket: ISocket, craftingRecipe: CraftingRecipe): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const playerData = this.playerData[socket.id];
+         playerData.instance.processCraftingPacket(craftingRecipe);
+      }
+   }
+
+   private processItemHoldPacket(socket: ISocket, inventoryType: PlayerInventoryType, itemSlot: number): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const playerData = this.playerData[socket.id];
+         playerData.instance.processItemHoldPacket(inventoryType, itemSlot);
+      }
+   }
+
+   private processItemReleasePacket(socket: ISocket, inventoryType: PlaceablePlayerInventoryType, itemSlot: number): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const playerData = this.playerData[socket.id];
+         playerData.instance.processItemReleasePacket(inventoryType, itemSlot);
+      }
+   }
+   
    private async processAttackPacket(sendingSocket: ISocket, attackPacket: AttackPacket): Promise<void> {
       const player = this.playerData[sendingSocket.id].instance;
 

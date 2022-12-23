@@ -15,15 +15,11 @@ abstract class Item implements BaseItemInfo {
    public readonly type: ItemType;
    public count: number;
 
-   public readonly name: string;
-
    constructor(itemType: ItemType, count: number, itemInfo: BaseItemInfo) {
       this.id = getUniqueID();
 
       this.type = itemType;
       this.count = count;
-
-      this.name = itemInfo.name;
    }
 }
 

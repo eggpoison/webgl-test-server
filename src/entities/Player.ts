@@ -1,9 +1,11 @@
-import { HitboxType, HitData, Point, SETTINGS } from "webgl-test-shared";
+import { canCraftRecipe, CraftingRecipe, HitboxType, HitData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryType, Point, ServerItemData, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import Hitbox from "../hitboxes/Hitbox";
-import ItemEntity from "../items/ItemEntity";
+import Item from "../items/Item";
+import { createItem } from "../items/item-creation";
+import StackableItem from "../items/StackableItem";
 import Entity from "./Entity";
 
 type PlayerAttackInfo = {
@@ -11,13 +13,11 @@ type PlayerAttackInfo = {
    readonly angle: number;
 }
 
-/** Player events to be sent to the client */
-type PlayerEvents = {
-   readonly pickedUpItemEntities: Array<number>;
-}
-
 class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
+
+   public craftingOutputItem: Item | null = null;
+   public heldItem: Item | null = null;
 
    public readonly type = "player";
 
@@ -34,7 +34,7 @@ class Player extends Entity {
          })
       ]), {
          health: new HealthComponent(Player.MAX_HEALTH, true),
-         inventory: new InventoryComponent(SETTINGS.PLAYER_ITEM_SLOTS)
+         inventory: new InventoryComponent(SETTINGS.PLAYER_HOTBAR_SIZE)
       });
 
       this.displayName = name;
@@ -82,6 +82,84 @@ class Player extends Entity {
 
    public clearHitsTaken(): void {
       this.hitsTaken = new Array<HitData>();
+   }
+
+   public processCraftingPacket(craftingRecipe: CraftingRecipe): void {
+      if (this.craftingOutputItem !== null && (this.craftingOutputItem.type !== craftingRecipe.product || !this.craftingOutputItem.hasOwnProperty("stackSize") || this.craftingOutputItem.count + craftingRecipe.productCount > (this.craftingOutputItem as StackableItem).stackSize)) {
+         return;
+      }
+      
+      const inventoryComponent = this.getComponent("inventory")!;
+      
+      if (canCraftRecipe(inventoryComponent.getInventory(), craftingRecipe, SETTINGS.PLAYER_HOTBAR_SIZE)) {
+         // Consume ingredients
+         for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients) as ReadonlyArray<[ItemType, number]>) {
+            inventoryComponent.consumeItemType(ingredientType, ingredientCount);
+         }
+
+         // Add product to held item
+         if (this.craftingOutputItem === null) {
+            const item = createItem(craftingRecipe.product, craftingRecipe.productCount);
+            this.craftingOutputItem = item;
+         } else {
+            this.craftingOutputItem.count += craftingRecipe.productCount;
+         }
+      }
+   }
+
+   public processItemHoldPacket(inventoryType: PlayerInventoryType, itemSlot: number): void {
+      // Don't pick up the item if there is already a held item
+      if (this.heldItem !== null) return;
+
+      const inventoryComponent = this.getComponent("inventory")!;
+      
+      // Find which item is being held
+      let item: Item | null;
+      switch (inventoryType) {
+         case "hotbar": {
+            item = inventoryComponent.getItem(itemSlot);
+            break;
+         }
+         case "craftingOutput": {
+            item = this.craftingOutputItem;
+            break;
+         }
+      }
+
+      if (item === null) return;
+
+      // Hold the item
+      this.heldItem = item;
+
+      // Remove the item from its previous inventory
+      switch (inventoryType) {
+         case "hotbar": {
+            inventoryComponent.setItem(itemSlot, null);
+            break;
+         }
+         case "craftingOutput": {
+            this.craftingOutputItem = null;
+            break;
+         }
+      }
+   }
+
+   public processItemReleasePacket(inventoryType: PlaceablePlayerInventoryType, itemSlot: number): void {
+      // Don't release an item if there is no held item
+      if (this.heldItem === null) return;
+
+      const inventoryComponent = this.getComponent("inventory")!;
+
+      // Add the item to the inventory
+      switch (inventoryType) {
+         case "hotbar": {
+            inventoryComponent.setItem(itemSlot, this.heldItem);
+            break;
+         }
+      }
+
+      // Clear the held item
+      this.heldItem = null;
    }
 }
 

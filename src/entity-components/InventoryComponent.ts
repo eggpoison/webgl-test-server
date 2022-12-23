@@ -40,6 +40,22 @@ class InventoryComponent extends Component {
       return this.inventory;
    }
 
+   public getItem(itemSlot: number): Item | null {
+      if (this.inventory.hasOwnProperty(itemSlot)) {
+         return this.inventory[itemSlot];
+      } else {
+         return null;
+      }
+   }
+
+   public setItem(itemSlot: number, item: Item | null): void {
+      if (item !== null) {
+         this.inventory[itemSlot] = item;
+      } else {
+         delete this.inventory[itemSlot];
+      }
+   }
+
    private getNearbyItemEntities(): Set<ItemEntity> {
       const nearbyItemEntities = new Set<ItemEntity>();
       for (const chunk of this.entity.chunks) {
@@ -91,7 +107,7 @@ class InventoryComponent extends Component {
     * Adds an item to the inventory
     * @returns The number of items added to the inventory
     */
-   private addItem(item: Item): number {
+   public addItem(item: Item): number {
       let remainingAmountToAdd = item.count;
       let amountAdded = 0;
       
@@ -104,23 +120,39 @@ class InventoryComponent extends Component {
          }
 
          // If the slot contains an item of the same type, add as much of the item as possible
-         if (!item.hasOwnProperty("stackSize")) {
-            // If the item can't be stacked then nothing can be added to the slot
-            continue;
-         } else {
-            const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
-            this.inventory[i].count += maxAddAmount;
-            amountAdded += maxAddAmount;
-            remainingAmountToAdd -= maxAddAmount;
+         if (this.inventory[i].type === item.type) {
+            if (!item.hasOwnProperty("stackSize")) {
+               // If the item can't be stacked then nothing can be added to the slot
+               continue;
+            } else {
+               const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
+               this.inventory[i].count += maxAddAmount;
+               amountAdded += maxAddAmount;
+               remainingAmountToAdd -= maxAddAmount;
 
-            // If there is none of the item left to add, exit
-            if (remainingAmountToAdd === 0) {
-               break;
+               // If there is none of the item left to add, exit
+               if (remainingAmountToAdd === 0) {
+                  break;
+               }
             }
          }
       }
 
       return amountAdded;
+   }
+
+   public consumeItemType(itemType: ItemType, count: number): void {
+      let remainingAmountToConsume = count;
+      for (const [itemSlot, item] of Object.entries(this.inventory) as unknown as ReadonlyArray<[number, Item]>) {
+         if (item.type !== itemType) continue;
+
+         const amountConsumed = Math.min(remainingAmountToConsume, item.count);
+         item.count -= amountConsumed;
+         remainingAmountToConsume -= amountConsumed;
+         if (item.count === 0) {
+            delete this.inventory[itemSlot];
+         }
+      }
    }
 }
 
