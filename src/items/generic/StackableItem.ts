@@ -9,10 +9,6 @@ class StackableItem extends Item implements StackableItemInfo {
 
       this.stackSize = itemInfo.stackSize;
    }
-
-   public getAttackDamage(): number {
-      return 1;
-   }
 }
 
 export default StackableItem;

@@ -1,308 +1,185 @@
-import { EntityType, Point, randFloat, randInt, randItem, SETTINGS } from "webgl-test-shared";
-import { TOMBSTONE_SPAWN_INFO_RECORD, EntitySpawnInfo, HOSTILE_MOB_SPAWN_INFO_RECORD, PASSIVE_MOB_SPAWN_INFO_RECORD, RESOURCE_SPAWN_INFO_RECORD, SpawnInfoRecord } from "./data/entity-spawn-data";
+import { Point, randInt, randItem, SETTINGS } from "webgl-test-shared";
+import SPAWN_INFO_RECORD, { EntitySpawnInfo } from "./data/entity-spawn-data";
+import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-class-record";
 import { SERVER } from "./server";
-import { getTilesByBiome } from "./terrain-generation";
+import { LocalBiome, LOCAL_BIOME_RECORD } from "./terrain-generation";
 
-/*
-Goals of the spawning system:
-- Keep entities and resources at a specific 'density' (not too many or too little entities per area in space)
-- No abrupt spawning - when an entity dies it shouldn't be immediately replaced
-- Passive mobs have to be rarer than hostile mobs
-- Flexible system to easily allow for changes to spawn criteria or new entities being spawned
+/** Maximum distance a spawn event can occur from another entity */
+const MAX_SPAWN_DISTANCE = 100;
 
-Passive mobs being rare than hostile mobs is achieved by having passive mobs less likely to be spawned than hostile mobs in an entity spawn attempt
-*/
-
-type SpawnerObjectInfo = {
-   readonly spawnInfoRecord: SpawnInfoRecord;
-   /** The average number of times that a spawn attempt will succeed in a second */
-   readonly spawnAttemptSuccessRate: number;
-   /** The target density of its entity types in the world (number of entities that should be present per chunk) */
-   readonly targetWorldEntityDensity?: number;
-}
-
-class SpawnerObject {
-   private readonly spawnInfoRecord: SpawnInfoRecord;
-   private readonly spawnAttemptSuccessRate: number;
-   private readonly targetWorldEntityDensity: number | null;
-
-   /** Current amount of entities that the spawner is able to spawn */
-   private currentEntityCount: number = 0;
-   /** Maximum number of entities, based on the target world entity density */
-   private readonly entityCap: number | null = null;
-
-   private readonly countedEntityTypes: ReadonlySet<EntityType>;
-
-   constructor({ spawnInfoRecord, spawnAttemptSuccessRate, targetWorldEntityDensity }: SpawnerObjectInfo) {
-      this.spawnInfoRecord = spawnInfoRecord;
-      this.spawnAttemptSuccessRate = spawnAttemptSuccessRate;
-
-      if (typeof targetWorldEntityDensity !== "undefined") {
-         this.targetWorldEntityDensity = targetWorldEntityDensity;
-         this.entityCap = targetWorldEntityDensity * SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
-      } else {
-         this.targetWorldEntityDensity = null;
-      }
-
-      // Get the counted entity types
-      const countedEntityTypes = new Set<EntityType>();
-      for (const entityType of Object.keys(spawnInfoRecord) as ReadonlyArray<EntityType>) {
-         countedEntityTypes.add(entityType);
-      }
-      this.countedEntityTypes = countedEntityTypes;
-   }
-
-   public updateEntityCount(entityTypeCounts: Partial<{ [T in EntityType]: number }>): void {
-      this.currentEntityCount = 0;
-      for (const [entityType, count] of Object.entries(entityTypeCounts) as ReadonlyArray<[EntityType, number]>) {
-         if (this.countedEntityTypes.has(entityType)) {
-            this.currentEntityCount += count;
-         }
-      }
-   }
-
-   public runSpawnAttempt(): void {
-      // If there is a world entity density limit, make sure it is accounted for
-      if (this.targetWorldEntityDensity !== null) {
-         const entityDensity = this.currentEntityCount / SETTINGS.BOARD_SIZE / SETTINGS.BOARD_SIZE;
-         if (entityDensity > this.targetWorldEntityDensity) {
-            return;
-         }
-      }
-
-      // Make sure entity cap isn't exceeded
-      if (!(this.entityCap === null || this.currentEntityCount < this.entityCap)) {
-         return;
-      }
-
-      if (Math.random() < this.spawnAttemptSuccessRate / SETTINGS.TPS) {
-         this.spawnEntities();
-      }
-   }
-
-   protected spawnEntities(): void {
-      // Find which entity types are able to be spawned
-      let spawnableEntityTypes = new Set<EntityType>();
-      for (const [entityType, spawnInfo] of Object.entries(this.spawnInfoRecord) as ReadonlyArray<[EntityType, EntitySpawnInfo]>) {
-
-         if (this.entityTypeCanBeSpawned(entityType)) {
-            spawnableEntityTypes.add(entityType);
-         }
-      }
-
-      // Don't spawn anything if there's nothing to spawn
-      if (spawnableEntityTypes.size === 0) {
-         return;
-      }
-
-      // Pick a (weighted) random entity type based on those available to spawn
-      const entityTypeToSpawn = this.getWeightedRandomEntityType(spawnableEntityTypes);
-
-      this.spawnEntity(entityTypeToSpawn);
-   }
-
-   /** Picks a random entity type based off their weights */
-   private getWeightedRandomEntityType(entityTypes: ReadonlySet<EntityType>): EntityType {
-      let totalWeight = 0;
-      for (const entityType of entityTypes) {
-         const spawnInfo = this.spawnInfoRecord[entityType]!;
-         totalWeight += spawnInfo.weight;
-      }
-   
-      const selectedWeight = randInt(1, totalWeight);
-   
-      totalWeight = 0;
-      let selectedEntityType!: EntityType;
-      for (const entityType of entityTypes) {
-         const spawnInfo = this.spawnInfoRecord[entityType]!;
-         totalWeight += spawnInfo.weight;
-         if (selectedWeight <= totalWeight) {
-            selectedEntityType = entityType;
+const spawnInfoConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
+   // Check time ranges are valid
+   if (typeof spawnInfo.spawnTimeRanges !== "undefined") {
+      let spawnTimeIsValid = false;
+      for (const [minSpawnTime, maxSpawnTime] of spawnInfo.spawnTimeRanges) {
+         if (SERVER.time >= minSpawnTime && SERVER.time <= maxSpawnTime) {
+            spawnTimeIsValid = true;
             break;
          }
       }
+      if (!spawnTimeIsValid) return false;
+   }
    
-      return selectedEntityType;
-   }
+   return true;
+}
 
-   /**
-    * Spawns a given entity type in a random position
-    * @returns The number of entities spawned
-    */
-   private spawnEntity(entityType: EntityType): number {
-      const spawnInfo = this.spawnInfoRecord[entityType]!;
+const findAvailableLocalBiomes = (spawnInfo: EntitySpawnInfo): Set<LocalBiome> | null => {
+   const availableLocalBiomes = new Set<LocalBiome>();
 
-      // Pick a random location to spawn the entity at
-      const tileSpawnLocation = randItem(spawnInfo.spawnableTiles);
-      const originSpawnPosition = new Point((tileSpawnLocation[0] + 0.5) * SETTINGS.TILE_SIZE, (tileSpawnLocation[1] + 0.5) * SETTINGS.TILE_SIZE);
-
-      let packAmount = 1;
-
-      if (typeof spawnInfo.packSpawningInfo === "undefined") {
-         const entityClass = ENTITY_CLASS_RECORD[entityType]();
-         new entityClass(originSpawnPosition);
-      } else {
-         packAmount = typeof spawnInfo.packSpawningInfo.size === "number" ? spawnInfo.packSpawningInfo.size : randInt(...spawnInfo.packSpawningInfo.size);
-         
-         // Generate spawn positions
-         const spawnPositions = new Set<Point>();
-
-         // The origin spawn position is always a spawn position
-         spawnPositions.add(originSpawnPosition);
-
-         while (spawnPositions.size < packAmount) {
-            const xOffset = spawnInfo.packSpawningInfo.spawnRange * SETTINGS.TILE_SIZE * randFloat(-1, 1);
-            const yOffset = spawnInfo.packSpawningInfo.spawnRange * SETTINGS.TILE_SIZE * randFloat(-1, 1);
-            const testPosition = originSpawnPosition.copy();
-            testPosition.x += xOffset;
-            testPosition.y += yOffset;
-
-            // If the position is valid, add it to the spawn positions
-            if (testPosition.x >= 0 && testPosition.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE && testPosition.y >= 0 && testPosition.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
-               spawnPositions.add(testPosition);
-            }
-         }
-
-         // Spawn the entities
-         const entityClass = ENTITY_CLASS_RECORD[entityType]();
-         for (const spawnPosition of spawnPositions) {
-            new entityClass(spawnPosition);
-         }
-      }
-
-      return packAmount;
-   }
-
-   public spawnInitialEntities(): void {
-      let spawnableEntityTypes = new Set<EntityType>();
-
-      for (const entityType of Object.keys(this.spawnInfoRecord) as ReadonlyArray<EntityType>) {
-         if (this.entityTypeCanBeSpawned(entityType)) {
-            spawnableEntityTypes.add(entityType);
-         }
-      }
-
-      const MAX_SPAWN_ATTEMPTS = 999;
-      let spawnAttempts = 0;
-
-      this.currentEntityCount = 0;
-      while (spawnableEntityTypes.size > 0 && (this.entityCap === null || this.currentEntityCount < this.entityCap)) {
-         const entityTypeToSpawn = this.getWeightedRandomEntityType(spawnableEntityTypes);
-
-         this.currentEntityCount += this.spawnEntity(entityTypeToSpawn);
-
-         // Check if the entity type can't be spawned anymore
-         if (!this.entityTypeCanBeSpawned(entityTypeToSpawn)) {
-            spawnableEntityTypes.delete(entityTypeToSpawn);
-         }
-         
-         if (++spawnAttempts >= MAX_SPAWN_ATTEMPTS) {
-            console.log("Spawnable entity types: " + Array.from(spawnableEntityTypes).join(" "));
-            throw new Error("We may have an infinite loop on our hands");
-         }
-      }
-   }
-
-   private entityTypeCanBeSpawned(entityType: EntityType): boolean {
-      const spawnInfo = this.spawnInfoRecord[entityType]!;
+   for (const biomeName of spawnInfo.spawnableBiomes) {
+      if (!LOCAL_BIOME_RECORD.hasOwnProperty(biomeName)) continue;
       
-      // If it is the right time of day to spawn the entity
-      if (typeof spawnInfo.time !== "undefined") {
-         if ((spawnInfo.time === "day" && SERVER.time < 6 || SERVER.time >= 18) || (spawnInfo.time === "night" && (SERVER.time >= 6 && SERVER.time < 18))) {
-            return false;
+      for (const localBiome of LOCAL_BIOME_RECORD[biomeName]!) {
+         let entityCount: number;
+         if (!localBiome.entityCounts.hasOwnProperty(spawnInfo.entityType)) {
+            entityCount = 0;
+         } else {
+            entityCount = localBiome.entityCounts[spawnInfo.entityType]!;
+         }
+
+         const localBiomeDensity = entityCount / localBiome.tiles.size;
+         if (localBiomeDensity < spawnInfo.maxLocalBiomeDensity!) {
+            availableLocalBiomes.add(localBiome);
          }
       }
+   }
 
-      // If the max biome density hasn't been exceeded
-      if (typeof spawnInfo.maxBiomeDensityPerTile !== "undefined") {
-         const numSpawnableTiles = spawnInfo.spawnableTiles.length;
-         const spawnableTilesDensity = this.currentEntityCount / numSpawnableTiles;
-         if (spawnableTilesDensity > spawnInfo.maxBiomeDensityPerTile) {
-            return false;
-         }
-      }
+   if (availableLocalBiomes.size === 0) return null;
+   return availableLocalBiomes;
+}
 
-      return true;
+const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => {
+   const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
+   
+   new entityClass(spawnOrigin);
+
+   if (typeof spawnInfo.packSpawningInfo === "undefined") {
+      return;
+   }
+
+   // 
+   // Pack spawning
+   // 
+   const minX = Math.max(spawnOrigin.x - spawnInfo.packSpawningInfo.spawnRange, 0);
+   const maxX = Math.min(spawnOrigin.x + spawnInfo.packSpawningInfo.spawnRange, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
+   const minY = Math.max(spawnOrigin.y - spawnInfo.packSpawningInfo.spawnRange, 0);
+   const maxY = Math.min(spawnOrigin.y + spawnInfo.packSpawningInfo.spawnRange, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
+
+   const spawnCount = typeof spawnInfo.packSpawningInfo.size === "number" ? spawnInfo.packSpawningInfo.size : randInt(...spawnInfo.packSpawningInfo.size);
+   for (let i = 0; i < spawnCount - 1; i++) {
+      // Generate a spawn position near the spawn origin
+      const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
+
+      new entityClass(spawnPosition);
    }
 }
 
-const spawners = new Set<SpawnerObject>();
-// Passive mob spawner
-spawners.add(new SpawnerObject({
-   spawnInfoRecord: PASSIVE_MOB_SPAWN_INFO_RECORD,
-   spawnAttemptSuccessRate: 0.3,
-   targetWorldEntityDensity: 0.3
-}));
-// Hostile mob spawner
-spawners.add(new SpawnerObject({
-   spawnInfoRecord: HOSTILE_MOB_SPAWN_INFO_RECORD,
-   spawnAttemptSuccessRate: 0.3,
-   targetWorldEntityDensity: 1
-}));
-// Resource spawner
-spawners.add(new SpawnerObject({
-   spawnInfoRecord: RESOURCE_SPAWN_INFO_RECORD,
-   spawnAttemptSuccessRate: 0.3
-}));
-// Tombstone spawner
-spawners.add(new SpawnerObject({
-   spawnInfoRecord: TOMBSTONE_SPAWN_INFO_RECORD,
-   spawnAttemptSuccessRate: 0.1,
-   targetWorldEntityDensity: 0.2
-}));
+const chooseRandomLocalBiome = (localBiomes: ReadonlySet<LocalBiome>): LocalBiome => {
+   let totalWeight = 0;
+   for (const localBiome of localBiomes) {
+      totalWeight += localBiome.tiles.size;
+   }
 
-/** Spawns initial entities until no more can be spawned */
-export function spawnInitialEntities(): void {
-   for (const spawner of spawners) {
-      spawner.spawnInitialEntities();
+   const targetWeight = randInt(1, totalWeight);
+
+   let currentWeight = 0;
+   for (const localBiome of localBiomes) {
+      currentWeight += localBiome.tiles.size;
+      if (currentWeight >= targetWeight) {
+         return localBiome;
+      }
+   }
+
+   throw new Error("Unable to find a local biome!");
+}
+
+const spawnPositionIsValid = (position: Point): boolean => {
+   const minChunkX = Math.max(Math.min(Math.floor(position.x - MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor(position.x + MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor(position.y - MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor(position.y + MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+   const checkedEntities = new Set<Entity>();
+   
+   for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         for (const entity of chunk.getEntities()) {
+            if (checkedEntities.has(entity)) continue;
+            
+            const distance = position.calculateDistanceBetween(entity.position);
+            if (distance > MAX_SPAWN_DISTANCE) {
+               return false;
+            }
+
+            checkedEntities.add(entity);
+         }
+      }  
+   }
+
+   return true;
+}
+
+const runSpawnEvent = (spawnInfo: EntitySpawnInfo, localBiome: LocalBiome): void => {
+   if (!spawnInfoConditionsAreMet(spawnInfo)) return;
+
+   // Pick a random tile in the local biome to spawn at
+   const [spawnTileX, spawnTileY] = randItem(Array.from(localBiome.tiles));
+
+   // Calculate a random position in that tile to run the spawn at
+   const x = (spawnTileX + Math.random()) * SETTINGS.TILE_SIZE;
+   const y = (spawnTileY + Math.random()) * SETTINGS.TILE_SIZE;
+   const spawnPosition = new Point(x, y);
+
+
+   if (spawnPositionIsValid(spawnPosition)) {
+      spawnEntities(spawnInfo, spawnPosition);
    }
 }
 
-/** Attempts to spawn entities */
+let bigGrassBiome!: LocalBiome;
+
 export function runSpawnAttempt(): void {
-   // Count the amounts of each entity type
-   const entityTypeCounts: Partial<{ [T in EntityType]: number }> = {};
-   const countedMobIDs = new Set<number>();
-   for (const entity of Object.values(SERVER.board.entities)) {
-      // If the entity has already been accounted for, skip it
-      if (countedMobIDs.has(entity.id)) continue;
+   console.log(bigGrassBiome.entityCounts.tombstone);
+   
+   for (const spawnInfo of SPAWN_INFO_RECORD) {
+      if (Math.random() < spawnInfo.spawnRate / SETTINGS.TPS) {
+         const availableLocalBiomes = findAvailableLocalBiomes(spawnInfo);
+         if (availableLocalBiomes === null) continue;
 
-      // If the entity type hasn't been counted yet, add it to the record
-      if (!entityTypeCounts.hasOwnProperty(entity.type)) {
-         entityTypeCounts[entity.type] = 1;
-      } else {
-         // Otherwise add to the existing count
-         entityTypeCounts[entity.type]!++;
+         const localBiome = chooseRandomLocalBiome(availableLocalBiomes);
+         runSpawnEvent(spawnInfo, localBiome);
       }
-
-      countedMobIDs.add(entity.id);
-   }
-
-   for (const spawner of spawners) {
-      // Send the new entity counts to the spawner
-      spawner.updateEntityCount(entityTypeCounts);
-      // Run spawn attempt
-      spawner.runSpawnAttempt();
    }
 }
 
-const precomputeSpawnInfoRecordSpawnLocations = (spawnInfoRecord: SpawnInfoRecord): void => {
-   const entries = Object.entries(spawnInfoRecord) as ReadonlyArray<[EntityType, EntitySpawnInfo]>;
-   for (const [entityType, spawnInfo] of entries) {
-      for (const biome of spawnInfo.spawnableBiomes) {
-         const spawnableTiles = getTilesByBiome(biome);
-         for (const tileCoords of spawnableTiles) {
-            spawnInfoRecord[entityType]!.spawnableTiles.push(tileCoords);   
+export function spawnInitialEntities(): void {
+   let numSpawnAttempts = 0;
+   // For each spawn info object, spawn entities until no more can be spawned
+   for (const spawnInfo of SPAWN_INFO_RECORD) {
+      while (spawnInfoConditionsAreMet(spawnInfo)) {
+         const localBiomes = findAvailableLocalBiomes(spawnInfo);
+         if (localBiomes === null) {
+            break;
+         }
+
+         const localBiome = chooseRandomLocalBiome(localBiomes);
+
+         runSpawnEvent(spawnInfo, localBiome);
+
+         if (++numSpawnAttempts >= 999) {
+            console.log(spawnInfo);
+            throw new Error("we may have an infinite loop on our hands...");
          }
       }
    }
-}
 
-/** Precomputes the potential spawn locations of different entity types to improve performance (realistically this won't affect performance in the slightest but it feels like a sin not to) */
-export function precomputeSpawnLocations(): void {
-   precomputeSpawnInfoRecordSpawnLocations(PASSIVE_MOB_SPAWN_INFO_RECORD);
-   precomputeSpawnInfoRecordSpawnLocations(HOSTILE_MOB_SPAWN_INFO_RECORD);
-   precomputeSpawnInfoRecordSpawnLocations(RESOURCE_SPAWN_INFO_RECORD);
-   precomputeSpawnInfoRecordSpawnLocations(TOMBSTONE_SPAWN_INFO_RECORD);
+   for (const biome of LOCAL_BIOME_RECORD.grasslands!) {
+      if (typeof bigGrassBiome === "undefined") {
+         bigGrassBiome = biome;
+      } else if (biome.tiles.size > bigGrassBiome.tiles.size) {
+         bigGrassBiome = biome;
+      }
+   }
 }

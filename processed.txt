@@ -1,0 +1,1051 @@
+Statistical profiling result from isolate-0x5640960-25873-v8.log, (12305 ticks, 6 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+   6360   51.7%          /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+    215    1.7%          /usr/lib/x86_64-linux-gnu/libc-2.31.so
+      6    0.0%          /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.28
+      3    0.0%          [vdso]
+      1    0.0%          /usr/lib/x86_64-linux-gnu/libm-2.31.so
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+   2055   16.7%   35.9%  LazyCompile: *calculateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:316:31
+   1388   11.3%   24.3%  LazyCompile: *calculateEntitiesInVisionRange /home/eddie/webgl-test-server/src/entities/Mob.ts:79:35
+    203    1.6%    3.5%  LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    165    1.3%    2.9%  LazyCompile: *applyPhysics /home/eddie/webgl-test-server/src/entities/Entity.ts:166:17
+    124    1.0%    2.2%  LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+    119    1.0%    2.1%  LazyCompile: *setEntityPotentialCollidingEntities /home/eddie/webgl-test-server/src/Board.ts:76:40
+    109    0.9%    1.9%  LazyCompile: *resolveEntityCollisions /home/eddie/webgl-test-server/src/entities/Entity.ts:259:28
+     96    0.8%    1.7%  LazyCompile: *circleAndRectangleDoIntersect /home/eddie/webgl-test-shared/lib/collision-detection.js:31:39
+     72    0.6%    1.3%  LazyCompile: *subtract /home/eddie/webgl-test-shared/lib/utils.js:28:13
+     70    0.6%    1.2%  LazyCompile: *calculateContainingChunks /home/eddie/webgl-test-server/src/entities/Entity.ts:124:30
+     59    0.5%    1.0%  LazyCompile: *add /home/eddie/webgl-test-shared/lib/utils.js:68:8
+     37    0.3%    0.6%  LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Entity.ts:73:9
+     36    0.3%    0.6%  LazyCompile: *generateVisibleEntityData /home/eddie/webgl-test-server/src/server.ts:151:30
+     29    0.2%    0.5%  LazyCompile: *updateHitboxBounds /home/eddie/webgl-test-server/src/hitboxes/Hitbox.ts:30:23
+     28    0.2%    0.5%  LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     24    0.2%    0.4%  LazyCompile: *copy /home/eddie/webgl-test-shared/lib/utils.js:82:9
+     20    0.2%    0.3%  LazyCompile: *scanJsDocToken /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12145:32
+     18    0.1%    0.3%  LazyCompile: *filterEntitiesInVisionRange /home/eddie/webgl-test-server/src/ai/HerdAI.ts:190:32
+     18    0.1%    0.3%  LazyCompile: *filterEntitiesInVisionRange /home/eddie/webgl-test-server/src/ai/ChaseAI.ts:36:32
+     17    0.1%    0.3%  LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+     17    0.1%    0.3%  LazyCompile: *parseJSDocCommentWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37470:45
+     13    0.1%    0.2%  LazyCompile: *hasBinary /home/eddie/webgl-test-server/node_modules/socket.io-parser/dist/is-binary.js:28:19
+     12    0.1%    0.2%  LazyCompile: *isColliding /home/eddie/webgl-test-server/src/hitboxes/CircularHitbox.ts:16:16
+     11    0.1%    0.2%  LazyCompile: *scan /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:11420:22
+      8    0.1%    0.1%  LazyCompile: *iterateCommentRanges /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10639:34
+      7    0.1%    0.1%  LazyCompile: *rotatePoint /home/eddie/webgl-test-shared/lib/utils.js:111:21
+      7    0.1%    0.1%  LazyCompile: *createBaseNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31406:38
+      7    0.1%    0.1%  LazyCompile: *convertToPoint /home/eddie/webgl-test-shared/lib/utils.js:63:19
+      5    0.0%    0.1%  LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      5    0.0%    0.1%  LazyCompile: *createToken /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:23033:29
+      5    0.0%    0.1%  LazyCompile: *createIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32363:34
+      5    0.0%    0.1%  LazyCompile: *<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37490:74
+      4    0.0%    0.1%  LazyCompile: *updateContainingChunks /home/eddie/webgl-test-server/src/entities/Entity.ts:143:27
+      4    0.0%    0.1%  LazyCompile: *resolveWallCollisions /home/eddie/webgl-test-server/src/entities/Entity.ts:225:26
+      4    0.0%    0.1%  LazyCompile: *createNodeArray /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32318:33
+      4    0.0%    0.1%  LazyCompile: *createBaseVariableLikeDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22875:51
+      4    0.0%    0.1%  LazyCompile: *createBaseGenericNamedDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22816:51
+      4    0.0%    0.1%  LazyCompile: *copy /home/eddie/webgl-test-shared/lib/utils.js:47:9
+      4    0.0%    0.1%  LazyCompile: *calculateHitboxBounds /home/eddie/webgl-test-server/src/hitboxes/CircularHitbox.ts:9:26
+      4    0.0%    0.1%  LazyCompile: *calculateCurrentTile /home/eddie/webgl-test-server/src/entities/Entity.ts:161:25
+      4    0.0%    0.1%  Function: ^resolveNameHelper /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:49650:35
+      4    0.0%    0.1%  Function: ^recursiveTypeRelatedTo /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:65472:44
+      3    0.0%    0.1%  LazyCompile: *token /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31992:23
+      3    0.0%    0.1%  LazyCompile: *tick /home/eddie/webgl-test-server/src/ai/WanderAI.ts:19:9
+      3    0.0%    0.1%  LazyCompile: *getPlayerNearbyEntities /home/eddie/webgl-test-server/src/Board.ts:151:28
+      3    0.0%    0.1%  LazyCompile: *findMin /home/eddie/webgl-test-shared/lib/collision-detection.js:5:17
+      3    0.0%    0.1%  LazyCompile: *commitPendingMapping /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:90179:38
+      3    0.0%    0.1%  LazyCompile: *_getWeight /home/eddie/webgl-test-server/src/ai/StarveAI.ts:96:15
+      3    0.0%    0.1%  LazyCompile: *Vector /home/eddie/webgl-test-shared/lib/utils.js:59:16
+      3    0.0%    0.1%  LazyCompile: *Point /home/eddie/webgl-test-shared/lib/utils.js:19:16
+      3    0.0%    0.1%  LazyCompile: *<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:51771:38
+      3    0.0%    0.1%  Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      3    0.0%    0.1%  Function: ^getPipelinePhase /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:111032:34
+      3    0.0%    0.1%  Function: ^bindWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46820:28
+      3    0.0%    0.1%  Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37490:74
+      2    0.0%    0.0%  LazyCompile: *visitNodes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30665:24
+      2    0.0%    0.0%  LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Tombstone.ts:41:9
+      2    0.0%    0.0%  LazyCompile: *speculationHelper /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32040:35
+      2    0.0%    0.0%  LazyCompile: *savePreviousCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:80:34
+      2    0.0%    0.0%  LazyCompile: *runRandomTickAttempt /home/eddie/webgl-test-server/src/Board.ts:195:25
+      2    0.0%    0.0%  LazyCompile: *pipelineEmitWithComments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:114697:42
+      2    0.0%    0.0%  LazyCompile: *normalizeString node:path:66:25
+      2    0.0%    0.0%  LazyCompile: *isSourceFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:29423:26
+      2    0.0%    0.0%  LazyCompile: *isLeftHandSideExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:13780:38
+      2    0.0%    0.0%  LazyCompile: *isInJSFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:16334:24
+      2    0.0%    0.0%  LazyCompile: *getTileDist /home/eddie/webgl-test-server/src/terrain-generation.ts:97:21
+      2    0.0%    0.0%  LazyCompile: *getModifierFlagsWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:18925:36
+      2    0.0%    0.0%  LazyCompile: *forEachChild /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30729:26
+      2    0.0%    0.0%  LazyCompile: *findAncestor /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12734:26
+      2    0.0%    0.0%  LazyCompile: *createIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22965:34
+      2    0.0%    0.0%  LazyCompile: *computeVertexPositions /home/eddie/webgl-test-server/src/hitboxes/RectangularHitbox.ts:13:27
+      2    0.0%    0.0%  LazyCompile: *computeLineStarts /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10275:31
+      2    0.0%    0.0%  LazyCompile: *computeLineAndCharacterOfPosition /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10343:47
+      2    0.0%    0.0%  LazyCompile: *calculateHitboxBounds /home/eddie/webgl-test-server/src/hitboxes/RectangularHitbox.ts:35:26
+      2    0.0%    0.0%  LazyCompile: *bindEach /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:45204:26
+      2    0.0%    0.0%  LazyCompile: *bind /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46728:22
+      2    0.0%    0.0%  LazyCompile: *_getWeight /home/eddie/webgl-test-server/src/ai/HerdAI.ts:204:15
+      2    0.0%    0.0%  Function: ^scan /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:11420:22
+      2    0.0%    0.0%  Function: ^resolveEntityCollisions /home/eddie/webgl-test-server/src/entities/Entity.ts:259:28
+      2    0.0%    0.0%  Function: ^pipelineEmitWithHintWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:111085:44
+      2    0.0%    0.0%  Function: ^parseType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34271:27
+      2    0.0%    0.0%  Function: ^getTypeAtFlowNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:70334:39
+      2    0.0%    0.0%  Function: ^getLinesBetweenNodes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:114265:38
+      2    0.0%    0.0%  Function: ^getBiome /home/eddie/webgl-test-server/src/terrain-generation.ts:53:18
+      2    0.0%    0.0%  Function: ^createNodeArray /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22737:33
+      2    0.0%    0.0%  Function: ^calculateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:316:31
+      1    0.0%    0.0%  RegExp: ^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)
+      1    0.0%    0.0%  RegExp: (?:\/\/)|(?:^|\/)\.\.?(?:$|\/)
+      1    0.0%    0.0%  LazyCompile: *writeText /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:18226:27
+      1    0.0%    0.0%  LazyCompile: *write /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:18236:23
+      1    0.0%    0.0%  LazyCompile: *visitNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30662:23
+      1    0.0%    0.0%  LazyCompile: *updateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:250:28
+      1    0.0%    0.0%  LazyCompile: *trampoline /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30605:28
+      1    0.0%    0.0%  LazyCompile: *some /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:931:18
+      1    0.0%    0.0%  LazyCompile: *resolveNameHelper /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:49650:35
+      1    0.0%    0.0%  LazyCompile: *pipelineEmit /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:111016:30
+      1    0.0%    0.0%  LazyCompile: *parseTagComments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37734:42
+      1    0.0%    0.0%  LazyCompile: *parseTag /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37651:34
+      1    0.0%    0.0%  LazyCompile: *parsePostfixTypeOrHigher /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34072:42
+      1    0.0%    0.0%  LazyCompile: *parseParameters /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33558:33
+      1    0.0%    0.0%  LazyCompile: *parseNonArrayType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33948:35
+      1    0.0%    0.0%  LazyCompile: *parseDelimitedList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33050:36
+      1    0.0%    0.0%  LazyCompile: *parseDecorators /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36740:33
+      1    0.0%    0.0%  LazyCompile: *nextToken /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32002:27
+      1    0.0%    0.0%  LazyCompile: *isStatementKindButNotDeclarationKind /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:14033:50
+      1    0.0%    0.0%  LazyCompile: *isMatchingReference /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69309:37
+      1    0.0%    0.0%  LazyCompile: *isLineBreak /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10410:25
+      1    0.0%    0.0%  LazyCompile: *isFunctionLike /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:13521:28
+      1    0.0%    0.0%  LazyCompile: *isColliding /home/eddie/webgl-test-server/src/hitboxes/RectangularHitbox.ts:42:16
+      1    0.0%    0.0%  LazyCompile: *isBinary /home/eddie/webgl-test-server/node_modules/socket.io-parser/dist/is-binary.js:22:18
+      1    0.0%    0.0%  LazyCompile: *isArray /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:1821:21
+      1    0.0%    0.0%  LazyCompile: *instantiateSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:63373:35
+      1    0.0%    0.0%  LazyCompile: *hasSyntacticModifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:18888:34
+      1    0.0%    0.0%  LazyCompile: *getThisContainer /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:15869:30
+      1    0.0%    0.0%  LazyCompile: *getSymbolLinks /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:49346:32
+      1    0.0%    0.0%  LazyCompile: *getSourceFileOfNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:14525:33
+      1    0.0%    0.0%  LazyCompile: *getSignaturesOfStructuredType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:59430:47
+      1    0.0%    0.0%  LazyCompile: *getPropertyOfType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:59403:35
+      1    0.0%    0.0%  LazyCompile: *getNodeLinks /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:49352:30
+      1    0.0%    0.0%  LazyCompile: *getNameOfDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12915:34
+      1    0.0%    0.0%  LazyCompile: *getEncodedRootLength /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7657:34
+      1    0.0%    0.0%  LazyCompile: *getDeclarationName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:44821:36
+      1    0.0%    0.0%  LazyCompile: *getConditionalFlowTypeOfType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:60477:46
+      1    0.0%    0.0%  LazyCompile: *get /home/eddie/webgl-test-shared/lib/index.js:6:47
+      1    0.0%    0.0%  LazyCompile: *generatePerlinNoise /home/eddie/webgl-test-server/src/perlin-noise.ts:18:29
+      1    0.0%    0.0%  LazyCompile: *forEachChildRecursively /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31248:37
+      1    0.0%    0.0%  LazyCompile: *forEach /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:374:21
+      1    0.0%    0.0%  LazyCompile: *finishNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32323:28
+      1    0.0%    0.0%  LazyCompile: *findMax /home/eddie/webgl-test-shared/lib/collision-detection.js:15:17
+      1    0.0%    0.0%  LazyCompile: *fileExtensionIs /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7616:29
+      1    0.0%    0.0%  LazyCompile: *emitNodeList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:113832:30
+      1    0.0%    0.0%  LazyCompile: *emitIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:111730:32
+      1    0.0%    0.0%  LazyCompile: *emitExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:111000:32
+      1    0.0%    0.0%  LazyCompile: *curveWeight /home/eddie/webgl-test-shared/lib/utils.js:129:21
+      1    0.0%    0.0%  LazyCompile: *createBaseNamedDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22790:44
+      1    0.0%    0.0%  LazyCompile: *createBaseDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22775:39
+      1    0.0%    0.0%  LazyCompile: *convertToVector /home/eddie/webgl-test-shared/lib/utils.js:41:20
+      1    0.0%    0.0%  LazyCompile: *computeLineOfPosition /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10355:35
+      1    0.0%    0.0%  LazyCompile: *circlesDoIntersect /home/eddie/webgl-test-shared/lib/collision-detection.js:25:28
+      1    0.0%    0.0%  LazyCompile: *checkTypeRelatedTo /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:64669:36
+      1    0.0%    0.0%  LazyCompile: *checkIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:71643:33
+      1    0.0%    0.0%  LazyCompile: *checkExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:79855:33
+      1    0.0%    0.0%  LazyCompile: *callEvents /home/eddie/webgl-test-server/src/entities/Entity.ts:360:15
+      1    0.0%    0.0%  LazyCompile: *calculateDistanceBetween /home/eddie/webgl-test-shared/lib/utils.js:35:29
+      1    0.0%    0.0%  LazyCompile: *calculateAngleBetween /home/eddie/webgl-test-shared/lib/utils.js:38:26
+      1    0.0%    0.0%  LazyCompile: *bindWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46820:28
+      1    0.0%    0.0%  LazyCompile: *bindContainer /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:45091:31
+      1    0.0%    0.0%  LazyCompile: *assert /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:2714:24
+      1    0.0%    0.0%  LazyCompile: *addMapping /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:90079:28
+      1    0.0%    0.0%  LazyCompile: *_getWeight /home/eddie/webgl-test-server/src/ai/WanderAI.ts:30:15
+      1    0.0%    0.0%  LazyCompile: *_getWeight /home/eddie/webgl-test-server/src/ai/ChaseAI.ts:45:15
+      1    0.0%    0.0%  Function: ^writePunctuation /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:114000:34
+      1    0.0%    0.0%  Function: ^visitorWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:91709:31
+      1    0.0%    0.0%  Function: ^tryGetThisTypeAt /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:71998:34
+      1    0.0%    0.0%  Function: ^tryGetDeclaredTypeOfSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57532:44
+      1    0.0%    0.0%  Function: ^tickStatusEffects /home/eddie/webgl-test-server/src/entities/Entity.ts:369:22
+      1    0.0%    0.0%  Function: ^tick /home/eddie/webgl-test-server/src/entities/Tombstone.ts:41:9
+      1    0.0%    0.0%  Function: ^tick /home/eddie/webgl-test-server/src/entities/Entity.ts:73:9
+      1    0.0%    0.0%  Function: ^symbolIsValue /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:51709:31
+      1    0.0%    0.0%  Function: ^substituteNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:109688:32
+      1    0.0%    0.0%  Function: ^substituteExpressionIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:105735:48
+      1    0.0%    0.0%  Function: ^stopXVelocity /home/eddie/webgl-test-server/src/entities/Entity.ts:210:18
+      1    0.0%    0.0%  Function: ^speculationHelper /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32040:35
+      1    0.0%    0.0%  Function: ^skipOuterExpressions /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:29942:34
+      1    0.0%    0.0%  Function: ^shouldCommitMapping /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:90162:37
+      1    0.0%    0.0%  Function: ^sendGameDataPackets /home/eddie/webgl-test-server/src/server.ts:181:30
+      1    0.0%    0.0%  Function: ^scanJsDocToken /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12145:32
+      1    0.0%    0.0%  Function: ^savePreviousCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:80:34
+      1    0.0%    0.0%  Function: ^sameMap /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:653:21
+      1    0.0%    0.0%  Function: ^runSpawnAttempt /home/eddie/webgl-test-server/src/entity-spawning.ts:233:25
+      1    0.0%    0.0%  Function: ^rotatePoint /home/eddie/webgl-test-shared/lib/utils.js:111:21
+      1    0.0%    0.0%  Function: ^right /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30507:23
+      1    0.0%    0.0%  Function: ^resolveStructuredTypeMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:58698:46
+      1    0.0%    0.0%  Function: ^resolveEntityName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50987:35
+      1    0.0%    0.0%  Function: ^resolveCallExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:76429:39
+      1    0.0%    0.0%  Function: ^resolveAnonymousTypeMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:58366:45
+      1    0.0%    0.0%  Function: ^resolveAlias /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50816:30
+      1    0.0%    0.0%  Function: ^refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+      1    0.0%    0.0%  Function: ^propertyRelatedTo /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:66332:39
+      1    0.0%    0.0%  Function: ^processTicksAndRejections node:internal/process/task_queues:68:35
+      1    0.0%    0.0%  Function: ^pathComponents /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7803:28
+      1    0.0%    0.0%  Function: ^parseTypeAnnotation /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34291:37
+      1    0.0%    0.0%  Function: ^parseStatement /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36265:32
+      1    0.0%    0.0%  Function: ^parsePropertyOrMethodDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36620:50
+      1    0.0%    0.0%  Function: ^parseParametersWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33533:39
+      1    0.0%    0.0%  Function: ^parseNonArrayType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33948:35
+      1    0.0%    0.0%  Function: ^parseAssignmentExpressionOrHigher /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34387:51
+      1    0.0%    0.0%  Function: ^parseArgumentOrArrayLiteralElement /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:35703:52
+      1    0.0%    0.0%  Function: ^parenthesizeExpressionForDisallowedComma /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:21847:58
+      1    0.0%    0.0%  Function: ^onRefresh /home/eddie/webgl-test-server/src/ai/HerdAI.ts:29:14
+      1    0.0%    0.0%  Function: ^onLeft /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:45970:28
+      1    0.0%    0.0%  Function: ^onEnter /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:112336:29
+      1    0.0%    0.0%  Function: ^normalizeEncoding node:internal/util:160:27
+      1    0.0%    0.0%  Function: ^moveToPosition /home/eddie/webgl-test-server/src/ai/AI.ts:49:19
+      1    0.0%    0.0%  Function: ^map /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:633:17
+      1    0.0%    0.0%  Function: ^isUnparsedTextLike /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:13331:32
+      1    0.0%    0.0%  Function: ^isThisIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:18572:30
+      1    0.0%    0.0%  Function: ^isStringLiteral /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:28685:29
+      1    0.0%    0.0%  Function: ^isStartOfLeftHandSideExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34295:49
+      1    0.0%    0.0%  Function: ^isSelfReferenceLocation /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50105:41
+      1    0.0%    0.0%  Function: ^isReferencedAliasDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:87277:56
+      1    0.0%    0.0%  Function: ^isPropertyAccessExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:29003:40
+      1    0.0%    0.0%  Function: ^isPrologueDirective /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:15466:33
+      1    0.0%    0.0%  Function: ^isOuterExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:29923:31
+      1    0.0%    0.0%  Function: ^isMatchingReference /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69309:37
+      1    0.0%    0.0%  Function: ^isKeyword /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:17405:23
+      1    0.0%    0.0%  Function: ^isJSDocTypeExpressionOrChild /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:14762:42
+      1    0.0%    0.0%  Function: ^isJSDocTypeExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:29437:35
+      1    0.0%    0.0%  Function: ^isJSConstructor /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:76957:33
+      1    0.0%    0.0%  Function: ^isInTypeQuery /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69273:31
+      1    0.0%    0.0%  Function: ^isIdentifierPart /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10781:30
+      1    0.0%    0.0%  Function: ^isEmptyAnonymousObjectType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:64511:44
+      1    0.0%    0.0%  Function: ^isColliding /home/eddie/webgl-test-server/src/hitboxes/CircularHitbox.ts:16:16
+      1    0.0%    0.0%  Function: ^isClassMemberStart /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36646:36
+      1    0.0%    0.0%  Function: ^isClassElement /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:13577:28
+      1    0.0%    0.0%  Function: ^isAsyncFunction /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:17473:29
+      1    0.0%    0.0%  Function: ^inferFromObjectTypes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:68936:42
+      1    0.0%    0.0%  Function: ^indexSignaturesRelatedTo /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:66797:46
+      1    0.0%    0.0%  Function: ^inYieldContext /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31940:32
+      1    0.0%    0.0%  Function: ^hasBinary /home/eddie/webgl-test-server/node_modules/socket.io-parser/dist/is-binary.js:28:19
+      1    0.0%    0.0%  Function: ^getTypeId /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:61111:27
+      1    0.0%    0.0%  Function: ^getTypeFacts /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69590:30
+      1    0.0%    0.0%  Function: ^getThisTypeOfSignature /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:59814:40
+      1    0.0%    0.0%  Function: ^getSourceTextOfNodeFromSourceFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:14757:47
+      1    0.0%    0.0%  Function: ^getSourceMapRange /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:27768:31
+      1    0.0%    0.0%  Function: ^getSignatureApplicabilityError /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:75715:48
+      1    0.0%    0.0%  Function: ^getRecursionIdentity /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:67210:38
+      1    0.0%    0.0%  Function: ^getPropertiesOfType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:58769:37
+      1    0.0%    0.0%  Function: ^getPropertiesOfObjectType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:58727:43
+      1    0.0%    0.0%  Function: ^getOutput /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:449:25
+      1    0.0%    0.0%  Function: ^getOrCreateEmitNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:27693:33
+      1    0.0%    0.0%  Function: ^getOptions node:internal/fs/utils:314:20
+      1    0.0%    0.0%  Function: ^getNewLine /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:117421:38
+      1    0.0%    0.0%  Function: ^getNameOfDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12915:34
+      1    0.0%    0.0%  Function: ^getModifierFlagsWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:18925:36
+      1    0.0%    0.0%  Function: ^getLateBoundSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57876:36
+      1    0.0%    0.0%  Function: ^getImpliedNodeFormatForFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:116476:41
+      1    0.0%    0.0%  Function: ^getIdentifierToken /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:11347:36
+      1    0.0%    0.0%  Function: ^getFlowTypeOfAccessExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74751:47
+      1    0.0%    0.0%  Function: ^getExternalModuleMember /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50608:41
+      1    0.0%    0.0%  Function: ^getEncodedRootLength /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7657:34
+      1    0.0%    0.0%  Function: ^getDeclaredTypeOfTypeParameter /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57521:48
+      1    0.0%    0.0%  Function: ^getDeclarationModifierFlagsFromSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:19534:51
+      1    0.0%    0.0%  Function: ^getCannotFindNameDiagnosticForName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69208:52
+      1    0.0%    0.0%  Function: ^getApparentTypeOfContextualType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:72910:49
+      1    0.0%    0.0%  Function: ^getApparentType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:59131:33
+      1    0.0%    0.0%  Function: ^forEachTrailingCommentToEmit /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:114977:46
+      1    0.0%    0.0%  Function: ^forEachChild /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30729:26
+      1    0.0%    0.0%  Function: ^forEach /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:374:21
+      1    0.0%    0.0%  Function: ^finishMaybe node:internal/streams/writable:731:21
+      1    0.0%    0.0%  Function: ^emitNodeList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:113832:30
+      1    0.0%    0.0%  Function: ^emitCommentsAfterNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:114715:39
+      1    0.0%    0.0%  Function: ^emit node:domain:464:44
+      1    0.0%    0.0%  Function: ^declareSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:44903:31
+      1    0.0%    0.0%  Function: ^currentNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32759:29
+      1    0.0%    0.0%  Function: ^createIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32363:34
+      1    0.0%    0.0%  Function: ^createDeprecation /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:3230:35
+      1    0.0%    0.0%  Function: ^createBaseTokenNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:27409:39
+      1    0.0%    0.0%  Function: ^createBaseGenericNamedDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22816:51
+      1    0.0%    0.0%  Function: ^createBaseDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22775:39
+      1    0.0%    0.0%  Function: ^computeLineAndCharacterOfPosition /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10343:47
+      1    0.0%    0.0%  Function: ^checkSignatureDeclarationDiagnostics /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:80210:58
+      1    0.0%    0.0%  Function: ^checkPropertyAccessExpressionOrQualifiedName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74619:62
+      1    0.0%    0.0%  Function: ^checkNonNullTypeWithReporter /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74489:46
+      1    0.0%    0.0%  Function: ^checkGrammarForAtLeastOneTypeArgument /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:88164:55
+      1    0.0%    0.0%  Function: ^checkFunctionOrConstructorSymbolWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:80920:56
+      1    0.0%    0.0%  Function: ^checkExternalImportOrExportDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:85092:56
+      1    0.0%    0.0%  Function: ^checkExpressionWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:79897:39
+      1    0.0%    0.0%  Function: ^checkBinaryLikeExpressionWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:79020:49
+      1    0.0%    0.0%  Function: ^checkAssertionWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:77320:38
+      1    0.0%    0.0%  Function: ^checkAllCodePathsInNonVoidFunctionReturnOrThrow /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:78096:65
+      1    0.0%    0.0%  Function: ^canHaveSyntheticDefault /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50446:41
+      1    0.0%    0.0%  Function: ^calculateMaxDistanceFromEntity /home/eddie/webgl-test-server/src/entities/Entity.ts:286:35
+      1    0.0%    0.0%  Function: ^calculateEntitiesInVisionRange /home/eddie/webgl-test-server/src/entities/Mob.ts:79:35
+      1    0.0%    0.0%  Function: ^calculateContainingChunks /home/eddie/webgl-test-server/src/entities/Entity.ts:124:30
+      1    0.0%    0.0%  Function: ^bindContainer /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:45091:31
+      1    0.0%    0.0%  Function: ^bind /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46728:22
+      1    0.0%    0.0%  Function: ^assertEqual /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:2724:29
+      1    0.0%    0.0%  Function: ^applyToParameterTypes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:68001:39
+      1    0.0%    0.0%  Function: ^allowInAnd /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31907:28
+      1    0.0%    0.0%  Function: ^addMapping /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:90079:28
+      1    0.0%    0.0%  Function: ^addJSDocComment /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31711:33
+      1    0.0%    0.0%  Function: ^addInheritedMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57641:37
+      1    0.0%    0.0%  Function: ^addHitboxes /home/eddie/webgl-test-server/src/entities/Entity.ts:105:16
+      1    0.0%    0.0%  Function: ^_isValidUTF8 /home/eddie/webgl-test-server/node_modules/engine.io/node_modules/ws/lib/validation.js:53:22
+      1    0.0%    0.0%  Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:81896:26
+      1    0.0%    0.0%  Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:63423:106
+      1    0.0%    0.0%  Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50031:44
+
+ [C++]:
+   ticks  total  nonlib   name
+    234    1.9%    4.1%  __write
+     67    0.5%    1.2%  __pthread_cond_wait
+     57    0.5%    1.0%  __pthread_cond_signal
+     34    0.3%    0.6%  __mprotect
+     31    0.3%    0.5%  _IO_fwrite
+     28    0.2%    0.5%  epoll_pwait
+     21    0.2%    0.4%  __lll_lock_wait
+     19    0.2%    0.3%  __libc_malloc
+     13    0.1%    0.2%  __mmap
+     11    0.1%    0.2%  __munmap
+      8    0.1%    0.1%  __libc_free
+      7    0.1%    0.1%  __GI___pthread_mutex_unlock
+      5    0.0%    0.1%  std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const
+      5    0.0%    0.1%  std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long)
+      4    0.0%    0.1%  std::ostream::sentry::sentry(std::ostream&)
+      4    0.0%    0.1%  std::ostream& std::ostream::_M_insert<long>(long)
+      3    0.0%    0.1%  std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&)
+      3    0.0%    0.1%  __GI___pthread_rwlock_wrlock
+      3    0.0%    0.1%  _IO_file_xsputn
+      2    0.0%    0.0%  std::locale::id::_M_id() const
+      2    0.0%    0.0%  std::__detail::_Prime_rehash_policy::_M_next_bkt(unsigned long) const
+      2    0.0%    0.0%  __pthread_rwlock_tryrdlock
+      2    0.0%    0.0%  __libc_write
+      2    0.0%    0.0%  __clock_gettime
+      2    0.0%    0.0%  __GI___pthread_rwlock_unlock
+      2    0.0%    0.0%  __GI___pthread_getspecific
+      1    0.0%    0.0%  std::ostream::operator<<(int)
+      1    0.0%    0.0%  std::__detail::_List_node_base::_M_hook(std::__detail::_List_node_base*)
+      1    0.0%    0.0%  operator new[](unsigned long)
+      1    0.0%    0.0%  operator new(unsigned long)
+      1    0.0%    0.0%  getrusage
+      1    0.0%    0.0%  brk
+      1    0.0%    0.0%  __pthread_mutex_unlock_usercnt
+      1    0.0%    0.0%  __printf_fp
+      1    0.0%    0.0%  __libc_read
+      1    0.0%    0.0%  __GI___pthread_mutex_lock
+      1    0.0%    0.0%  __GI___pthread_mutex_init
+
+ [Summary]:
+   ticks  total  nonlib   name
+   5132   41.7%   89.7%  JavaScript
+    582    4.7%   10.2%  C++
+    766    6.2%   13.4%  GC
+   6585   53.5%          Shared libraries
+      6    0.0%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+    204   58.6%    1.7%  __write
+     31    8.9%    0.3%  _IO_fwrite
+     24    6.9%    0.2%  __mprotect
+     22    6.3%    0.2%  __pthread_cond_signal
+     16    4.6%    0.1%  __libc_malloc
+      6    1.7%    0.0%  __lll_lock_wait
+      5    1.4%    0.0%  std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, long) const
+      5    1.4%    0.0%  std::basic_ostream<char, std::char_traits<char> >& std::__ostream_insert<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*, long)
+      4    1.1%    0.0%  __libc_free
+      3    0.9%    0.0%  std::ostream::sentry::sentry(std::ostream&)
+      3    0.9%    0.0%  std::ostream& std::ostream::_M_insert<long>(long)
+      3    0.9%    0.0%  std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&)
+      2    0.6%    0.0%  std::locale::id::_M_id() const
+      2    0.6%    0.0%  __pthread_rwlock_tryrdlock
+      2    0.6%    0.0%  __libc_write
+      2    0.6%    0.0%  __clock_gettime
+      2    0.6%    0.0%  __GI___pthread_rwlock_wrlock
+      2    0.6%    0.0%  __GI___pthread_rwlock_unlock
+      2    0.6%    0.0%  __GI___pthread_getspecific
+      2    0.6%    0.0%  _IO_file_xsputn
+      1    0.3%    0.0%  std::ostream::operator<<(int)
+      1    0.3%    0.0%  std::__detail::_Prime_rehash_policy::_M_next_bkt(unsigned long) const
+      1    0.3%    0.0%  std::__detail::_List_node_base::_M_hook(std::__detail::_List_node_base*)
+      1    0.3%    0.0%  operator new[](unsigned long)
+      1    0.3%    0.0%  operator new(unsigned long)
+      1    0.3%    0.0%  brk
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+   6360   51.7%  /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+   2574   40.5%    /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+    496   19.3%      LazyCompile: *setEntityPotentialCollidingEntities /home/eddie/webgl-test-server/src/Board.ts:76:40
+    466   94.0%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    453   97.2%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    453  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     13    2.8%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     13  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     30    6.0%        Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     26   86.7%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     26  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      4   13.3%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      4  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    394   15.3%      /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+    119   30.2%        /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+    117   98.3%          LazyCompile: *setEntityPotentialCollidingEntities /home/eddie/webgl-test-server/src/Board.ts:76:40
+    108   92.3%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      9    7.7%            Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      2    1.7%          LazyCompile: *filterEntitiesInVisionRange /home/eddie/webgl-test-server/src/ai/FollowAI.ts:59:32
+      2  100.0%            LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+     78   19.8%        LazyCompile: *filterEntitiesInVisionRange /home/eddie/webgl-test-server/src/ai/HerdAI.ts:190:32
+     68   87.2%          LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+     64   94.1%            LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      4    5.9%            Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      7    9.0%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      7  100.0%            LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      3    3.8%          LazyCompile: *updateValues /home/eddie/webgl-test-server/src/ai/AI.ts:27:17
+      3  100.0%            Function: ^refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+     73   18.5%        LazyCompile: *calculateEntitiesInVisionRange /home/eddie/webgl-test-server/src/entities/Mob.ts:79:35
+     59   80.8%          LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+     53   89.8%            LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      6   10.2%            Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     10   13.7%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      8   80.0%            LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      1   10.0%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      1   10.0%            Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      4    5.5%          Function: ^refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+      3   75.0%            Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      1   25.0%            LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     58   14.7%        LazyCompile: *setEntityPotentialCollidingEntities /home/eddie/webgl-test-server/src/Board.ts:76:40
+     53   91.4%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     51   96.2%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      2    3.8%            LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      5    8.6%          Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      4   80.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1   20.0%            LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      9    2.3%        LazyCompile: *runSpawnAttempt /home/eddie/webgl-test-server/src/entity-spawning.ts:233:25
+      9  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      9  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      7    1.8%        LazyCompile: *calculateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:316:31
+      7  100.0%          LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+      7  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    196    7.6%      LazyCompile: ~Script node:vm:66:14
+    196  100.0%        LazyCompile: ~_moduleCompile /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:207:17
+    196  100.0%          LazyCompile: ~_ownModuleCompile /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:157:31
+    196  100.0%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+    131    5.1%      LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    121   92.4%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    121  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    121  100.0%            Function: ^listOnTimeout node:internal/timers:507:25
+     10    7.6%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     10  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     10  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+     81    3.1%      Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+     73   90.1%        Function: ^nativeModuleRequire node:internal/bootstrap/loaders:332:29
+     21   28.8%          Function: ~<anonymous> node:repl:1:1
+     21  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      6    8.2%          Function: ~<anonymous> node:crypto:1:1
+      6  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      4    5.5%          Function: ~<anonymous> node:tty:1:1
+      4  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      4    5.5%          Function: ~<anonymous> node:internal/modules/esm/loader:1:1
+      4  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      4    5.5%          Function: ~<anonymous> node:http:1:1
+      4  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      3    4.1%          Function: ~<anonymous> node:tls:1:1
+      3  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      3    4.1%          Function: ~<anonymous> node:_http_client:1:1
+      3  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      2    2.7%          Function: ~<anonymous> node:internal/process/esm_loader:1:1
+      2  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      2    2.7%          Function: ~<anonymous> node:internal/modules/esm/get_source:1:1
+      2  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      2    2.7%          Function: ~<anonymous> node:internal/cluster/primary:1:1
+      2  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      2    2.7%          Function: ~<anonymous> node:child_process:1:1
+      2  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      2    2.7%          Function: ~<anonymous> node:assert:1:1
+      2  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          LazyCompile: ~lazyRequire node:internal/crypto/util:67:21
+      1  100.0%            LazyCompile: ~get node:crypto:287:8
+      1    1.4%          LazyCompile: ~lazyLoadStreams node:fs:2845:25
+      1  100.0%            LazyCompile: ~get ReadStream node:fs:2988:17
+      1    1.4%          Function: ~<anonymous> node:worker_threads:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:net:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:module:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/worker:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/modules/esm/resolve:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/modules/esm/load:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/crypto/pbkdf2:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/crypto/hkdf:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/child_process:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:internal/blocklist:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:https:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:dgram:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:cluster:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:_tls_wrap:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:_tls_common:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1    1.4%          Function: ~<anonymous> node:_http_common:1:1
+      1  100.0%            Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      8    9.9%        Function: ^compileForPublicLoader node:internal/bootstrap/loaders:246:25
+      8  100.0%          Function: ^loadNativeModule node:internal/modules/cjs/helpers:44:26
+      8  100.0%            Function: ^Module._load node:internal/modules/cjs/loader:757:24
+     74    2.9%      Function: ^encodeAsString /home/eddie/webgl-test-server/node_modules/socket.io-parser/dist/index.js:50:19
+     71   95.9%        Function: ^encode /home/eddie/webgl-test-server/node_modules/socket.io-parser/dist/index.js:34:11
+     71  100.0%          Function: ^_packet /home/eddie/webgl-test-server/node_modules/socket.io/dist/client.js:152:12
+     71  100.0%            Function: ^packet /home/eddie/webgl-test-server/node_modules/socket.io/dist/socket.js:177:11
+      3    4.1%        LazyCompile: ~encode /home/eddie/webgl-test-server/node_modules/socket.io-parser/dist/index.js:34:11
+      3  100.0%          Function: ^_packet /home/eddie/webgl-test-server/node_modules/socket.io/dist/client.js:152:12
+      3  100.0%            Function: ^packet /home/eddie/webgl-test-server/node_modules/socket.io/dist/socket.js:177:11
+     61    2.4%      Function: ^compileFunction node:vm:308:25
+     56   91.8%        Function: ^wrapSafe node:internal/modules/cjs/loader:1017:18
+     55   98.2%          Function: ^Module._compile node:internal/modules/cjs/loader:1057:37
+     29   52.7%            Function: ^m._compile /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:845:31
+     14   25.5%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      6   10.9%            LazyCompile: ~m._compile /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:845:31
+      6   10.9%            Function: ^Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      1    1.8%          LazyCompile: ~Module._compile node:internal/modules/cjs/loader:1057:37
+      1  100.0%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      5    8.2%        LazyCompile: ~wrapSafe node:internal/modules/cjs/loader:1017:18
+      5  100.0%          LazyCompile: ~Module._compile node:internal/modules/cjs/loader:1057:37
+      5  100.0%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+     51    2.0%      Function: ^readSync node:fs:684:18
+     51  100.0%        Function: ^tryReadSync node:fs:429:21
+     51  100.0%          Function: ^readFileSync node:fs:450:22
+     30   58.8%            Function: ^readFileWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7334:36
+      7   13.7%            LazyCompile: ~readFileWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7334:36
+      7   13.7%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      4    7.8%            Function: ^Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      2    3.9%            LazyCompile: ~_load /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:96:8
+      1    2.0%            LazyCompile: ~Module._extensions..json node:internal/modules/cjs/loader:1162:39
+     38    1.5%      Function: ^slice node:buffer:594:12
+     38  100.0%        Function: ^toString node:buffer:783:46
+     29   76.3%          Function: ^readFileSync node:fs:450:22
+     29  100.0%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      5   13.2%          LazyCompile: ~readFileWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7334:36
+      3   60.0%            LazyCompile: ~readFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7365:30
+      2   40.0%            Function: ^readFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7365:30
+      4   10.5%          Function: ^readFileWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7334:36
+      4  100.0%            Function: ^readFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:7365:30
+     26    1.0%      Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     26  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     26  100.0%          Function: ^listOnTimeout node:internal/timers:507:25
+     26  100.0%            Function: ^processTimers node:internal/timers:487:25
+    368    5.8%    LazyCompile: *setEntityPotentialCollidingEntities /home/eddie/webgl-test-server/src/Board.ts:76:40
+    341   92.7%      LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    334   97.9%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    334  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    332   99.4%            Function: ^listOnTimeout node:internal/timers:507:25
+      7    2.1%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      7  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      7  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+     27    7.3%      Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     24   88.9%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     24  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     24  100.0%            Function: ^listOnTimeout node:internal/timers:507:25
+      3   11.1%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      3  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+    330    5.2%    LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+    303   91.8%      LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+    282   93.1%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+    270   95.7%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    270  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     12    4.3%          Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     12  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     19    6.3%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     19  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     19  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     27    8.2%      Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     24   88.9%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     24  100.0%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     24  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3   11.1%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      3  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    293    4.6%    LazyCompile: *calculateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:316:31
+    231   78.8%      LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+    231  100.0%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    231  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    231  100.0%            Function: ^listOnTimeout node:internal/timers:507:25
+     41   14.0%      LazyCompile: *updateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:250:28
+     24   58.5%        LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+     17   70.8%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     17  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      7   29.2%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      7  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     17   41.5%        Function: ^resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+      9   52.9%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      9  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      8   47.1%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      8  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     21    7.2%      Function: ^updateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:250:28
+     21  100.0%        Function: ^resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+     21  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     21  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    253    4.0%    LazyCompile: *calculateEntitiesInVisionRange /home/eddie/webgl-test-server/src/entities/Mob.ts:79:35
+    216   85.4%      LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+    201   93.1%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+    190   94.5%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+    173   91.1%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     17    8.9%            Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     10    5.0%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     10  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     14    6.5%        Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     14  100.0%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     14  100.0%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     21    8.3%      LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     21  100.0%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     21  100.0%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     11   52.4%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     10   47.6%            LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     16    6.3%      Function: ^refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+      8   50.0%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      8  100.0%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      8  100.0%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      8   50.0%        Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      5   62.5%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      3   60.0%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      2   40.0%            Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      3   37.5%          Function: ^tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      3  100.0%            Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    122    1.9%    LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+    122  100.0%      Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    122  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    122  100.0%          Function: ^listOnTimeout node:internal/timers:507:25
+    122  100.0%            Function: ^processTimers node:internal/timers:487:25
+    113    1.8%    LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    108   95.6%      Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    108  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    107   99.1%          Function: ^listOnTimeout node:internal/timers:507:25
+    107  100.0%            Function: ^processTimers node:internal/timers:487:25
+      5    4.4%      LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      5  100.0%        LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      5  100.0%          LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      4   80.0%            LazyCompile: ~processTimers node:internal/timers:487:25
+      1   20.0%            Function: ^processTimers node:internal/timers:487:25
+     91    1.4%    Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     91  100.0%      Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     91  100.0%        Function: ^listOnTimeout node:internal/timers:507:25
+     91  100.0%          Function: ^processTimers node:internal/timers:487:25
+
+   2055   16.7%  LazyCompile: *calculateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:316:31
+   1827   88.9%    LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+   1827  100.0%      Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+   1827  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+   1827  100.0%          Function: ^listOnTimeout node:internal/timers:507:25
+   1827  100.0%            Function: ^processTimers node:internal/timers:487:25
+    121    5.9%    LazyCompile: *updateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:250:28
+     90   74.4%      LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+     63   70.0%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     63  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     47   74.6%            Function: ^listOnTimeout node:internal/timers:507:25
+     16   25.4%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+     27   30.0%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     27  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     27  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+     31   25.6%      Function: ^resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+     22   71.0%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     22  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     22  100.0%            Function: ^listOnTimeout node:internal/timers:507:25
+      9   29.0%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      9  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      9  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+    107    5.2%    Function: ^updateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:250:28
+    107  100.0%      Function: ^resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+    104   97.2%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    104  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    104  100.0%            Function: ^listOnTimeout node:internal/timers:507:25
+      3    2.8%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      3  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+
+   1388   11.3%  LazyCompile: *calculateEntitiesInVisionRange /home/eddie/webgl-test-server/src/entities/Mob.ts:79:35
+   1226   88.3%    LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+   1136   92.7%      LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+   1080   95.1%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+   1003   92.9%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+   1003  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     77    7.1%          Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     77  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     56    4.9%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     56  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     56  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     90    7.3%      Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     87   96.7%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     87  100.0%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     87  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3    3.3%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      3  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     94    6.8%    LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     77   81.9%      LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     77  100.0%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     54   70.1%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     54  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     23   29.9%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     23  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      9    9.6%      Function: ^tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      6   66.7%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      6  100.0%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      6  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      3   33.3%        Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      3  100.0%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      8    8.5%      LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      4   50.0%        LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      4  100.0%          LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      4  100.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      4   50.0%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      4  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      3   75.0%            Function: ^listOnTimeout node:internal/timers:507:25
+      1   25.0%            LazyCompile: ~listOnTimeout node:internal/timers:507:25
+     68    4.9%    Function: ^refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+     37   54.4%      LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     36   97.3%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     31   86.1%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     31  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      5   13.9%          Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      5  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1    2.7%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      1  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+     30   44.1%      Function: ^tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+     19   63.3%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+     15   78.9%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+     15  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      4   21.1%          Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      4  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+     10   33.3%        Function: ^tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      7   70.0%          Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      7  100.0%            LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3   30.0%          LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      3  100.0%            LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1    3.3%        Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      1  100.0%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      1    1.5%      Function: ^Mob /home/eddie/webgl-test-server/src/entities/Mob.ts:25:16
+      1  100.0%        Function: ^Zombie /home/eddie/webgl-test-server/src/entities/Zombie.ts:12:16
+      1  100.0%          Function: ^setup /home/eddie/webgl-test-server/src/server.ts:37:10
+      1  100.0%            Function: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:1:1
+
+    234    1.9%  __write
+    204   87.2%    /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+      7    3.4%      /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+      1   14.3%        LazyCompile: ~getESMFacade node:internal/bootstrap/loaders:264:15
+      1  100.0%          LazyCompile: ~compileForPublicLoader node:internal/bootstrap/loaders:246:25
+      1  100.0%            LazyCompile: ~loadNativeModule node:internal/modules/cjs/helpers:44:26
+      1   14.3%        LazyCompile: ~URL node:internal/url:620:14
+      1  100.0%          LazyCompile: ~pathToFileURL node:internal/url:1455:23
+      1  100.0%            LazyCompile: ~resolveExports node:internal/modules/cjs/loader:472:24
+      1   14.3%        LazyCompile: *declareSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:44903:31
+      1  100.0%          LazyCompile: *declareModuleMember /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:45024:37
+      1  100.0%            Function: ^bindBlockScopedDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46459:44
+      1   14.3%        LazyCompile: *calculateEntitiesInVisionRange /home/eddie/webgl-test-server/src/entities/Mob.ts:79:35
+      1  100.0%          Function: ^refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+      1  100.0%            LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      1   14.3%        Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:39098:11
+      1  100.0%          Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:1:11
+      1  100.0%            LazyCompile: ~_ownModuleCompile /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:157:31
+      1   14.3%        Function: ^invokeOnce /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:68683:32
+      1  100.0%          Function: ^inferFromTypes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:68468:36
+      1  100.0%            Function: ^inferToMultipleTypes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:68779:42
+      1   14.3%        Function: ^getSignatureFromDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:59621:45
+      1  100.0%          Function: ^getSignaturesOfSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:59783:39
+      1  100.0%            Function: ^resolveAnonymousTypeMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:58366:45
+
+    215    1.7%  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+     75   34.9%    /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+      6    8.0%      LazyCompile: *<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37490:74
+      3   50.0%        LazyCompile: *parseJSDocCommentWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37470:45
+      3  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37443:89
+      3  100.0%            Function: ^doInsideOfContext /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31888:35
+      3   50.0%        Function: ^scanRange /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12249:27
+      3  100.0%          Function: ^parseJSDocCommentWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37470:45
+      3  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37443:89
+      6    8.0%      Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:14275:11
+      6  100.0%        Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:1:11
+      6  100.0%          LazyCompile: ~_ownModuleCompile /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:157:31
+      6  100.0%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      5    6.7%      LazyCompile: *setEntityPotentialCollidingEntities /home/eddie/webgl-test-server/src/Board.ts:76:40
+      5  100.0%        LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      5  100.0%          Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      5  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      5    6.7%      /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+      1   20.0%        LazyCompile: ~resolvePackageTargetString node:internal/modules/esm/resolve:488:36
+      1  100.0%          LazyCompile: ~resolvePackageTarget node:internal/modules/esm/resolve:553:30
+      1  100.0%            LazyCompile: ~resolvePackageTarget node:internal/modules/esm/resolve:553:30
+      1   20.0%        LazyCompile: ~parsePartial /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:3498:26
+      1  100.0%          LazyCompile: ~parseComparator /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:3523:29
+      1  100.0%            LazyCompile: ~parseRange /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:3473:24
+      1   20.0%        LazyCompile: ~formatStringFromArgs /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:19953:34
+      1  100.0%          LazyCompile: ~createDetachedDiagnostic /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:19976:38
+      1  100.0%            LazyCompile: ~parseErrorAtPosition /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31958:38
+      1   20.0%        LazyCompile: ~extractPragmas /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:38993:28
+      1  100.0%          LazyCompile: ~processCommentPragmas /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:38877:35
+      1  100.0%            LazyCompile: ~parseSourceFileWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31676:39
+      1   20.0%        Function: ^parseList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32735:27
+      1  100.0%          Function: ^parseModuleBlock /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36975:34
+      1  100.0%            Function: ^parseAmbientExternalModuleDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36998:55
+      3    4.0%      LazyCompile: *refreshAI /home/eddie/webgl-test-server/src/entities/Mob.ts:51:14
+      3  100.0%        LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Mob.ts:42:9
+      3  100.0%          LazyCompile: *tick /home/eddie/webgl-test-server/src/entities/Zombie.ts:40:9
+      2   66.7%            LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      1   33.3%            Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      2    2.7%      Function: ^visitEachChild /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:89516:28
+      2  100.0%        Function: ^visitorWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:94339:31
+      2  100.0%          Function: ^visitor /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:94397:25
+      2  100.0%            Function: ^visitNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:89310:23
+      2    2.7%      Function: ^nextTokenJSDoc /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32010:32
+      2  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37490:74
+      2  100.0%          Function: ^scanRange /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12249:27
+      2  100.0%            Function: ^parseJSDocCommentWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37470:45
+      1    1.3%      LazyCompile: ~updateSourceFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:26420:34
+      1  100.0%        LazyCompile: ~visitSourceFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:92013:33
+      1  100.0%          Function: ^saveStateAndInvoke /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:91641:36
+      1  100.0%            LazyCompile: ~transformSourceFile /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:91626:37
+      1    1.3%      LazyCompile: ~updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      1  100.0%        Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      1  100.0%            Function: ^listOnTimeout node:internal/timers:507:25
+      1    1.3%      LazyCompile: ~transformSourceFileOrBundle /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:90653:45
+      1  100.0%        LazyCompile: ~transformation /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:109635:39
+      1  100.0%          LazyCompile: ~transformRoot /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:109664:31
+      1  100.0%            LazyCompile: ~transformNodes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:109565:28
+      1    1.3%      LazyCompile: ~setupWarningHandler node:internal/bootstrap/pre_execution:134:29
+      1  100.0%        LazyCompile: ~prepareMainThreadExecution node:internal/bootstrap/pre_execution:22:36
+      1  100.0%          Function: ~<anonymous> node:internal/main/run_main_module:1:1
+      1    1.3%      LazyCompile: ~setInterval node:timers:209:21
+      1  100.0%        LazyCompile: ~GameServer /home/eddie/webgl-test-server/src/server.ts:14:16
+      1  100.0%          Function: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:1:1
+      1  100.0%            Function: ^Module._compile node:internal/modules/cjs/loader:1057:37
+      1    1.3%      LazyCompile: ~resolveCall /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:76046:29
+      1  100.0%        LazyCompile: ~resolveNewExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:76543:38
+      1  100.0%          LazyCompile: ~resolveSignature /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:76908:34
+      1  100.0%            Function: ^getResolvedSignature /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:76931:38
+      1    1.3%      LazyCompile: ~parseMemberExpressionRest /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:35516:43
+      1  100.0%        LazyCompile: ~parseCallExpressionRest /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:35571:41
+      1  100.0%          LazyCompile: ~parseLeftHandSideExpressionOrHigher /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:35069:53
+      1  100.0%            LazyCompile: ~parseUpdateExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:35051:39
+      1    1.3%      LazyCompile: ~parseIdentifierName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32397:37
+      1  100.0%        LazyCompile: ~parseImportOrExportSpecifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37216:46
+      1  100.0%          LazyCompile: ~parseImportSpecifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37213:38
+      1  100.0%            LazyCompile: ~parseListElement /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32752:34
+      1    1.3%      LazyCompile: ~parseDelimitedList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33050:36
+      1  100.0%        LazyCompile: ~parseBracketedList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33121:36
+      1  100.0%          LazyCompile: ~parseNamedImportsOrExports /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37195:44
+      1  100.0%            LazyCompile: ~parseImportClause /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37144:35
+      1    1.3%      LazyCompile: ~openSync node:fs:576:18
+      1  100.0%        LazyCompile: ~readFileSync node:fs:450:22
+      1  100.0%          LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      1  100.0%            LazyCompile: ~Module.load node:internal/modules/cjs/loader:969:33
+      1    1.3%      LazyCompile: ~onRandomTick /home/eddie/webgl-test-server/src/tiles/GrassTile.ts:20:17
+      1  100.0%        Function: ^runRandomTickAttempt /home/eddie/webgl-test-server/src/Board.ts:195:25
+      1  100.0%          LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      1    1.3%      LazyCompile: ~nodeModuleNameResolverWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:43350:42
+      1  100.0%        LazyCompile: ~nodeModuleNameResolver /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:43332:36
+      1  100.0%          LazyCompile: ~resolveModuleName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:43020:31
+      1  100.0%            LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/node_modules/ts-node/dist/resolver-functions.js:66:32
+      1    1.3%      LazyCompile: ~lateBindMember /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57774:32
+      1  100.0%        Function: ^getResolvedMembersOrExportsOfSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57816:53
+      1  100.0%          Function: ^getMembersOfSymbol /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57865:36
+      1  100.0%            Function: ^resolveDeclaredMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57652:40
+      1    1.3%      LazyCompile: ~getTypeFacts /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69590:30
+      1  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69682:46
+      1  100.0%          Function: ^filterType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69887:28
+      1  100.0%            Function: ^getTypeWithFacts /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69681:34
+      1    1.3%      LazyCompile: ~getBindingElementTypeFromParentType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:55852:53
+      1  100.0%        Function: ^getTypeForBindingElement /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:55847:42
+      1  100.0%          Function: ^getTypeForVariableLikeDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:55946:51
+      1  100.0%            Function: ^getWidenedTypeForVariableLikeDeclaration /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:56487:58
+      1    1.3%      LazyCompile: ~generateBiomeInfo /home/eddie/webgl-test-server/src/terrain-generation.ts:61:27
+      1  100.0%        Function: ^generateTerrain /home/eddie/webgl-test-server/src/terrain-generation.ts:132:25
+      1  100.0%          LazyCompile: ~Board /home/eddie/webgl-test-server/src/Board.ts:12:16
+      1  100.0%            LazyCompile: ~GameServer /home/eddie/webgl-test-server/src/server.ts:14:16
+      1    1.3%      LazyCompile: ~forEachChild /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30729:26
+      1  100.0%        Function: ^gatherPossibleChildren /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31290:36
+      1  100.0%          Function: ^forEachChildRecursively /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31248:37
+      1  100.0%            Function: ^setParentRecursive /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:21212:32
+      1    1.3%      LazyCompile: ~createVariableDeclarationList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:25101:47
+      1  100.0%        LazyCompile: ~parseVariableDeclarationList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36507:46
+      1  100.0%          LazyCompile: ~parseVariableStatement /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36547:40
+      1  100.0%            LazyCompile: ~parseDeclarationWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36376:40
+      1    1.3%      LazyCompile: ~createTypeFromGenericGlobalType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:60785:49
+      1  100.0%        LazyCompile: ~createArrayType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:60794:33
+      1  100.0%          LazyCompile: ~getTupleBaseType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57203:34
+      1  100.0%            Function: ^getBaseTypes /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57173:30
+      1    1.3%      LazyCompile: ~createTranspileOnlyGetOutputFunction /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:642:50
+      1  100.0%        LazyCompile: ~createFromPreloadedConfig /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:151:35
+      1  100.0%          LazyCompile: ~create /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:145:16
+      1  100.0%            LazyCompile: ~register /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:122:18
+      1    1.3%      LazyCompile: ~checkTypeRelatedTo /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:64669:36
+      1  100.0%        LazyCompile: ~isTypeRelatedTo /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:64607:33
+      1  100.0%          LazyCompile: ~compareTypesAssignable /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:63833:40
+      1  100.0%            LazyCompile: ~getInferredType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:69148:33
+      1    1.3%      LazyCompile: ~checkPropertyAccessibilityAtLocation /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74354:54
+      1  100.0%        Function: ^checkPropertyAccessibility /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74336:44
+      1  100.0%          Function: ^checkPropertyAccessExpressionOrQualifiedName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74619:62
+      1  100.0%            Function: ^checkPropertyAccessExpression /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:74512:47
+      1    1.3%      LazyCompile: ~checkGrammarExpressionWithTypeArguments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:88194:57
+      1  100.0%        Function: ^some /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:931:18
+      1  100.0%          LazyCompile: ~checkGrammarHeritageClause /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:88183:44
+      1  100.0%            LazyCompile: ~checkGrammarClassDeclarationHeritageClauses /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:88200:61
+      1    1.3%      LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:36586:38
+      1  100.0%        Function: ^speculationHelper /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12229:35
+      1  100.0%          Function: ^tryScan /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12273:25
+      1  100.0%            Function: ^speculationHelper /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32040:35
+      1    1.3%      LazyCompile: *parseTagComments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37734:42
+      1  100.0%        Function: ^parseTrailingTagComments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37727:50
+      1  100.0%          Function: ^parseParameterOrPropertyTag /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37943:53
+      1  100.0%            Function: ^parseTag /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37651:34
+      1    1.3%      LazyCompile: *getTypeListId /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:60164:31
+      1  100.0%        Function: ^getUnionTypeFromSortedList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:61392:44
+      1  100.0%          LazyCompile: *getUnionType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:61285:30
+      1  100.0%            Function: ^getOptionalType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:67634:33
+      1    1.3%      LazyCompile: *createNodeArray /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32318:33
+      1  100.0%        LazyCompile: *parseUnionOrIntersectionType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34166:46
+      1  100.0%          Function: ^parseUnionTypeOrHigher /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34184:40
+      1  100.0%            Function: ^parseType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34271:27
+      1    1.3%      LazyCompile: *createIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:22965:34
+      1  100.0%        Function: ^createIdentifier /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32363:34
+      1  100.0%          Function: ^parseIdentifierName /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32397:37
+      1  100.0%            Function: ^parsePropertyNameWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:32409:41
+      1    1.3%      LazyCompile: *addInheritedMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57641:37
+      1  100.0%        Function: ^resolveObjectTypeMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57908:42
+      1  100.0%          Function: ^resolveTypeReferenceMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:57949:45
+      1  100.0%            Function: ^resolveStructuredTypeMembers /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:58698:46
+      1    1.3%      Function: ~<anonymous> node:internal/fs/rimraf:1:1
+      1  100.0%        Function: ^compileForInternalLoader node:internal/bootstrap/loaders:299:27
+      1  100.0%          Function: ^nativeModuleRequire node:internal/bootstrap/loaders:332:29
+      1  100.0%            Function: ~<anonymous> node:internal/fs/promises:1:1
+      1    1.3%      Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:5744:15
+      1  100.0%        Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:4162:11
+      1  100.0%          Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:1:11
+      1  100.0%            LazyCompile: ~_ownModuleCompile /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:157:31
+      1    1.3%      Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:4162:11
+      1  100.0%        Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:1:11
+      1  100.0%          LazyCompile: ~_ownModuleCompile /home/eddie/webgl-test-server/node_modules/v8-compile-cache-lib/v8-compile-cache.js:157:31
+      1  100.0%            LazyCompile: ~Module._extensions..js node:internal/modules/cjs/loader:1112:37
+      1    1.3%      Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.umd.js:5:20
+      1  100.0%        Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.umd.js:1:11
+      1  100.0%          Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.umd.js:1:1
+      1  100.0%            Function: ^Module._compile node:internal/modules/cjs/loader:1057:37
+      1    1.3%      Function: ^updateSourceMap /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:891:25
+      1  100.0%        Function: ^updateOutput /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:856:22
+      1  100.0%          Function: ^compile /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:702:21
+      1  100.0%            Function: ^m._compile /home/eddie/webgl-test-server/node_modules/ts-node/dist/index.js:845:31
+      1    1.3%      Function: ^scanRange /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:12249:27
+      1  100.0%        Function: ^parseJSDocCommentWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37470:45
+      1  100.0%          Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37443:89
+      1  100.0%            Function: ^doInsideOfContext /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31888:35
+      1    1.3%      Function: ^reduceEachLeadingCommentRange /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10744:43
+      1  100.0%        Function: ^getLeadingCommentRanges /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:10759:37
+      1  100.0%          Function: ^getJSDocCommentRanges /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:15494:35
+      1  100.0%            Function: ^addJSDocComment /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31711:33
+      1    1.3%      Function: ^pipelineEmit /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:111016:30
+      1  100.0%        Function: ^emit /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:110988:22
+      1  100.0%          Function: ^emitListItemWithParenthesizerRule /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:115195:47
+      1  100.0%            Function: ^emitNodeList /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:113832:30
+      1    1.3%      Function: ^parseTagComments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37734:42
+      1  100.0%        Function: ^parseTrailingTagComments /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37727:50
+      1  100.0%          Function: ^parseSimpleTag /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:38064:40
+      1  100.0%            Function: ^parseTag /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:37651:34
+      1    1.3%      Function: ^parseNonArrayType /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:33948:35
+      1  100.0%        Function: ^parsePostfixTypeOrHigher /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:34072:42
+      1  100.0%          Function: ^doOutsideOfContext /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31869:36
+      1  100.0%            Function: ^allowConditionalTypesAnd /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:31913:42
+      1    1.3%      Function: ^multiMapAdd /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:1642:25
+      1  100.0%        Function: ^registerCodeFix /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:150137:33
+      1  100.0%          Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:157575:15
+      1  100.0%            Function: ~<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:157573:11
+      1    1.3%      Function: ^isColliding /home/eddie/webgl-test-server/src/hitboxes/CircularHitbox.ts:16:16
+      1  100.0%        Function: ^calculateCollidingEntities /home/eddie/webgl-test-server/src/entities/Entity.ts:316:31
+      1  100.0%          LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+      1  100.0%            Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      1    1.3%      Function: ^getTypeFromTypeNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:63149:37
+      1  100.0%        LazyCompile: ~getTypeFromTypeOperatorNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:61887:45
+      1  100.0%          LazyCompile: *getTypeFromTypeNodeWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:63152:43
+      1  100.0%            Function: ^getTypeFromTypeNode /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:63149:37
+      1    1.3%      Function: ^generatePerlinNoise /home/eddie/webgl-test-server/src/perlin-noise.ts:18:29
+      1  100.0%        LazyCompile: ~generateOctavePerlinNoise /home/eddie/webgl-test-server/src/perlin-noise.ts:67:35
+      1  100.0%          LazyCompile: ~generateBiomeInfo /home/eddie/webgl-test-server/src/terrain-generation.ts:61:27
+      1  100.0%            Function: ^generateTerrain /home/eddie/webgl-test-server/src/terrain-generation.ts:132:25
+      1    1.3%      Function: ^declareSymbolAndAddToSymbolTable /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46277:50
+      1  100.0%        Function: ^bindPropertyOrMethodOrAccessor /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:47634:48
+      1  100.0%          Function: ^bindWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46820:28
+      1  100.0%            LazyCompile: *bind /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:46728:22
+      1    1.3%      Function: ^checkBinaryLikeExpressionWorker /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:79020:49
+      1  100.0%        Function: ^onExit /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:78947:28
+      1  100.0%          Function: ^exit /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30525:22
+      1  100.0%            Function: ^trampoline /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:30605:28
+      1    1.3%      Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50304:112
+      1  100.0%        /home/eddie/.nvm/versions/node/v16.14.2/bin/node
+      1  100.0%          Function: ^checkResolvedBlockScopedVariable /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50296:50
+      1  100.0%            Function: ^<anonymous> /home/eddie/webgl-test-server/node_modules/typescript/lib/typescript.js:50031:44
+
+    203    1.6%  LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    196   96.6%    Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    196  100.0%      Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    192   98.0%        Function: ^listOnTimeout node:internal/timers:507:25
+    192  100.0%          Function: ^processTimers node:internal/timers:487:25
+      4    2.0%        LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      4  100.0%          Function: ^processTimers node:internal/timers:487:25
+      6    3.0%    LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      6  100.0%      LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      6  100.0%        LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      6  100.0%          LazyCompile: ~processTimers node:internal/timers:487:25
+
+    165    1.3%  LazyCompile: *applyPhysics /home/eddie/webgl-test-server/src/entities/Entity.ts:166:17
+    154   93.3%    LazyCompile: *updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+    152   98.7%      Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    152  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    149   98.0%          Function: ^listOnTimeout node:internal/timers:507:25
+    149  100.0%            Function: ^processTimers node:internal/timers:487:25
+      3    2.0%          LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      3  100.0%            Function: ^processTimers node:internal/timers:487:25
+      2    1.3%      LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      2  100.0%        LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      2  100.0%          LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      1   50.0%            LazyCompile: ~processTimers node:internal/timers:487:25
+      1   50.0%            Function: ^processTimers node:internal/timers:487:25
+      8    4.8%    Function: ^updateEntities /home/eddie/webgl-test-server/src/Board.ts:52:19
+      8  100.0%      Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      8  100.0%        Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      8  100.0%          Function: ^listOnTimeout node:internal/timers:507:25
+      8  100.0%            Function: ^processTimers node:internal/timers:487:25
+      3    1.8%    Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      3  100.0%      Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      3  100.0%        Function: ^listOnTimeout node:internal/timers:507:25
+      3  100.0%          Function: ^processTimers node:internal/timers:487:25
+
+    124    1.0%  LazyCompile: *resolveCollisions /home/eddie/webgl-test-server/src/Board.ts:97:22
+    122   98.4%    Function: ^tick /home/eddie/webgl-test-server/src/server.ts:134:15
+    122  100.0%      Function: ^<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+    121   99.2%        Function: ^listOnTimeout node:internal/timers:507:25
+    121  100.0%          Function: ^processTimers node:internal/timers:487:25
+      2    1.6%    LazyCompile: ~tick /home/eddie/webgl-test-server/src/server.ts:134:15
+      2  100.0%      LazyCompile: ~<anonymous> /home/eddie/webgl-test-server/src/server.ts:25:21
+      2  100.0%        LazyCompile: ~listOnTimeout node:internal/timers:507:25
+      2  100.0%          LazyCompile: ~processTimers node:internal/timers:487:25
+

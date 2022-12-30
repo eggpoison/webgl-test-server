@@ -5,22 +5,17 @@ import CircularHitbox from "../hitboxes/CircularHitbox";
 import Hitbox from "../hitboxes/Hitbox";
 import Item from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
+import ToolItem from "../items/generic/ToolItem";
 import { createItem } from "../items/item-creation";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 
-type PlayerAttackInfo = {
-   readonly target: Entity;
-   readonly angle: number;
-}
-
 class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
+   private static readonly DEFAULT_KNOCKBACK = 100;
 
    public craftingOutputItem: Item | null = null;
    public heldItem: Item | null = null;
-
-   public readonly type = "player";
 
    /** Player nametag. Used when sending player data to the client */
    private readonly displayName: string;
@@ -28,24 +23,28 @@ class Player extends Entity {
    private hitsTaken = new Array<HitData>();
 
    constructor(position: Point, name: string) {
-      super(position, new Set<Hitbox<HitboxType>>([
+      super(position, {
+         health: new HealthComponent(Player.MAX_HEALTH, true),
+         inventory: new InventoryComponent(SETTINGS.PLAYER_HOTBAR_SIZE)
+      }, "player");
+
+      this.addHitboxes([
          new CircularHitbox({
             type: "circular",
             radius: 32
          })
-      ]), {
-         health: new HealthComponent(Player.MAX_HEALTH, true),
-         inventory: new InventoryComponent(SETTINGS.PLAYER_HOTBAR_SIZE)
-      });
+      ]);
 
       this.displayName = name;
 
-      this.createEvent("hurt", (damage: number, attackingEntity: Entity | null) => {
-         const hitData: HitData = {
-            damage: damage,
-            angleFromDamageSource: attackingEntity !== null ? this.position.calculateAngleBetween(attackingEntity.position) + Math.PI : null
-         };
-         this.hitsTaken.push(hitData);
+      this.createEvent("hurt", (damage: number, knockback: number, attackDirection: number, attackingEntity: Entity | null) => {
+         if (knockback !== 0) {
+            const hitData: HitData = {
+               knockback: knockback,
+               angleFromDamageSource: attackingEntity !== null ? this.position.calculateAngleBetween(attackingEntity.position) + Math.PI : 0
+            };
+            this.hitsTaken.push(hitData);
+         }
       });
    }
 
@@ -53,7 +52,7 @@ class Player extends Entity {
       return [this.displayName];
    }
 
-   public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): PlayerAttackInfo | null {
+   public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {
       let closestEntity: Entity | null = null;
       let minDistance = Number.MAX_SAFE_INTEGER;
       for (const entity of targetEntities) {
@@ -71,10 +70,7 @@ class Player extends Entity {
 
       if (closestEntity === null) return null;
 
-      return {
-         target: closestEntity,
-         angle: this.position.calculateDistanceBetween(closestEntity.position)
-      };
+      return closestEntity;
    }
 
    public getHitsTaken(): ReadonlyArray<HitData> {
@@ -166,24 +162,28 @@ class Player extends Entity {
    public processAttackPacket(attackPacket: AttackPacket): void {
       // Calculate the attack's target entity
       const targetEntities = attackPacket.targetEntities.map(id => SERVER.board.entities[id]);
-      const targetInfo = this.calculateAttackedEntity(targetEntities);
+      const attackTarget = this.calculateAttackedEntity(targetEntities);
       // Don't attack if the attack didn't hit anything
-      if (targetInfo === null) return;
+      if (attackTarget === null) return;
 
       // Find the selected item
       const selectedItem = this.getComponent("inventory")!.getItem(attackPacket.itemSlot);
+      const selectedItemIsTool = selectedItem !== null && selectedItem.hasOwnProperty("toolType");
 
-      let damage: number;
-      if (selectedItem !== null) {
-         damage = selectedItem.getAttackDamage();
+      let attackDamage: number;
+      let attackKnockback: number;
+      if (selectedItemIsTool) {
+         attackDamage = (selectedItem as ToolItem).getAttackDamage(attackTarget);
+         attackKnockback = (selectedItem as ToolItem).knockback;
       } else {
-         damage = 1;
+         attackDamage = 1;
+         attackKnockback = Player.DEFAULT_KNOCKBACK;
       }
 
       // Register the hit
       const attackHash = this.id.toString();
-      targetInfo.target.takeDamage(damage, this, attackHash);
-      targetInfo.target.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+      attackTarget.takeDamage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
+      attackTarget.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
    }
 
    public processItemUsePacket(itemSlot: number): void {

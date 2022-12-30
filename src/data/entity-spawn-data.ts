@@ -1,51 +1,51 @@
 import { BiomeName, EntityType } from "webgl-test-shared";
 
 export type EntitySpawnInfo = {
+   /** The type of entity to spawn */
+   readonly entityType: EntityType;
+   /** Array of all biomes which the entity is able to be spawned in */
    readonly spawnableBiomes: ReadonlyArray<BiomeName>;
-   readonly spawnableTiles: Array<[number, number]>;
-   /** Affects the chance of the mob type being chosen to spawn */
-   readonly weight: number;
+   /** Average number of times that the entity will have a spawn event occur */
+   readonly spawnRate: number;
+   /**
+    * If present, details how a pack of entities should be spawned
+    * Doesn't affect the conditions for the entity's spawn.
+   */
    readonly packSpawningInfo?: {
       readonly size: number | [number, number];
-      /** Number of tiles the entities can spawn from the spawn origin */
+      /** Maximum istance from the spawn origin that the entities can spawn */
       readonly spawnRange: number;
    }
-   /** Maximum density the entity can have in its biome */
-   readonly maxBiomeDensityPerTile?: number;
-   /** If present, specifies when the entity is able to be spawned */
-   readonly time?: "night" | "day";
+   /** Maximum density per tile the entity can have in its local biome */
+   readonly maxLocalBiomeDensity: number;
+   /** Time ranges when the entity is able to be spawned. Only one time range has to be satisfied for the entity to be able to spawn. */
+   readonly spawnTimeRanges?: ReadonlyArray<[minSpawnTime: number, maxSpawnTime: number]>;
 }
 
-export type SpawnInfoRecord = Partial<Record<EntityType, EntitySpawnInfo>>;
-
-export const PASSIVE_MOB_SPAWN_INFO_RECORD: SpawnInfoRecord = {
-   cow: {
+const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
+   {
+      entityType: "cow",
       spawnableBiomes: ["grasslands"],
-      spawnableTiles: [],
+      spawnRate: 0.1,
       packSpawningInfo: {
-         size: [1, 4],
-         spawnRange: 4,
+         size: [2, 5],
+         spawnRange: 200
       },
-      weight: 1
-   }
-};
-
-export const HOSTILE_MOB_SPAWN_INFO_RECORD: SpawnInfoRecord = {};
-
-export const RESOURCE_SPAWN_INFO_RECORD: SpawnInfoRecord = {
-   tree: {
+      maxLocalBiomeDensity: 0.01
+   },
+   {
+      entityType: "tree",
       spawnableBiomes: ["grasslands"],
-      spawnableTiles: [],
-      maxBiomeDensityPerTile: 0.015,
-      weight: 1
-   }
-};
-
-export const TOMBSTONE_SPAWN_INFO_RECORD: SpawnInfoRecord = {
-   tombstone: {
+      spawnRate: 0.2,
+      maxLocalBiomeDensity: 0.015
+   },
+   {
+      entityType: "tombstone",
       spawnableBiomes: ["grasslands"],
-      spawnableTiles: [],
-      weight: 1,
-      time: "night"
+      spawnRate: 0.2,
+      maxLocalBiomeDensity: 0.005,
+      spawnTimeRanges: [[0, 3], [19, 24]]
    }
-};
+];
+
+export default SPAWN_INFO_RECORD;

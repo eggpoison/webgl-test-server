@@ -16,22 +16,22 @@ class Tree extends Entity {
       [TreeSize.large]: [3, 5]
    }
 
-   public readonly type = "tree";
-
    private readonly size: TreeSize;
    
    constructor(position: Point) {
       const size = randInt(0, 2) >= 1 ? 1 : 0;
 
-      super(position, new Set<Hitbox<HitboxType>>([
+      super(position, {
+         health: new HealthComponent(Tree.MAX_HEALTH, false),
+         item_creation: new ItemCreationComponent()
+      }, "tree");
+
+      this.addHitboxes([
          new CircularHitbox({
             type: "circular",
             radius: 40 + size * 10
          })
-      ]), {
-         health: new HealthComponent(Tree.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent()
-      });
+      ]);
 
       this.setIsStatic(true);
 

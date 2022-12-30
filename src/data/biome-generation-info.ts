@@ -1,7 +1,7 @@
 import { BiomeName, TileInfo } from "webgl-test-shared";
 
 export type TileGenerationInfo = {
-   readonly info: Omit<TileInfo, "biome" | "fogAmount">;
+   readonly info: Omit<TileInfo, "biomeName" | "fogAmount">;
    readonly minWeight?: number;
    readonly maxWeight?: number;
    /** The minimum number of tiles from the end of the biome */

@@ -11,6 +11,7 @@ import SandTile from "./SandTile";
 import SludgeTile from "./SludgeTile";
 import SnowTile from "./SnowTile";
 import WaterTile from "./WaterTile";
+import Tile from "./Tile";
 
 const TILE_CLASS_RECORD: Record<TileType, new(x: number, y: number, info: TileInfo) => BaseTile> = {
    grass: GrassTile,
@@ -25,5 +26,10 @@ const TILE_CLASS_RECORD: Record<TileType, new(x: number, y: number, info: TileIn
    magma: MagmaTile,
    lava: LavaTile
 };
+
+export function createGenericTile(x: number, y: number, tileInfo: TileInfo): Tile {
+   const tileClass = TILE_CLASS_RECORD[tileInfo.type!];
+   return new tileClass(x, y, tileInfo);
+}
 
 export default TILE_CLASS_RECORD;

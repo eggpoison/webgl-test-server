@@ -7,7 +7,6 @@ import ItemEntity from "./items/ItemEntity";
 import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
-import TILE_CLASS_RECORD from "./tiles/tile-class-record";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -57,6 +56,10 @@ class Board {
       return this.tiles[x][y];
    }
 
+   public setTile(x: number, y: number, tile: Tile): void {
+      this.tiles[x][y] = tile;
+   }
+
    public getChunk(x: number, y: number): Chunk {
       return this.chunks[x][y];
    }
@@ -76,7 +79,9 @@ class Board {
       this.removedEntities.clear();
    }
 
-   public tickEntities(): void {
+   public updateEntities(): void {
+      const entityChunkGroups: { [key: string]: Set<Entity> } = {};
+
       for (const entity of Object.values(this.entities)) {
          entity.applyPhysics();
 
@@ -93,10 +98,39 @@ class Board {
          // Tick entity
          entity.tick();
 
+         // If the entity was removed during the tick, add it to the list of removed entities
          if (entity.isRemoved) {
             this.removedEntities.add(entity.id);
          }
+
+         entity.savePreviousCollidingEntities();
+         entity.clearCollidingEntities();
+
+         this.setEntityPotentialCollidingEntities(entityChunkGroups, entity);
       }
+   }
+
+   private setEntityPotentialCollidingEntities(entityChunkGroups: { [key: string]: Set<Entity> }, entity: Entity): void {
+      // Generate the chunk group hash
+      let chunkGroupHash = "";
+      for (const chunk of entity.chunks) {
+         chunkGroupHash += chunk.x + "_" + chunk.y + "-";
+      }
+
+      // Set the entity's potential colliding entities based on the chunk group hash
+      if (!entityChunkGroups.hasOwnProperty(chunkGroupHash)) {
+         // If a chunk group doesn't exist for the hash, create it
+         const chunkGroup = new Set<Entity>();
+         for (const chunk of entity.chunks) {
+            for (const entity of chunk.getEntities()) {
+               if (!chunkGroup.has(entity)) {
+                  chunkGroup.add(entity);
+               }
+            }
+         }
+         entityChunkGroups[chunkGroupHash] = chunkGroup;
+      }
+      entity.potentialCollidingEntities = new Set(entityChunkGroups[chunkGroupHash]);
    }
 
    public resolveCollisions(): void {
@@ -126,6 +160,7 @@ class Board {
 
    /** Removes the entity from the game */
    private removeEntity(entity: Entity): void {
+      entity.remove();
       delete this.entities[entity.id];
 
       // Remove the entity from its chunks
@@ -134,14 +169,8 @@ class Board {
       }
    }
 
-   public changeTile(x: number, y: number, newTileInfo: TileInfo): void {
-      const tileClass = TILE_CLASS_RECORD[newTileInfo.type];
-      this.tiles[x][y] = new tileClass(x, y, newTileInfo);
-      this.registerNewTileUpdate(x, y);
-   }
-
    /** Registers a tile update to be sent to the clients */
-   private registerNewTileUpdate(x: number, y: number): void {
+   public registerNewTileUpdate(x: number, y: number): void {
       this.tileUpdateCoordinates.add([x, y]);
    }
 

@@ -1,4 +1,4 @@
-import { HitboxType, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { EntityType, HitboxType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../ai/AI";
 import EscapeAI from "../ai/EscapeAI";
 import FollowAI from "../ai/FollowAI";
@@ -46,8 +46,8 @@ abstract class Mob extends Entity implements MobInfo {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
-   constructor(position: Point, hitboxes: Set<Hitbox<HitboxType>>, components: Partial<Components>, aiData: MobAIData) {
-      super(position, hitboxes, components);
+   constructor(position: Point, components: Partial<Components>, entityType: EntityType, aiData: MobAIData) {
+      super(position, components, entityType);
 
       this.visionRange = aiData.info.visionRange;
       

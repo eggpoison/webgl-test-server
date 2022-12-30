@@ -1,16 +1,29 @@
-import { EntityType, ItemType, PlaceableItemInfo, Point, Vector } from "webgl-test-shared";
+import { EntityType, ItemType, PlaceableItemInfo, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import ENTITY_CLASS_RECORD from "../../entity-class-record";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
+import { SERVER } from "../../server";
 import StackableItem from "./StackableItem";
 
+type PlaceableItemHitboxInfo = {
+   readonly width: number;
+   readonly height: number;
+}
+
+const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxInfo>> = {
+   workbench: {
+      width: 80,
+      height: 80
+   }
+};
+
 class PlaceableItem extends StackableItem implements PlaceableItemInfo {
-   /** Distance from the player that the item is placed at */
-   private static readonly PLACE_DISTANCE = 100;
+   private static readonly placeTestHitbox: RectangularHitbox = new RectangularHitbox();
    
    public readonly entityType: EntityType;
 
    private readonly entityClass: new (position: Point, ...args: any[]) => Entity;
-   
+
    constructor(itemType: ItemType, count: number, itemInfo: PlaceableItemInfo) {
       super(itemType, count, itemInfo);
 
@@ -19,22 +32,69 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
       this.entityClass = ENTITY_CLASS_RECORD[this.entityType]();
    }
 
-   public getAttackDamage(): number {
-      return 1;
-   }
-
    public use(entity: Entity): void {
-      const entityPosition = entity.position.copy();
-      const offsetVector = new Vector(PlaceableItem.PLACE_DISTANCE, entity.rotation);
-      entityPosition.add(offsetVector.convertToPoint());
+      // Calculate the position to spawn the placeable entity at
+      const spawnPosition = entity.position.copy();
+      const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, entity.rotation);
+      spawnPosition.add(offsetVector.convertToPoint());
+
+      // Make sure the placeable item can be placed
+      if (!this.canBePlaced(spawnPosition, entity.rotation)) return;
       
       // Spawn the placeable entity
-      const placedEntity = new this.entityClass(entityPosition);
+      const placedEntity = new this.entityClass(spawnPosition);
 
       // Rotate it to match the entity's rotation
       placedEntity.rotation = entity.rotation;
 
       super.consumeItem(entity.getComponent("inventory")!, 1);
+   }
+
+   private canBePlaced(spawnPosition: Point, rotation: number): boolean {
+      // Update the place test hitbox to match the placeable item's info
+      const { width, height } = PLACEABLE_ITEM_HITBOX_INFO[this.type]!;
+
+      const tempHitboxObject = {
+         position: spawnPosition,
+         rotation: rotation
+      };
+
+      PlaceableItem.placeTestHitbox.setHitboxObject(tempHitboxObject);
+
+      PlaceableItem.placeTestHitbox.setHitboxInfo({
+         type: "rectangular",
+         width: width,
+         height: height
+      });
+
+      PlaceableItem.placeTestHitbox.computeVertexPositions();
+      PlaceableItem.placeTestHitbox.calculateSideAxes();
+
+      const minChunkX = Math.max(Math.min(Math.floor((spawnPosition.x - width / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((spawnPosition.x + width / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((spawnPosition.y - height / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((spawnPosition.y + height / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      
+      const previouslyCheckedEntityIDs = new Set<number>();
+
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = SERVER.board.getChunk(chunkX, chunkY);
+            for (const entity of chunk.getEntities()) {
+               if (!previouslyCheckedEntityIDs.has(entity.id)) {
+                  for (const hitbox of entity.hitboxes) {   
+                     if (PlaceableItem.placeTestHitbox.isColliding(hitbox)) {
+                        return false;
+                     }
+                  }
+                  
+                  previouslyCheckedEntityIDs.add(entity.id);
+               }
+            }
+         }
+      }
+
+      return true;
    }
 }
 

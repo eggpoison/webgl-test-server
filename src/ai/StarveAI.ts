@@ -3,6 +3,7 @@ import Mob from "../entities/Mob";
 import ItemEntity from "../items/ItemEntity";
 import { SERVER } from "../server";
 import Tile from "../tiles/Tile";
+import { createGenericTile } from "../tiles/tile-class-record";
 import AI, { BaseAIParams } from "./AI";
 
 type FoodSource = {
@@ -136,10 +137,10 @@ class StarveAI extends AI implements HerdAIParams {
       const previousTile = this.mob.currentTile;
       const newTileInfo: TileInfo = {
          type: foodInfo.resultingTileType,
-         biome: previousTile.biome,
+         biomeName: previousTile.biomeName,
          isWall: previousTile.isWall
       };
-      SERVER.board.changeTile(previousTile.x, previousTile.y, newTileInfo);
+      createGenericTile(previousTile.x, previousTile.y, newTileInfo);
 
       this.food += foodInfo.foodUnits;
       if (this.food > 100) {

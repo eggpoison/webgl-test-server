@@ -1,8 +1,12 @@
-import { ItemType, ToolItemInfo, ToolType } from "webgl-test-shared";
+import { ENTITY_INFO_RECORD, ItemType, ToolItemInfo, ToolType } from "webgl-test-shared";
+import Entity from "../../entities/Entity";
 import Item from "./Item";
 
-class ToolItem extends Item implements ToolItemInfo {
+abstract class ToolItem extends Item implements ToolItemInfo {
    public readonly toolType: ToolType;
+
+   public readonly damage: number;
+   public readonly knockback: number;
    public readonly attackCooldown: number;
 
    private attackTimer = 0;
@@ -11,12 +15,13 @@ class ToolItem extends Item implements ToolItemInfo {
       super(itemType, count, itemInfo);
 
       this.toolType = itemInfo.toolType;
+
+      this.damage = itemInfo.damage;
+      this.knockback = itemInfo.knockback;
       this.attackCooldown = itemInfo.attackCooldown;
    }
 
-   public getAttackDamage(): number {
-      return 1;
-   }
+   public abstract getAttackDamage(entityToAttack: Entity): number;
 }
 
 export default ToolItem;

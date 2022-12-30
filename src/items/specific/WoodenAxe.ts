@@ -1,6 +1,6 @@
-import ToolItem from "../generic/ToolItem";
+import AxeItem from "../generic/AxeItem";
 
-class WoodenAxe extends ToolItem {
+class WoodenAxe extends AxeItem {
 
 }
 

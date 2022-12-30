@@ -23,7 +23,7 @@ class Cow extends Mob {
             aiWeightMultiplier: 0.75,
             acceleration: 50,
             terminalVelocity: 25,
-            minDistanceFromFollowTarget: 150,
+            minDistanceFromFollowTarget: 100,
             weightBuildupTime: 10,
             interestDuration: 7,
             chanceToGainInterest: 0.2,
@@ -68,24 +68,25 @@ class Cow extends Mob {
       }
    };
 
-   public readonly type = "cow";
-   
    public readonly species: CowSpecies;
    public readonly herdMemberHash: number;
 
    constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent();
 
-      super(position, new Set<Hitbox<HitboxType>>([
+      super(position, {
+         health: new HealthComponent(Cow.MAX_HEALTH, false),
+         item_creation: itemCreationComponent
+      }, "cow", Cow.MOB_AI_DATA);
+
+      this.addHitboxes([
          new RectangularHitbox({
             type: "rectangular",
             width: 50,
             height: 100
          })
-      ]), {
-         health: new HealthComponent(Cow.MAX_HEALTH, false),
-         item_creation: itemCreationComponent
-      }, Cow.MOB_AI_DATA);
+      ]);
+
       this.rotation = 2 * Math.PI * Math.random();
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;

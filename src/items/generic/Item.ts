@@ -23,8 +23,6 @@ abstract class Item implements BaseItemInfo {
 
    public tick?(): void;
 
-   public abstract getAttackDamage(): number;
-
    public use?(entity: Entity): void;
 
    public consumeItem(inventoryComponent: InventoryComponent, amount: number): void {

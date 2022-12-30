@@ -1,11 +1,10 @@
 import Chunk from "../Chunk";
-import { curveWeight, EntityInfoClientArgs, EntityType, ENTITY_INFO_RECORD, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { curveWeight, EntityInfoClientArgs, EntityType, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import { SERVER } from "../server";
 import HealthComponent from "../entity-components/HealthComponent";
 import Tile from "../tiles/Tile";
 import Hitbox from "../hitboxes/Hitbox";
-import CircularHitbox from "../hitboxes/CircularHitbox";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { Event, EventParams, EventType } from "../events";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -43,27 +42,28 @@ type StatusEffect = {
 }
 
 abstract class Entity {
-   private static readonly MAX_ENTITY_COLLISION_PUSH_FORCE = 200;
-   
    private readonly components: Partial<{ [key in keyof Components]: Components[key] }> = {};
    private readonly tickableComponents: ReadonlyArray<Component>;
 
    /** Unique identifier for every entity */
    public readonly id: number;
-   /** Type of the entity (e.g. "cow") */
-   public abstract readonly type: EntityType;
+   public readonly type: EntityType;
 
-   public hitboxes:Set<Hitbox<HitboxType>>;
+   /** All hitboxes attached to the entity but not active */
+   private inactiveHitboxes = new Set<Hitbox<HitboxType>>();
+   /** All hitboxes in use by the entity */
+   public hitboxes = new Set<Hitbox<HitboxType>>();
 
    public readonly events: { [E in EventType]: Array<Event<E>> } = {
       hurt: [],
       death: [],
       item_pickup: [],
-      enter_collision: []
+      enter_collision: [],
+      during_collision: []
    };
 
    /** Position of the entity */
-   public position: Point;
+   public position!: Point;
    /** Velocity of the entity */
    public velocity: Vector | null = null;
    /** Amount of units that the entity's speed increases in a second */
@@ -86,27 +86,27 @@ abstract class Entity {
    /** If this flag is set to true, then the entity will not move */
    private isStatic: boolean = false;
 
+   /** Stores which other entities could be colliding with the entity */
+   public potentialCollidingEntities = new Set<Entity>();
    private collidingEntities = new Set<Entity>();
+
+   private previousCollidingEntityIDs = new Set<number>();
 
    /** Impacts how much force an entity experiences which pushing away from another entity */
    private pushForceMultiplier = 1;
 
    public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
-   constructor(position: Point, hitboxes: Set<Hitbox<HitboxType>>, components: Partial<Components>) {
+   constructor(position: Point, components: Partial<Components>, entityType: EntityType) {
       this.id = findAvailableEntityID();
+      this.type = entityType;
       
       this.position = position;
-      this.hitboxes = hitboxes;
       this.components = components;
 
       this.calculateCurrentTile();
 
       this.tickableComponents = filterTickableComponents(components);
-
-      for (const hitbox of this.hitboxes) {
-         hitbox.setHitboxObject(this);
-      }
 
       for (const component of Object.values(components) as Array<Component>) {
          component.setEntity(this);
@@ -133,6 +133,22 @@ abstract class Entity {
       this.tickStatusEffects();
    }
 
+   public savePreviousCollidingEntities(): void {
+      this.previousCollidingEntityIDs.clear();
+      for (const entity of this.collidingEntities) {
+         this.previousCollidingEntityIDs.add(entity.id);
+      }
+   }
+
+   public clearCollidingEntities(): void {
+      this.collidingEntities.clear();
+   }
+
+   public confirmCollidingEntity(entity: Entity): void {
+      this.potentialCollidingEntities.delete(entity);
+      this.collidingEntities.add(entity);
+   }
+
    public setPushForceMultiplier(pushForceMultiplier: number): void {
       this.pushForceMultiplier = pushForceMultiplier;
    }
@@ -146,6 +162,26 @@ abstract class Entity {
          return this.components[name] as Components[C];
       }
       return null;
+   }
+
+   public addHitboxes(hitboxes: ReadonlyArray<Hitbox<HitboxType>>): void {
+      for (const hitbox of hitboxes) {
+         hitbox.setHitboxObject(this);
+
+         // If the hitbox is already active, add it to the list of active hitboxes
+         if (hitbox.isActive) {
+            this.hitboxes.add(hitbox);
+         } else {
+            // Otherwise add it to the list of inactive hitboxes and wait for it to become active
+            this.inactiveHitboxes.add(hitbox);
+            hitbox.addActivationCallback(() => this.activateHitbox(hitbox));
+         }
+      }
+   }
+
+   private activateHitbox(hitbox: Hitbox<HitboxType>): void {
+      this.inactiveHitboxes.delete(hitbox);
+      this.hitboxes.add(hitbox);
    }
 
    /** Calculates the chunks that contain the entity.  */
@@ -197,7 +233,30 @@ abstract class Entity {
       const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
 
-      this.currentTile = SERVER.board.getTile(tileX, tileY);
+      const newTile = SERVER.board.getTile(tileX, tileY);
+
+      // If the entity wasn't on a local biome previously, add them to their new local biome
+      if (typeof this.currentTile === "undefined") {
+         if (!newTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
+            newTile.localBiome.entityCounts[this.type] = 1;
+         } else {
+            newTile.localBiome.entityCounts[this.type]!++;
+         }
+      } else if (newTile !== this.currentTile) {
+         // Account for if the entity moved into a new local biome
+         if (this.currentTile.localBiome !== newTile.localBiome) {
+            // Add the entity to the new local biome and remove it from the previous one
+            if (!newTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
+               newTile.localBiome.entityCounts[this.type] = 1;
+            } else {
+               newTile.localBiome.entityCounts[this.type]!++;
+            }
+
+            this.currentTile.localBiome.entityCounts[this.type]!--;
+         }
+      }
+
+      this.currentTile = newTile;
    }
 
    public applyPhysics(): void {
@@ -294,12 +353,13 @@ abstract class Entity {
    }
 
    public updateCollidingEntities(): void {
-      const previousCollidingEntities = new Set(this.collidingEntities);
-      this.collidingEntities = this.getCollidingEntities();
+      this.calculateCollidingEntities();
 
-      // Check for new collisions
+      // Call collision events
       for (const collidingEntity of this.collidingEntities) {
-         if (!previousCollidingEntities.has(collidingEntity)) {
+         this.callEvents("during_collision", collidingEntity);
+         
+         if (!this.previousCollidingEntityIDs.has(collidingEntity.id)) {
             this.callEvents("enter_collision", collidingEntity);
          }
       }
@@ -322,7 +382,7 @@ abstract class Entity {
          let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
          forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
          
-         const force = Entity.MAX_ENTITY_COLLISION_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
+         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
          const pushAngle = this.position.calculateAngleBetween(entity.position) + Math.PI;
          // No need to apply force to other entity as they will do it themselves
          const pushForce = new Vector(force, pushAngle);
@@ -365,44 +425,46 @@ abstract class Entity {
       return maxDist;
    }
    
-   private getCollidingEntities(): Set<Entity> {
-      const collidingEntities = new Set<Entity>();
-
-      for (const chunk of this.chunks) {
-         entityLoop: for (const entity of chunk.getEntities()) {
-            if (entity === this) continue;
-
-            for (const hitbox of this.hitboxes) {
-               for (const otherHitbox of entity.hitboxes) {
-                  if (hitbox.isColliding(otherHitbox)) {
-                     collidingEntities.add(entity);
-                     continue entityLoop;
-                  }
+   private calculateCollidingEntities(): void {
+      this.potentialCollidingEntities.delete(this);
+      entityLoop: for (const entity of this.potentialCollidingEntities) {
+         if (this.collidingEntities.has(entity)) continue;
+         
+         for (const hitbox of this.hitboxes) {
+            for (const otherHitbox of entity.hitboxes) {
+               // If the entities are colliding, add the colliding entity and 
+               if (hitbox.isColliding(otherHitbox)) {
+                  entity.confirmCollidingEntity(this);
+                  
+                  this.collidingEntities.add(entity);
+                  continue entityLoop;
                }
             }
          }
       }
-
-      return collidingEntities;
    }
 
-   public takeDamage(damage: number, attackingEntity: Entity | null, attackHash?: string): void {
+   /**
+    * Attempts to damage the entity
+    * @returns Whether the entity took the damage or not
+   */
+   public takeDamage(damage: number, knockback: number, attackDirection: number, attackingEntity: Entity | null, attackHash?: string): boolean {
       const healthComponent = this.getComponent("health")!;
       
       // Don't attack during invulnerability
       if (healthComponent.isInvulnerable(attackHash)) {
-         return;
+         return false;
       }
       
       const hitWasReceived = healthComponent.takeDamage(damage);
  
-      if (hitWasReceived) this.callEvents("hurt", damage, attackingEntity);
+      if (hitWasReceived) this.callEvents("hurt", damage, knockback, attackDirection, attackingEntity);
 
       // Push away from the source of damage
       if (hitWasReceived && !this.isRemoved && !this.isStatic) {
          if (attackingEntity !== null) {
             const angle = this.position.calculateAngleBetween(attackingEntity.position) + Math.PI;
-            const force = new Vector(150 * healthComponent.getKnockbackMultiplier(), angle);
+            const force = new Vector(knockback * healthComponent.getKnockbackMultiplier(), angle);
             if (this.velocity !== null) {
                this.velocity.add(force);
             } else {
@@ -410,6 +472,8 @@ abstract class Entity {
             }
          }
       }
+
+      return true;
    }
 
    public destroy(): void {
@@ -444,7 +508,7 @@ abstract class Entity {
       if (this.statusEffects.hasOwnProperty("fire")) {
          if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
             // Fire tick
-            this.takeDamage(1, null);
+            this.takeDamage(1, 0, 0, null);
          }
       }
    }
@@ -470,6 +534,11 @@ abstract class Entity {
 
    public removeStatusEffect(type: StatusEffectType): void {
       delete this.statusEffects[type];
+   }
+
+   public remove(): void {
+      // When the entity dies, update the entity count of the entity's local biome
+      this.currentTile.localBiome.entityCounts[this.type]!--;
    }
 }
 

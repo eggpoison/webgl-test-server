@@ -1,5 +1,6 @@
 import { TileInfo } from "webgl-test-shared";
 import { SERVER } from "../server";
+import GrassTile from "./GrassTile";
 import Tile from "./Tile";
 
 class DirtTile extends Tile {
@@ -16,12 +17,12 @@ class DirtTile extends Tile {
    }
 
    private grow(): void {
-      const newTileInfo: TileInfo = {
+      const grassTileInfo: TileInfo = {
          type: "grass",
-         biome: this.biome,
+         biomeName: this.biomeName,
          isWall: this.isWall
-      };
-      SERVER.board.changeTile(this.x, this.y, newTileInfo);
+      }
+      new GrassTile(this.x, this.y, grassTileInfo);
    }
 }
 

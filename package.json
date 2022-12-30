@@ -2,7 +2,7 @@
    "license": "UNLICENSED",
    "scripts": {
       "start": "nodemon",
-      "test": "node -r ts-node/register --prof myapp.ts"
+      "test": "node -r ts-node/register --prof src/server.ts"
    },
    "dependencies": {
       "@types/ws": "^8.5.3",

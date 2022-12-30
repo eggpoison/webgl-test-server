@@ -1,7 +1,6 @@
-import { HitboxType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { Point, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import Hitbox from "../hitboxes/Hitbox";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 import Mob, { MobAIData } from "./Mob";
@@ -12,7 +11,8 @@ class Zombie extends Mob {
 
    private static readonly MAX_HEALTH = 20;
 
-   private static readonly DAMAGE = 2;
+   private static readonly ATTACK_DAMAGE = 2;
+   private static readonly ATTACK_KNOCKBACK = 150;
 
    private static readonly MOB_AI_DATA: MobAIData = {
       info: {
@@ -50,35 +50,41 @@ class Zombie extends Mob {
       }
    };
 
-   public readonly type = "zombie";
-
-   /** The type of the zombie, 0-2 */
+   /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
 
-   constructor(position: Point) {
-      super(position, new Set<Hitbox<HitboxType>>([
+   constructor(position: Point, isGolden: boolean = false) {
+      super(position, {
+         health: new HealthComponent(Zombie.MAX_HEALTH, false)
+      }, "zombie", Zombie.MOB_AI_DATA);
+
+      this.addHitboxes([
          new CircularHitbox({
             type: "circular",
             radius: 32
          })
-      ]), {
-         health: new HealthComponent(Zombie.MAX_HEALTH, false)
-      }, Zombie.MOB_AI_DATA);
+      ]);
       
-      this.zombieType = Math.floor(Math.random() * 3);
+      if (isGolden) {
+         this.zombieType = 3;
+      } else {
+         this.zombieType = Math.floor(Math.random() * 3);
+      }
 
       // Hurt players on collision
-      this.createEvent("enter_collision", (collidingEntity: Entity) => {
+      this.createEvent("during_collision", (collidingEntity: Entity) => {
          if (collidingEntity.type === "player") {
-            collidingEntity.takeDamage(Zombie.DAMAGE, this);
-
+            const angleFromTarget = this.position.calculateAngleBetween(collidingEntity.position);
+            
             // Push away from the entity on collision
-            const angle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
-            const pushForce = new Vector(75, angle);
-            if (this.velocity !== null) {
-               this.velocity.add(pushForce);
-            } else {
-               this.velocity = pushForce;
+            if (collidingEntity.takeDamage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, angleFromTarget, this)) {
+                  const pushDirection = angleFromTarget + Math.PI;
+                  const pushForce = new Vector(75, pushDirection);
+                  if (this.velocity !== null) {
+                  this.velocity.add(pushForce);
+               } else {
+                  this.velocity = pushForce;
+               }
             }
          }
       });

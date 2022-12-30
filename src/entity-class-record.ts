@@ -7,7 +7,7 @@ import Tree from "./entities/Tree";
 import Workbench from "./entities/Workbench";
 import Zombie from "./entities/Zombie";
 
-const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any) => Entity)> = {
+const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any[]) => Entity)> = {
    cow: () => Cow,
    zombie: () => Zombie,
    tombstone: () => Tombstone,

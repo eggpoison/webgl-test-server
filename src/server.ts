@@ -1,19 +1,26 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
 import Entity from "./entities/Entity";
 import Mob from "./entities/Mob";
-import { startReadingInput } from "./command-input";
-import { precomputeSpawnLocations, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Item from "./items/generic/Item";
+import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
+import Zombie from "./entities/Zombie";
+
+/*
+
+Reference for future self:
+node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
+
+*/
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 type PlayerData = {
-   readonly clientEntityIDs: Array<number>;
    readonly instance: Player;
+   clientIsActive: boolean;
    /** Bounds of where the player can see on their screen */
    visibleChunkBounds: VisibleChunkBounds;
 }
@@ -61,8 +68,13 @@ class GameServer {
 
    /** Sets up the various stuff */
    public setup(): void {
-      precomputeSpawnLocations();
       spawnInitialEntities();
+
+      // for (let i = 0; i < 1000; i++) {
+      //    const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //    const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
+      //    new Zombie(new Point(x, y));
+      // }
    }
 
    private handlePlayerConnections(): void {
@@ -114,7 +126,13 @@ class GameServer {
                const row = tiles[y];
                for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
                   const tile = row[x];
-                  serverTileData[y][x] = tile;
+                  serverTileData[y][x] = {
+                     x: tile.x,
+                     y: tile.y,
+                     type: tile.type,
+                     biomeName: tile.biomeName,
+                     isWall: tile.isWall
+                  };
                }
             }
             
@@ -126,12 +144,13 @@ class GameServer {
                spawnPosition: [xSpawnPosition, ySpawnPosition],
                serverEntityDataArray: visibleEntityDataArray,
                serverItemEntityDataArray: serverItemDataArray,
-               hotbarInventory: {},
+               playerHotbarInventory: {},
                craftingOutputItem: null,
-               heldItem: null,
+               playerHeldItem: null,
                tileUpdates: [],
                serverTicks: this.ticks,
-               hitsTaken: []
+               hitsTaken: [],
+               playerHealth: 20
             }
 
             socket.emit("initial_game_data_packet", initialGameDataPacket);
@@ -140,6 +159,20 @@ class GameServer {
          // Handle player disconnects
          socket.on("disconnect", () => {
             this.handlePlayerDisconnect(socket);
+         });
+
+         socket.on("deactivate", () => {
+            if (this.playerData.hasOwnProperty(socket.id)) {
+               this.playerData[socket.id].clientIsActive = false;
+            }
+         });
+
+         socket.on("activate", () => {
+            if (this.playerData.hasOwnProperty(socket.id)) {
+               this.playerData[socket.id].clientIsActive = true;
+
+               this.sendGameDataSyncPacket(socket);
+            }
          });
 
          socket.on("player_data_packet", (playerDataPacket: PlayerDataPacket) => {
@@ -175,7 +208,7 @@ class GameServer {
 
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
-      this.board.tickEntities();
+      this.board.updateEntities();
       this.board.resolveCollisions();
 
       // Age items
@@ -233,6 +266,9 @@ class GameServer {
 
          // Get the player data for the current client
          const playerData = this.playerData[socket.id];
+
+         if (!this.playerData[socket.id].clientIsActive) continue;
+
          const player = playerData.instance;
          
          // Create the visible entity info array
@@ -272,12 +308,13 @@ class GameServer {
          const gameDataPacket: GameDataPacket = {
             serverEntityDataArray: visibleEntityInfoArray,
             serverItemEntityDataArray: serverItemEntityDataArray,
-            hotbarInventory: hotbarInventoryData,
+            playerHotbarInventory: hotbarInventoryData,
             craftingOutputItem: craftingOutputItem,
-            heldItem: heldItem,
+            playerHeldItem: heldItem,
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
-            hitsTaken: hitsTaken
+            hitsTaken: hitsTaken,
+            playerHealth: player.getComponent("health")!.getHealth()
          };
 
          // Send the game data to the player
@@ -289,6 +326,35 @@ class GameServer {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const playerData = this.playerData[socket.id];
          playerData.instance.isRemoved = true;
+         delete this.playerData[socket.id];
+      }
+   }
+
+   private sendGameDataSyncPacket(socket: ISocket): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const player = this.playerData[socket.id].instance;
+            
+         // Calculate the hotbar inventory data
+         const playerHotbarInventoryData: ServerInventoryData = {};
+         const inventory = player.getComponent("inventory")!.getInventory();
+         for (const [itemSlot, item] of Object.entries(inventory) as unknown as ReadonlyArray<[number, Item]>) {
+            playerHotbarInventoryData[itemSlot] = {
+               type: item.type,
+               count: item.count
+            };
+         }
+
+         const packet: GameDataSyncPacket = {
+            position: player.position.package(),
+            velocity: player.velocity?.package() || null,
+            acceleration: player.acceleration?.package() || null,
+            rotation: player.rotation,
+            terminalVelocity: player.terminalVelocity,
+            health: player.getComponent("health")!.getHealth(),
+            playerHotbarInventory: playerHotbarInventoryData
+         };
+
+         socket.emit("game_data_sync_packet", packet);
       }
    }
 
@@ -347,8 +413,8 @@ class GameServer {
 
       // Initialise the player's gamedata record
       this.playerData[socket.id] = {
-         clientEntityIDs: new Array<number>(),
          instance: player,
+         clientIsActive: true,
          visibleChunkBounds: visibleChunkBounds
       };
 
@@ -359,4 +425,3 @@ class GameServer {
 // Start the game server
 export const SERVER = new GameServer();
 SERVER.setup();
-startReadingInput();

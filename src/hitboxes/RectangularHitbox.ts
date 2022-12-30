@@ -1,17 +1,17 @@
 import { circleAndRectangleDoIntersect, computeSideAxis, HitboxType, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rectanglesDoIntersect, RectangularHitboxInfo, rotatePoint, Vector } from "webgl-test-shared";
-import Hitbox, { HitboxBounds, HitboxObject } from "./Hitbox";
+import Hitbox, { HitboxBounds } from "./Hitbox";
 
 class RectangularHitbox extends Hitbox<"rectangular"> {
    /** Length of half of the diagonal of the rectangle */
-   public readonly halfDiagonalLength: number;
+   public halfDiagonalLength!: number;
 
    public vertexPositions!: HitboxVertexPositions;
    public sideAxes!: [axis1: Vector, axis2: Vector];
 
-   constructor(hitboxInfo: RectangularHitboxInfo) {
-      super(hitboxInfo);
+   public setHitboxInfo(hitboxInfo: RectangularHitboxInfo): void {
+      super.setHitboxInfo(hitboxInfo);
 
-      this.halfDiagonalLength = Math.sqrt(Math.pow(this.info.width / 2, 2) + Math.pow(this.info.height / 2, 2));
+      this.halfDiagonalLength = Math.sqrt(Math.pow(hitboxInfo.width / 2, 2) + Math.pow(hitboxInfo.height / 2, 2));
    }
 
    public computeVertexPositions(): void {

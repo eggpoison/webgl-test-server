@@ -1,29 +1,89 @@
-import { Tile, TileInfo } from "webgl-test-shared/lib/Tile";
 import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
 import { BiomeName } from "webgl-test-shared/lib/biomes";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./data/biome-generation-info";
-import TILE_CLASS_RECORD from "./tiles/tile-class-record";
+import Tile from "./tiles/Tile";
+import { EntityType, TileInfo } from "webgl-test-shared";
+import { createGenericTile } from "./tiles/tile-class-record";
 
-const TILES_BY_BIOME_RECORD: Record<BiomeName, Array<[x: number, y: number]>> = {
-   grasslands: [],
-   desert: [],
-   tundra: [],
-   swamp: [],
-   mountains: [],
-   magmaFields: []
-};
+export const CONNECTED_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
+   [0, 1],
+   [1, 1],
+   [1, 0],
+   [1, -1],
+   [0, -1],
+   [-1, -1],
+   [-1, 0],
+   [-1, 1]
+]
 
-export function getTilesByBiome(biomeName: BiomeName): Array<[number, number]> {
-   return TILES_BY_BIOME_RECORD[biomeName];
+export type LocalBiome = {
+   readonly tiles: Set<[tileX: number, tileY: number]>;
+   /** Number of entities currently inside the local biome */
+   readonly entityCounts: Partial<Record<EntityType, number>>;
 }
 
-const categoriseTiles = (tiles: Array<Array<Tile>>): void => {
-   for (let x = 0; x < SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE; x++) {
-      for (let y = 0; y < SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE; y++) {
+export const LOCAL_BIOME_RECORD: Partial<Record<BiomeName, Set<LocalBiome>>> = {};
+
+const generateLocalBiomes = (tiles: Array<Array<Tile>>): void => {
+   for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
+      for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          const tile = tiles[x][y];
 
-         TILES_BY_BIOME_RECORD[tile.biome].push([x, y]);
+         // Skip tiles which have already been assigned a local biome
+         if (typeof tile.localBiome !== "undefined") continue;
+
+         // 
+         // Add all connected tiles to the local biome
+         // 
+
+         if (!LOCAL_BIOME_RECORD.hasOwnProperty(tile.biomeName)) {
+            LOCAL_BIOME_RECORD[tile.biomeName] = new Set<LocalBiome>();
+         }
+
+         // Create the local biome
+         const localBiome: LocalBiome = {
+            tiles: new Set<[tileX: number, tileY: number]>(),
+            entityCounts: {}
+         };
+         LOCAL_BIOME_RECORD[tile.biomeName]!.add(localBiome);
+
+         const addedTiles = new Set<Tile>();
+         const tilesToAdd = new Array<Tile>();
+
+         addedTiles.add(tile);
+         tilesToAdd.push(tile);
+
+         while (tilesToAdd.length > 0) {
+            const currentTile = tilesToAdd[0];
+            tilesToAdd.splice(0, 1);
+
+            // Add the current tile
+            localBiome.tiles.add([currentTile.x, currentTile.y]);
+            currentTile.localBiome = localBiome;
+
+
+            // Mark all nearby tiles to the current tile to be checked
+            for (const [xOffset, yOffset] of CONNECTED_TILE_OFFSETS) {
+               const tileX = currentTile.x + xOffset;
+               const tileY = currentTile.y + yOffset;
+               
+               // Don't add tiles which don't exist
+               if (tileX < 0 || tileX >= SETTINGS.BOARD_DIMENSIONS || tileY < 0 || tileY >= SETTINGS.BOARD_DIMENSIONS) {
+                  continue;
+               }
+
+               const nearbyTile = tiles[tileX][tileY];
+
+               // Don't add tiles already added
+               if (addedTiles.has(nearbyTile)) continue;
+
+               if (nearbyTile.biomeName === currentTile.biomeName) {
+                  tilesToAdd.push(nearbyTile);
+                  addedTiles.add(nearbyTile);
+               }
+            }
+         }
       }
    }
 }
@@ -72,8 +132,8 @@ const generateBiomeInfo = (tileArray: Array<Array<Partial<TileInfo>>>): void => 
          const temperature = temperatureMap[x][y];
          const humidity = humidityMap[x][y];
 
-         const biome = getBiome(height, temperature, humidity);
-         tileArray[x][y].biome = biome;
+         const biomeName = getBiome(height, temperature, humidity);
+         tileArray[x][y].biomeName = biomeName;
       }
    }
 }
@@ -88,7 +148,7 @@ const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: num
    return true;
 }
 
-const getTileInfo = (biomeName: BiomeName, weight: number, dist: number): Omit<TileInfo, "biome" | "fogAmount"> => {
+const getTileInfo = (biomeName: BiomeName, weight: number, dist: number): Omit<TileInfo, "biomeName" | "fogAmount"> => {
    const biomeGenerationInfo = BIOME_GENERATION_INFO[biomeName];
    for (const tileGenerationInfo of biomeGenerationInfo.tiles) {
       if (matchesTileRequirements(tileGenerationInfo, weight, dist)) {
@@ -103,7 +163,7 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
    /** The maximum distance that the algorithm will search for */
    const MAX_SEARCH_DIST = 10;
 
-   const tileBiome = tileInfoArray[tileX][tileY].biome;
+   const tileBiome = tileInfoArray[tileX][tileY].biomeName;
 
    for (let dist = 1; dist <= MAX_SEARCH_DIST; dist++) {
       for (let i = 0; i <= dist; i++) {
@@ -119,7 +179,7 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 
             const tile = tileInfoArray[x][y];
 
-            if (tile.biome !== tileBiome) return dist - 1;
+            if (tile.biomeName !== tileBiome) return dist - 1;
          }
       }
    }
@@ -139,10 +199,12 @@ const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void 
 
          const dist = getTileDist(tileInfoArray, x, y);
 
-         Object.assign(tileInfo, getTileInfo(tileInfo.biome!, weight, dist));
+         Object.assign(tileInfo, getTileInfo(tileInfo.biomeName!, weight, dist));
       }
    }
 }
+
+export let terrainHasBeenGenerated: boolean = false;
 
 function generateTerrain(): Array<Array<Tile>> {
    // Initialise the tile info array
@@ -163,14 +225,16 @@ function generateTerrain(): Array<Array<Tile>> {
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
       tiles[x] = new Array<Tile>();
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-         const tileInfo = tileInfoArray[x][y];
-         const tileClass = TILE_CLASS_RECORD[tileInfo.type!];
-         tiles[x][y] = new tileClass(x, y, tileInfoArray[x][y] as TileInfo);
+         // Create the tile
+         const tileInfo = tileInfoArray[x][y] as TileInfo;
+         const tile = createGenericTile(x, y, tileInfo);
+         tiles[x][y] = tile;
       }
    }
 
-   // Categorise the tiles for later use
-   categoriseTiles(tiles);
+   terrainHasBeenGenerated = true;
+
+   generateLocalBiomes(tiles);
 
    return tiles;
 }

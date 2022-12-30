@@ -66,10 +66,6 @@ class HerdAI extends AI implements HerdAIParams {
       this.cohesionInfluence = cohesionWeight;
 
       this.wallAvoidanceInfluence = Math.max(seperationWeight, alignmentWeight, cohesionWeight) * HerdAI.WALL_AVOIDANCE_MULTIPLIER;
-
-      if (this.mob.type === "cow") {
-         console.log(maxWeightInflenceCount);
-      }
    }
 
    public onRefresh(): void {

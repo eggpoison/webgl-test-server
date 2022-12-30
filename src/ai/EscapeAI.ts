@@ -29,7 +29,7 @@ class EscapeAI extends AI implements EscapeAIParams {
 
       this.attackSubsideTimer = attackSubsideTime;
 
-      this.mob.createEvent("hurt", (_, attackingEntity: Entity | null): void => {
+      this.mob.createEvent("hurt", (_1, _2, _3, attackingEntity: Entity | null): void => {
          if (attackingEntity !== null) {
             this.attacker = attackingEntity;
             this.attackSubsideTimer = this.attackSubsideTime;

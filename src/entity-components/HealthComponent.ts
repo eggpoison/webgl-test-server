@@ -1,6 +1,8 @@
 import { SETTINGS } from "webgl-test-shared";
 import Component from "./Component";
 
+let a = 0;
+
 class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
 
@@ -65,12 +67,13 @@ class HealthComponent extends Component {
       this.secondsSinceLastHit = 0;
 
       this.health -= damage;
+
+      // If the entity was killed by the attack, destroy the entity
       if (this.health <= 0) {
          this.entity.destroy();
-         return true;
       }
 
-      if (this.hasGlobalInvulnerability){
+      if (this.hasGlobalInvulnerability) {
          this.globalInvulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
       }
 
@@ -88,14 +91,14 @@ class HealthComponent extends Component {
    }
 
    public isInvulnerable(attackHash?: string): boolean {
+      // Global invulnerability
+      if (this.hasGlobalInvulnerability && this.globalInvulnerabilityTimer > 0) {
+         return true;
+      }
+
       // Local invulnerability
       if (typeof attackHash !== "undefined" && this.localInvulnerabilityHashes.hasOwnProperty(attackHash)) {
          return true;
-      }
-      
-      // Global invulnerability
-      if (this.hasGlobalInvulnerability) {
-         return this.globalInvulnerabilityTimer > 0;
       }
 
       return false;

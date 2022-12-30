@@ -110,6 +110,23 @@ class InventoryComponent extends Component {
    public addItem(item: Item): number {
       let remainingAmountToAdd = item.count;
       let amountAdded = 0;
+
+      const itemIsStackable = item.hasOwnProperty("stackSize");
+
+      if (itemIsStackable) {
+         // If there is already an item of the same type in the inventory, add it there
+         for (const [itemSlot, currentItem] of Object.entries(this.inventory) as unknown as ReadonlyArray<[number, Item]>) {
+               // If the item is of the same type, add it
+            if (currentItem.type === item.type) {
+               const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
+               this.inventory[itemSlot].count += maxAddAmount;
+               remainingAmountToAdd -= maxAddAmount;
+               amountAdded += maxAddAmount;
+
+               if (remainingAmountToAdd === 0) return amountAdded;
+            }
+         }
+      }
       
       for (let i = 1; i <= this.inventorySize; i++) {
          // If the slot is empty then add the rest of the item
@@ -121,7 +138,7 @@ class InventoryComponent extends Component {
 
          // If the slot contains an item of the same type, add as much of the item as possible
          if (this.inventory[i].type === item.type) {
-            if (!item.hasOwnProperty("stackSize")) {
+            if (!itemIsStackable) {
                // If the item can't be stacked then nothing can be added to the slot
                continue;
             } else {
@@ -132,7 +149,7 @@ class InventoryComponent extends Component {
 
                // If there is none of the item left to add, exit
                if (remainingAmountToAdd === 0) {
-                  break;
+                  return amountAdded;
                }
             }
          }
