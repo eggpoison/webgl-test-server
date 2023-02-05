@@ -114,7 +114,7 @@ class Board {
       // Generate the chunk group hash
       let chunkGroupHash = "";
       for (const chunk of entity.chunks) {
-         chunkGroupHash += chunk.x + "_" + chunk.y + "-";
+         chunkGroupHash += chunk.x + "-" + chunk.y + "-";
       }
 
       // Set the entity's potential colliding entities based on the chunk group hash
@@ -139,7 +139,7 @@ class Board {
          entity.resolveEntityCollisions();
          entity.resolveWallCollisions();
 
-         entity.calculateCurrentTile();
+         entity.updateCurrentTile();
       }
    }
    
@@ -233,12 +233,18 @@ class Board {
       }
 
       const serverItemDataArray: ReadonlyArray<ServerItemEntityData> = nearbyItemEntities.map(itemEntity => {
+         const chunkCoordinates = new Array<[number, number]>();
+         for (const chunk of itemEntity.chunks) {
+            chunkCoordinates.push([chunk.x, chunk.y]);
+         }
+
          return {
             id: itemEntity.id,
             itemID: itemEntity.item.type,
             count: itemEntity.item.count,
             position: itemEntity.position.package(),
-            chunkCoordinates: itemEntity.chunks.map(chunk => [chunk.x, chunk.y]),
+            velocity: itemEntity.velocity !== null ? itemEntity.velocity.package() : null,
+            chunkCoordinates: chunkCoordinates,
             rotation: itemEntity.rotation
          };
       });
@@ -269,11 +275,20 @@ class Board {
       for (const entity of this.entityJoinBuffer) {
          // Add entity to the ID record
          this.entities[entity.id] = entity;
-
-         entity.isAdded = true;
       }
 
       this.entityJoinBuffer.clear();
+   }
+
+   public tickItems(): void {
+      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+            const chunk = this.getChunk(chunkX, chunkY);
+            for (const itemEntity of chunk.getItemEntities()) {
+               itemEntity.tick();
+            }
+         }
+      }
    }
 
    public ageItems(): void {

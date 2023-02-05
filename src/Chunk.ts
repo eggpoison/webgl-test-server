@@ -29,11 +29,11 @@ class Chunk {
       return this.entities;
    }
 
-   public addItem(item: ItemEntity): void {
+   public addItemEntity(item: ItemEntity): void {
       this.itemEntities.add(item);
    }
 
-   public removeItem(item: ItemEntity): void {
+   public removeItemEntity(item: ItemEntity): void {
       this.itemEntities.delete(item);
    }
 

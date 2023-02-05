@@ -106,7 +106,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    },
    mountains: {
       spawnRequirements: {
-         minHeight: 0.8
+         minHeight: 0.7
       },
       tiles: [
          {
@@ -128,7 +128,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    swamp: {
       spawnRequirements: {
          minTemperature: 0.7,
-         minHumidity: 0.6
+         minHumidity: 0.8
       },
       tiles: [
          {

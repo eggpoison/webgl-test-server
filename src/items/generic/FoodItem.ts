@@ -1,4 +1,5 @@
 import { FoodItemInfo, ItemType } from "webgl-test-shared";
+import Entity from "../../entities/Entity";
 import StackableItem from "./StackableItem";
 
 class FoodItem extends StackableItem implements FoodItemInfo {
@@ -10,6 +11,20 @@ class FoodItem extends StackableItem implements FoodItemInfo {
 
       this.healAmount = itemInfo.healAmount;
       this.eatTime = itemInfo.eatTime;
+   }
+
+   public use(entity: Entity): void {
+      const healthComponent = entity.getComponent("health")!;
+
+      // Don't use food if already at maximum health
+      if (healthComponent.getHealth() >= healthComponent.maxHealth) return;
+
+      // Heal entity
+      healthComponent.heal(this.healAmount);
+
+      // Consume the item
+      const inventoryComponent = entity.getComponent("inventory")!;
+      this.consumeItem(inventoryComponent, 1);
    }
 }
 

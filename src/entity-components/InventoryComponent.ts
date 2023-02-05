@@ -1,4 +1,5 @@
 import { ItemType } from "webgl-test-shared";
+import Player from "../entities/Player";
 import Item from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
@@ -90,6 +91,9 @@ class InventoryComponent extends Component {
     * @returns Whether the item was picked up or not
     */
    private pickupItemEntity(itemEntity: ItemEntity): void {
+      // Don't pick up item entities which are on pickup cooldown
+      if (!itemEntity.playerCanPickup(this.entity as Player)) return;
+
       const amountAdded = this.addItem(itemEntity.item);
 
       this.entity.callEvents("item_pickup", itemEntity);

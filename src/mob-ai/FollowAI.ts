@@ -14,8 +14,8 @@ interface HerdAIParams extends BaseAIParams {
    readonly interestDuration: number;
    /** Chance for the mob to start following a target in a second */
    readonly chanceToGainInterest?: number;
-   /** Entities to avoid following */
-   readonly entityTypesToExclude: ReadonlySet<EntityType>;
+   /** All entity types which the entity is able to follow */
+   readonly followableEntityTypes: ReadonlySet<EntityType>;
 }
 
 class FollowAI extends AI implements HerdAIParams {
@@ -27,13 +27,13 @@ class FollowAI extends AI implements HerdAIParams {
    public readonly weightBuildupTime: number;
    public readonly interestDuration: number;
    public readonly chanceToGainInterest?: number;
-   public readonly entityTypesToExclude: ReadonlySet<EntityType>;
+   public readonly followableEntityTypes: ReadonlySet<EntityType>;
 
    private followTarget: Entity | null = null;
 
    private weight = 0;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, minDistanceFromFollowTarget, weightBuildupTime, interestDuration, chanceToGainInterest, entityTypesToExclude }: HerdAIParams) {
+   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, minDistanceFromFollowTarget, weightBuildupTime, interestDuration, chanceToGainInterest, followableEntityTypes: followableEntityTypes }: HerdAIParams) {
       super(mob, { aiWeightMultiplier });
 
       this.acceleration = acceleration;
@@ -42,7 +42,7 @@ class FollowAI extends AI implements HerdAIParams {
       this.weightBuildupTime = weightBuildupTime;
       this.interestDuration = interestDuration;
       this.chanceToGainInterest = chanceToGainInterest;
-      this.entityTypesToExclude = entityTypesToExclude;
+      this.followableEntityTypes = followableEntityTypes;
    }
 
    public tick(): void {
@@ -89,7 +89,7 @@ class FollowAI extends AI implements HerdAIParams {
       const filteredEntities = new Set<Entity>(visibleEntities);
 
       for (const entity of filteredEntities) {
-         if (this.entityTypesToExclude.has(entity.type)) {
+         if (!this.followableEntityTypes.has(entity.type)) {
             filteredEntities.delete(entity);
          }
       }

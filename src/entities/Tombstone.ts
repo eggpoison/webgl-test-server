@@ -1,10 +1,13 @@
 import { Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 import Zombie from "./Zombie";
 
 class Tombstone extends Entity {
+   private static readonly MAX_HEALTH = 50;
+
    /** Average number of zombies that are created by the tombstone in a second */
    private static readonly ZOMBIE_SPAWN_RATE = 0.05;
    /** Distance the zombies spawn from the tombstone */
@@ -20,7 +23,9 @@ class Tombstone extends Entity {
    private currentSpawnedZombieCount = 0;
    
    constructor(position: Point) {
-      super(position, {}, "tombstone");
+      super(position, {
+         health: new HealthComponent(Tombstone.MAX_HEALTH, false)
+      }, "tombstone");
 
       this.addHitboxes([
          new RectangularHitbox({
@@ -62,7 +67,7 @@ class Tombstone extends Entity {
          const crumbleChance = Math.exp(dayProgress * 2);
          if (Math.random() < crumbleChance / SETTINGS.TPS) {
             // Crumble
-            this.isRemoved = true;
+            this.remove();
             return;
          }
       }

@@ -1,13 +1,13 @@
 import { EntityType, HitboxType, Point, randInt, SETTINGS } from "webgl-test-shared";
-import AI from "../ai/AI";
-import EscapeAI from "../ai/EscapeAI";
-import FollowAI from "../ai/FollowAI";
-import StarveAI from "../ai/StarveAI";
-import HerdAI from "../ai/HerdAI";
-import WanderAI from "../ai/WanderAI";
+import AI from "../mob-ai/AI";
+import EscapeAI from "../mob-ai/EscapeAI";
+import FollowAI from "../mob-ai/FollowAI";
+import StarveAI from "../mob-ai/StarveAI";
+import HerdAI from "../mob-ai/HerdAI";
+import WanderAI from "../mob-ai/WanderAI";
 import Entity, { Components } from "./Entity";
 import { SERVER } from "../server";
-import ChaseAI from "../ai/ChaseAI";
+import ChaseAI from "../mob-ai/ChaseAI";
 import Hitbox from "../hitboxes/Hitbox";
 
 export const MobAIs = {

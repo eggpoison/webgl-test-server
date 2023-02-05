@@ -1,13 +1,13 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
 import Entity from "./entities/Entity";
 import Mob from "./entities/Mob";
 import Item from "./items/generic/Item";
-import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
-import Zombie from "./entities/Zombie";
+import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
+import Boulder from "./entities/Boulder";
 
 /*
 
@@ -19,7 +19,8 @@ node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 type PlayerData = {
-   readonly instance: Player;
+   readonly username: string;
+   instance: Player;
    clientIsActive: boolean;
    /** Bounds of where the player can see on their screen */
    visibleChunkBounds: VisibleChunkBounds;
@@ -32,6 +33,8 @@ export type EntityCensus = {
 class GameServer {
    /** Minimum number of units away from the border that the player will spawn at */
    private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
+   /** Number of seconds between each entity census */
+   private static readonly ENTITY_CENSUS_INTERVAL = 60;
    
    private ticks: number = 0;
 
@@ -54,27 +57,11 @@ class GameServer {
       console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
 
       setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-
-      // setTimeout(() => {
-      //    for (let i = 0; i < 1000; i++) {
-      //       const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //       const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //       // const x = randFloat(60, 200);
-      //       // const y = randFloat(60, 200);
-      //       new Tombstone(new Point(x, y));
-      //    }
-      // }, 2000);
    }
 
    /** Sets up the various stuff */
    public setup(): void {
       spawnInitialEntities();
-
-      // for (let i = 0; i < 1000; i++) {
-      //    const x = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //    const y = randFloat(0, (SETTINGS.BOARD_DIMENSIONS - 1) * SETTINGS.TILE_SIZE);
-      //    new Zombie(new Point(x, y));
-      // }
    }
 
    private handlePlayerConnections(): void {
@@ -92,15 +79,13 @@ class GameServer {
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
-            const xSpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-            const ySpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-            const position = new Point(xSpawnPosition, ySpawnPosition);
+            const spawnPosition = this.generatePlayerSpawnPosition();
 
             // Estimate which entities will be visible to the player
-            const chunkMinX = Math.max(Math.min(Math.floor((position.x - clientWindowWidth/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const chunkMaxX = Math.max(Math.min(Math.floor((position.x + clientWindowWidth/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const chunkMinY = Math.max(Math.min(Math.floor((position.y - clientWindowHeight/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const chunkMaxY = Math.max(Math.min(Math.floor((position.y + clientWindowHeight/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+            const chunkMinX = Math.max(Math.min(Math.floor((spawnPosition.x - clientWindowWidth/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+            const chunkMaxX = Math.max(Math.min(Math.floor((spawnPosition.x + clientWindowWidth/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+            const chunkMinY = Math.max(Math.min(Math.floor((spawnPosition.y - clientWindowHeight/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+            const chunkMaxY = Math.max(Math.min(Math.floor((spawnPosition.y + clientWindowHeight/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
             const visibleChunkBounds: [number, number, number, number] = [chunkMinX, chunkMaxX, chunkMinY, chunkMaxY];
             
             const visibleEntities = new Set<Entity>();
@@ -115,9 +100,17 @@ class GameServer {
                }
             }
             const visibleEntityDataArray = this.generateVisibleEntityData(visibleEntities);
-            
-            // Create the player in the server side
-            const playerID = this.addPlayerToServer(socket, clientUsername, position, visibleChunkBounds);
+
+            // Spawn the player entity
+            const player = new Player(spawnPosition, clientUsername);
+
+            // Initialise the player's gamedata record
+            this.playerData[socket.id] = {
+               username: clientUsername,
+               instance: player,
+               clientIsActive: true,
+               visibleChunkBounds: visibleChunkBounds
+            };
 
             const tiles = this.board.getTiles();
             const serverTileData = new Array<Array<ServerTileData>>();
@@ -139,9 +132,9 @@ class GameServer {
             const serverItemDataArray = this.board.calculatePlayerItemInfoArray(visibleChunkBounds);
 
             const initialGameDataPacket: InitialGameDataPacket = {
-               playerID: playerID,
+               playerID: player.id,
                tiles: serverTileData,
-               spawnPosition: [xSpawnPosition, ySpawnPosition],
+               spawnPosition: spawnPosition.package(),
                serverEntityDataArray: visibleEntityDataArray,
                serverItemEntityDataArray: serverItemDataArray,
                playerHotbarInventory: {},
@@ -198,6 +191,14 @@ class GameServer {
          socket.on("item_use_packet", (itemSlot: number) => {
             this.processItemUsePacket(socket, itemSlot);
          });
+
+         socket.on("throw_held_item_packet", (throwDirection: number) => {
+            this.processThrowHeldItemPacket(socket, throwDirection);
+         })
+
+         socket.on("respawn", () => {
+            this.respawnPlayer(socket);
+         });
       });
    }
 
@@ -211,9 +212,16 @@ class GameServer {
       this.board.updateEntities();
       this.board.resolveCollisions();
 
+      this.board.tickItems();
+
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
          this.board.ageItems();
+      }
+
+      // Run entity census
+      if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {
+         runEntityCensus();
       }
 
       runSpawnAttempt();
@@ -325,7 +333,7 @@ class GameServer {
    private handlePlayerDisconnect(socket: ISocket): void {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const playerData = this.playerData[socket.id];
-         playerData.instance.isRemoved = true;
+         playerData.instance.remove();
          delete this.playerData[socket.id];
       }
    }
@@ -385,6 +393,13 @@ class GameServer {
          player.processItemUsePacket(itemSlot);
       }
    }
+
+   private processThrowHeldItemPacket(socket: ISocket, throwDirection: number): void {
+      if (this.playerData.hasOwnProperty(socket.id)) {
+         const player = this.playerData[socket.id].instance;
+         player.throwHeldItem(throwDirection);
+      }
+   }
    
    private async processAttackPacket(socket: ISocket, attackPacket: AttackPacket): Promise<void> {
       const player = this.playerData[socket.id].instance;
@@ -403,22 +418,28 @@ class GameServer {
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
    }
 
-   /**
-    * Adds a player to the server and creates its player entity
-    * @returns The ID of the created player entity
-    */
-   private addPlayerToServer(socket: ISocket, username: string, position: Point, visibleChunkBounds: VisibleChunkBounds): number {
-      // Create the player entity
-      const player = new Player(position, username);
+   private generatePlayerSpawnPosition(): Point {
+      const xSpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
+      const ySpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
+      const position = new Point(xSpawnPosition, ySpawnPosition);
+      return position;
+   }
 
-      // Initialise the player's gamedata record
-      this.playerData[socket.id] = {
-         instance: player,
-         clientIsActive: true,
-         visibleChunkBounds: visibleChunkBounds
+   private respawnPlayer(socket: ISocket): void {
+      const { username } = this.playerData[socket.id];
+
+      const spawnPosition = this.generatePlayerSpawnPosition();
+      const playerEntity = new Player(spawnPosition, username);
+
+      // Update the player data's instance
+      this.playerData[socket.id].instance = playerEntity;
+
+      const dataPacket: RespawnDataPacket = {
+         playerID: playerEntity.id,
+         spawnPosition: spawnPosition.package()
       };
 
-      return player.id;
+      socket.emit("respawn_data_packet", dataPacket);
    }
 }
 

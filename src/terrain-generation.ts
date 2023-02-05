@@ -18,9 +18,9 @@ export const CONNECTED_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: nu
 ]
 
 export type LocalBiome = {
-   readonly tiles: Set<[tileX: number, tileY: number]>;
+   readonly tileCoordinates: Set<[tileX: number, tileY: number]>;
    /** Number of entities currently inside the local biome */
-   readonly entityCounts: Partial<Record<EntityType, number>>;
+   entityCounts: Partial<Record<EntityType, number>>;
 }
 
 export const LOCAL_BIOME_RECORD: Partial<Record<BiomeName, Set<LocalBiome>>> = {};
@@ -43,7 +43,7 @@ const generateLocalBiomes = (tiles: Array<Array<Tile>>): void => {
 
          // Create the local biome
          const localBiome: LocalBiome = {
-            tiles: new Set<[tileX: number, tileY: number]>(),
+            tileCoordinates: new Set<[tileX: number, tileY: number]>(),
             entityCounts: {}
          };
          LOCAL_BIOME_RECORD[tile.biomeName]!.add(localBiome);
@@ -59,7 +59,7 @@ const generateLocalBiomes = (tiles: Array<Array<Tile>>): void => {
             tilesToAdd.splice(0, 1);
 
             // Add the current tile
-            localBiome.tiles.add([currentTile.x, currentTile.y]);
+            localBiome.tileCoordinates.add([currentTile.x, currentTile.y]);
             currentTile.localBiome = localBiome;
 
 

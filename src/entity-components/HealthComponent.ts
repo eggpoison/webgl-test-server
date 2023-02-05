@@ -6,7 +6,7 @@ let a = 0;
 class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
 
-   private readonly maxHealth: number;
+   public readonly maxHealth: number;
    private health: number;
 
    private readonly localInvulnerabilityHashes: { [immunityHash: string]: number } = {};
@@ -55,6 +55,10 @@ class HealthComponent extends Component {
       return this.knockbackMultiplier;
    }
 
+   public getHealth(): number {
+      return this.health;
+   }
+
    /**
     * Attempts to apply damage to an entity
     * @param damage The amount of damage given
@@ -70,7 +74,8 @@ class HealthComponent extends Component {
 
       // If the entity was killed by the attack, destroy the entity
       if (this.health <= 0) {
-         this.entity.destroy();
+         this.entity.callEvents("death");
+         this.entity.remove();
       }
 
       if (this.hasGlobalInvulnerability) {
@@ -80,8 +85,11 @@ class HealthComponent extends Component {
       return true;
    }
 
-   public getHealth(): number {
-      return this.health;
+   public heal(healAmount: number): void {
+      this.health += healAmount;
+      if (this.health > this.maxHealth) {
+         this.health = this.maxHealth;
+      }
    }
 
    public addLocalInvulnerabilityHash(hash: string, invulnerabiityDurationSeconds: number): void {

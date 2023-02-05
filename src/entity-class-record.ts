@@ -1,4 +1,5 @@
 import { EntityType, Point } from "webgl-test-shared";
+import Boulder from "./entities/Boulder";
 import Cow from "./entities/Cow";
 import Entity from "./entities/Entity";
 import Player from "./entities/Player";
@@ -13,7 +14,8 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...ar
    tombstone: () => Tombstone,
    player: () => Player,
    tree: () => Tree,
-   workbench: () => Workbench
+   workbench: () => Workbench,
+   boulder: () => Boulder
 };
 
 export default ENTITY_CLASS_RECORD;

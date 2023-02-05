@@ -6,17 +6,17 @@ const removePreviousTile = (x: number, y: number): void => {
    const tile = SERVER.board.getTile(x, y);
 
    // Remove the tile from its local biome
-   tile.localBiome.tiles.delete([x, y]);
+   tile.localBiome.tileCoordinates.delete([x, y]);
 
    // If the tile was the last tile in the local biome, destroy the local biome
-   if (tile.localBiome.tiles.size === 0) {
+   if (tile.localBiome.tileCoordinates.size === 0) {
       LOCAL_BIOME_RECORD[tile.biomeName]!.delete(tile.localBiome);
    }
 }
 
 const createNewLocalBiome = (tiles: Set<[tileX: number, tileY: number]>): LocalBiome => {
    const localBiome: LocalBiome = {
-      tiles: tiles,
+      tileCoordinates: tiles,
       entityCounts: {}
    };
 
@@ -80,7 +80,7 @@ const setTileLocalBiome = (tile: Tile): void => {
    } else if (nearbyLocalBiomes.length === 1) {
       // If there was only one nearby biome, add the tile to the existing local biome
       const localBiome = nearbyLocalBiomes[0];
-      localBiome.tiles.add([tile.x, tile.y]);
+      localBiome.tileCoordinates.add([tile.x, tile.y]);
 
       tile.localBiome = localBiome;
    } else {
@@ -91,7 +91,7 @@ const setTileLocalBiome = (tile: Tile): void => {
       // Remove all previous local biomes while collecting their tiles
       const tiles = new Set<[tileX: number, tileY: number]>();
       for (const localBiome of nearbyLocalBiomes) {
-         for (const tilePosition of localBiome.tiles) {
+         for (const tilePosition of localBiome.tileCoordinates) {
             tiles.add(tilePosition);
          }
 

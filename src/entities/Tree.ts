@@ -1,8 +1,7 @@
-import { HitboxType, Point, randInt, TreeSize } from "webgl-test-shared";
+import { Point, randInt, TreeSize } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import Hitbox from "../hitboxes/Hitbox";
 import Entity from "./Entity";
 
 class Tree extends Entity {
@@ -37,7 +36,7 @@ class Tree extends Entity {
 
       this.getComponent("health")!.setKnockbackMultiplier(Tree.KNOCKBACK_MULTIPLIER);
 
-      this.getComponent("item_creation")!.createItemOnDeath("wood", randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]))
+      this.getComponent("item_creation")!.createItemOnDeath("wood", randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]));
       
       this.rotation = Math.PI * 2 * Math.random();
 

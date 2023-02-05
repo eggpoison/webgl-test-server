@@ -1,12 +1,12 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitboxType, HitData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryType, Point, ServerItemData, SETTINGS } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryType, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import Hitbox from "../hitboxes/Hitbox";
 import Item from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import ToolItem from "../items/generic/ToolItem";
 import { createItem } from "../items/item-creation";
+import ItemEntity from "../items/ItemEntity";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 
@@ -14,11 +14,14 @@ class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
    private static readonly DEFAULT_KNOCKBACK = 100;
 
+   private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
+   private static readonly ITEM_THROW_FORCE = 100;
+
    public craftingOutputItem: Item | null = null;
    public heldItem: Item | null = null;
 
    /** Player nametag. Used when sending player data to the client */
-   private readonly displayName: string;
+   public readonly displayName: string;
 
    private hitsTaken = new Array<HitData>();
 
@@ -37,7 +40,7 @@ class Player extends Entity {
 
       this.displayName = name;
 
-      this.createEvent("hurt", (damage: number, knockback: number, attackDirection: number, attackingEntity: Entity | null) => {
+      this.createEvent("hurt", (_damage: number, knockback: number, _attackDirection: number, attackingEntity: Entity | null) => {
          if (knockback !== 0) {
             const hitData: HitData = {
                knockback: knockback,
@@ -82,7 +85,7 @@ class Player extends Entity {
    }
 
    public processCraftingPacket(craftingRecipe: CraftingRecipe): void {
-      if (this.craftingOutputItem !== null && (this.craftingOutputItem.type !== craftingRecipe.product || !this.craftingOutputItem.hasOwnProperty("stackSize") || this.craftingOutputItem.count + craftingRecipe.productCount > (this.craftingOutputItem as StackableItem).stackSize)) {
+      if (this.craftingOutputItem !== null && (this.craftingOutputItem.type !== craftingRecipe.product || !this.craftingOutputItem.hasOwnProperty("stackSize") || this.craftingOutputItem.count + craftingRecipe.yield > (this.craftingOutputItem as StackableItem).stackSize)) {
          return;
       }
       
@@ -96,10 +99,10 @@ class Player extends Entity {
 
          // Add product to held item
          if (this.craftingOutputItem === null) {
-            const item = createItem(craftingRecipe.product, craftingRecipe.productCount);
+            const item = createItem(craftingRecipe.product, craftingRecipe.yield);
             this.craftingOutputItem = item;
          } else {
-            this.craftingOutputItem.count += craftingRecipe.productCount;
+            this.craftingOutputItem.count += craftingRecipe.yield;
          }
       }
    }
@@ -192,6 +195,20 @@ class Player extends Entity {
 
       if (typeof item.use !== "undefined") {
          item.use(this);
+      }
+   }
+
+   public throwHeldItem(throwDirection: number): void {
+      if (this.heldItem !== null) {
+         // Create the item entity
+         const itemEntity = new ItemEntity(this.position.copy(), this.heldItem);
+
+         // Add a pickup cooldown so the item isn't picked up immediately
+         itemEntity.addPlayerPickupCooldown(this.displayName, Player.THROWN_ITEM_PICKUP_COOLDOWN);
+
+         itemEntity.addVelocity(Player.ITEM_THROW_FORCE, throwDirection);
+         
+         this.heldItem = null;
       }
    }
 }

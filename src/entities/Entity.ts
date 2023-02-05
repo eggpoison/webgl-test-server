@@ -78,8 +78,6 @@ abstract class Entity {
 
    public currentTile!: Tile;
 
-   /** Whether the entity has been added to the game */
-   public isAdded: boolean = false;
    /** If true, the entity is flagged for deletion at the beginning of the next tick */
    public isRemoved: boolean = false;
 
@@ -88,7 +86,7 @@ abstract class Entity {
 
    /** Stores which other entities could be colliding with the entity */
    public potentialCollidingEntities = new Set<Entity>();
-   private collidingEntities = new Set<Entity>();
+   public collidingEntities = new Set<Entity>();
 
    private previousCollidingEntityIDs = new Set<number>();
 
@@ -104,7 +102,7 @@ abstract class Entity {
       this.position = position;
       this.components = components;
 
-      this.calculateCurrentTile();
+      this.updateCurrentTile();
 
       this.tickableComponents = filterTickableComponents(components);
 
@@ -229,34 +227,42 @@ abstract class Entity {
    }
 
    /** Calculates the tile the entity is currently in using its position */
-   public calculateCurrentTile(): void {
+   private calculateCurrentTile(): Tile {
       const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
 
-      const newTile = SERVER.board.getTile(tileX, tileY);
+      return SERVER.board.getTile(tileX, tileY);
+   }
 
+   public updateCurrentTile(): void {
+      const previousTile = this.currentTile;
+      this.currentTile = this.calculateCurrentTile();
+      this.updateLocalBiomeEntityCount(previousTile);
+   }
+
+   private updateLocalBiomeEntityCount(previousTile: Tile): void {
       // If the entity wasn't on a local biome previously, add them to their new local biome
-      if (typeof this.currentTile === "undefined") {
-         if (!newTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
-            newTile.localBiome.entityCounts[this.type] = 1;
+      if (typeof previousTile === "undefined") {
+         if (!this.currentTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
+            this.currentTile.localBiome.entityCounts[this.type] = 1;
          } else {
-            newTile.localBiome.entityCounts[this.type]!++;
+            this.currentTile.localBiome.entityCounts[this.type]!++;
          }
-      } else if (newTile !== this.currentTile) {
+      } else if (this.currentTile.localBiome !== previousTile.localBiome) {
          // Account for if the entity moved into a new local biome
-         if (this.currentTile.localBiome !== newTile.localBiome) {
-            // Add the entity to the new local biome and remove it from the previous one
-            if (!newTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
-               newTile.localBiome.entityCounts[this.type] = 1;
-            } else {
-               newTile.localBiome.entityCounts[this.type]!++;
-            }
+         
+         // Add the entity to the new local biome and remove it from the previous one
+         if (!this.currentTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
+            this.currentTile.localBiome.entityCounts[this.type] = 1;
+         } else {
+            this.currentTile.localBiome.entityCounts[this.type]!++;
+         }
 
-            this.currentTile.localBiome.entityCounts[this.type]!--;
+         previousTile.localBiome.entityCounts[this.type]!--;
+         if (previousTile.localBiome.entityCounts[this.type] === 0) {
+            delete previousTile.localBiome.entityCounts[this.type];
          }
       }
-
-      this.currentTile = newTile;
    }
 
    public applyPhysics(): void {
@@ -294,7 +300,7 @@ abstract class Entity {
          }
       // Friction
       } else if (this.velocity !== null) {
-         this.velocity.magnitude -= 50 * tileTypeInfo.friction / SETTINGS.TPS;
+         this.velocity.magnitude -= SETTINGS.FRICTION_CONSTANT * tileTypeInfo.friction / SETTINGS.TPS;
          if (this.velocity.magnitude <= 0) {
             this.velocity = null;
          }
@@ -350,6 +356,10 @@ abstract class Entity {
             this.stopYVelocity();
          }
       }
+   }
+
+   public setCollidingEntities(collidingEntities: Set<Entity>): void {
+      this.collidingEntities = collidingEntities;
    }
 
    public updateCollidingEntities(): void {
@@ -476,11 +486,6 @@ abstract class Entity {
       return true;
    }
 
-   public destroy(): void {
-      this.callEvents("death");
-      this.isRemoved = true;
-   }
-
    public callEvents<E extends EventType>(type: E, ...params: EventParams<E>): void {
       for (const event of this.events[type]) {
          // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
@@ -537,8 +542,13 @@ abstract class Entity {
    }
 
    public remove(): void {
-      // When the entity dies, update the entity count of the entity's local biome
+      this.isRemoved = true;
+
+      // When the entity dies, decrement the entity count of the entity's local biome
       this.currentTile.localBiome.entityCounts[this.type]!--;
+      if (this.currentTile.localBiome.entityCounts[this.type] === 0) {
+         delete this.currentTile.localBiome.entityCounts[this.type];
+      }
    }
 }
 

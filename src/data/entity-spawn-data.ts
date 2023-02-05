@@ -5,7 +5,7 @@ export type EntitySpawnInfo = {
    readonly entityType: EntityType;
    /** Array of all biomes which the entity is able to be spawned in */
    readonly spawnableBiomes: ReadonlyArray<BiomeName>;
-   /** Average number of times that the entity will have a spawn event occur */
+   /** Average number of spawn attempts per tile that happen in the local biome each second */
    readonly spawnRate: number;
    /**
     * If present, details how a pack of entities should be spawned
@@ -26,7 +26,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "cow",
       spawnableBiomes: ["grasslands"],
-      spawnRate: 0.1,
+      spawnRate: 0.01,
       packSpawningInfo: {
          size: [2, 5],
          spawnRange: 200
@@ -36,15 +36,21 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "tree",
       spawnableBiomes: ["grasslands"],
-      spawnRate: 0.2,
+      spawnRate: 0.01,
       maxLocalBiomeDensity: 0.015
    },
    {
       entityType: "tombstone",
       spawnableBiomes: ["grasslands"],
-      spawnRate: 0.2,
-      maxLocalBiomeDensity: 0.005,
+      spawnRate: 0.005,
+      maxLocalBiomeDensity: 0.003,
       spawnTimeRanges: [[0, 3], [19, 24]]
+   },
+   {
+      entityType: "boulder",
+      spawnableBiomes: ["mountains"],
+      spawnRate: 0.005,
+      maxLocalBiomeDensity: 0.05
    }
 ];
 

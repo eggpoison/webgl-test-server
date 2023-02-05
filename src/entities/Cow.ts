@@ -1,7 +1,6 @@
-import { CowSpecies, HitboxType, Point, SETTINGS } from "webgl-test-shared";
+import { CowSpecies, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import Hitbox from "../hitboxes/Hitbox";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Mob, { MobAIData } from "./Mob";
 
@@ -27,7 +26,7 @@ class Cow extends Mob {
             weightBuildupTime: 10,
             interestDuration: 7,
             chanceToGainInterest: 0.2,
-            entityTypesToExclude: new Set(["cow"])
+            followableEntityTypes: new Set(["player", "zombie"])
          },
          herd: {
             aiWeightMultiplier: 1,
@@ -68,7 +67,7 @@ class Cow extends Mob {
       }
    };
 
-   public readonly species: CowSpecies;
+   public species: CowSpecies;
    public readonly herdMemberHash: number;
 
    constructor(position: Point) {
