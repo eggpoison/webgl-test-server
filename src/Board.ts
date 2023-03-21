@@ -280,6 +280,15 @@ class Board {
       this.entityJoinBuffer.clear();
    }
 
+   public addEntityFromJoinBuffer(entity: Entity): void {
+      if (!this.entityJoinBuffer.has(entity)) {
+         throw new Error("Tried to add an entity from the join buffer which wasn't there!");
+      }
+
+      this.entityJoinBuffer.delete(entity);
+      this.entities[entity.id] = entity;
+   }
+
    public tickItems(): void {
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
          for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {

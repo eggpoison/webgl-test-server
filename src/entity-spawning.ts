@@ -73,14 +73,25 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    const minY = Math.max(spawnOrigin.y - spawnInfo.packSpawningInfo.spawnRange, 0);
    const maxY = Math.min(spawnOrigin.y + spawnInfo.packSpawningInfo.spawnRange, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
 
+   let totalSpawnAttempts = 0;
+
    const spawnCount = typeof spawnInfo.packSpawningInfo.size === "number" ? spawnInfo.packSpawningInfo.size : randInt(...spawnInfo.packSpawningInfo.size);
-   for (let i = 0; i < spawnCount - 1; i++) {
+   for (let i = 0; i < spawnCount - 1;) {
       // Generate a spawn position near the spawn origin
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
-      const entity = new entityClass(spawnPosition);  
-      if (spawnInfo.entityType === "cow") {
-         (entity as Cow).species = cowSpecies;
+      if (spawnPositionIsValid(spawnPosition)) {
+         const entity = new entityClass(spawnPosition);  
+         if (spawnInfo.entityType === "cow") {
+            (entity as Cow).species = cowSpecies;
+         }
+         SERVER.board.addEntityFromJoinBuffer(entity);
+
+         i++;
+      }
+
+      if (++totalSpawnAttempts === 99) {
+         break;
       }
    }
 }
@@ -120,7 +131,6 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo, localBiome: LocalBiome): void
    const x = (spawnTileX + Math.random()) * SETTINGS.TILE_SIZE;
    const y = (spawnTileY + Math.random()) * SETTINGS.TILE_SIZE;
    const spawnPosition = new Point(x, y);
-
 
    if (spawnPositionIsValid(spawnPosition)) {
       spawnEntities(spawnInfo, spawnPosition);

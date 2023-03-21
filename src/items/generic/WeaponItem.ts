@@ -16,9 +16,8 @@ class WeaponItem extends ToolItem implements WeaponItemInfo {
       
       if (entityToAttackInfo.category !== "resource") {
          return this.damage;
-      } else {
-         return Math.ceil(this.damage / 2);
       }
+      return 1;
    }
 }
 

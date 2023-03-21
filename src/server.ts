@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, ServerInventoryData, CraftingRecipe, ServerItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket } from "webgl-test-shared";
+import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, PlayerInventoryData, CraftingRecipe, ItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket, ItemSlotData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -7,7 +7,6 @@ import Entity from "./entities/Entity";
 import Mob from "./entities/Mob";
 import Item from "./items/generic/Item";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
-import Boulder from "./entities/Boulder";
 
 /*
 
@@ -137,14 +136,17 @@ class GameServer {
                spawnPosition: spawnPosition.package(),
                serverEntityDataArray: visibleEntityDataArray,
                serverItemEntityDataArray: serverItemDataArray,
-               playerHotbarInventory: {},
-               craftingOutputItem: null,
-               playerHeldItem: null,
+               inventory: {
+                  hotbar: {},
+                  backpackItemSlot: null,
+                  heldItemSlot: null,
+                  craftingOutputItemSlot: null
+               },
                tileUpdates: [],
                serverTicks: this.ticks,
                hitsTaken: [],
                playerHealth: 20
-            }
+            };
 
             socket.emit("initial_game_data_packet", initialGameDataPacket);
          });
@@ -272,11 +274,10 @@ class GameServer {
          // Skip clients which haven't been properly loaded yet
          if (!this.playerData.hasOwnProperty(socket.id)) continue;
 
-         // Get the player data for the current client
-         const playerData = this.playerData[socket.id];
-
          if (!this.playerData[socket.id].clientIsActive) continue;
 
+         // Get the player data for the current client
+         const playerData = this.playerData[socket.id];
          const player = playerData.instance;
          
          // Create the visible entity info array
@@ -286,28 +287,6 @@ class GameServer {
          const tileUpdates = this.board.popTileUpdates();
 
          const serverItemEntityDataArray = this.board.calculatePlayerItemInfoArray(playerData.visibleChunkBounds);
-            
-         // Calculate the hotbar inventory data
-         const hotbarInventoryData: ServerInventoryData = {};
-         const inventory = player.getComponent("inventory")!.getInventory();
-         for (const [itemSlot, item] of Object.entries(inventory) as unknown as ReadonlyArray<[number, Item]>) {
-            hotbarInventoryData[itemSlot] = {
-               type: item.type,
-               count: item.count
-            };
-         }
-
-         // Format the crafting output item
-         const craftingOutputItem: ServerItemData | null = player.craftingOutputItem !== null ? {
-            type: player.craftingOutputItem.type,
-            count: player.craftingOutputItem.count
-         } : null;
-
-         // Format the crafting held item
-         const heldItem: ServerItemData | null = player.heldItem !== null ? {
-            type: player.heldItem.type,
-            count: player.heldItem.count
-         } : null;
          
          const hitsTaken = player.getHitsTaken();
          player.clearHitsTaken();
@@ -316,9 +295,7 @@ class GameServer {
          const gameDataPacket: GameDataPacket = {
             serverEntityDataArray: visibleEntityInfoArray,
             serverItemEntityDataArray: serverItemEntityDataArray,
-            playerHotbarInventory: hotbarInventoryData,
-            craftingOutputItem: craftingOutputItem,
-            playerHeldItem: heldItem,
+            inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
             hitsTaken: hitsTaken,
@@ -341,16 +318,6 @@ class GameServer {
    private sendGameDataSyncPacket(socket: ISocket): void {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const player = this.playerData[socket.id].instance;
-            
-         // Calculate the hotbar inventory data
-         const playerHotbarInventoryData: ServerInventoryData = {};
-         const inventory = player.getComponent("inventory")!.getInventory();
-         for (const [itemSlot, item] of Object.entries(inventory) as unknown as ReadonlyArray<[number, Item]>) {
-            playerHotbarInventoryData[itemSlot] = {
-               type: item.type,
-               count: item.count
-            };
-         }
 
          const packet: GameDataSyncPacket = {
             position: player.position.package(),
@@ -359,7 +326,7 @@ class GameServer {
             rotation: player.rotation,
             terminalVelocity: player.terminalVelocity,
             health: player.getComponent("health")!.getHealth(),
-            playerHotbarInventory: playerHotbarInventoryData
+            inventory: player.bundleInventoryData()
          };
 
          socket.emit("game_data_sync_packet", packet);

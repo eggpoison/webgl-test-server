@@ -1,12 +1,11 @@
 import { Point, randInt } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import RectangularHitbox from "../hitboxes/RectangularHitbox";
+import CircularHitbox from "../hitboxes/CircularHitbox";
 import Entity from "./Entity";
 
 class Boulder extends Entity {
-   private static readonly WIDTH = 64;
-   private static readonly HEIGHT = 64;
+   private static readonly RADIUS = 40;
 
    private static readonly MAX_HEALTH = 40;
 
@@ -21,10 +20,9 @@ class Boulder extends Entity {
       }, "boulder");
 
       this.addHitboxes([
-         new RectangularHitbox({
-            type: "rectangular",
-            width: Boulder.WIDTH,
-            height: Boulder.HEIGHT
+         new CircularHitbox({
+            type: "circular",
+            radius: Boulder.RADIUS
          })
       ]);
 

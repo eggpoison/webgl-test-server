@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryType, Point, SETTINGS } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -10,6 +10,19 @@ import ItemEntity from "../items/ItemEntity";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 
+const bundleItemData = (item: Item): ItemData => {
+   return {
+      type: item.type,
+      count: item.count
+   };
+}
+
+const bundleItemSlotData = (itemSlot: Item | null): ItemSlotData => {
+   if (itemSlot === null) return null;
+   
+   return bundleItemData(itemSlot);
+}
+
 class Player extends Entity {
    private static readonly MAX_HEALTH = 20;
    private static readonly DEFAULT_KNOCKBACK = 100;
@@ -17,8 +30,9 @@ class Player extends Entity {
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
    private static readonly ITEM_THROW_FORCE = 100;
 
-   public craftingOutputItem: Item | null = null;
+   public backpackItemSlot: Item | null = null;
    public heldItem: Item | null = null;
+   public craftingOutputItem: Item | null = null;
 
    /** Player nametag. Used when sending player data to the client */
    public readonly displayName: string;
@@ -28,7 +42,7 @@ class Player extends Entity {
    constructor(position: Point, name: string) {
       super(position, {
          health: new HealthComponent(Player.MAX_HEALTH, true),
-         inventory: new InventoryComponent(SETTINGS.PLAYER_HOTBAR_SIZE)
+         inventory: new InventoryComponent(SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)
       }, "player");
 
       this.addHitboxes([
@@ -91,7 +105,7 @@ class Player extends Entity {
       
       const inventoryComponent = this.getComponent("inventory")!;
       
-      if (canCraftRecipe(inventoryComponent.getInventory(), craftingRecipe, SETTINGS.PLAYER_HOTBAR_SIZE)) {
+      if (canCraftRecipe(inventoryComponent.getInventory(), craftingRecipe, SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)) {
          // Consume ingredients
          for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients) as ReadonlyArray<[ItemType, number]>) {
             inventoryComponent.consumeItemType(ingredientType, ingredientCount);
@@ -124,6 +138,10 @@ class Player extends Entity {
             item = this.craftingOutputItem;
             break;
          }
+         case "backpackItemSlot": {
+            item = this.backpackItemSlot;
+            break;
+         }
       }
 
       if (item === null) return;
@@ -141,6 +159,10 @@ class Player extends Entity {
             this.craftingOutputItem = null;
             break;
          }
+         case "backpackItemSlot": {
+            this.backpackItemSlot = null;
+            break;
+         }
       }
    }
 
@@ -155,6 +177,9 @@ class Player extends Entity {
          case "hotbar": {
             inventoryComponent.setItem(itemSlot, this.heldItem);
             break;
+         }
+         case "backpackItemSlot": {
+            this.backpackItemSlot = this.heldItem;
          }
       }
 
@@ -210,6 +235,25 @@ class Player extends Entity {
          
          this.heldItem = null;
       }
+   }
+
+   /**
+    * Bundles the player's items into a format which can be transferred between the server and client.
+    */
+   public bundleInventoryData(): PlayerInventoryData {
+      const inventoryData: PlayerInventoryData = {
+         hotbar: {},
+         backpackItemSlot: bundleItemSlotData(this.backpackItemSlot),
+         heldItemSlot: bundleItemSlotData(this.heldItem),
+         craftingOutputItemSlot: bundleItemSlotData(this.craftingOutputItem)
+      };
+
+      const inventory = this.getComponent("inventory")!.getInventory();
+      for (const [itemSlot, item] of Object.entries(inventory) as unknown as ReadonlyArray<[number, Item]>) {
+         inventoryData.hotbar[itemSlot] = bundleItemData(item);
+      }
+
+      return inventoryData;
    }
 }
 

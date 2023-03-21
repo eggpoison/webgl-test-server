@@ -1,4 +1,4 @@
-import { CowSpecies, Point, SETTINGS } from "webgl-test-shared";
+import { CowSpecies, Point, randInt, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
@@ -71,11 +71,9 @@ class Cow extends Mob {
    public readonly herdMemberHash: number;
 
    constructor(position: Point) {
-      const itemCreationComponent = new ItemCreationComponent();
-
       super(position, {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
-         item_creation: itemCreationComponent
+         item_creation: new ItemCreationComponent()
       }, "cow", Cow.MOB_AI_DATA);
 
       this.addHitboxes([
@@ -91,7 +89,8 @@ class Cow extends Mob {
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
 
-      itemCreationComponent.createItemOnDeath("raw_beef", 3);
+      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2));
+      this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2));
    }
 
    public getClientArgs(): [species: CowSpecies] {

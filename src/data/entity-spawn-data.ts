@@ -50,7 +50,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: "boulder",
       spawnableBiomes: ["mountains"],
       spawnRate: 0.005,
-      maxLocalBiomeDensity: 0.05
+      maxLocalBiomeDensity: 0.025
    }
 ];
 

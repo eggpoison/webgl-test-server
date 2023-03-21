@@ -122,7 +122,7 @@ class InventoryComponent extends Component {
          for (const [itemSlot, currentItem] of Object.entries(this.inventory) as unknown as ReadonlyArray<[number, Item]>) {
                // If the item is of the same type, add it
             if (currentItem.type === item.type) {
-               const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
+               const maxAddAmount = Math.min((item as StackableItem).stackSize - currentItem.count, remainingAmountToAdd);
                this.inventory[itemSlot].count += maxAddAmount;
                remainingAmountToAdd -= maxAddAmount;
                amountAdded += maxAddAmount;
