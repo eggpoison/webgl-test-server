@@ -1,6 +1,7 @@
-import { ENTITY_INFO_RECORD, Mutable, Point, ServerItemEntityData, SETTINGS, ServerTileUpdateData, Vector, VisibleChunkBounds, TileInfo, randInt } from "webgl-test-shared";
+import { ENTITY_INFO_RECORD, Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
+import Mob from "./entities/Mob";
 import Player from "./entities/Player";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import ItemEntity from "./items/ItemEntity";
@@ -160,7 +161,6 @@ class Board {
 
    /** Removes the entity from the game */
    private removeEntity(entity: Entity): void {
-      entity.remove();
       delete this.entities[entity.id];
 
       // Remove the entity from its chunks
@@ -192,64 +192,6 @@ class Board {
       this.tileUpdateCoordinates.clear();
 
       return tileUpdates;
-   }
-
-   public getPlayerNearbyEntities(player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlySet<Entity> {
-      // Find the chunks nearby to the player and all entities inside them
-      let nearbyEntities = new Set<Entity>();
-      for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
-         for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
-
-            // Add all entities which aren't already in the array
-            for (const entity of chunk.getEntities()) {
-               if (!nearbyEntities.has(entity)) {
-                  nearbyEntities.add(entity);
-               }
-            }
-         }
-      }
-
-      // Remove the player
-      nearbyEntities.delete(player);
-
-      return nearbyEntities;
-   }
-
-   public calculatePlayerItemInfoArray(visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ServerItemEntityData> {
-      // Find the chunks nearby to the player and all items inside them
-      let nearbyItemEntities = new Array<ItemEntity>();
-      for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
-         for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
-
-            // Add all entities which aren't already in the array
-            for (const item of chunk.getItemEntities()) {
-               if (!nearbyItemEntities.includes(item)) {
-                  nearbyItemEntities.push(item);
-               }
-            }
-         }
-      }
-
-      const serverItemDataArray: ReadonlyArray<ServerItemEntityData> = nearbyItemEntities.map(itemEntity => {
-         const chunkCoordinates = new Array<[number, number]>();
-         for (const chunk of itemEntity.chunks) {
-            chunkCoordinates.push([chunk.x, chunk.y]);
-         }
-
-         return {
-            id: itemEntity.id,
-            itemID: itemEntity.item.type,
-            count: itemEntity.item.count,
-            position: itemEntity.position.package(),
-            velocity: itemEntity.velocity !== null ? itemEntity.velocity.package() : null,
-            chunkCoordinates: chunkCoordinates,
-            rotation: itemEntity.rotation
-         };
-      });
-
-      return serverItemDataArray;
    }
 
    public runRandomTickAttempt(): void {
@@ -309,6 +251,87 @@ class Board {
             }
          }  
       }
+   }
+
+   private bundleEntityData(entity: Entity): EntityData {
+      const healthComponent = entity.getComponent("health")!;
+      
+      const entityData: Mutable<EntityData> = {
+         id: entity.id,
+         type: entity.type,
+         position: entity.position.package(),
+         velocity: entity.velocity !== null ? entity.velocity.package() : null,
+         acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
+         terminalVelocity: entity.terminalVelocity,
+         rotation: entity.rotation,
+         clientArgs: entity.getClientArgs(),
+         secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
+         chunkCoordinates: Array.from(entity.chunks).map(chunk => [chunk.x, chunk.y]),
+         hitboxes: Array.from(entity.hitboxes).map(hitbox => {
+            return hitbox.info;
+         })
+      };
+
+      const entityInfo = ENTITY_INFO_RECORD[entity.type];
+      if (entityInfo.category === "mob") {
+         entityData.special = {
+            mobAIType: (entity as Mob).getCurrentAIType()
+         };
+      }
+
+      return entityData;
+   }
+
+   public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData> {
+      const entityDataArray = new Array<EntityData>();
+
+      for (const entity of Object.values(this.entities)) {
+         if (entity !== player) {
+            const data = this.bundleEntityData(entity);
+            entityDataArray.push(data);
+         }
+      }
+
+      return entityDataArray;
+   }
+
+   private bundleItemEntityData(itemEntity: ItemEntity): ItemEntityData {
+      const chunkCoordinates = new Array<[number, number]>();
+      for (const chunk of itemEntity.chunks) {
+         chunkCoordinates.push([chunk.x, chunk.y]);
+      }
+
+      return {
+         id: itemEntity.id,
+         itemID: itemEntity.item.type,
+         count: itemEntity.item.count,
+         position: itemEntity.position.package(),
+         velocity: itemEntity.velocity !== null ? itemEntity.velocity.package() : null,
+         chunkCoordinates: chunkCoordinates,
+         rotation: itemEntity.rotation
+      };
+   }
+
+   public bundleItemEntityDataArray(): ReadonlyArray<ItemEntityData> {
+      const itemEntityDataArray = new Array<ItemEntityData>();
+
+      const seenItemEntityIDs = new Array<number>();
+
+      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+            const chunk = this.getChunk(chunkX, chunkY);
+            for (const itemEntity of chunk.getItemEntities()) {
+               if (!seenItemEntityIDs.includes(itemEntity.id)) {
+                  const data = this.bundleItemEntityData(itemEntity);
+                  itemEntityDataArray.push(data);
+                  
+                  seenItemEntityIDs.push(itemEntity.id);
+               }
+            }
+         }
+      }
+
+      return itemEntityDataArray;
    }
 }
 

@@ -1,11 +1,8 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, ServerEntityData, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, VisibleChunkBounds, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, PlayerInventoryData, CraftingRecipe, ItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket, ItemSlotData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, PlayerInventoryData, CraftingRecipe, ItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket, ItemSlotData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
-import Entity from "./entities/Entity";
-import Mob from "./entities/Mob";
-import Item from "./items/generic/Item";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 
 /*
@@ -21,8 +18,6 @@ type PlayerData = {
    readonly username: string;
    instance: Player;
    clientIsActive: boolean;
-   /** Bounds of where the player can see on their screen */
-   visibleChunkBounds: VisibleChunkBounds;
 }
 
 export type EntityCensus = {
@@ -66,39 +61,15 @@ class GameServer {
    private handlePlayerConnections(): void {
       this.io.on("connection", (socket: ISocket) => {
          let clientUsername: string;
-         let clientWindowWidth: number;
-         let clientWindowHeight: number;
          
-         socket.on("initial_player_data", (username: string, windowWidth: number, windowHeight: number) => {
+         socket.on("initial_player_data", (username: string) => {
             clientUsername = username;
-            clientWindowWidth = windowWidth;
-            clientWindowHeight = windowHeight;
          });
 
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
-
-            // Estimate which entities will be visible to the player
-            const chunkMinX = Math.max(Math.min(Math.floor((spawnPosition.x - clientWindowWidth/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const chunkMaxX = Math.max(Math.min(Math.floor((spawnPosition.x + clientWindowWidth/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const chunkMinY = Math.max(Math.min(Math.floor((spawnPosition.y - clientWindowHeight/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const chunkMaxY = Math.max(Math.min(Math.floor((spawnPosition.y + clientWindowHeight/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-            const visibleChunkBounds: [number, number, number, number] = [chunkMinX, chunkMaxX, chunkMinY, chunkMaxY];
-            
-            const visibleEntities = new Set<Entity>();
-            for (let chunkX = chunkMinX; chunkX <= chunkMaxX; chunkX++) {
-               for (let chunkY = chunkMinY; chunkY <= chunkMaxY; chunkY++) {
-                  const chunk = this.board.getChunk(chunkX, chunkY);
-                  for (const entity of chunk.getEntities()) {
-                     if (!visibleEntities.has(entity)) {
-                        visibleEntities.add(entity);
-                     }
-                  }
-               }
-            }
-            const visibleEntityDataArray = this.generateVisibleEntityData(visibleEntities);
 
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);
@@ -107,8 +78,7 @@ class GameServer {
             this.playerData[socket.id] = {
                username: clientUsername,
                instance: player,
-               clientIsActive: true,
-               visibleChunkBounds: visibleChunkBounds
+               clientIsActive: true
             };
 
             const tiles = this.board.getTiles();
@@ -127,17 +97,16 @@ class GameServer {
                   };
                }
             }
-            
-            const serverItemDataArray = this.board.calculatePlayerItemInfoArray(visibleChunkBounds);
 
             const initialGameDataPacket: InitialGameDataPacket = {
                playerID: player.id,
                tiles: serverTileData,
                spawnPosition: spawnPosition.package(),
-               serverEntityDataArray: visibleEntityDataArray,
-               serverItemEntityDataArray: serverItemDataArray,
+               entityDataArray: this.board.bundleEntityDataArray(player),
+               itemEntityDataArray: this.board.bundleItemEntityDataArray(),
                inventory: {
                   hotbar: {},
+                  backpackInventory: {},
                   backpackItemSlot: null,
                   heldItemSlot: null,
                   craftingOutputItemSlot: null
@@ -234,39 +203,6 @@ class GameServer {
       this.sendGameDataPackets();
    }
 
-   private generateVisibleEntityData(visibleEntities: ReadonlySet<Entity>): ReadonlyArray<ServerEntityData> {
-      const visibleEntityDataArray = new Array<ServerEntityData>();
-      for (const entity of visibleEntities) {
-         const healthComponent = entity.getComponent("health");
-
-         const entityData: Mutable<ServerEntityData> = {
-            id: entity.id,
-            type: entity.type,
-            position: entity.position.package(),
-            velocity: entity.velocity !== null ? entity.velocity.package() : null,
-            acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
-            terminalVelocity: entity.terminalVelocity,
-            rotation: entity.rotation,
-            clientArgs: entity.getClientArgs(),
-            secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
-            chunkCoordinates: Array.from(entity.chunks).map(chunk => [chunk.x, chunk.y]),
-            hitboxes: Array.from(entity.hitboxes).map(hitbox => {
-               return hitbox.info;
-            })
-         };
-
-         const entityInfo = ENTITY_INFO_RECORD[entity.type];
-         if (entityInfo.category === "mob") {
-            entityData.special = {
-               mobAIType: (entity as Mob).getCurrentAIType()
-            };
-         }
-
-         visibleEntityDataArray.push(entityData);
-      }
-      return visibleEntityDataArray;
-   }
-
    /** Send data about the server to all players */
    private async sendGameDataPackets(): Promise<void> {
       const sockets = await this.io.fetchSockets();
@@ -279,22 +215,16 @@ class GameServer {
          // Get the player data for the current client
          const playerData = this.playerData[socket.id];
          const player = playerData.instance;
-         
-         // Create the visible entity info array
-         const nearbyEntities = this.board.getPlayerNearbyEntities(player, playerData.visibleChunkBounds);
-         const visibleEntityInfoArray = this.generateVisibleEntityData(nearbyEntities);
 
          const tileUpdates = this.board.popTileUpdates();
-
-         const serverItemEntityDataArray = this.board.calculatePlayerItemInfoArray(playerData.visibleChunkBounds);
          
          const hitsTaken = player.getHitsTaken();
          player.clearHitsTaken();
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
-            serverEntityDataArray: visibleEntityInfoArray,
-            serverItemEntityDataArray: serverItemEntityDataArray,
+            entityDataArray: this.board.bundleEntityDataArray(player),
+            itemEntityDataArray: this.board.bundleItemEntityDataArray(),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
@@ -381,8 +311,6 @@ class GameServer {
       playerData.instance.acceleration = playerDataPacket.acceleration !== null ? Vector.unpackage(playerDataPacket.acceleration) : null;
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
-
-      playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
    }
 
    private generatePlayerSpawnPosition(): Point {

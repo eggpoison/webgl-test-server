@@ -23,12 +23,14 @@ abstract class Item implements BaseItemInfo {
 
    public tick?(): void;
 
-   public use?(entity: Entity): void;
+   public use?(entity: Entity, inventoryName: string): void;
 
-   public consumeItem(inventoryComponent: InventoryComponent, amount: number): void {
-      for (const [itemSlot, item] of Object.entries(inventoryComponent.getInventory()) as unknown as ReadonlyArray<[number, Item]>) {
+   public consumeItem(inventoryComponent: InventoryComponent, inventoryName: string, amount: number): void {
+      const itemSlots = inventoryComponent.getInventory(inventoryName).itemSlots;
+      
+      for (const [itemSlot, item] of Object.entries(itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
          if (item.id === this.id) {
-            inventoryComponent.consumeItem(itemSlot, amount);
+            inventoryComponent.consumeItem(inventoryName, itemSlot, amount);
             break;
          }
       }

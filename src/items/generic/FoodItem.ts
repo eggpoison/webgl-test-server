@@ -13,7 +13,7 @@ class FoodItem extends StackableItem implements FoodItemInfo {
       this.eatTime = itemInfo.eatTime;
    }
 
-   public use(entity: Entity): void {
+   public use(entity: Entity, inventoryName: string): void {
       const healthComponent = entity.getComponent("health")!;
 
       // Don't use food if already at maximum health
@@ -24,7 +24,7 @@ class FoodItem extends StackableItem implements FoodItemInfo {
 
       // Consume the item
       const inventoryComponent = entity.getComponent("inventory")!;
-      this.consumeItem(inventoryComponent, 1);
+      this.consumeItem(inventoryComponent, inventoryName, 1);
    }
 }
 

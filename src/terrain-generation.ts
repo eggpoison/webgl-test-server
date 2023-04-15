@@ -3,90 +3,8 @@ import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
 import { BiomeName } from "webgl-test-shared/lib/biomes";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./data/biome-generation-info";
 import Tile from "./tiles/Tile";
-import { EntityType, TileInfo } from "webgl-test-shared";
+import { TileInfo } from "webgl-test-shared";
 import { createGenericTile } from "./tiles/tile-class-record";
-
-export const CONNECTED_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
-   [0, 1],
-   [1, 1],
-   [1, 0],
-   [1, -1],
-   [0, -1],
-   [-1, -1],
-   [-1, 0],
-   [-1, 1]
-]
-
-export type LocalBiome = {
-   readonly tileCoordinates: Set<[tileX: number, tileY: number]>;
-   /** Number of entities currently inside the local biome */
-   entityCounts: Partial<Record<EntityType, number>>;
-}
-
-export const LOCAL_BIOME_RECORD: Partial<Record<BiomeName, Set<LocalBiome>>> = {};
-
-const generateLocalBiomes = (tiles: Array<Array<Tile>>): void => {
-   for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-      for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-         const tile = tiles[x][y];
-
-         // Skip tiles which have already been assigned a local biome
-         if (typeof tile.localBiome !== "undefined") continue;
-
-         // 
-         // Add all connected tiles to the local biome
-         // 
-
-         if (!LOCAL_BIOME_RECORD.hasOwnProperty(tile.biomeName)) {
-            LOCAL_BIOME_RECORD[tile.biomeName] = new Set<LocalBiome>();
-         }
-
-         // Create the local biome
-         const localBiome: LocalBiome = {
-            tileCoordinates: new Set<[tileX: number, tileY: number]>(),
-            entityCounts: {}
-         };
-         LOCAL_BIOME_RECORD[tile.biomeName]!.add(localBiome);
-
-         const addedTiles = new Set<Tile>();
-         const tilesToAdd = new Array<Tile>();
-
-         addedTiles.add(tile);
-         tilesToAdd.push(tile);
-
-         while (tilesToAdd.length > 0) {
-            const currentTile = tilesToAdd[0];
-            tilesToAdd.splice(0, 1);
-
-            // Add the current tile
-            localBiome.tileCoordinates.add([currentTile.x, currentTile.y]);
-            currentTile.localBiome = localBiome;
-
-
-            // Mark all nearby tiles to the current tile to be checked
-            for (const [xOffset, yOffset] of CONNECTED_TILE_OFFSETS) {
-               const tileX = currentTile.x + xOffset;
-               const tileY = currentTile.y + yOffset;
-               
-               // Don't add tiles which don't exist
-               if (tileX < 0 || tileX >= SETTINGS.BOARD_DIMENSIONS || tileY < 0 || tileY >= SETTINGS.BOARD_DIMENSIONS) {
-                  continue;
-               }
-
-               const nearbyTile = tiles[tileX][tileY];
-
-               // Don't add tiles already added
-               if (addedTiles.has(nearbyTile)) continue;
-
-               if (nearbyTile.biomeName === currentTile.biomeName) {
-                  tilesToAdd.push(nearbyTile);
-                  addedTiles.add(nearbyTile);
-               }
-            }
-         }
-      }
-   }
-}
 
 const HEIGHT_NOISE_SCALE = 25;
 const TEMPERATURE_NOISE_SCALE = 30;
@@ -233,8 +151,6 @@ function generateTerrain(): Array<Array<Tile>> {
    }
 
    terrainHasBeenGenerated = true;
-
-   generateLocalBiomes(tiles);
 
    return tiles;
 }

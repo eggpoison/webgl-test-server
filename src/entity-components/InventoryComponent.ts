@@ -6,25 +6,44 @@ import { createItem } from "../items/item-creation";
 import ItemEntity from "../items/ItemEntity";
 import Component from "./Component";
 
-type Inventory = { [itemSlot: number]: Item };
+export type ItemSlots = { [itemSlot: number]: Item };
+
+export interface Inventory {
+   /** Number of item slots the inventory contains. */
+   size: number;
+   /** The items contained by the inventory. */
+   readonly itemSlots: ItemSlots;
+}
 
 class InventoryComponent extends Component {
-   private readonly inventorySize: number;
-   /** Inventory. Index begins at 1 */
-   private readonly inventory: Inventory = this.createInventory();
+   /**
+    * Stores a record of all inventories associated with the inventory component.
+    */
+   private readonly inventories: Record<string, Inventory> = {};
 
-   constructor(inventorySize: number) {
-      super();
+   /**
+    * Stores all inventories associated with the inventory component in the order of when they were added.
+    * Note: the order the inventories were added affects which inventory picked up items are added to.
+    */
+   private readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 
-      this.inventorySize = inventorySize;
+   /** Creates and stores a new inventory in the component. */
+   public createNewInventory(name: string, inventorySize: number): void {
+      if (this.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
+      
+      const inventory: Inventory = {
+         size: inventorySize,
+         itemSlots: {}
+      };
+
+      this.inventories[name] = inventory;
+      this.inventoryArray.push([name, inventory]);
    }
 
-   private createInventory(): Inventory {
-      const inventory: Inventory = {};
-      for (let i = 1; i <= this.inventorySize; i++) {
-         delete inventory[i];
-      }
-      return inventory;
+   public resizeInventory(name: string, newSize: number): void {
+      if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
+
+      this.inventories[name].size = newSize;
    }
 
    public tick(): void {
@@ -37,23 +56,29 @@ class InventoryComponent extends Component {
       }
    }
 
-   public getInventory(): Inventory {
-      return this.inventory;
+   public getInventory(name: string): Inventory {
+      if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
+      
+      return this.inventories[name];
    }
 
-   public getItem(itemSlot: number): Item | null {
-      if (this.inventory.hasOwnProperty(itemSlot)) {
-         return this.inventory[itemSlot];
+   public getItem(inventoryName: string, itemSlot: number): Item | null {
+      const inventory = this.getInventory(inventoryName);
+      
+      if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+         return inventory.itemSlots[itemSlot];
       } else {
          return null;
       }
    }
 
-   public setItem(itemSlot: number, item: Item | null): void {
+   public setItem(inventoryName: string, itemSlot: number, item: Item | null): void {
+      const inventory = this.getInventory(inventoryName);
+
       if (item !== null) {
-         this.inventory[itemSlot] = item;
+         inventory.itemSlots[itemSlot] = item;
       } else {
-         delete this.inventory[itemSlot];
+         delete inventory.itemSlots[itemSlot];
       }
    }
 
@@ -94,36 +119,46 @@ class InventoryComponent extends Component {
       // Don't pick up item entities which are on pickup cooldown
       if (!itemEntity.playerCanPickup(this.entity as Player)) return;
 
-      const amountAdded = this.addItem(itemEntity.item);
+      let totalAmountPickedUp = 0;
+      for (const [inventoryName, _inventory] of this.inventoryArray) {
+         const amountPickedUp = this.addItemToInventory(inventoryName, itemEntity.item);
+
+         totalAmountPickedUp += amountPickedUp
+         itemEntity.item.count -= amountPickedUp;
+
+         // When all of the item stack is picked up, don't attempt to add to any other inventories.
+         if (itemEntity.item.count === 0) {
+            break;
+         }
+      }
 
       this.entity.callEvents("item_pickup", itemEntity);
       
       // If all of the item was added, destroy the item entity
-      if (amountAdded === itemEntity.item.count) {
+      if (totalAmountPickedUp === itemEntity.item.count) {
          itemEntity.destroy();
-      } else {
-         // Otherwise subtract the amount of items added from the item entity
-         itemEntity.item.count -= amountAdded;
       }
    }
 
    /**
-    * Adds an item to the inventory
+    * Adds as much of an item as possible to a specific inventory.
     * @returns The number of items added to the inventory
     */
-   public addItem(item: Item): number {
+   public addItemToInventory(inventoryName: string, item: Item): number {
       let remainingAmountToAdd = item.count;
       let amountAdded = 0;
 
       const itemIsStackable = item.hasOwnProperty("stackSize");
 
+      const inventory = this.getInventory(inventoryName);
+
       if (itemIsStackable) {
          // If there is already an item of the same type in the inventory, add it there
-         for (const [itemSlot, currentItem] of Object.entries(this.inventory) as unknown as ReadonlyArray<[number, Item]>) {
+         for (const [itemSlot, currentItem] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
                // If the item is of the same type, add it
             if (currentItem.type === item.type) {
                const maxAddAmount = Math.min((item as StackableItem).stackSize - currentItem.count, remainingAmountToAdd);
-               this.inventory[itemSlot].count += maxAddAmount;
+               inventory.itemSlots[itemSlot].count += maxAddAmount;
                remainingAmountToAdd -= maxAddAmount;
                amountAdded += maxAddAmount;
 
@@ -132,22 +167,22 @@ class InventoryComponent extends Component {
          }
       }
       
-      for (let i = 1; i <= this.inventorySize; i++) {
+      for (let i = 1; i <= inventory.size; i++) {
          // If the slot is empty then add the rest of the item
-         if (!this.inventory.hasOwnProperty(i)) {
-            this.inventory[i] = createItem(item.type, remainingAmountToAdd);
+         if (!inventory.itemSlots.hasOwnProperty(i)) {
+            inventory.itemSlots[i] = createItem(item.type, remainingAmountToAdd);
             amountAdded = item.count;
             break;
          }
 
          // If the slot contains an item of the same type, add as much of the item as possible
-         if (this.inventory[i].type === item.type) {
+         if (inventory.itemSlots[i].type === item.type) {
             if (!itemIsStackable) {
                // If the item can't be stacked then nothing can be added to the slot
                continue;
             } else {
                const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
-               this.inventory[i].count += maxAddAmount;
+               inventory.itemSlots[i].count += maxAddAmount;
                amountAdded += maxAddAmount;
                remainingAmountToAdd -= maxAddAmount;
 
@@ -162,27 +197,41 @@ class InventoryComponent extends Component {
       return amountAdded;
    }
 
-   public consumeItemType(itemType: ItemType, amount: number): void {
+   /**
+    * Attempts to consume a certain amount of an item type from an inventory.
+    * @returns The number of items consumed from the inventory.
+   */
+   public consumeItemTypeFromInventory(inventoryName: string, itemType: ItemType, amount: number): number {
+      const inventory = this.getInventory(inventoryName);
+      
       let remainingAmountToConsume = amount;
-      for (const [itemSlot, item] of Object.entries(this.inventory) as unknown as ReadonlyArray<[number, Item]>) {
+      let totalAmountConsumed = 0;
+      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
          if (item.type !== itemType) continue;
 
          const amountConsumed = Math.min(remainingAmountToConsume, item.count);
+
          item.count -= amountConsumed;
          remainingAmountToConsume -= amountConsumed;
+         totalAmountConsumed += amountConsumed;
+
          if (item.count === 0) {
-            delete this.inventory[itemSlot];
+            delete inventory.itemSlots[itemSlot];
          }
       }
+
+      return totalAmountConsumed;
    }
 
-   public consumeItem(itemSlot: number, amount: number): void {
-      const item = this.inventory[itemSlot];
+   public consumeItem(inventoryName: string, itemSlot: number, amount: number): void {
+      const inventory = this.getInventory(inventoryName);
+      
+      const item = inventory.itemSlots[itemSlot];
       if (typeof item === "undefined") return;
 
       item.count -= amount;
       if (item.count <= 0) {
-         delete this.inventory[itemSlot];
+         delete inventory.itemSlots[itemSlot];
       }
    }
 }

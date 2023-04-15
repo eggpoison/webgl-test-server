@@ -40,9 +40,11 @@ class Player extends Entity {
    private hitsTaken = new Array<HitData>();
 
    constructor(position: Point, name: string) {
+      const inventoryComponent = new InventoryComponent();
+
       super(position, {
          health: new HealthComponent(Player.MAX_HEALTH, true),
-         inventory: new InventoryComponent(SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)
+         inventory: inventoryComponent
       }, "player");
 
       this.addHitboxes([
@@ -51,6 +53,9 @@ class Player extends Entity {
             radius: 32
          })
       ]);
+
+      inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE);
+      inventoryComponent.createNewInventory("backpack", 0);
 
       this.displayName = name;
 
@@ -105,10 +110,18 @@ class Player extends Entity {
       
       const inventoryComponent = this.getComponent("inventory")!;
       
-      if (canCraftRecipe(inventoryComponent.getInventory(), craftingRecipe, SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)) {
+      const hotbarInventory = inventoryComponent.getInventory("hotbar");
+      const backpackInventory = inventoryComponent.getInventory("backpack");
+
+      if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe, SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)) {
          // Consume ingredients
          for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients) as ReadonlyArray<[ItemType, number]>) {
-            inventoryComponent.consumeItemType(ingredientType, ingredientCount);
+            // Prioritise consuming ingredients from the backpack inventory first
+            const amountConsumedFromBackpackInventory = inventoryComponent.consumeItemTypeFromInventory("backpack", ingredientType, ingredientCount);
+
+            // Consume the rest from the hotbar
+            const remainingAmountToConsume = ingredientCount - amountConsumedFromBackpackInventory;
+            inventoryComponent.consumeItemTypeFromInventory("hotbar", ingredientType, remainingAmountToConsume);
          }
 
          // Add product to held item
@@ -131,7 +144,11 @@ class Player extends Entity {
       let item: Item | null;
       switch (inventoryType) {
          case "hotbar": {
-            item = inventoryComponent.getItem(itemSlot);
+            item = inventoryComponent.getItem("hotbar", itemSlot);
+            break;
+         }
+         case "backpackInventory": {
+            item = inventoryComponent.getItem("backpack", itemSlot);
             break;
          }
          case "craftingOutput": {
@@ -152,7 +169,11 @@ class Player extends Entity {
       // Remove the item from its previous inventory
       switch (inventoryType) {
          case "hotbar": {
-            inventoryComponent.setItem(itemSlot, null);
+            inventoryComponent.setItem("hotbar", itemSlot, null);
+            break;
+         }
+         case "backpackInventory": {
+            inventoryComponent.setItem("backpack", itemSlot, null);
             break;
          }
          case "craftingOutput": {
@@ -175,7 +196,11 @@ class Player extends Entity {
       // Add the item to the inventory
       switch (inventoryType) {
          case "hotbar": {
-            inventoryComponent.setItem(itemSlot, this.heldItem);
+            inventoryComponent.setItem("hotbar", itemSlot, this.heldItem);
+            break;
+         }
+         case "backpackInventory": {
+            inventoryComponent.setItem("backpack", itemSlot, this.heldItem);
             break;
          }
          case "backpackItemSlot": {
@@ -194,8 +219,10 @@ class Player extends Entity {
       // Don't attack if the attack didn't hit anything
       if (attackTarget === null) return;
 
+      const inventoryComponent = this.getComponent("inventory")!;
+
       // Find the selected item
-      const selectedItem = this.getComponent("inventory")!.getItem(attackPacket.itemSlot);
+      const selectedItem = inventoryComponent.getItem("hotbar", attackPacket.itemSlot);
       const selectedItemIsTool = selectedItem !== null && selectedItem.hasOwnProperty("toolType");
 
       let attackDamage: number;
@@ -215,11 +242,13 @@ class Player extends Entity {
    }
 
    public processItemUsePacket(itemSlot: number): void {
-      const item = this.getComponent("inventory")!.getItem(itemSlot);
+      const inventoryComponent = this.getComponent("inventory")!;
+
+      const item = inventoryComponent.getItem("hotbar", itemSlot);
       if (item === null) return;
 
       if (typeof item.use !== "undefined") {
-         item.use(this);
+         item.use(this, "hotbar");
       }
    }
 
@@ -243,14 +272,22 @@ class Player extends Entity {
    public bundleInventoryData(): PlayerInventoryData {
       const inventoryData: PlayerInventoryData = {
          hotbar: {},
+         backpackInventory: {},
          backpackItemSlot: bundleItemSlotData(this.backpackItemSlot),
          heldItemSlot: bundleItemSlotData(this.heldItem),
          craftingOutputItemSlot: bundleItemSlotData(this.craftingOutputItem)
       };
 
-      const inventory = this.getComponent("inventory")!.getInventory();
-      for (const [itemSlot, item] of Object.entries(inventory) as unknown as ReadonlyArray<[number, Item]>) {
+      const inventoryComponent = this.getComponent("inventory")!;
+
+      const hotbarInventory = inventoryComponent.getInventory("hotbar");
+      for (const [itemSlot, item] of Object.entries(hotbarInventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
          inventoryData.hotbar[itemSlot] = bundleItemData(item);
+      }
+
+      const backpackInventory = inventoryComponent.getInventory("backpack");
+      for (const [itemSlot, item] of Object.entries(backpackInventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
+         inventoryData.backpackInventory[itemSlot] = bundleItemData(item);
       }
 
       return inventoryData;

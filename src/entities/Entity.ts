@@ -9,6 +9,7 @@ import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { Event, EventParams, EventType } from "../events";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
+import { addEntityToCensus, removeEntityFromCensus } from "../entity-spawning";
 
 let idCounter = 0;
 
@@ -114,6 +115,8 @@ abstract class Entity {
       for (const component of Object.values(components) as Array<Component>) {
          if (typeof component.onLoad !== "undefined") component.onLoad();
       }
+
+      addEntityToCensus(this.type);
 
       // Add the entity to the join buffer
       SERVER.board.addEntityToJoinBuffer(this);
@@ -235,34 +238,7 @@ abstract class Entity {
    }
 
    public updateCurrentTile(): void {
-      const previousTile = this.currentTile;
       this.currentTile = this.calculateCurrentTile();
-      this.updateLocalBiomeEntityCount(previousTile);
-   }
-
-   private updateLocalBiomeEntityCount(previousTile: Tile): void {
-      // If the entity wasn't on a local biome previously, add them to their new local biome
-      if (typeof previousTile === "undefined") {
-         if (!this.currentTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
-            this.currentTile.localBiome.entityCounts[this.type] = 1;
-         } else {
-            this.currentTile.localBiome.entityCounts[this.type]!++;
-         }
-      } else if (this.currentTile.localBiome !== previousTile.localBiome) {
-         // Account for if the entity moved into a new local biome
-         
-         // Add the entity to the new local biome and remove it from the previous one
-         if (!this.currentTile.localBiome.entityCounts.hasOwnProperty(this.type)) {
-            this.currentTile.localBiome.entityCounts[this.type] = 1;
-         } else {
-            this.currentTile.localBiome.entityCounts[this.type]!++;
-         }
-
-         previousTile.localBiome.entityCounts[this.type]!--;
-         if (previousTile.localBiome.entityCounts[this.type] === 0) {
-            delete previousTile.localBiome.entityCounts[this.type];
-         }
-      }
    }
 
    public applyPhysics(): void {
@@ -542,13 +518,8 @@ abstract class Entity {
    }
 
    public remove(): void {
+      removeEntityFromCensus(this.type);
       this.isRemoved = true;
-
-      // When the entity dies, decrement the entity count of the entity's local biome
-      this.currentTile.localBiome.entityCounts[this.type]!--;
-      if (this.currentTile.localBiome.entityCounts[this.type] === 0) {
-         delete this.currentTile.localBiome.entityCounts[this.type];
-      }
    }
 }
 

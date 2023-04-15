@@ -32,7 +32,7 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
       this.entityClass = ENTITY_CLASS_RECORD[this.entityType]();
    }
 
-   public use(entity: Entity): void {
+   public use(entity: Entity, inventoryName: string): void {
       // Calculate the position to spawn the placeable entity at
       const spawnPosition = entity.position.copy();
       const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, entity.rotation);
@@ -47,7 +47,7 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
       // Rotate it to match the entity's rotation
       placedEntity.rotation = entity.rotation;
 
-      super.consumeItem(entity.getComponent("inventory")!, 1);
+      super.consumeItem(entity.getComponent("inventory")!, inventoryName, 1);
    }
 
    private canBePlaced(spawnPosition: Point, rotation: number): boolean {

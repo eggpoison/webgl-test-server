@@ -1,4 +1,3 @@
-import { EntityType } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 
 abstract class Component {
