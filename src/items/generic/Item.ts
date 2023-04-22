@@ -1,4 +1,4 @@
-import { ItemType, BaseItemInfo } from "webgl-test-shared";
+import { ItemType, BaseItemInfo, ITEM_INFO_RECORD } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
 
@@ -38,3 +38,13 @@ abstract class Item implements BaseItemInfo {
 }
 
 export default Item;
+
+/**
+ * Checks whether a given item type is able to be stacked.
+ * @param itemType The type of item to check.
+ * @returns Whether the item type is able to be stacked.
+ */
+export function itemIsStackable(itemType: ItemType): boolean {
+   const itemInfo = ITEM_INFO_RECORD[itemType];
+   return itemInfo.hasOwnProperty("stackSize");
+}

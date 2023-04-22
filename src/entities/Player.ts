@@ -134,46 +134,46 @@ class Player extends Entity {
       }
    }
 
-   public processItemHoldPacket(inventoryType: PlayerInventoryType, itemSlot: number): void {
+   public processItemPickupPacket(inventoryType: PlayerInventoryType, itemSlot: number, amount: number): void {
       // Don't pick up the item if there is already a held item
       if (this.heldItem !== null) return;
 
       const inventoryComponent = this.getComponent("inventory")!;
       
-      // Find which item is being held
-      let item: Item | null;
+      // Find which item is being picked up
+      let pickedUpItem: Item | null;
       switch (inventoryType) {
          case "hotbar": {
-            item = inventoryComponent.getItem("hotbar", itemSlot);
+            pickedUpItem = inventoryComponent.getItem("hotbar", itemSlot);
             break;
          }
          case "backpackInventory": {
-            item = inventoryComponent.getItem("backpack", itemSlot);
+            pickedUpItem = inventoryComponent.getItem("backpack", itemSlot);
             break;
          }
          case "craftingOutput": {
-            item = this.craftingOutputItem;
+            pickedUpItem = this.craftingOutputItem;
             break;
          }
          case "backpackItemSlot": {
-            item = this.backpackItemSlot;
+            pickedUpItem = this.backpackItemSlot;
             break;
          }
       }
 
-      if (item === null) return;
+      if (pickedUpItem === null) return;
 
       // Hold the item
-      this.heldItem = item;
+      this.heldItem = createItem(pickedUpItem.type, amount);
 
       // Remove the item from its previous inventory
       switch (inventoryType) {
          case "hotbar": {
-            inventoryComponent.setItem("hotbar", itemSlot, null);
+            inventoryComponent.consumeItem("hotbar", itemSlot, amount);
             break;
          }
          case "backpackInventory": {
-            inventoryComponent.setItem("backpack", itemSlot, null);
+            inventoryComponent.consumeItem("backpack", itemSlot, amount);
             break;
          }
          case "craftingOutput": {
@@ -187,29 +187,40 @@ class Player extends Entity {
       }
    }
 
-   public processItemReleasePacket(inventoryType: PlaceablePlayerInventoryType, itemSlot: number): void {
+   public processItemReleasePacket(inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number): void {
       // Don't release an item if there is no held item
       if (this.heldItem === null) return;
 
       const inventoryComponent = this.getComponent("inventory")!;
 
       // Add the item to the inventory
+      let amountAdded: number;
       switch (inventoryType) {
          case "hotbar": {
-            inventoryComponent.setItem("hotbar", itemSlot, this.heldItem);
+            amountAdded = inventoryComponent.addItemToSlot("hotbar", itemSlot, this.heldItem.type, amount)
             break;
          }
          case "backpackInventory": {
-            inventoryComponent.setItem("backpack", itemSlot, this.heldItem);
+            amountAdded = inventoryComponent.addItemToSlot("backpack", itemSlot, this.heldItem.type, amount)
             break;
          }
          case "backpackItemSlot": {
-            this.backpackItemSlot = this.heldItem;
+            if (this.backpackItemSlot === null) {
+               this.backpackItemSlot = this.heldItem;
+               amountAdded = 1;
+            } else {
+               amountAdded = 0;
+            }
          }
       }
 
-      // Clear the held item
-      this.heldItem = null;
+      // If all of the item was added, clear the held item
+      if (amountAdded === this.heldItem.count) {
+         this.heldItem = null;
+      } else {
+         // Otherwise remove the amount from the held item
+         this.heldItem.count -= amountAdded;
+      }
    }
 
    public processAttackPacket(attackPacket: AttackPacket): void {

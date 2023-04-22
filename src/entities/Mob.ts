@@ -83,19 +83,13 @@ abstract class Mob extends Entity implements MobInfo {
    public refreshAI(): void {
       const entitiesInVisionRange = this.calculateEntitiesInVisionRange();
 
-      // Update all AI's values, and the AI with highest weight
-      let newAI!: AI;
-      let maxWeight = -1;
+      // Update the values of all AI's
       for (const ai of this.ais) {
-         // Update their values
          ai.updateValues(entitiesInVisionRange);
-
-         const weight = ai.getWeight();
-         if (weight > maxWeight) {
-            maxWeight = weight;
-            newAI = ai;
-         }
       }
+
+      // The new AI is the one with the highest weight.
+      const newAI = this.findAIWithHighestWeight();
 
       // If the AI is new, activate the AI
       if (newAI !== this.currentAI) {
@@ -109,6 +103,21 @@ abstract class Mob extends Entity implements MobInfo {
       if (typeof newAI.onRefresh !== "undefined") newAI.onRefresh();
       
       this.currentAI = newAI;
+   }
+
+   private findAIWithHighestWeight(): AI {
+      let aiWithHighestWeight!: AI;
+      let maxWeight = -1;
+
+      for (const ai of this.ais) {
+         const weight = ai.getWeight();
+         if (weight > maxWeight) {
+            maxWeight = weight;
+            aiWithHighestWeight = ai;
+         }
+      }
+
+      return aiWithHighestWeight;
    }
 
    /** Finds all entities within the range of the mob's vision */

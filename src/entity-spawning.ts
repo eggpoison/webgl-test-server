@@ -72,6 +72,7 @@ export function addEntityToCensus(entityType: EntityType): void {
 
 export function removeEntityFromCensus(entityType: EntityType): void {
    if (!entityTypeCounts.hasOwnProperty(entityType)) {
+      console.log(entityType);
       throw new Error("Entity type is not in the census.")
    }
 
@@ -102,13 +103,11 @@ export function removeTileFromCensus(tileType: TileType): void {
 
 const getTileTypeCount = (tileType: TileType): number => {
    if (!tileTypeCounts.hasOwnProperty(tileType)) {
-      throw new Error("Tile type is not in the census.")
+      return 0;
    }
 
    return tileTypeCounts[tileType]!;
 }
-
-const NUM_TILES = SETTINGS.CHUNK_SIZE * SETTINGS.CHUNK_SIZE * SETTINGS.TILE_SIZE * SETTINGS.TILE_SIZE;
 
 /** Maximum distance a spawn event can occur from another entity */
 const MAX_SPAWN_DISTANCE = 100;
@@ -116,13 +115,16 @@ const MAX_SPAWN_DISTANCE = 100;
 const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
    // Check if the entity density is right
 
-   if (!entityTypeCounts.hasOwnProperty(spawnInfo.entityType)) {
-      entityTypeCounts[spawnInfo.entityType] = 0;
-   }
-
    let numEligibleTiles = 0;
    for (const tileType of spawnInfo.spawnableTiles) {
       numEligibleTiles += getTileTypeCount(tileType);
+   }
+
+   // If there are no tiles upon which the entity is able to be spawned, the spawn conditions aren't valid
+   if (numEligibleTiles === 0) return false;
+
+   if (!entityTypeCounts.hasOwnProperty(spawnInfo.entityType)) {
+      entityTypeCounts[spawnInfo.entityType] = 0;
    }
 
    const density = entityTypeCounts[spawnInfo.entityType]! / numEligibleTiles;

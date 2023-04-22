@@ -55,7 +55,7 @@ abstract class Entity {
    /** All hitboxes in use by the entity */
    public hitboxes = new Set<Hitbox<HitboxType>>();
 
-   public readonly events: { [E in EventType]: Array<Event<E>> } = {
+   private readonly events: { [E in EventType]: Array<Event<E>> } = {
       hurt: [],
       death: [],
       item_pickup: [],
@@ -75,6 +75,7 @@ abstract class Entity {
    /** Direction the entity is facing (radians) */
    public rotation: number = 0;
 
+   /** Set of all chunks the entity is contained in */
    public chunks = new Set<Chunk>();
 
    public currentTile!: Tile;

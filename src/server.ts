@@ -151,12 +151,12 @@ class GameServer {
             this.processCraftingPacket(socket, craftingRecipe);
          });
 
-         socket.on("item_hold_packet", (inventoryType: PlayerInventoryType, itemSlot: number) => {
-            this.processItemHoldPacket(socket, inventoryType, itemSlot);
+         socket.on("item_pickup_packet", (inventoryType: PlayerInventoryType, itemSlot: number, amount: number) => {
+            this.processItemPickupPacket(socket, inventoryType, itemSlot, amount);
          });
 
-         socket.on("item_release_packet", (inventoryType: PlaceablePlayerInventoryType, itemSlot: number) => {
-            this.processItemReleasePacket(socket, inventoryType, itemSlot);
+         socket.on("item_release_packet", (inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number) => {
+            this.processItemReleasePacket(socket, inventoryType, itemSlot, amount);
          });
 
          socket.on("item_use_packet", (itemSlot: number) => {
@@ -169,6 +169,10 @@ class GameServer {
 
          socket.on("respawn", () => {
             this.respawnPlayer(socket);
+         });
+
+         socket.on("error", () => {
+            console.log("a");
          });
       });
    }
@@ -270,17 +274,17 @@ class GameServer {
       }
    }
 
-   private processItemHoldPacket(socket: ISocket, inventoryType: PlayerInventoryType, itemSlot: number): void {
+   private processItemPickupPacket(socket: ISocket, inventoryType: PlayerInventoryType, itemSlot: number, amount: number): void {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const playerData = this.playerData[socket.id];
-         playerData.instance.processItemHoldPacket(inventoryType, itemSlot);
+         playerData.instance.processItemPickupPacket(inventoryType, itemSlot, amount);
       }
    }
 
-   private processItemReleasePacket(socket: ISocket, inventoryType: PlaceablePlayerInventoryType, itemSlot: number): void {
+   private processItemReleasePacket(socket: ISocket, inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number): void {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const playerData = this.playerData[socket.id];
-         playerData.instance.processItemReleasePacket(inventoryType, itemSlot);
+         playerData.instance.processItemReleasePacket(inventoryType, itemSlot, amount);
       }
    }
 

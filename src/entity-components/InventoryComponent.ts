@@ -1,6 +1,6 @@
-import { ItemType } from "webgl-test-shared";
+import { ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
 import Player from "../entities/Player";
-import Item from "../items/generic/Item";
+import Item, { itemIsStackable } from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
 import ItemEntity from "../items/ItemEntity";
@@ -155,7 +155,7 @@ class InventoryComponent extends Component {
       if (itemIsStackable) {
          // If there is already an item of the same type in the inventory, add it there
          for (const [itemSlot, currentItem] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
-               // If the item is of the same type, add it
+            // If the item is of the same type, add it
             if (currentItem.type === item.type) {
                const maxAddAmount = Math.min((item as StackableItem).stackSize - currentItem.count, remainingAmountToAdd);
                inventory.itemSlots[itemSlot].count += maxAddAmount;
@@ -192,6 +192,45 @@ class InventoryComponent extends Component {
                }
             }
          }
+      }
+
+      return amountAdded;
+   }
+
+   /**
+    * Attempts to add a certain amount of an item to a specific item slot in an inventory.
+    * @param inventoryName The name of the inventory to add the item to.
+    * @param itemType The type of the item.
+    * @param amount The amount of item to attempt to add.
+    * @returns The number of items added to the item slot.
+    */
+   public addItemToSlot(inventoryName: string, itemSlot: number, itemType: ItemType, amount: number): number {
+      const inventory = this.getInventory(inventoryName);
+
+      let amountAdded: number;
+
+      if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+         const item = this.getItem(inventoryName, itemSlot)!;
+
+         if (item.type !== itemType) {
+            // Items are of different types, so none can be added
+            return 0;
+         }
+
+         if (itemIsStackable(itemType)) {
+            // If the item is stackable, add as many as the stack size of the item would allow
+
+            const stackSize = (ITEM_INFO_RECORD[itemType] as StackableItem).stackSize;
+            
+            amountAdded = Math.min(amount, stackSize - item.count);
+            item.count += amountAdded;
+         } else {
+            // Unstackable items cannot be stacked (crazy right), so no more can be added
+            return 0;
+         }
+      } else {
+         amountAdded = amount;
+         inventory.itemSlots[itemSlot] = createItem(itemType, amount);
       }
 
       return amountAdded;
