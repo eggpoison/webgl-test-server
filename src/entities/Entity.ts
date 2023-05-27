@@ -519,7 +519,6 @@ abstract class Entity {
    }
 
    public remove(): void {
-      removeEntityFromCensus(this.type);
       this.isRemoved = true;
    }
 }

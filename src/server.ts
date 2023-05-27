@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, Mutable, randInt, ENTITY_INFO_RECORD, InitialGameDataPacket, ServerTileData, PlayerInventoryData, CraftingRecipe, ItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket, ItemSlotData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, PlayerInventoryData, CraftingRecipe, ItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket, ItemSlotData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -18,10 +18,6 @@ type PlayerData = {
    readonly username: string;
    instance: Player;
    clientIsActive: boolean;
-}
-
-export type EntityCensus = {
-   readonly passiveMobCount: number;
 }
 
 class GameServer {

@@ -5,9 +5,9 @@ import Mob from "./entities/Mob";
 import Player from "./entities/Player";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import ItemEntity from "./items/ItemEntity";
-import { EntityCensus, SERVER } from "./server";
 import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
+import { removeEntityFromCensus } from "./entity-spawning";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -143,21 +143,6 @@ class Board {
          entity.updateCurrentTile();
       }
    }
-   
-   public holdCensus(): EntityCensus {
-      const census: Mutable<EntityCensus> = {
-         passiveMobCount: 0
-      };
-
-      for (const entity of Object.values(this.entities)) {
-         const entityInfo = ENTITY_INFO_RECORD[entity.type];
-         if (entityInfo.category === "mob" && entityInfo.behaviour === "passive") {
-            census.passiveMobCount++;
-         }
-      }
-
-      return census;
-   }
 
    /** Removes the entity from the game */
    private removeEntity(entity: Entity): void {
@@ -167,6 +152,8 @@ class Board {
       for (const chunk of entity.chunks) {
          chunk.removeEntity(entity);
       }
+
+      removeEntityFromCensus(entity.type);
    }
 
    /** Registers a tile update to be sent to the clients */

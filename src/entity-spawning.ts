@@ -73,7 +73,8 @@ export function addEntityToCensus(entityType: EntityType): void {
 export function removeEntityFromCensus(entityType: EntityType): void {
    if (!entityTypeCounts.hasOwnProperty(entityType)) {
       console.log(entityType);
-      throw new Error("Entity type is not in the census.")
+      console.warn(`Entity type "${entityType}" is not in the census.`);
+      console.trace();
    }
 
    entityTypeCounts[entityType]!--;
