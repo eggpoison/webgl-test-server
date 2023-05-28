@@ -30,7 +30,7 @@ class GameServer {
    private ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public time: number = 0;
+   public time: number = 18;
 
    public readonly board: Board;
 
@@ -114,6 +114,7 @@ class GameServer {
                },
                tileUpdates: [],
                serverTicks: this.ticks,
+               serverTime: this.time,
                hitsTaken: [],
                playerHealth: 20
             };
@@ -185,7 +186,8 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
-      this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+      this.time += SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600;
+      this.time = this.time % 24;
       
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
@@ -237,6 +239,7 @@ class GameServer {
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
+            serverTime: this.time,
             hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth()
          };

@@ -17,6 +17,10 @@ const killPlayer = (username: string): void => {
    }
 }
 
+const setTime = (time: number): void => {
+   SERVER.time = time;
+}
+
 export function registerCommand(command: string, player: Player): void {
    const commandComponents = parseCommand(command);
    const numParameters = commandComponents.length - 1;
@@ -29,6 +33,10 @@ export function registerCommand(command: string, player: Player): void {
             const targetPlayerName = commandComponents[1] as string;
             killPlayer(targetPlayerName);
          }
+      }
+
+      case "set_time": {
+         setTime(commandComponents[1] as number);
       }
    }
 }
