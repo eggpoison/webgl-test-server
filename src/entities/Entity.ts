@@ -443,7 +443,7 @@ abstract class Entity {
          return false;
       }
       
-      const hitWasReceived = healthComponent.takeDamage(damage);
+      const hitWasReceived = healthComponent.damage(damage);
  
       if (hitWasReceived) this.callEvents("hurt", damage, knockback, attackDirection, attackingEntity);
 

@@ -4,6 +4,7 @@ import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketDa
 import Player from "./entities/Player";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
+import { registerCommand } from "./commands";
 
 /*
 
@@ -52,6 +53,10 @@ class GameServer {
    /** Sets up the various stuff */
    public setup(): void {
       spawnInitialEntities();
+   }
+
+   public getPlayerData(): Record<string, PlayerData> {
+      return this.playerData;
    }
 
    private handlePlayerConnections(): void {
@@ -166,9 +171,13 @@ class GameServer {
          socket.on("respawn", () => {
             this.respawnPlayer(socket);
          });
+         
+         socket.on("command", (command: string) => {
+            // Get the player data for the current client
+            const playerData = this.playerData[socket.id];
+            const player = playerData.instance;
 
-         socket.on("error", () => {
-            console.log("a");
+            registerCommand(command, player);
          });
       });
    }
@@ -177,7 +186,7 @@ class GameServer {
       // Update server ticks and time
       this.ticks++;
       this.time = (this.ticks * SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
-
+      
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
       this.board.updateEntities();

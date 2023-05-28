@@ -64,7 +64,7 @@ class HealthComponent extends Component {
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
-   public takeDamage(damage: number, attackHash?: string): boolean {
+   public damage(damage: number, attackHash?: string): boolean {
       // Don't receive damage if invulnerable
       if (this.isInvulnerable(attackHash)) return false;
 

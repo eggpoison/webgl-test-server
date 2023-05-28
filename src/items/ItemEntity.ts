@@ -67,7 +67,7 @@ class ItemEntity {
       // Add velocity
       if (this.velocity !== null) {
          const velocity = this.velocity.copy();
-         velocity.magnitude *= 1 / SETTINGS.TPS;
+         velocity.magnitude /= SETTINGS.TPS;
 
          this.position.add(velocity.convertToPoint());
 
