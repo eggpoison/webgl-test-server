@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, PlayerInventoryData, CraftingRecipe, ItemData, PlayerInventoryType, PlaceablePlayerInventoryType, randFloat, GameDataSyncPacket, RespawnDataPacket, ItemSlotData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
@@ -108,7 +108,7 @@ class GameServer {
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
-                  backpackItemSlot: null,
+                  backpackSlot: null,
                   heldItemSlot: null,
                   craftingOutputItemSlot: null
                },

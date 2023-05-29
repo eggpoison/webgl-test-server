@@ -9,10 +9,8 @@ abstract class ToolItem extends Item implements ToolItemInfo {
    public readonly knockback: number;
    public readonly attackCooldown: number;
 
-   private attackTimer = 0;
-
    constructor(itemType: ItemType, count: number, itemInfo: ToolItemInfo) {
-      super(itemType, count, itemInfo);
+      super(itemType, count);
 
       this.toolType = itemInfo.toolType;
 

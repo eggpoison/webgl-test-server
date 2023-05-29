@@ -13,7 +13,8 @@ import Entity from "./Entity";
 const bundleItemData = (item: Item): ItemData => {
    return {
       type: item.type,
-      count: item.count
+      count: item.count,
+      id: item.id
    };
 }
 
@@ -284,7 +285,7 @@ class Player extends Entity {
       const inventoryData: PlayerInventoryData = {
          hotbar: {},
          backpackInventory: {},
-         backpackItemSlot: bundleItemSlotData(this.backpackItemSlot),
+         backpackSlot: bundleItemSlotData(this.backpackItemSlot),
          heldItemSlot: bundleItemSlotData(this.heldItem),
          craftingOutputItemSlot: bundleItemSlotData(this.craftingOutputItem)
       };

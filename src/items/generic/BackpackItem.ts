@@ -6,7 +6,7 @@ class BackpackItem extends Item implements BackpackItemInfo {
    public inventoryHeight: number;
    
    constructor(itemType: ItemType, count: number, itemInfo: BackpackItemInfo) {
-      super(itemType, count, itemInfo);
+      super(itemType, count);
 
       this.inventoryWidth = itemInfo.inventoryWidth;
       this.inventoryHeight = itemInfo.inventoryHeight;

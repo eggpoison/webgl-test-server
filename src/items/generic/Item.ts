@@ -14,7 +14,7 @@ abstract class Item implements BaseItemInfo {
    public readonly type: ItemType;
    public count: number;
 
-   constructor(itemType: ItemType, count: number, itemInfo: BaseItemInfo) {
+   constructor(itemType: ItemType, count: number) {
       this.id = getUniqueID();
 
       this.type = itemType;
