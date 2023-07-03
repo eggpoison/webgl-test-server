@@ -1,24 +1,34 @@
-import { parseCommand } from "webgl-test-shared";
+import { ItemType, parseCommand } from "webgl-test-shared";
 import Player from "./entities/Player";
 import { SERVER } from "./server";
+import { createItem } from "./items/item-creation";
 
 const killPlayer = (username: string): void => {
-   const playerData = SERVER.getPlayerData();
-   for (const data of Object.values(playerData)) {
-      if (data.username === username) {
-         // Found the player!
-         const player = data.instance;
+   const player = SERVER.getPlayerFromUsername(username);
+   if (player === null) return;
 
-         // Kill the player
-         player.getComponent("health")!.damage(999999);
-         
-         break;
-      }
-   }
+   // Kill the player
+   player.getComponent("health")!.damage(999999);
+}
+
+const damagePlayer = (username: string, damage: number): void => {
+   const player = SERVER.getPlayerFromUsername(username);
+   if (player === null) return;
+
+   // Damage the player
+   player.getComponent("health")!.damage(damage);
 }
 
 const setTime = (time: number): void => {
    SERVER.time = time;
+}
+
+const giveItem = (username: string, itemType: ItemType, amount: number): void => {
+   const player = SERVER.getPlayerFromUsername(username);
+   if (player === null) return;
+
+   const item = createItem(itemType, amount);
+   player.getComponent("inventory")!.addItem(item);
 }
 
 export function registerCommand(command: string, player: Player): void {
@@ -33,10 +43,42 @@ export function registerCommand(command: string, player: Player): void {
             const targetPlayerName = commandComponents[1] as string;
             killPlayer(targetPlayerName);
          }
+
+         break;
+      }
+
+      case "damage": {
+         if (numParameters === 1) {
+            const damage = commandComponents[1] as number;
+            damagePlayer(player.displayName, damage);
+         } else if (numParameters === 2) {
+            const username = commandComponents[1] as string;
+            const damage = commandComponents[2] as number;
+            damagePlayer(username, damage);
+         }
+
+         break;
       }
 
       case "set_time": {
          setTime(commandComponents[1] as number);
+
+         break;
+      }
+
+      case "give": {
+         if (numParameters === 1) {
+            const itemType = commandComponents[1] as ItemType;
+            
+            giveItem(player.displayName, itemType, 1);
+         } else if (numParameters === 2) {
+            const itemType = commandComponents[1] as ItemType;
+            const amount = commandComponents[2] as number;
+
+            giveItem(player.displayName, itemType, amount);
+         }
+         
+         break;
       }
    }
 }

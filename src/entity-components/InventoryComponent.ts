@@ -141,6 +141,24 @@ class InventoryComponent extends Component {
    }
 
    /**
+    * Adds as much of an item as possible to any/all available inventories.
+    * @returns The number of items added.
+    */
+   public addItem(item: Item): number {
+      let amountAdded = 0;
+
+      for (const [inventoryName, _inventory] of this.inventoryArray) {
+         amountAdded += this.addItemToInventory(inventoryName, item);
+
+         if (amountAdded === item.count) {
+            break;
+         }
+      }
+
+      return amountAdded;
+   }
+
+   /**
     * Adds as much of an item as possible to a specific inventory.
     * @returns The number of items added to the inventory
     */

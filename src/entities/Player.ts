@@ -55,8 +55,8 @@ class Player extends Entity {
          })
       ]);
 
-      inventoryComponent.createNewInventory("backpack", 0);
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE);
+      inventoryComponent.createNewInventory("backpack", 0);
 
       this.displayName = name;
 

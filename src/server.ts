@@ -1,10 +1,12 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import { registerCommand } from "./commands";
+import ItemEntity from "./items/ItemEntity";
+import RawBeef from "./items/specific/RawBeef";
 
 /*
 
@@ -55,8 +57,16 @@ class GameServer {
       spawnInitialEntities();
    }
 
-   public getPlayerData(): Record<string, PlayerData> {
-      return this.playerData;
+   public getPlayerFromUsername(username: string): Player | null {
+      for (const data of Object.values(this.playerData)) {
+         if (data.username === username) {
+            // Found the player!
+            const player = data.instance;
+            return player;
+         }
+      }
+
+      return null;
    }
 
    private handlePlayerConnections(): void {
@@ -186,8 +196,7 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
-      this.time += SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600;
-      this.time = this.time % 24;
+      this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
       
       this.board.removeEntities();
       this.board.addEntitiesFromJoinBuffer();
