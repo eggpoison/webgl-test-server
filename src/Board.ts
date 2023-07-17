@@ -1,7 +1,7 @@
 import { ENTITY_INFO_RECORD, Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
-import Mob from "./entities/Mob";
+import Mob from "./entities/mobs/Mob";
 import Player from "./entities/Player";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import ItemEntity from "./items/ItemEntity";

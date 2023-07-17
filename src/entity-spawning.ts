@@ -1,5 +1,5 @@
 import { EntityType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
-import Cow from "./entities/Cow";
+import Cow from "./entities/mobs/Cow";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-class-record";
 import { SERVER } from "./server";
@@ -31,23 +31,18 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: "cow",
       spawnableTiles: ["grass"],
       spawnRate: 0.01,
+      maxDensity: 0.01,
       packSpawningInfo: {
          size: [2, 5],
          spawnRange: 200
-      },
+      }
+   },
+   {
+      entityType: "berry_bush",
+      spawnableTiles: ["grass"],
+      spawnRate: 0.01,
       maxDensity: 0.01
    },
-   // {
-   //    entityType: "zombie",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.02,
-   //    packSpawningInfo: {
-   //       size: 2,
-   //       spawnRange: 100
-   //    },
-   //    maxDensity: 0.02,
-   //    spawnTimeRanges: [[0, 3], [19, 24]]
-   // }
    {
       entityType: "tree",
       spawnableTiles: ["grass"],

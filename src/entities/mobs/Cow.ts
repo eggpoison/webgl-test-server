@@ -1,7 +1,7 @@
 import { CowSpecies, Point, randInt, SETTINGS } from "webgl-test-shared";
-import HealthComponent from "../entity-components/HealthComponent";
-import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import RectangularHitbox from "../hitboxes/RectangularHitbox";
+import HealthComponent from "../../entity-components/HealthComponent";
+import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Mob, { MobAIData } from "./Mob";
 
 class Cow extends Mob {

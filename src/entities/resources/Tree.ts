@@ -1,8 +1,8 @@
 import { Point, randInt, TreeSize } from "webgl-test-shared";
-import HealthComponent from "../entity-components/HealthComponent";
-import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import CircularHitbox from "../hitboxes/CircularHitbox";
-import Entity from "./Entity";
+import HealthComponent from "../../entity-components/HealthComponent";
+import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import Entity from "../Entity";
 
 class Tree extends Entity {
    private static readonly MAX_HEALTH = 10;

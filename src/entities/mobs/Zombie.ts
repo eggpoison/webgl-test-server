@@ -1,8 +1,8 @@
 import { Point, SETTINGS, Vector, randFloat } from "webgl-test-shared";
-import HealthComponent from "../entity-components/HealthComponent";
-import CircularHitbox from "../hitboxes/CircularHitbox";
-import { SERVER } from "../server";
-import Entity from "./Entity";
+import HealthComponent from "../../entity-components/HealthComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { SERVER } from "../../server";
+import Entity from "../Entity";
 import Mob from "./Mob";
 
 class Zombie extends Mob {

@@ -1,6 +1,6 @@
 import { EntityType, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
-import Mob from "../entities/Mob";
+import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 
 interface ChaseAIParams extends BaseAIParams {

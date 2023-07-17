@@ -1,13 +1,13 @@
 import { EntityType, Point, randInt, SETTINGS } from "webgl-test-shared";
-import AI from "../mob-ai/AI";
-import EscapeAI from "../mob-ai/EscapeAI";
-import FollowAI from "../mob-ai/FollowAI";
-import StarveAI from "../mob-ai/StarveAI";
-import HerdAI from "../mob-ai/HerdAI";
-import WanderAI from "../mob-ai/WanderAI";
-import Entity, { Components } from "./Entity";
-import { SERVER } from "../server";
-import ChaseAI from "../mob-ai/ChaseAI";
+import AI from "../../mob-ai/AI";
+import EscapeAI from "../../mob-ai/EscapeAI";
+import FollowAI from "../../mob-ai/FollowAI";
+import StarveAI from "../../mob-ai/StarveAI";
+import HerdAI from "../../mob-ai/HerdAI";
+import WanderAI from "../../mob-ai/WanderAI";
+import Entity, { Components } from "../Entity";
+import { SERVER } from "../../server";
+import ChaseAI from "../../mob-ai/ChaseAI";
 
 export const MobAIs = {
    wander: WanderAI,
@@ -148,7 +148,7 @@ abstract class Mob extends Entity implements MobInfo {
    }
 
    public getCurrentAIType(): keyof typeof MobAIs | null {
-      return this.currentAI?.type || null;
+      return this.currentAI !== null ? this.currentAI.type : null;
    }
 }
 

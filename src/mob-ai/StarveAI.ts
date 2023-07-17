@@ -1,5 +1,5 @@
 import { ItemType, randFloat, SETTINGS, TileInfo, TileType } from "webgl-test-shared";
-import Mob from "../entities/Mob";
+import Mob from "../entities/mobs/Mob";
 import ItemEntity from "../items/ItemEntity";
 import { SERVER } from "../server";
 import Tile from "../tiles/Tile";

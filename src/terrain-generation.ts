@@ -6,10 +6,10 @@ import Tile from "./tiles/Tile";
 import { TileInfo } from "webgl-test-shared";
 import { createGenericTile } from "./tiles/tile-class-record";
 
-const HEIGHT_NOISE_SCALE = 25;
-const TEMPERATURE_NOISE_SCALE = 30;
-const HUMIDITY_NOISE_SCALE = 15;
-const TILE_TYPE_NOISE_SCALE = 5;
+const HEIGHT_NOISE_SCALE = 50;
+const TEMPERATURE_NOISE_SCALE = 80;
+const HUMIDITY_NOISE_SCALE = 30;
+const TILE_TYPE_NOISE_SCALE = 7;
 
 const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height: number, temperature: number, humidity: number): boolean => {
    // Height

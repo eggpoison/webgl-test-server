@@ -1,6 +1,6 @@
 import { Point, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
-import Mob, { MobAIs } from "../entities/Mob";
+import Mob, { MobAIs } from "../entities/mobs/Mob";
 
 export type BaseAIParams = {
    readonly aiWeightMultiplier: number;
