@@ -37,6 +37,17 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       },
       maxDensity: 0.01
    },
+   // {
+   //    entityType: "zombie",
+   //    spawnableTiles: ["grass"],
+   //    spawnRate: 0.02,
+   //    packSpawningInfo: {
+   //       size: 2,
+   //       spawnRange: 100
+   //    },
+   //    maxDensity: 0.02,
+   //    spawnTimeRanges: [[0, 3], [19, 24]]
+   // }
    {
       entityType: "tree",
       spawnableTiles: ["grass"],
