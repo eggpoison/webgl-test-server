@@ -7,66 +7,6 @@ import Mob, { MobAIData } from "./Mob";
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
-   private static readonly MOB_AI_DATA: MobAIData = {
-      info: {
-         visionRange: SETTINGS.TILE_SIZE * 4
-      },
-      aiCreationInfo: {
-         wander: {
-            aiWeightMultiplier: 0.5,
-            wanderRate: 0.6,
-            acceleration: 100,
-            terminalVelocity: 50
-         },
-         follow: {
-            aiWeightMultiplier: 0.75,
-            acceleration: 50,
-            terminalVelocity: 25,
-            minDistanceFromFollowTarget: 100,
-            weightBuildupTime: 10,
-            interestDuration: 7,
-            chanceToGainInterest: 0.2,
-            followableEntityTypes: new Set(["player", "zombie"])
-         },
-         herd: {
-            aiWeightMultiplier: 1,
-            acceleration: 100,
-            terminalVelocity: 50,
-            minSeperationDistance: 150,
-            turnRate: 0.2,
-            maxWeightInflenceCount: 3,
-            weightInfluenceFalloff: {
-               start: 5,
-               duration: 2
-            },
-            validHerdMembers: new Set(["cow"]),
-            seperationInfluence: 0.7,
-            alignmentInfluence: 0.5,
-            cohesionInfluence: 0.3
-         },
-         starve: {
-            aiWeightMultiplier: 1.25,
-            acceleration: 100,
-            terminalVelocity: 50,
-            metabolism: 1,
-            traitVariance: 0.3,
-            tileTargets: new Map([
-               ["grass", {
-                  resultingTileType: "dirt",
-                  foodUnits: 100,
-                  grazeTime: 5
-               }]
-            ])
-         },
-         escape: {
-            aiWeightMultiplier: 1.5,
-            acceleration: 150,
-            terminalVelocity: 100,
-            attackSubsideTime: 5
-         }
-      }
-   };
-
    public species: CowSpecies;
    public readonly herdMemberHash: number;
 
@@ -74,7 +14,64 @@ class Cow extends Mob {
       super(position, {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "cow", Cow.MOB_AI_DATA);
+      }, "cow", SETTINGS.TILE_SIZE * 4);
+
+      this.addAI("wander", {
+         aiWeightMultiplier: 0.5,
+         wanderRate: 0.6,
+         acceleration: 100,
+         terminalVelocity: 50
+      });
+
+      this.addAI("follow", {
+         aiWeightMultiplier: 0.75,
+         acceleration: 50,
+         terminalVelocity: 25,
+         minDistanceFromFollowTarget: 100,
+         weightBuildupTime: 10,
+         interestDuration: 7,
+         chanceToGainInterest: 0.2,
+         followableEntityTypes: new Set(["player", "zombie"])
+      });
+
+      this.addAI("herd", {
+         aiWeightMultiplier: 1,
+         acceleration: 100,
+         terminalVelocity: 50,
+         minSeperationDistance: 150,
+         turnRate: 0.2,
+         maxWeightInflenceCount: 3,
+         weightInfluenceFalloff: {
+            start: 5,
+            duration: 2
+         },
+         validHerdMembers: new Set(["cow"]),
+         seperationInfluence: 0.7,
+         alignmentInfluence: 0.5,
+         cohesionInfluence: 0.3
+      });
+
+      this.addAI("starve", {
+         aiWeightMultiplier: 1.25,
+         acceleration: 100,
+         terminalVelocity: 50,
+         metabolism: 1,
+         traitVariance: 0.3,
+         tileTargets: new Map([
+            ["grass", {
+               resultingTileType: "dirt",
+               foodUnits: 100,
+               grazeTime: 5
+            }]
+         ])
+      });
+
+      this.addAI("escape", {
+         aiWeightMultiplier: 1.5,
+         acceleration: 150,
+         terminalVelocity: 100,
+         attackSubsideTime: 5
+      });
 
       this.addHitboxes([
          new RectangularHitbox({

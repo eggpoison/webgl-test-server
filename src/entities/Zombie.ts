@@ -1,9 +1,9 @@
-import { Point, SETTINGS, Vector } from "webgl-test-shared";
+import { Point, SETTINGS, Vector, randFloat } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { SERVER } from "../server";
 import Entity from "./Entity";
-import Mob, { MobAIData } from "./Mob";
+import Mob from "./Mob";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously ignite every second */
@@ -14,49 +14,44 @@ class Zombie extends Mob {
    private static readonly ATTACK_DAMAGE = 2;
    private static readonly ATTACK_KNOCKBACK = 150;
 
-   private static readonly MOB_AI_DATA: MobAIData = {
-      info: {
-         visionRange: SETTINGS.TILE_SIZE * 5
-      },
-      aiCreationInfo: {
-         wander: {
-            aiWeightMultiplier: 0.5,
-            wanderRate: 0.4,
-            acceleration: 100,
-            terminalVelocity: 50
-         },
-         herd: {
-            aiWeightMultiplier: 0.8,
-            acceleration: 100,
-            terminalVelocity: 50,
-            minSeperationDistance: 50,
-            turnRate: 0.2,
-            maxWeightInflenceCount: 3,
-            weightInfluenceFalloff: {
-               start: 6,
-               duration: 3
-            },
-            validHerdMembers: new Set(["zombie"]),
-            seperationInfluence: 0.4,
-            alignmentInfluence: 0.5,
-            cohesionInfluence: 0.8
-         },
-         chase: {
-            aiWeightMultiplier: 1,
-            acceleration: 200,
-            terminalVelocity: 125,
-            targetEntityTypes: new Set(["player"])
-         }
-      }
-   };
-
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
 
    constructor(position: Point, isGolden: boolean = false) {
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false)
-      }, "zombie", Zombie.MOB_AI_DATA);
+      }, "zombie", SETTINGS.TILE_SIZE * 5);
+
+      const speedMultiplier = randFloat(0.9, 1.1);
+
+      this.addAI("wander", {
+         aiWeightMultiplier: 0.5,
+         wanderRate: 0.4,
+         acceleration: 100 * speedMultiplier,
+         terminalVelocity: 50
+      });
+      this.addAI("herd", {
+         aiWeightMultiplier: 0.8,
+         acceleration: 100,
+         terminalVelocity: 50 * speedMultiplier,
+         minSeperationDistance: 50,
+         turnRate: 0.2,
+         maxWeightInflenceCount: 3,
+         weightInfluenceFalloff: {
+            start: 6,
+            duration: 3
+         },
+         validHerdMembers: new Set(["zombie"]),
+         seperationInfluence: 0.4,
+         alignmentInfluence: 0.5,
+         cohesionInfluence: 0.8
+      });
+     this.addAI("chase", {
+         aiWeightMultiplier: 1,
+         acceleration: 200,
+         terminalVelocity: 100 * speedMultiplier,
+         targetEntityTypes: new Set(["player"])
+     });
 
       this.addHitboxes([
          new CircularHitbox({

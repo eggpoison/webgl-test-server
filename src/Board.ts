@@ -262,7 +262,7 @@ class Board {
       const entityInfo = ENTITY_INFO_RECORD[entity.type];
       if (entityInfo.category === "mob") {
          entityData.special = {
-            mobAIType: (entity as Mob).getCurrentAIType()
+            mobAIType: (entity as Mob).getCurrentAIType() || "none"
          };
       }
 

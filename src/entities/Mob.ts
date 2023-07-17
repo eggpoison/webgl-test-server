@@ -1,4 +1,4 @@
-import { EntityType, HitboxType, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { EntityType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../mob-ai/AI";
 import EscapeAI from "../mob-ai/EscapeAI";
 import FollowAI from "../mob-ai/FollowAI";
@@ -8,7 +8,6 @@ import WanderAI from "../mob-ai/WanderAI";
 import Entity, { Components } from "./Entity";
 import { SERVER } from "../server";
 import ChaseAI from "../mob-ai/ChaseAI";
-import Hitbox from "../hitboxes/Hitbox";
 
 export const MobAIs = {
    wander: WanderAI,
@@ -25,6 +24,10 @@ export interface MobInfo {
    readonly visionRange: number;
 }
 
+type a = keyof typeof MobAIs;
+
+type b = ConstructorParameters<typeof MobAIs["wander"]>[1];
+
 export type MobAICreationInfo = Partial<{ [T in keyof typeof MobAIs]: ConstructorParameters<typeof MobAIs[T]>[1] }>;
 
 export type MobAIData = {
@@ -38,34 +41,28 @@ abstract class Mob extends Entity implements MobInfo {
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
    
-   private readonly ais: Set<AI>;
-   private currentAI!: AI;
+   private readonly ais = new Set<AI>();
+   private currentAI: AI | null = null;
 
    /** Used to further distinguish between herd members in the HerdAI AI component */
    public readonly herdMemberHash?: number;
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
-   constructor(position: Point, components: Partial<Components>, entityType: EntityType, aiData: MobAIData) {
+   constructor(position: Point, components: Partial<Components>, entityType: EntityType, visionRange: number) {
       super(position, components, entityType);
 
-      this.visionRange = aiData.info.visionRange;
-      
-      this.ais = this.createAIs(aiData.aiCreationInfo);
-      this.refreshAI();
+      this.visionRange = visionRange;
    }
 
-   private createAIs(aiCreationInfo: MobAICreationInfo): Set<AI> {
-      const ais = new Set<AI>();
-
-      const entries = Object.entries(aiCreationInfo) as Array<MobAIEntry<keyof MobAICreationInfo>>;
-      for (const [aiKey, params] of entries) {
-         const constructor = MobAIs[aiKey];
-         const ai = new constructor(this as any, params as any);
-         ais.add(ai);
-      }
-
-      return ais;
+   /**
+    * Adds a new AI component to the mob.
+    * @param aiData AI information to use.
+    */
+   protected addAI<T extends keyof typeof MobAIs>(aiType: T, aiParams: ConstructorParameters<typeof MobAIs[T]>[1]): void {
+      const constructor = MobAIs[aiType];
+      const ai = new constructor(this, aiParams as any);
+      this.ais.add(ai);
    }
 
    public tick(): void {
@@ -77,7 +74,9 @@ abstract class Mob extends Entity implements MobInfo {
          this.aiRefreshTicker = 0;
       }
 
-      this.currentAI.tick();
+      if (this.currentAI !== null) {
+         this.currentAI.tick();
+      }
    }
 
    public refreshAI(): void {
@@ -94,7 +93,7 @@ abstract class Mob extends Entity implements MobInfo {
       // If the AI is new, activate the AI
       if (newAI !== this.currentAI) {
          newAI.activate();
-         if (typeof this.currentAI !== "undefined") {
+         if (this.currentAI !== null) {
             this.currentAI.deactivate();
             if (typeof this.currentAI.onDeactivation !== "undefined") this.currentAI.onDeactivation();
          }
@@ -148,8 +147,8 @@ abstract class Mob extends Entity implements MobInfo {
       return entitiesInVisionRange;
    }
 
-   public getCurrentAIType(): keyof typeof MobAIs {
-      return this.currentAI.type;
+   public getCurrentAIType(): keyof typeof MobAIs | null {
+      return this.currentAI?.type || null;
    }
 }
 
