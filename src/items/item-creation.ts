@@ -14,6 +14,7 @@ import WoodenAxe from "./specific/WoodenAxe";
 import WoodenPickaxe from "./specific/WoodenPickaxe";
 import WoodenSword from "./specific/WoodenSword";
 import Workbench from "./specific/Workbench";
+import CactusSpine from "./specific/CactusSpine";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
@@ -29,7 +30,8 @@ const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: numbe
    stone_axe: () => StoneAxe,
    stone_pickaxe: () => StonePickaxe,
    leather: () => Leather,
-   leather_backpack: () => LeatherBackpack
+   leather_backpack: () => LeatherBackpack,
+   cactus_spine: () => CactusSpine
 };
 
 export function createItem(itemType: ItemType, count: number): Item {

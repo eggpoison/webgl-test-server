@@ -1,7 +1,6 @@
 import { Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
-import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import ItemEntity from "../../items/ItemEntity";
 import { createItem } from "../../items/item-creation";

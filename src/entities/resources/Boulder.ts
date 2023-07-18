@@ -33,7 +33,7 @@ class Boulder extends Entity {
 
       this.setIsStatic(true);
       
-      this.rotation = Math.PI * 2 * Math.random();
+      this.rotation = 2 * Math.PI * Math.random();
    }
 
    public getClientArgs(): [boulderType: number] {

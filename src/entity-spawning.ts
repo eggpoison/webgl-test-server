@@ -61,6 +61,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["rock"],
       spawnRate: 0.005,
       maxDensity: 0.025
+   },
+   {
+      entityType: "cactus",
+      spawnableTiles: ["sand"],
+      spawnRate: 0.005,
+      maxDensity: 0.02
    }
 ];
 
@@ -155,6 +161,8 @@ const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
 }
 
 const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => {
+   if (!spawnPositionIsValid(spawnOrigin)) return;
+
    const cowSpecies = randInt(0, 1);
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
@@ -238,9 +246,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
       const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
       const spawnPosition = new Point(x, y);
    
-      if (spawnPositionIsValid(spawnPosition)) {
-         spawnEntities(spawnInfo, spawnPosition);
-      }
+      spawnEntities(spawnInfo, spawnPosition);
    }
 }
 
