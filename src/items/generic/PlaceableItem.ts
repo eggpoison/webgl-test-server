@@ -1,6 +1,6 @@
 import { EntityType, ItemType, PlaceableItemInfo, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
-import ENTITY_CLASS_RECORD from "../../entity-class-record";
+import ENTITY_CLASS_RECORD from "../../entity-classes";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { SERVER } from "../../server";
 import StackableItem from "./StackableItem";

@@ -1,4 +1,4 @@
-import { ENTITY_INFO_RECORD, ItemType, ToolItemInfo, ToolType } from "webgl-test-shared";
+import { ItemType, ToolItemInfo, ToolType } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import Item from "./Item";
 

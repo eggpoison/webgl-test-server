@@ -9,7 +9,7 @@ import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { Event, EventParams, EventType } from "../events";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import { addEntityToCensus, removeEntityFromCensus } from "../entity-spawning";
+import { addEntityToCensus } from "../entity-spawning";
 
 let idCounter = 0;
 

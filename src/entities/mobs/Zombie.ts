@@ -6,8 +6,8 @@ import Entity from "../Entity";
 import Mob from "./Mob";
 
 class Zombie extends Mob {
-   /** Chance for a zombie to spontaneously ignite every second */
-   private static readonly SPONTANEOUS_IGNITION_CHANCE = 0.5;
+   /** Chance for a zombie to spontaneously combust every second */
+   private static readonly SPONTANEOUS_COMBUSTION_CHANCE = 0.5;
 
    private static readonly MAX_HEALTH = 20;
 
@@ -91,7 +91,7 @@ class Zombie extends Mob {
       // If day time, ignite
       if (SERVER.time >= 6 && SERVER.time < 18) {
          // Ignite randomly or stay on fire if already on fire
-         if (super.hasStatusEffect("fire") || Math.random() < Zombie.SPONTANEOUS_IGNITION_CHANCE / SETTINGS.TPS) {
+         if (super.hasStatusEffect("fire") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
             super.applyStatusEffect("fire", 5);
          }
       }

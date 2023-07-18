@@ -1,7 +1,7 @@
 import { EntityType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
 import Cow from "./entities/mobs/Cow";
 import Entity from "./entities/Entity";
-import ENTITY_CLASS_RECORD from "./entity-class-record";
+import ENTITY_CLASS_RECORD from "./entity-classes";
 import { SERVER } from "./server";
 
 export type EntitySpawnInfo = {

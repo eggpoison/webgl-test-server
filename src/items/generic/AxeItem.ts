@@ -1,6 +1,7 @@
-import { AxeItemInfo, ENTITY_INFO_RECORD, ItemType } from "webgl-test-shared";
+import { AxeItemInfo, ItemType } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import ToolItem from "./ToolItem";
+import { RESOURCE_ENTITY_TYPES } from "../../entity-classes";
 
 class AxeItem extends ToolItem implements AxeItemInfo {
    public readonly toolType: "axe";
@@ -12,9 +13,7 @@ class AxeItem extends ToolItem implements AxeItemInfo {
    }
 
    public getAttackDamage(entityToAttack: Entity): number {
-      const entityToAttackInfo = ENTITY_INFO_RECORD[entityToAttack.type];
-
-      if (entityToAttackInfo.category === "resource") {
+      if (RESOURCE_ENTITY_TYPES.includes(entityToAttack.type)) {
          return this.damage;
       } else {
          return Math.ceil(this.damage / 2);

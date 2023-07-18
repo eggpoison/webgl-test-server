@@ -1,4 +1,4 @@
-import { ENTITY_INFO_RECORD, Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType } from "webgl-test-shared";
+import { Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
@@ -259,8 +259,7 @@ class Board {
          })
       };
 
-      const entityInfo = ENTITY_INFO_RECORD[entity.type];
-      if (entityInfo.category === "mob") {
+      if (entity instanceof Mob) {
          entityData.special = {
             mobAIType: (entity as Mob).getCurrentAIType() || "none"
          };

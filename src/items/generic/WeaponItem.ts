@@ -1,6 +1,8 @@
-import { ENTITY_INFO_RECORD, ItemType, WeaponItemInfo } from "webgl-test-shared";
+import { ItemType, WeaponItemInfo } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import ToolItem from "./ToolItem";
+import Mob from "../../entities/mobs/Mob";
+import { MOB_ENTITY_TYPES } from "../../entity-classes";
 
 class WeaponItem extends ToolItem implements WeaponItemInfo {
    public readonly toolType: "weapon";
@@ -12,9 +14,7 @@ class WeaponItem extends ToolItem implements WeaponItemInfo {
    }
 
    public getAttackDamage(entityToAttack: Entity): number {
-      const entityToAttackInfo = ENTITY_INFO_RECORD[entityToAttack.type];
-      
-      if (entityToAttackInfo.category !== "resource") {
+      if (MOB_ENTITY_TYPES.includes(entityToAttack.type)) {
          return this.damage;
       }
       return 1;
