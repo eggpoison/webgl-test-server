@@ -1,4 +1,4 @@
-import { ENTITY_INFO_RECORD, Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData } from "webgl-test-shared";
+import { ENTITY_INFO_RECORD, Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
@@ -240,10 +240,10 @@ class Board {
       }
    }
 
-   private bundleEntityData(entity: Entity): EntityData {
+   private bundleEntityData(entity: Entity): EntityData<EntityType> {
       const healthComponent = entity.getComponent("health")!;
       
-      const entityData: Mutable<EntityData> = {
+      const entityData: Mutable<EntityData<EntityType>> = {
          id: entity.id,
          type: entity.type,
          position: entity.position.package(),
@@ -269,8 +269,8 @@ class Board {
       return entityData;
    }
 
-   public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData> {
-      const entityDataArray = new Array<EntityData>();
+   public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData<EntityType>> {
+      const entityDataArray = new Array<EntityData<EntityType>>();
 
       for (const entity of Object.values(this.entities)) {
          if (entity !== player) {

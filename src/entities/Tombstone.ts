@@ -64,7 +64,7 @@ class Tombstone extends Entity {
       // If in the daytime, chance to crumble
       if (SERVER.time > 6 && SERVER.time < 18) {
          const dayProgress = (SERVER.time - 6) / 12;
-         const crumbleChance = Math.exp(dayProgress * 2);
+         const crumbleChance = Math.exp(dayProgress * 12 - 6);
          if (Math.random() < crumbleChance / SETTINGS.TPS) {
             // Crumble
             this.remove();

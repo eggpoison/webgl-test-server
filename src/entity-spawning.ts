@@ -40,8 +40,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "berry_bush",
       spawnableTiles: ["grass"],
-      spawnRate: 0.01,
-      maxDensity: 0.01
+      spawnRate: 0.002,
+      maxDensity: 0.005
    },
    {
       entityType: "tree",
@@ -53,7 +53,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: "tombstone",
       spawnableTiles: ["grass"],
       spawnRate: 0.01,
-      maxDensity: 0.005,
+      maxDensity: 0.003,
       spawnTimeRanges: [[0, 3], [19, 24]] // 7pm to 3am
    },
    {
