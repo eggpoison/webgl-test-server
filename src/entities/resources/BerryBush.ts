@@ -4,6 +4,7 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import ItemEntity from "../../items/ItemEntity";
 import { createItem } from "../../items/item-creation";
+import { SERVER } from "../../server";
 
 class BerryBush extends Entity {
    private static readonly HEALTH = 10;
@@ -70,16 +71,24 @@ class BerryBush extends Entity {
    private dropBerry(): void {
       const berry = createItem("berry", 1);
 
-      const spawnDirection = 2 * Math.PI * Math.random();
-      
-      const spawnOffset = new Vector(BerryBush.BERRY_DROP_OFFSET, spawnDirection).convertToPoint();
-      const position = this.position.copy();
-      position.add(spawnOffset);
+      // Generate new spawn positions until we find one inside the board
+      let position: Point;
+      let spawnDirection: number;
+      do {
+         position = this.position.copy();
 
-      const itemEntity = new ItemEntity(position, berry);
-      
-      const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
-      itemEntity.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
+         spawnDirection = 2 * Math.PI * Math.random();
+         const spawnOffset = new Vector(BerryBush.BERRY_DROP_OFFSET, spawnDirection).convertToPoint();
+
+         position.add(spawnOffset);
+      } while (!SERVER.board.isInBoard(position));
+
+      if (SERVER.board.isInBoard(position)) {
+         const itemEntity = new ItemEntity(position, berry);
+         
+         const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
+         itemEntity.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
+      }
    }
 }
 

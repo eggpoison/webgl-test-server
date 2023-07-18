@@ -1,42 +1,32 @@
-import { CactusFlowerPositions, CactusFlowerType, Mutable, Point, randFloat, randInt, randItem } from "webgl-test-shared";
+import { CactusFlowerData, CactusFlowerType, Point, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 
-const POTENTIAL_FLOWERS: ReadonlyArray<CactusFlowerType> = [CactusFlowerType.pinkRed, CactusFlowerType.pinkYellow, CactusFlowerType.pinkGreen, CactusFlowerType.yellow, CactusFlowerType.white];
+const POTENTIAL_FLOWER_TYPES: ReadonlyArray<CactusFlowerType> = [CactusFlowerType.pinkRed, CactusFlowerType.pinkYellow, CactusFlowerType.pinkGreen, CactusFlowerType.yellow, CactusFlowerType.white];
 
-const generateRandomFlowers = (): ReadonlyArray<CactusFlowerType> => {
+const POTENTIAL_FLOWER_SIZES: ReadonlyArray<number> = [16, 20];
+
+const generateRandomFlowers = (): ReadonlyArray<CactusFlowerData> => {
    // Generate random number of flowers from 2 to 7, weighted low
    let numFlowers = 2;
-   while (Math.random() < 0.4 && numFlowers < 7) {
+   while (Math.random() < 0.5 && numFlowers < 7) {
       numFlowers++;
    }
 
-   const flowers = new Array<CactusFlowerType>();
+   const flowers = new Array<CactusFlowerData>();
 
    for (let i = 0; i < numFlowers; i++) {
-      flowers.push(randItem(POTENTIAL_FLOWERS));
+      flowers.push({
+         type: randItem(POTENTIAL_FLOWER_TYPES),
+         column: randInt(0, 7),
+         height: randFloat(0.2, 0.6),
+         size: randItem(POTENTIAL_FLOWER_SIZES)
+      });
    }
 
    return flowers;
-}
-
-const generateFlowerPositions = (numFlowers: number): CactusFlowerPositions => {
-   const remainingFlowerColumns = [0, 1, 2, 3, 4, 5, 6, 7];
-   
-   const flowerPositions: Mutable<CactusFlowerPositions> = [];
-   for (let i = 0; i < numFlowers; i++) {
-      // Choose random column for the flower
-      const columnIdx = randInt(0, remainingFlowerColumns.length - 1);
-      const column = remainingFlowerColumns[columnIdx];
-      remainingFlowerColumns.splice(columnIdx, 1);
-
-      const height = randFloat(0.2, 0.8);
-      flowerPositions.push([column, height]);
-   }
-
-   return flowerPositions;
 }
 
 class Cactus extends Entity {
@@ -44,8 +34,13 @@ class Cactus extends Entity {
 
    private static readonly RADIUS = 40;
 
-   private readonly flowers: ReadonlyArray<CactusFlowerType>;
-   private readonly flowerPositions: CactusFlowerPositions;
+   /** Amount the hitbox is brought in. */
+   private static readonly HITBOX_PADDING = 3;
+
+   private static readonly CONTACT_DAMAGE = 1;
+   private static readonly CONTACT_KNOCKBACK = 50;
+
+   private readonly flowers: ReadonlyArray<CactusFlowerData>;
 
    constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent();
@@ -58,12 +53,11 @@ class Cactus extends Entity {
       this.addHitboxes([
          new CircularHitbox({
             type: "circular",
-            radius: Cactus.RADIUS
+            radius: Cactus.RADIUS - Cactus.HITBOX_PADDING
          })
       ]);
 
       this.flowers = generateRandomFlowers();
-      this.flowerPositions = generateFlowerPositions(this.flowers.length);
 
       const spineDropCount = randInt(2, 5);
       itemCreationComponent.createItemOnDeath("cactus_spine", spineDropCount);
@@ -71,10 +65,15 @@ class Cactus extends Entity {
       this.setIsStatic(true);
       
       this.rotation = 2 * Math.PI * Math.random();
+
+      this.createEvent("during_collision", (collidingEntity: Entity): void => {
+         const direction = this.position.calculateAngleBetween(collidingEntity.position);
+         collidingEntity.takeDamage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, direction, this, "cactus");
+      });
    }
 
-   public getClientArgs(): [flowers: ReadonlyArray<CactusFlowerType>, flowerPositions: CactusFlowerPositions] {
-      return [this.flowers, this.flowerPositions];
+   public getClientArgs(): [flowers: ReadonlyArray<CactusFlowerData>] {
+      return [this.flowers];
    }
 }
 

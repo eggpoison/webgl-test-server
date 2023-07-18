@@ -2,7 +2,7 @@ import { circleAndRectangleDoIntersect, circlesDoIntersect, HitboxType } from "w
 import Hitbox, { HitboxBounds } from "./Hitbox";
 
 class CircularHitbox extends Hitbox<"circular"> {
-   public calculateHitboxBounds(): HitboxBounds {
+   protected calculateHitboxBounds(): HitboxBounds {
       const minX = this.hitboxObject.position.x - this.info.radius;
       const maxX = this.hitboxObject.position.x + this.info.radius;
       const minY = this.hitboxObject.position.y - this.info.radius;

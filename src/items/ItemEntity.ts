@@ -48,12 +48,11 @@ class ItemEntity {
       this.item = item;
 
       // Create the hitbox
-      const hitboxInfo: RectangularHitboxInfo = {
+      this.hitbox = new RectangularHitbox({
          type: "rectangular",
          width: SETTINGS.ITEM_SIZE,
          height: SETTINGS.ITEM_SIZE
-      }
-      this.hitbox = new RectangularHitbox(hitboxInfo);
+      });
       this.hitbox.setHitboxObject(this);
 
       // Add to containing chunks
@@ -106,12 +105,58 @@ class ItemEntity {
             this.playerPickupCooldowns.delete(playerPickupCooldown);
          }
       }
+
+      this.hitbox.computeVertexPositions();
+      this.hitbox.calculateSideAxes();
+      this.hitbox.updateHitboxBounds();
+      this.resolveWallCollisions();
    }
 
    private calculateContainingTile(): Tile {
       const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
       return SERVER.board.getTile(tileX, tileY);
+   }
+
+   private resolveWallCollisions(): void {
+      const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
+
+      // Left wall
+      if (this.hitbox.bounds[0] < 0) {
+         this.stopXVelocity();
+         this.position.x -= this.hitbox.bounds[0];
+      // Right wall
+      } else if (this.hitbox.bounds[1] > boardUnits) {
+         this.position.x -= this.hitbox.bounds[1] - boardUnits;
+         this.stopXVelocity();
+      }
+
+      // Bottom wall
+      if (this.hitbox.bounds[2] < 0) {
+         this.position.y -= this.hitbox.bounds[2];
+         this.stopYVelocity();
+      // Top wall
+      } else if (this.hitbox.bounds[3] > boardUnits) {
+         this.position.y -= this.hitbox.bounds[3] - boardUnits;
+         this.stopYVelocity();
+      }
+   }
+
+   private stopXVelocity(): void {
+      if (this.velocity !== null) {
+         const pointVelocity = this.velocity.convertToPoint();
+         pointVelocity.x = 0;
+         this.velocity = pointVelocity.convertToVector();
+      }
+   }
+
+   private stopYVelocity(): void {
+      if (this.velocity !== null) {
+         // Stop y velocity
+         const pointVelocity = this.velocity.convertToPoint();
+         pointVelocity.y = 0;
+         this.velocity = pointVelocity.convertToVector();
+      }
    }
 
    // IMPORTANT: Only run once every second

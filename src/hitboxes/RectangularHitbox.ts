@@ -41,7 +41,7 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
       ];
    }
 
-   public calculateHitboxBounds(): HitboxBounds {
+   protected calculateHitboxBounds(): HitboxBounds {
       const minX = Math.min(this.vertexPositions[0].x, this.vertexPositions[1].x, this.vertexPositions[2].x, this.vertexPositions[3].x);
       const maxX = Math.max(this.vertexPositions[0].x, this.vertexPositions[1].x, this.vertexPositions[2].x, this.vertexPositions[3].x);
       const minY = Math.min(this.vertexPositions[0].y, this.vertexPositions[1].y, this.vertexPositions[2].y, this.vertexPositions[3].y);

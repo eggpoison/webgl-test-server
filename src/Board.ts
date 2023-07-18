@@ -320,6 +320,10 @@ class Board {
 
       return itemEntityDataArray;
    }
+
+   public isInBoard(position: Point): boolean {
+      return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+   }
 }
 
 export default Board;

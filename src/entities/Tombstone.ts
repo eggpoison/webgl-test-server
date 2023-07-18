@@ -30,8 +30,8 @@ class Tombstone extends Entity {
       this.addHitboxes([
          new RectangularHitbox({
             type: "rectangular",
-            width: 64,
-            height: 64
+            width: 48,
+            height: 88
          })
       ]);
 

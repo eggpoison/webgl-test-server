@@ -7,6 +7,7 @@ import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity
 import { registerCommand } from "./commands";
 import ItemEntity from "./items/ItemEntity";
 import RawBeef from "./items/specific/RawBeef";
+import BerryBush from "./entities/resources/BerryBush";
 
 /*
 
@@ -55,6 +56,8 @@ class GameServer {
    /** Sets up the various stuff */
    public setup(): void {
       spawnInitialEntities();
+
+      new BerryBush(new Point(20, 20));
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -80,7 +83,8 @@ class GameServer {
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
-            const spawnPosition = this.generatePlayerSpawnPosition();
+            // const spawnPosition = this.generatePlayerSpawnPosition();
+            const spawnPosition = new Point(200, 200);
 
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);
