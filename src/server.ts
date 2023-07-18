@@ -5,8 +5,6 @@ import Player from "./entities/Player";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import { registerCommand } from "./commands";
-import ItemEntity from "./items/ItemEntity";
-import RawBeef from "./items/specific/RawBeef";
 import BerryBush from "./entities/resources/BerryBush";
 
 /*

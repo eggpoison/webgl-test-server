@@ -1,12 +1,8 @@
-import { CactusFlowerData, CactusFlowerType, Point, randFloat, randInt, randItem } from "webgl-test-shared";
+import { CactusFlowerData, Point, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-
-const POTENTIAL_FLOWER_TYPES: ReadonlyArray<CactusFlowerType> = [CactusFlowerType.pinkRed, CactusFlowerType.pinkYellow, CactusFlowerType.pinkGreen, CactusFlowerType.yellow, CactusFlowerType.white];
-
-const POTENTIAL_FLOWER_SIZES: ReadonlyArray<number> = [16, 20];
 
 const generateRandomFlowers = (): ReadonlyArray<CactusFlowerData> => {
    // Generate random number of flowers from 2 to 7, weighted low
@@ -19,10 +15,10 @@ const generateRandomFlowers = (): ReadonlyArray<CactusFlowerData> => {
 
    for (let i = 0; i < numFlowers; i++) {
       flowers.push({
-         type: randItem(POTENTIAL_FLOWER_TYPES),
+         type: randInt(0, 3),
          column: randInt(0, 7),
          height: randFloat(0.2, 0.6),
-         size: randItem(POTENTIAL_FLOWER_SIZES)
+         size: randInt(0, 1)
       });
    }
 
