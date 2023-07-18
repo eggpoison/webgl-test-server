@@ -1,4 +1,4 @@
-import { Point, Vector } from "webgl-test-shared";
+import { Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -14,7 +14,12 @@ class BerryBush extends Entity {
    private static readonly BERRY_DROP_OFFSET = 30;
    private static readonly BERRY_DROP_VELOCITY = 40;
 
+   /** Number of seconds it takes for a berry bush to regrow one of its berries */
+   private static readonly BERRY_GROW_TIME = 30;
+
    private numBerries = 5;
+
+   private berryGrowTimer = 0;
 
    constructor(position: Point) {
       super(position, {
@@ -29,6 +34,9 @@ class BerryBush extends Entity {
       ]);
 
       this.createEvent("hurt", () => {
+         // Reset berry growth
+         this.berryGrowTimer = 0;
+
          if (this.numBerries > 0) {
             this.numBerries--;
             this.dropBerry();
@@ -40,8 +48,24 @@ class BerryBush extends Entity {
       this.rotation = 2 * Math.PI * Math.random();
    }
 
+   public tick(): void {
+      super.tick();
+
+      if (this.numBerries < 5) {
+         this.berryGrowTimer += 1 / SETTINGS.TPS;
+         if (this.berryGrowTimer >= BerryBush.BERRY_GROW_TIME) {
+            this.berryGrowTimer = 0;
+            this.growBerry();
+         }
+      }
+   }
+
    public getClientArgs(): [numBerries: number] {
       return [this.numBerries];
+   }
+
+   private growBerry(): void {
+      this.numBerries++;
    }
 
    private dropBerry(): void {
