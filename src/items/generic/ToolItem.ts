@@ -1,6 +1,9 @@
-import { ItemType, ToolItemInfo, ToolType } from "webgl-test-shared";
+import { EntityType, ItemType, ToolItemInfo, ToolType } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import Item from "./Item";
+
+export const RESOURCE_ENTITY_TYPES: ReadonlyArray<EntityType> = ["berry_bush", "boulder", "cactus", "tree"];
+export const MOB_ENTITY_TYPES: ReadonlyArray<EntityType> = ["cow", "zombie"];
 
 abstract class ToolItem extends Item implements ToolItemInfo {
    public readonly toolType: ToolType;

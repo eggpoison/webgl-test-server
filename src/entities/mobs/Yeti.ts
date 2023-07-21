@@ -14,7 +14,7 @@ class Yeti extends Mob {
    private static readonly CONTACT_DAMAGE = 3;
    private static readonly CONTACT_KNOCKBACK = 200;
 
-   private static readonly YETI_TILES: ReadonlySet<TileType> = new Set(["snow", "ice"]);
+   private static readonly YETI_TILES: ReadonlySet<TileType> = new Set(["snow", "ice", "permafrost"]);
 
    constructor(position: Point) {
       super(position, {
@@ -59,7 +59,8 @@ class Yeti extends Mob {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(Yeti.CONTACT_DAMAGE, Yeti.CONTACT_KNOCKBACK, hitDirection, this);
+            healthComponent.damage(Yeti.CONTACT_DAMAGE, Yeti.CONTACT_KNOCKBACK, hitDirection, this, "yeti");
+            healthComponent.addLocalInvulnerabilityHash("yeti", 0.3);
          }
       });
 

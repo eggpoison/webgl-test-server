@@ -1,13 +1,9 @@
-import { Point, RectangularHitboxInfo, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
-import Chunk from "../Chunk";
+import { Point, SETTINGS } from "webgl-test-shared";
 import Player from "../entities/Player";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-import { SERVER } from "../server";
-import Tile from "../tiles/Tile";
 import Item from "./generic/Item";
-import _GameObject, { GameObject } from "../GameObject";
+import _GameObject from "../GameObject";
 import { GameObjectEvents } from "../events";
-import Entity from "../entities/Entity";
 
 let nextAvailableItemID = 0;
 

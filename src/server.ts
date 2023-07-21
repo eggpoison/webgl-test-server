@@ -5,9 +5,6 @@ import Player from "./entities/Player";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import { registerCommand } from "./commands";
-import Cow from "./entities/mobs/Cow";
-import { createItem } from "./items/item-creation";
-import DroppedItem from "./items/DroppedItem";
 
 /*
 
@@ -37,20 +34,35 @@ class GameServer {
 
    public readonly board: Board;
 
-   private readonly io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+   private io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData> | null = null;
 
    private readonly playerData: Record<string, PlayerData> = {};
+
+   private tickInterval: NodeJS.Timer | undefined;
 
    constructor() {
       // Create the board
       this.board = new Board();
 
-      // Start the server
-      this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
-      this.handlePlayerConnections();
-      console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
+   }
 
-      setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+   public start(): void {
+      if (typeof this.tickInterval === "undefined") {
+         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+      }
+
+      if (this.io === null) {
+         // Start the server
+         this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
+         this.handlePlayerConnections();
+         console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
+      }
+   }
+
+   public stop(): void {
+      if (this.tickInterval !== null) {
+         clearInterval(this.tickInterval);
+      }
    }
 
    /** Sets up the various stuff */
@@ -71,6 +83,7 @@ class GameServer {
    }
 
    private handlePlayerConnections(): void {
+      if (this.io === null) return;
       this.io.on("connection", (socket: ISocket) => {
          let clientUsername: string;
          
@@ -226,6 +239,8 @@ class GameServer {
 
    /** Send data about the server to all players */
    private async sendGameDataPackets(): Promise<void> {
+      if (this.io === null) return;
+
       const sockets = await this.io.fetchSockets();
       for (const socket of sockets) {
          // Skip clients which haven't been properly loaded yet
@@ -363,3 +378,8 @@ class GameServer {
 // Start the game server
 export const SERVER = new GameServer();
 SERVER.setup();
+
+// Don't start the server if jest is running
+if (process.env.NODE_ENV !== "test") {
+   SERVER.start();
+}

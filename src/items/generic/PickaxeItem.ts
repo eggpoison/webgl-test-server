@@ -1,6 +1,5 @@
 import Entity from "../../entities/Entity";
-import ToolItem from "./ToolItem";
-import { RESOURCE_ENTITY_TYPES } from "../../entity-classes";
+import ToolItem, { RESOURCE_ENTITY_TYPES } from "./ToolItem";
 
 class PickaxeItem extends ToolItem {
    public getAttackDamage(entityToAttack: Entity): number {

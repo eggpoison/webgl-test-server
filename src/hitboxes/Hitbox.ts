@@ -14,6 +14,9 @@ abstract class Hitbox<T extends HitboxType> {
    /** The bounds of the hitbox since the last physics update */
    public bounds!: HitboxBounds;
 
+   /** The position of the hitbox, accounting for offset from its entity */
+   public position!: Point;
+
    private readonly activationCallbacks = new Set<() => void>();
 
    constructor(hitboxInfo?: HitboxInfo<T>) {
@@ -48,6 +51,13 @@ abstract class Hitbox<T extends HitboxType> {
 
    public updateHitboxBounds(): void {
       this.bounds = this.calculateHitboxBounds();
+   }
+
+   public updatePosition(): void {
+      this.position = this.hitboxObject.position.copy();
+      if (typeof this.info.offset !== "undefined") {
+         this.position.add(this.info.offset);
+      }
    }
 
    public abstract isColliding(otherHitbox: Hitbox<HitboxType>): boolean;

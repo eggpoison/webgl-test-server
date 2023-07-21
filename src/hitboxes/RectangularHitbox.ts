@@ -31,6 +31,13 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
       bottomLeft = rotatePoint(bottomLeft, this.hitboxObject.position, this.hitboxObject.rotation);
       bottomRight = rotatePoint(bottomRight, this.hitboxObject.position, this.hitboxObject.rotation);
 
+      if (typeof this.info.offset !== "undefined") {
+         topLeft.add(this.info.offset);
+         topRight.add(this.info.offset);
+         bottomLeft.add(this.info.offset);
+         bottomRight.add(this.info.offset);
+      }
+
       this.vertexPositions = [topLeft, topRight, bottomLeft, bottomRight];
    }
 
@@ -52,11 +59,11 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
    public isColliding(otherHitbox: Hitbox<HitboxType>): boolean {
       switch (otherHitbox.info.type) {
          case "circular": {
-            return circleAndRectangleDoIntersect(otherHitbox.hitboxObject.position, otherHitbox.info.radius, this.hitboxObject.position, this.info.width, this.info.height, this.hitboxObject.rotation);
+            return circleAndRectangleDoIntersect(otherHitbox.position, otherHitbox.info.radius, this.position, this.info.width, this.info.height, this.hitboxObject.rotation);
          }
          case "rectangular": {
             // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
-            const distance = this.hitboxObject.position.calculateDistanceBetween(otherHitbox.hitboxObject.position);
+            const distance = this.position.calculateDistanceBetween(otherHitbox.position);
             if (distance > this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength) {
                return false;
             }

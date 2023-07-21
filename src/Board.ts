@@ -1,4 +1,4 @@
-import { Mutable, Point, DroppedItemData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType } from "webgl-test-shared";
+import { Mutable, Point, DroppedItemData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType, HitboxData, HitboxType, HitboxInfo } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
@@ -7,6 +7,7 @@ import DroppedItem from "./items/DroppedItem";
 import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
 import { GameObject } from "./GameObject";
+import { removeEntityFromCensus } from "./entity-spawning";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -33,7 +34,6 @@ class Board {
 
    constructor() {
       this.tiles = generateTerrain();
-      console.log("Terrain generated successfully");
 
       this.tileUpdateCoordinates = new Set<[number, number]>();
 
@@ -97,6 +97,7 @@ class Board {
    private removeGameObject(gameObject: GameObject): void {
       if (gameObject.i === "entity") {
          delete this.entities[gameObject.id];
+         removeEntityFromCensus(gameObject.type);
       }
 
       for (const chunk of gameObject.chunks) {
@@ -123,6 +124,10 @@ class Board {
          gameObject.savePreviousCollidingGameObjects();
          gameObject.clearCollidingGameObjects();
          this.setEntityPotentialCollidingEntities(chunkGroups, gameObject);
+
+         for (const hitbox of gameObject.hitboxes) {
+            hitbox.updatePosition();
+         }
       }
    }
 
@@ -243,7 +248,7 @@ class Board {
          secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
          chunkCoordinates: Array.from(entity.chunks).map(chunk => [chunk.x, chunk.y]),
          hitboxes: Array.from(entity.hitboxes).map(hitbox => {
-            return hitbox.info;
+            return this.bundleHitboxData(hitbox.info);
          })
       };
 
@@ -254,6 +259,26 @@ class Board {
       }
 
       return entityData;
+   }
+
+   private bundleHitboxData(hitboxInfo: HitboxInfo<HitboxType>): HitboxData<HitboxType> {
+      switch (hitboxInfo.type) {
+         case "circular": {
+            return {
+               type: "circular",
+               radius: hitboxInfo.radius,
+               offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
+            };
+         }
+         case "rectangular": {
+            return {
+               type: "rectangular",
+               width: hitboxInfo.width,
+               height: hitboxInfo.height,
+               offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
+            };
+         }
+      }
    }
 
    public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData<EntityType>> {

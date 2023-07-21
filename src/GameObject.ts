@@ -57,6 +57,12 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    constructor(position: Point) {
       this.position = position;
 
+      // Clamp the game object's position to within the world
+      if (this.position.x < 0) this.position.x = 0;
+      if (this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) this.position.x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+      if (this.position.y < 0) this.position.y = 0;
+      if (this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) this.position.y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+
       this.updateTile();
 
       SERVER.board.addGameObjectToJoinBuffer(this as unknown as GameObject);

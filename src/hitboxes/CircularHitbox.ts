@@ -13,10 +13,10 @@ class CircularHitbox extends Hitbox<"circular"> {
    public isColliding(otherHitbox: Hitbox<HitboxType>): boolean {
       switch (otherHitbox.info.type) {
          case "circular": {
-            return circlesDoIntersect(this.hitboxObject.position, this.info.radius, otherHitbox.hitboxObject.position, otherHitbox.info.radius);
+            return circlesDoIntersect(this.position, this.info.radius, otherHitbox.position, otherHitbox.info.radius);
          }
          case "rectangular": {
-            return circleAndRectangleDoIntersect(this.hitboxObject.position, this.info.radius, otherHitbox.hitboxObject.position, otherHitbox.info.width, otherHitbox.info.height, otherHitbox.hitboxObject.rotation);
+            return circleAndRectangleDoIntersect(this.position, this.info.radius, otherHitbox.position, otherHitbox.info.width, otherHitbox.info.height, otherHitbox.hitboxObject.rotation);
          }
       }
    }

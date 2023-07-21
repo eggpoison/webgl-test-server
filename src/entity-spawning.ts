@@ -90,6 +90,7 @@ export function addEntityToCensus(entityType: EntityType): void {
 
 export function removeEntityFromCensus(entityType: EntityType): void {
    if (!entityTypeCounts.hasOwnProperty(entityType)) {
+      console.log(Object.assign({}, entityTypeCounts));
       console.log(entityType);
       console.warn(`Entity type "${entityType}" is not in the census.`);
       console.trace();
@@ -128,8 +129,8 @@ const getTileTypeCount = (tileType: TileType): number => {
    return tileTypeCounts[tileType]!;
 }
 
-/** Maximum distance a spawn event can occur from another entity */
-const MAX_SPAWN_DISTANCE = 100;
+/** Minimum distance a spawn event can occur from another entity */
+const MIN_SPAWN_DISTANCE = 2000;
 
 const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
    // Check if the entity density is right
@@ -212,10 +213,10 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
 }
 
 const spawnPositionIsValid = (position: Point): boolean => {
-   const minChunkX = Math.max(Math.min(Math.floor(position.x - MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor(position.x + MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor(position.y - MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor(position.y + MAX_SPAWN_DISTANCE / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.min(Math.floor((position.x - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((position.x + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((position.y - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((position.y + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
    const checkedEntities = new Set<Entity>();
    
@@ -226,7 +227,7 @@ const spawnPositionIsValid = (position: Point): boolean => {
             if (checkedEntities.has(entity)) continue;
             
             const distance = position.calculateDistanceBetween(entity.position);
-            if (distance <= MAX_SPAWN_DISTANCE) {
+            if (distance <= MIN_SPAWN_DISTANCE) {
                return false;
             }
 

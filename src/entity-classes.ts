@@ -24,7 +24,4 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...ar
    yeti: () => Yeti
 };
 
-export const RESOURCE_ENTITY_TYPES: ReadonlyArray<EntityType> = ["berry_bush", "boulder", "cactus", "tree"];
-export const MOB_ENTITY_TYPES: ReadonlyArray<EntityType> = ["cow", "zombie"];
-
 export default ENTITY_CLASS_RECORD;

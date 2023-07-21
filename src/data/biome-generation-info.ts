@@ -50,15 +50,14 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          maxHumidity: 0.5
       },
       tiles: [
-         // Make PERMAFROST
-         // {
-         //    info: {
-         //       type: "rock",
-         //       isWall: true
-         //    },
-         //    minWeight: 0.8,
-         //    minDist: 4
-         // },
+         {
+            info: {
+               type: "permafrost",
+               isWall: false
+            },
+            minWeight: 0.2,
+            minDist: 9
+         },
          {
             info: {
                type: "ice",

@@ -1,8 +1,6 @@
 import { ItemType, WeaponItemInfo } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
-import ToolItem from "./ToolItem";
-import Mob from "../../entities/mobs/Mob";
-import { MOB_ENTITY_TYPES } from "../../entity-classes";
+import ToolItem, { MOB_ENTITY_TYPES } from "./ToolItem";
 
 class WeaponItem extends ToolItem implements WeaponItemInfo {
    public readonly toolType: "weapon";

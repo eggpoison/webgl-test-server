@@ -1,7 +1,6 @@
 import { AxeItemInfo, ItemType } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
-import ToolItem from "./ToolItem";
-import { RESOURCE_ENTITY_TYPES } from "../../entity-classes";
+import ToolItem, { RESOURCE_ENTITY_TYPES } from "./ToolItem";
 
 class AxeItem extends ToolItem implements AxeItemInfo {
    public readonly toolType: "axe";
