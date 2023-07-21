@@ -48,36 +48,6 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
       this.tileTargets = typeof tileTargets !== "undefined" ? tileTargets : new Map();
    }
 
-   public onRefresh(): void {
-      // // Find the highest food source
-      // let mostNutritiousFoodSource: Tile | undefined;
-      // let highestFoodValue: number = 0;
-      // if (this.tileTargets.has(this.mob.currentTile.type)) {
-      //    const tileFoodInfo = this.tileTargets.get(this.mob.currentTile.type)!;
-      //    if (tileFoodInfo.foodUnits > highestFoodValue) {
-      //       mostNutritiousFoodSource = this.mob.currentTile;
-      //    }
-      // }
-
-      // const previousTarget = this.target;
-
-      // if (typeof mostNutritiousFoodSource === "undefined") {
-      //    this.target = null;
-      //    return;
-      // } else {
-      //    this.target = mostNutritiousFoodSource;
-      // }
-
-      // const target = this.target as Tile;
-
-      // this.mob.acceleration = null;
-
-      // if (previousTarget !== this.target) {
-      //    const foodInfo = this.tileTargets.get(target.type)!;
-      //    this.grazeTimer = foodInfo.grazeTime;
-      // }
-   }
-
    protected onActivation(): void {
       if (this.canGraze()) {
          this.grazeTimer = this.tileTargets.get(this.mob.tile.type)!.grazeTime;
@@ -85,10 +55,6 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
 
       this.mob.acceleration = null;
    }
-
-   // public onDeactivation(): void {
-   //    this.target = null;
-   // }
 
    public tick(): void {
       super.tick();

@@ -29,11 +29,6 @@ class Board {
 
    private gameObjectsToRemove = new Array<GameObject>();
 
-   /** Array of all entities' IDs to be removed at the beginning of the next tick */
-   private removedEntities = new Set<number>();
-   /** All entities to join the board */
-   // private entityJoinBuffer = new Set<Entity>();
-
    private joinBuffer = new Array<GameObject>();
 
    constructor() {
@@ -97,12 +92,6 @@ class Board {
       }
 
       this.gameObjectsToRemove = new Array<GameObject>();
-      // for (const id of this.removedEntities) {
-      //    const entity = this.entities[id];
-      //    this.removeEntity(entity);
-      // }
-
-      // this.removedEntities.clear();
    }
 
    private removeGameObject(gameObject: GameObject): void {
@@ -125,7 +114,6 @@ class Board {
       const chunkGroups: { [key: string]: Set<GameObject> } = {};
 
       for (const gameObject of this.gameObjects) {
-         // if (gameObject.i === "entity") console.log(gameObject.type);
          gameObject.tick();
 
          if (gameObject.isRemoved) {
@@ -137,37 +125,6 @@ class Board {
          this.setEntityPotentialCollidingEntities(chunkGroups, gameObject);
       }
    }
-
-   // public updateEntities(): void {
-      // const entityChunkGroups: { [key: string]: Set<Entity> } = {};
-
-   //    for (const entity of Object.values(this.entities)) {
-   //       entity.applyPhysics();
-
-   //       // Calculate the entity's new info
-   //       for (const hitbox of entity.hitboxes) {
-   //          if (hitbox.info.type === "rectangular") {
-   //             (hitbox as RectangularHitbox).computeVertexPositions();
-   //             (hitbox as RectangularHitbox).calculateSideAxes();
-   //          }
-   //          hitbox.updateHitboxBounds();
-   //       }
-   //       entity.updateContainingChunks();
-
-   //       // Tick entity
-   //       entity.tick();
-
-   //       // If the entity was removed during the tick, add it to the list of removed entities
-   //       if (entity.isRemoved) {
-   //          this.removedEntities.add(entity.id);
-   //       }
-
-   //       entity.savePreviousCollidingEntities();
-   //       entity.clearCollidingGameObjects();
-
-   //       this.setEntityPotentialCollidingEntities(entityChunkGroups, entity);
-   //    }
-   // }
 
    private setEntityPotentialCollidingEntities(chunkGroups: { [key: string]: Set<GameObject> }, gameObject: GameObject): void {
       // Generate the chunk group hash
@@ -190,8 +147,6 @@ class Board {
          chunkGroups[chunkGroupHash] = chunkGroup;
       }
       gameObject.potentialCollidingObjects = new Set(chunkGroups[chunkGroupHash]);
-      // console.log("potential colliding objects:");
-      // console.log(gameObject.potentialCollidingObjects);
    }
 
    public resolveCollisions(): void {
@@ -202,30 +157,7 @@ class Board {
 
          gameObject.updateTile();
       }
-      // for (const entity of Object.values(this.entities)) {
-      //    entity.updateCollidingEntities();
-      //    entity.resolveGameObjectCollisions();
-      //    entity.resolveWallCollisions();
-
-      //    entity.updateTile();
-      // }
    }
-
-   // /** Removes the entity from the game */
-   // private removeEntity(entity: Entity): void {
-   //    if (entity.isRemoved) {
-
-   //    }
-
-   //    delete this.entities[entity.id];
-
-   //    // Remove the entity from its chunks
-   //    for (const chunk of entity.chunks) {
-   //       chunk.removeEntity(entity);
-   //    }
-
-   //    removeEntityFromCensus(entity.type);
-   // }
 
    /** Registers a tile update to be sent to the clients */
    public registerNewTileUpdate(x: number, y: number): void {

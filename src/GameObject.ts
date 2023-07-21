@@ -98,7 +98,6 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    }
 
    public tick(): void {
-      // console.log("ticked da ting " + this.position.x);
       this.applyPhysics();
       this.updateHitboxes();
       this.updateContainingChunks();
@@ -334,13 +333,6 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    
    private calculateCollidingGameObjects(): void {
       this.potentialCollidingObjects.delete(this as unknown as GameObject);
-      if (this.i === "entity") {
-         // console.log(this["type"]);
-         // console.log("Potential colliding game objects: " + this.potentialCollidingObjects.size);
-         // for (const a of this.potentialCollidingObjects) {
-         //    console.log("- " + a["type"]);
-         // }
-      }
       objectLoop: for (const gameObject of this.potentialCollidingObjects) {
          if (this.collidingObjects.has(gameObject)) continue;
          
