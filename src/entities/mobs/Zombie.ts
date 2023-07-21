@@ -1,4 +1,4 @@
-import { Point, SETTINGS, Vector, randFloat } from "webgl-test-shared";
+import { Point, SETTINGS, randFloat } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
@@ -13,6 +13,7 @@ class Zombie extends Mob {
 
    private static readonly ATTACK_DAMAGE = 2;
    private static readonly ATTACK_KNOCKBACK = 150;
+   private static readonly ATTACK_SELF_KNOCKBACK = 100;
 
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
@@ -50,7 +51,9 @@ class Zombie extends Mob {
          aiWeightMultiplier: 1,
          acceleration: 200,
          terminalVelocity: 100 * speedMultiplier,
-         targetEntityTypes: new Set(["player"])
+         entityIsChased(entity: Entity) {
+            return entity.type === "player";
+         }
      });
 
       this.addHitboxes([
@@ -67,20 +70,16 @@ class Zombie extends Mob {
       }
 
       // Hurt players on collision
-      this.createEvent("during_collision", (collidingEntity: Entity) => {
+      this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          if (collidingEntity.type === "player") {
-            const angleFromTarget = this.position.calculateAngleBetween(collidingEntity.position);
-            
-            // Push away from the entity on collision
-            if (collidingEntity.takeDamage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, angleFromTarget, this)) {
-                  const pushDirection = angleFromTarget + Math.PI;
-                  const pushForce = new Vector(75, pushDirection);
-                  if (this.velocity !== null) {
-                  this.velocity.add(pushForce);
-               } else {
-                  this.velocity = pushForce;
-               }
-            }
+            const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
+
+            // Damage and knock back the player
+            const playerHealthComponent = collidingEntity.getComponent("health")!;
+            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this);
+
+            // Push the zombie away from the entity
+            this.getComponent("health")!.applyKnockback(Zombie.ATTACK_SELF_KNOCKBACK, hitDirection + Math.PI);
          }
       });
    }

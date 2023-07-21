@@ -27,6 +27,12 @@ class InventoryComponent extends Component {
     */
    private readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 
+   public onLoad(): void {
+      this.entity.createEvent("enter_collision", (itemEntity: ItemEntity): void => {
+         this.pickupItemEntity(itemEntity);
+      });
+   }
+
    /** Creates and stores a new inventory in the component. */
    public createNewInventory(name: string, inventorySize: number): void {
       if (this.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
@@ -44,16 +50,6 @@ class InventoryComponent extends Component {
       if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
 
       this.inventories[name].size = newSize;
-   }
-
-   public tick(): void {
-      const nearbyItemEntities = this.getNearbyItemEntities();
-      const collidingItemEntities = this.getCollidingItemEntities(nearbyItemEntities);
-
-      // Attempt to pick up all colliding item entities
-      for (const itemEntity of collidingItemEntities) {
-         this.pickupItemEntity(itemEntity);
-      }
    }
 
    public getInventory(name: string): Inventory {
@@ -82,34 +78,6 @@ class InventoryComponent extends Component {
       }
    }
 
-   private getNearbyItemEntities(): Set<ItemEntity> {
-      const nearbyItemEntities = new Set<ItemEntity>();
-      for (const chunk of this.entity.chunks) {
-         for (const itemEntity of chunk.getItemEntities()) {
-            if (!nearbyItemEntities.has(itemEntity)) {
-               nearbyItemEntities.add(itemEntity);
-            }
-         }
-      }
-      return nearbyItemEntities;
-
-   }
-
-   private getCollidingItemEntities(nearbyItemEntities: Set<ItemEntity>): Set<ItemEntity> {
-      const collidingItemEntities = new Set<ItemEntity>();
-
-      itemLoop: for (const itemEntity of nearbyItemEntities) {
-         for (const hitbox of this.entity.hitboxes) {
-            if (hitbox.isColliding(itemEntity.hitbox)) {
-               collidingItemEntities.add(itemEntity);
-               continue itemLoop;
-            }
-         }
-      }
-
-      return collidingItemEntities;
-   }
-
    /**
     * Attempts to pick up an item and add it to the inventory
     * @param itemEntity The item entit to attempt to pick up
@@ -132,8 +100,6 @@ class InventoryComponent extends Component {
          }
       }
 
-      this.entity.callEvents("item_pickup", itemEntity);
-      
       // If all of the item was added, destroy the item entity
       if (totalAmountPickedUp === itemEntity.item.count) {
          itemEntity.destroy();

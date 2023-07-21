@@ -2,7 +2,7 @@ import { CowSpecies, Point, randInt, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import Mob, { MobAIData } from "./Mob";
+import Mob from "./Mob";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
@@ -51,19 +51,32 @@ class Cow extends Mob {
          cohesionInfluence: 0.3
       });
 
-      this.addAI("starve", {
+      this.addAI("tileConsume", {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 1,
-         traitVariance: 0.3,
+         // metabolism: 1,
+         metabolism: 15,
          tileTargets: new Map([
             ["grass", {
                resultingTileType: "dirt",
                foodUnits: 100,
-               grazeTime: 5
+               grazeTime: 5,
+               healAmount: 3
             }]
          ])
+      });
+
+      this.addAI("itemConsume", {
+         aiWeightMultiplier: 1.25,
+         acceleration: 100,
+         terminalVelocity: 50,
+         metabolism: 1,
+         itemTargets: new Set(["berry"])
+      });
+
+      this.addAI("berryBushShake", {
+         aiWeightMultiplier: 1.1
       });
 
       this.addAI("escape", {

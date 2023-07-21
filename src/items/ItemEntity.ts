@@ -5,6 +5,9 @@ import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { SERVER } from "../server";
 import Tile from "../tiles/Tile";
 import Item from "./generic/Item";
+import _GameObject, { GameObject } from "../GameObject";
+import { GameObjectEvents } from "../events";
+import Entity from "../entities/Entity";
 
 let nextAvailableItemID = 0;
 
@@ -16,7 +19,15 @@ type PlayerPickupCooldown = {
    secondsRemaining: number;
 }
 
-class ItemEntity {
+class ItemEntity extends _GameObject<"itemEntity", GameObjectEvents> {
+   public i: "itemEntity" = "itemEntity";
+
+   protected events = {
+      enter_collision: [],
+      during_collision: [],
+      enter_entity_collision: [],
+      during_entity_collision: []
+   }
    /** ROUGHLY how long an item will take to despawn */
    private static readonly SECONDS_TO_DESPAWN = 300;
 
@@ -28,41 +39,57 @@ class ItemEntity {
 
    public readonly item: Item;
 
-   public readonly position: Point;
-   public velocity: Vector | null = null;
+   // public readonly position: Point;
+   // public velocity: Vector | null = null;
 
    /** Chunks the item entity is contained in */
-   public chunks: Set<Chunk>;
+   // public chunks: Set<Chunk>;
 
    /** Rotation of the item entity */
    public readonly rotation = 2 * Math.PI * Math.random();
 
-   public readonly hitbox: RectangularHitbox;
+   // public readonly hitbox: RectangularHitbox;
 
    private readonly playerPickupCooldowns = new Set<PlayerPickupCooldown>();
 
    constructor(position: Point, item: Item) {
+      super(position);
+
       this.id = findAvailableItemID();
 
       this.position = position;
       this.item = item;
 
+      this.addHitboxes([
+         new RectangularHitbox({
+            type: "rectangular",
+            width: SETTINGS.ITEM_SIZE,
+            height: SETTINGS.ITEM_SIZE
+         })
+      ]);
+
       // Create the hitbox
-      this.hitbox = new RectangularHitbox({
-         type: "rectangular",
-         width: SETTINGS.ITEM_SIZE,
-         height: SETTINGS.ITEM_SIZE
-      });
-      this.hitbox.setHitboxObject(this);
+      // this.hitbox = new RectangularHitbox({
+      //    type: "rectangular",
+      //    width: SETTINGS.ITEM_SIZE,
+      //    height: SETTINGS.ITEM_SIZE
+      // });
+      // this.hitbox.setHitboxObject(this);
+
+      // this.hitbox.computeVertexPositions();
+      // this.hitbox.calculateSideAxes();
+      // this.hitbox.updateHitboxBounds();
 
       // Add to containing chunks
-      this.chunks = this.calculateContainingChunks();
-      for (const chunk of this.chunks) {
-         chunk.addItemEntity(this);
-      }
+      // this.chunks = this.calculateContainingChunks();
+      // for (const chunk of this.chunks) {
+      //    chunk.addItemEntity(this);
+      // }
    } 
 
    public tick(): void {
+      super.tick();
+      
       // Add velocity
       if (this.velocity !== null) {
          const velocity = this.velocity.copy();
@@ -79,23 +106,23 @@ class ItemEntity {
             this.velocity = null;
          }
 
-         const newChunks = this.calculateContainingChunks();
+         // const newChunks = this.calculateContainingChunks();
 
-         const knownChunks = new Set(this.chunks);
+         // const knownChunks = new Set(this.chunks);
 
-         for (const chunk of newChunks) {
-            if (!knownChunks.has(chunk)) {
-               this.chunks.add(chunk);
-               chunk.addItemEntity(this);
-            } else {
-               knownChunks.delete(chunk);
-            }
-         }
+         // for (const chunk of newChunks) {
+         //    if (!knownChunks.has(chunk)) {
+         //       this.chunks.add(chunk);
+         //       chunk.addItemEntity(this);
+         //    } else {
+         //       knownChunks.delete(chunk);
+         //    }
+         // }
 
-         for (const chunk of knownChunks) {
-            this.chunks.delete(chunk);
-            chunk.removeItemEntity(this);
-         }
+         // for (const chunk of knownChunks) {
+         //    this.chunks.delete(chunk);
+         //    chunk.removeItemEntity(this);
+         // }
       }
       
       // Update player pickup cooldowns
@@ -106,10 +133,10 @@ class ItemEntity {
          }
       }
 
-      this.hitbox.computeVertexPositions();
-      this.hitbox.calculateSideAxes();
-      this.hitbox.updateHitboxBounds();
-      this.resolveWallCollisions();
+      // this.hitbox.computeVertexPositions();
+      // this.hitbox.calculateSideAxes();
+      // this.hitbox.updateHitboxBounds();
+      // this.resolveWallCollisions();
    }
 
    private calculateContainingTile(): Tile {
@@ -118,46 +145,46 @@ class ItemEntity {
       return SERVER.board.getTile(tileX, tileY);
    }
 
-   private resolveWallCollisions(): void {
-      const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
+   // private resolveWallCollisions(): void {
+   //    const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
 
-      // Left wall
-      if (this.hitbox.bounds[0] < 0) {
-         this.stopXVelocity();
-         this.position.x -= this.hitbox.bounds[0];
-      // Right wall
-      } else if (this.hitbox.bounds[1] > boardUnits) {
-         this.position.x -= this.hitbox.bounds[1] - boardUnits;
-         this.stopXVelocity();
-      }
+   //    // Left wall
+   //    if (this.hitbox.bounds[0] < 0) {
+   //       this.stopXVelocity();
+   //       this.position.x -= this.hitbox.bounds[0];
+   //    // Right wall
+   //    } else if (this.hitbox.bounds[1] > boardUnits) {
+   //       this.position.x -= this.hitbox.bounds[1] - boardUnits;
+   //       this.stopXVelocity();
+   //    }
 
-      // Bottom wall
-      if (this.hitbox.bounds[2] < 0) {
-         this.position.y -= this.hitbox.bounds[2];
-         this.stopYVelocity();
-      // Top wall
-      } else if (this.hitbox.bounds[3] > boardUnits) {
-         this.position.y -= this.hitbox.bounds[3] - boardUnits;
-         this.stopYVelocity();
-      }
-   }
+   //    // Bottom wall
+   //    if (this.hitbox.bounds[2] < 0) {
+   //       this.position.y -= this.hitbox.bounds[2];
+   //       this.stopYVelocity();
+   //    // Top wall
+   //    } else if (this.hitbox.bounds[3] > boardUnits) {
+   //       this.position.y -= this.hitbox.bounds[3] - boardUnits;
+   //       this.stopYVelocity();
+   //    }
+   // }
 
-   private stopXVelocity(): void {
-      if (this.velocity !== null) {
-         const pointVelocity = this.velocity.convertToPoint();
-         pointVelocity.x = 0;
-         this.velocity = pointVelocity.convertToVector();
-      }
-   }
+   // private stopXVelocity(): void {
+   //    if (this.velocity !== null) {
+   //       const pointVelocity = this.velocity.convertToPoint();
+   //       pointVelocity.x = 0;
+   //       this.velocity = pointVelocity.convertToVector();
+   //    }
+   // }
 
-   private stopYVelocity(): void {
-      if (this.velocity !== null) {
-         // Stop y velocity
-         const pointVelocity = this.velocity.convertToPoint();
-         pointVelocity.y = 0;
-         this.velocity = pointVelocity.convertToVector();
-      }
-   }
+   // private stopYVelocity(): void {
+   //    if (this.velocity !== null) {
+   //       // Stop y velocity
+   //       const pointVelocity = this.velocity.convertToPoint();
+   //       pointVelocity.y = 0;
+   //       this.velocity = pointVelocity.convertToVector();
+   //    }
+   // }
 
    // IMPORTANT: Only run once every second
    public ageItem(): void {
@@ -174,22 +201,22 @@ class ItemEntity {
       this.playerPickupCooldowns.add(pickupCooldown);
    }
 
-   private calculateContainingChunks(): Set<Chunk> {
-      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   // private calculateContainingChunks(): Set<Chunk> {
+   //    const minChunkX = Math.max(Math.min(Math.floor((this.position.x - SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   //    const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   //    const minChunkY = Math.max(Math.min(Math.floor((this.position.y - SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   //    const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + SETTINGS.ITEM_SIZE / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
-      const chunks = new Set<Chunk>();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
-            chunks.add(chunk);
-         }
-      }
+   //    const chunks = new Set<Chunk>();
+   //    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+   //       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+   //          const chunk = SERVER.board.getChunk(chunkX, chunkY);
+   //          chunks.add(chunk);
+   //       }
+   //    }
 
-      return chunks;
-   }
+   //    return chunks;
+   // }
 
    public addVelocity(magnitude: number, direction: number): void {
       const addVector = new Vector(magnitude, direction);

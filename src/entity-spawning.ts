@@ -41,7 +41,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: "berry_bush",
       spawnableTiles: ["grass"],
       spawnRate: 0.001,
-      maxDensity: 0.003
+      maxDensity: 0.0025
    },
    {
       entityType: "tree",
@@ -67,6 +67,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["sand"],
       spawnRate: 0.005,
       maxDensity: 0.03
+   },
+   {
+      entityType: "yeti",
+      spawnableTiles: ["snow"],
+      spawnRate: 0.004,
+      maxDensity: 0.008
    }
 ];
 
@@ -195,7 +201,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
          if (spawnInfo.entityType === "cow") {
             (entity as Cow).species = cowSpecies;
          }
-         SERVER.board.addEntityFromJoinBuffer(entity);
+         // SERVER.board.addEntityFromJoinBuffer(entity);
 
          i++;
       }
@@ -251,6 +257,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
 }
 
 export function runSpawnAttempt(): void {
+   if(1+1==2)return;
    for (const spawnInfo of SPAWN_INFO_RECORD) {
       if (spawnConditionsAreMet(spawnInfo)) {
          for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
@@ -265,10 +272,11 @@ export function runSpawnAttempt(): void {
 }
 
 export function spawnInitialEntities(): void {
-   let numSpawnAttempts = 0;
+   let numSpawnAttempts: number;
 
    // For each spawn info object, spawn entities until no more can be spawned
    for (const spawnInfo of SPAWN_INFO_RECORD) {
+      numSpawnAttempts = 0;
       while (spawnConditionsAreMet(spawnInfo)) {
          runSpawnEvent(spawnInfo);
 

@@ -38,7 +38,6 @@ class BerryBush extends Entity {
          this.berryGrowTimer = 0;
 
          if (this.numBerries > 0) {
-            this.numBerries--;
             this.dropBerry();
          }
       });
@@ -60,6 +59,16 @@ class BerryBush extends Entity {
       }
    }
 
+   public getNumBerries(): number {
+      return this.numBerries;
+   }
+
+   public shake(): void {
+      if (this.numBerries > 0) {
+         this.dropBerry();
+      }
+   }
+
    public getClientArgs(): [numBerries: number] {
       return [this.numBerries];
    }
@@ -69,6 +78,8 @@ class BerryBush extends Entity {
    }
 
    private dropBerry(): void {
+      this.numBerries--;
+
       const berry = createItem("berry", 1);
 
       // Generate new spawn positions until we find one inside the board

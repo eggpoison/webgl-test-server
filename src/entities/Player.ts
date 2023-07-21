@@ -60,14 +60,11 @@ class Player extends Entity {
 
       this.displayName = name;
 
-      this.createEvent("hurt", (_damage: number, knockback: number, _attackDirection: number, attackingEntity: Entity | null) => {
-         if (knockback !== 0) {
-            const hitData: HitData = {
-               knockback: knockback,
-               angleFromDamageSource: attackingEntity !== null ? this.position.calculateAngleBetween(attackingEntity.position) + Math.PI : 0
-            };
-            this.hitsTaken.push(hitData);
-         }
+      this.createEvent("on_knockback", (knockback: number, knockbackDirection: number): void => {
+         this.hitsTaken.push({
+            knockback: knockback,
+            knockbackDirection: knockbackDirection
+         });
       });
    }
 
@@ -249,7 +246,8 @@ class Player extends Entity {
 
       // Register the hit
       const attackHash = this.id.toString();
-      attackTarget.takeDamage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
+      const healthComponent = attackTarget.getComponent("health")!; // Attack targets always have a health component
+      healthComponent.damage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
       attackTarget.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
    }
 

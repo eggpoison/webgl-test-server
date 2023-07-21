@@ -6,7 +6,7 @@ import AI, { BaseAIParams } from "./AI";
 interface ChaseAIParams extends BaseAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
-   readonly targetEntityTypes: ReadonlySet<EntityType>;
+   readonly entityIsChased: (entity: Entity) => boolean;
 }
 
 class ChaseAI extends AI implements ChaseAIParams {
@@ -14,14 +14,14 @@ class ChaseAI extends AI implements ChaseAIParams {
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly targetEntityTypes: ReadonlySet<EntityType>;
+   public entityIsChased: (entity: Entity) => boolean;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, targetEntityTypes }: ChaseAIParams) {
+   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, entityIsChased }: ChaseAIParams) {
       super(mob, { aiWeightMultiplier });
 
       this.acceleration = acceleration;
       this.terminalVelocity = terminalVelocity;
-      this.targetEntityTypes = targetEntityTypes;
+      this.entityIsChased = entityIsChased;
    }
 
    public tick(): void {
@@ -51,7 +51,7 @@ class ChaseAI extends AI implements ChaseAIParams {
       const filteredEntities = new Set<Entity>();
 
       for (const entity of visibleEntities) {
-         if (this.targetEntityTypes.has(entity.type)) {
+         if (this.entityIsChased(entity)) {
             filteredEntities.add(entity);
          }
       }

@@ -3,6 +3,7 @@ import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { GameObject } from "../../GameObject";
 
 const generateRandomFlowers = (): ReadonlyArray<CactusFlowerData> => {
    // Generate random number of flowers from 2 to 7, weighted low
@@ -34,7 +35,7 @@ class Cactus extends Entity {
    private static readonly HITBOX_PADDING = 3;
 
    private static readonly CONTACT_DAMAGE = 1;
-   private static readonly CONTACT_KNOCKBACK = 50;
+   private static readonly CONTACT_KNOCKBACK = 200;
 
    private readonly flowers: ReadonlyArray<CactusFlowerData>;
 
@@ -62,9 +63,13 @@ class Cactus extends Entity {
       
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.createEvent("during_collision", (collidingEntity: Entity): void => {
-         const direction = this.position.calculateAngleBetween(collidingEntity.position);
-         collidingEntity.takeDamage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, direction, this, "cactus");
+      // this.createEvent("during_collision", (collidingEntity: GameObject): void => {
+      this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
+         const healthComponent = collidingEntity.getComponent("health");
+         if (healthComponent !== null) {
+            const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
+            healthComponent.damage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, hitDirection, this, "cactus");
+         }
       });
    }
 

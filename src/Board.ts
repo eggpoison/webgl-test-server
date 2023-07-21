@@ -8,6 +8,7 @@ import ItemEntity from "./items/ItemEntity";
 import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
 import { removeEntityFromCensus } from "./entity-spawning";
+import { GameObject } from "./GameObject";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -17,6 +18,8 @@ export type EntityHitboxInfo = {
 class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
+
+   private readonly gameObjects = new Array<GameObject>();
 
    /** Stores entities indexed by the IDs */
    public readonly entities: { [id: number]: Entity } = {};
@@ -29,7 +32,9 @@ class Board {
    /** Array of all entities' IDs to be removed at the beginning of the next tick */
    private removedEntities = new Set<number>();
    /** All entities to join the board */
-   private entityJoinBuffer = new Set<Entity>();
+   // private entityJoinBuffer = new Set<Entity>();
+
+   private joinBuffer = new Array<GameObject>();
 
    constructor() {
       this.tiles = generateTerrain();
@@ -53,12 +58,23 @@ class Board {
       return chunks;
    }
 
-   public getTile(x: number, y: number): Tile {
-      return this.tiles[x][y];
+   public worldToTileX(x: number): number {
+      return Math.floor(x / SETTINGS.TILE_SIZE);
    }
 
-   public setTile(x: number, y: number, tile: Tile): void {
-      this.tiles[x][y] = tile;
+   public worldToTileY(y: number): number {
+      return Math.floor(y / SETTINGS.TILE_SIZE);
+   }
+
+   public getTile(tileX: number, tileY: number): Tile {
+      if (tileX < 0 || tileX >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Tile x '${tileX}' is not a valid tile coordinate.`);
+      if (tileY < 0 || tileY >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Tile y '${tileY}' is not a valid tile coordinate.`);
+
+      return this.tiles[tileX][tileY];
+   }
+
+   public setTile(tileX: number, tileY: number, tile: Tile): void {
+      this.tiles[tileX][tileY] = tile;
    }
 
    public getChunk(x: number, y: number): Chunk {
@@ -80,72 +96,82 @@ class Board {
       this.removedEntities.clear();
    }
 
-   public updateEntities(): void {
-      const entityChunkGroups: { [key: string]: Set<Entity> } = {};
-
-      for (const entity of Object.values(this.entities)) {
-         entity.applyPhysics();
-
-         // Calculate the entity's new info
-         for (const hitbox of entity.hitboxes) {
-            if (hitbox.info.type === "rectangular") {
-               (hitbox as RectangularHitbox).computeVertexPositions();
-               (hitbox as RectangularHitbox).calculateSideAxes();
-            }
-            hitbox.updateHitboxBounds();
-         }
-         entity.updateContainingChunks();
-
-         // Tick entity
-         entity.tick();
-
-         // If the entity was removed during the tick, add it to the list of removed entities
-         if (entity.isRemoved) {
-            this.removedEntities.add(entity.id);
-         }
-
-         entity.savePreviousCollidingEntities();
-         entity.clearCollidingEntities();
-
-         this.setEntityPotentialCollidingEntities(entityChunkGroups, entity);
+   public updateGameObjects(): void {
+      for (const gameObject of this.gameObjects) {
+         gameObject.tick();
       }
    }
 
-   private setEntityPotentialCollidingEntities(entityChunkGroups: { [key: string]: Set<Entity> }, entity: Entity): void {
-      // Generate the chunk group hash
-      let chunkGroupHash = "";
-      for (const chunk of entity.chunks) {
-         chunkGroupHash += chunk.x + "-" + chunk.y + "-";
-      }
+   // public updateEntities(): void {
+   //    const entityChunkGroups: { [key: string]: Set<Entity> } = {};
 
-      // Set the entity's potential colliding entities based on the chunk group hash
-      if (!entityChunkGroups.hasOwnProperty(chunkGroupHash)) {
-         // If a chunk group doesn't exist for the hash, create it
-         const chunkGroup = new Set<Entity>();
-         for (const chunk of entity.chunks) {
-            for (const entity of chunk.getEntities()) {
-               if (!chunkGroup.has(entity)) {
-                  chunkGroup.add(entity);
-               }
-            }
-         }
-         entityChunkGroups[chunkGroupHash] = chunkGroup;
-      }
-      entity.potentialCollidingEntities = new Set(entityChunkGroups[chunkGroupHash]);
-   }
+   //    for (const entity of Object.values(this.entities)) {
+   //       entity.applyPhysics();
+
+   //       // Calculate the entity's new info
+   //       for (const hitbox of entity.hitboxes) {
+   //          if (hitbox.info.type === "rectangular") {
+   //             (hitbox as RectangularHitbox).computeVertexPositions();
+   //             (hitbox as RectangularHitbox).calculateSideAxes();
+   //          }
+   //          hitbox.updateHitboxBounds();
+   //       }
+   //       entity.updateContainingChunks();
+
+   //       // Tick entity
+   //       entity.tick();
+
+   //       // If the entity was removed during the tick, add it to the list of removed entities
+   //       if (entity.isRemoved) {
+   //          this.removedEntities.add(entity.id);
+   //       }
+
+   //       entity.savePreviousCollidingEntities();
+   //       entity.clearCollidingGameObjects();
+
+   //       this.setEntityPotentialCollidingEntities(entityChunkGroups, entity);
+   //    }
+   // }
+
+   // private setEntityPotentialCollidingEntities(entityChunkGroups: { [key: string]: Set<Entity> }, entity: Entity): void {
+   //    // Generate the chunk group hash
+   //    let chunkGroupHash = "";
+   //    for (const chunk of entity.chunks) {
+   //       chunkGroupHash += chunk.x + "-" + chunk.y + "-";
+   //    }
+
+   //    // Set the entity's potential colliding entities based on the chunk group hash
+   //    if (!entityChunkGroups.hasOwnProperty(chunkGroupHash)) {
+   //       // If a chunk group doesn't exist for the hash, create it
+   //       const chunkGroup = new Set<Entity>();
+   //       for (const chunk of entity.chunks) {
+   //          for (const entity of chunk.getEntities()) {
+   //             if (!chunkGroup.has(entity)) {
+   //                chunkGroup.add(entity);
+   //             }
+   //          }
+   //       }
+   //       entityChunkGroups[chunkGroupHash] = chunkGroup;
+   //    }
+   //    entity.potentialCollidingObjects = new Set(entityChunkGroups[chunkGroupHash]);
+   // }
 
    public resolveCollisions(): void {
       for (const entity of Object.values(this.entities)) {
          entity.updateCollidingEntities();
-         entity.resolveEntityCollisions();
+         entity.resolveGameObjectCollisions();
          entity.resolveWallCollisions();
 
-         entity.updateCurrentTile();
+         entity.updateTile();
       }
    }
 
    /** Removes the entity from the game */
    private removeEntity(entity: Entity): void {
+      if (entity.isRemoved) {
+
+      }
+
       delete this.entities[entity.id];
 
       // Remove the entity from its chunks
@@ -195,39 +221,54 @@ class Board {
       }
    }
 
-   public addEntityToJoinBuffer(entity: Entity): void {
-      this.entityJoinBuffer.add(entity);
+   public addGameObjectToJoinBuffer(gameObject: GameObject): void {
+      this.joinBuffer.push(gameObject);
+   }
+
+   // public addEntityToJoinBuffer(entity: Entity): void {
+   //    this.entityJoinBuffer.add(entity);
+   // }
+
+   public pushJoinBuffer(): void {
+      for (const gameObject of this.joinBuffer) {
+         gameObject.updateHitboxes();
+         gameObject.updateContainingChunks();
+
+         this.gameObjects.push(gameObject);
+      }
+
+      this.joinBuffer = new Array<GameObject>();
    }
 
    /** Creates all of the entities in the join buffer and adds them to the board */
-   public addEntitiesFromJoinBuffer(): void {
-      for (const entity of this.entityJoinBuffer) {
-         // Add entity to the ID record
-         this.entities[entity.id] = entity;
-      }
+   // public addEntitiesFromJoinBuffer(): void {
+   //    for (const entity of this.entityJoinBuffer) {
+   //       // Add entity to the ID record
+   //       this.entities[entity.id] = entity;
+   //    }
 
-      this.entityJoinBuffer.clear();
-   }
+   //    this.entityJoinBuffer.clear();
+   // }
 
-   public addEntityFromJoinBuffer(entity: Entity): void {
-      if (!this.entityJoinBuffer.has(entity)) {
-         throw new Error("Tried to add an entity from the join buffer which wasn't there!");
-      }
+   // public addEntityFromJoinBuffer(entity: Entity): void {
+   //    if (!this.entityJoinBuffer.has(entity)) {
+   //       throw new Error("Tried to add an entity from the join buffer which wasn't there!");
+   //    }
 
-      this.entityJoinBuffer.delete(entity);
-      this.entities[entity.id] = entity;
-   }
+   //    this.entityJoinBuffer.delete(entity);
+   //    this.entities[entity.id] = entity;
+   // }
 
-   public tickItems(): void {
-      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            const chunk = this.getChunk(chunkX, chunkY);
-            for (const itemEntity of chunk.getItemEntities()) {
-               itemEntity.tick();
-            }
-         }
-      }
-   }
+   // public tickItems(): void {
+   //    for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+   //       for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+   //          const chunk = this.getChunk(chunkX, chunkY);
+   //          for (const itemEntity of chunk.getItemEntities()) {
+   //             itemEntity.tick();
+   //          }
+   //       }
+   //    }
+   // }
 
    public ageItems(): void {
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {

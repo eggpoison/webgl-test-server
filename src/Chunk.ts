@@ -1,7 +1,11 @@
+import { GameObject } from "./GameObject";
 import Entity from "./entities/Entity";
 import ItemEntity from "./items/ItemEntity";
 
 class Chunk {
+   /** Stores all game objects inside the chunk */
+   private readonly gameObjects = new Set<GameObject>();
+   
    private readonly entities = new Set<Entity>();
    private readonly itemEntities = new Set<ItemEntity>();
 
@@ -13,6 +17,14 @@ class Chunk {
       this.y = y;
    }
 
+   public addGameObject(gameObject: GameObject): void {
+      this.gameObjects.add(gameObject);
+   }
+
+   public removeGameObject(gameObject: GameObject): void {
+      this.gameObjects.delete(gameObject);
+   }
+
    public addEntity(entity: Entity): void {
       this.entities.add(entity);
    }
@@ -21,9 +33,9 @@ class Chunk {
       this.entities.delete(entity);
    }
 
-   public hasEntity(entity: Entity): boolean {
-      return this.entities.has(entity);
-   }
+   // public hasEntity(entity: Entity): boolean {
+   //    return this.entities.has(entity);
+   // }
 
    public getEntities(): Set<Entity> {
       return this.entities;

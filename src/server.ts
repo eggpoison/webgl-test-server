@@ -5,7 +5,6 @@ import Player from "./entities/Player";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import { registerCommand } from "./commands";
-import BerryBush from "./entities/resources/BerryBush";
 
 /*
 
@@ -54,8 +53,6 @@ class GameServer {
    /** Sets up the various stuff */
    public setup(): void {
       spawnInitialEntities();
-
-      new BerryBush(new Point(20, 20));
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -81,8 +78,7 @@ class GameServer {
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
-            // const spawnPosition = this.generatePlayerSpawnPosition();
-            const spawnPosition = new Point(200, 200);
+            const spawnPosition = this.generatePlayerSpawnPosition();
 
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);
@@ -200,17 +196,20 @@ class GameServer {
       this.ticks++;
       this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
       
-      this.board.removeEntities();
-      this.board.addEntitiesFromJoinBuffer();
-      this.board.updateEntities();
+      this.board.pushJoinBuffer();
+
+      // this.board.updateEntities();
+      this.board.updateGameObjects();
       this.board.resolveCollisions();
 
-      this.board.tickItems();
+      // this.board.tickItems();
 
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
          this.board.ageItems();
       }
+
+      this.board.removeEntities();
 
       // Run entity census
       if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {

@@ -2,31 +2,29 @@ import { EntityType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import EscapeAI from "../../mob-ai/EscapeAI";
 import FollowAI from "../../mob-ai/FollowAI";
-import StarveAI from "../../mob-ai/StarveAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import WanderAI from "../../mob-ai/WanderAI";
-import Entity, { Components } from "../Entity";
+import Entity, { EntityComponents } from "../Entity";
 import { SERVER } from "../../server";
 import ChaseAI from "../../mob-ai/ChaseAI";
+import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
+import TileConsumeAI from "../../mob-ai/TileConsumeAI";
+import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 
 export const MobAIs = {
    wander: WanderAI,
    follow: FollowAI,
    herd: HerdAI,
-   starve: StarveAI,
+   tileConsume: TileConsumeAI,
+   itemConsume: ItemConsumeAI,
    escape: EscapeAI,
-   chase: ChaseAI
+   chase: ChaseAI,
+   berryBushShake: BerryBushShakeAI
 }
-
-type MobAIEntry<T extends keyof typeof MobAIs> = [T, ConstructorParameters<typeof MobAIs[T]>[1]];
 
 export interface MobInfo {
    readonly visionRange: number;
 }
-
-type a = keyof typeof MobAIs;
-
-type b = ConstructorParameters<typeof MobAIs["wander"]>[1];
 
 export type MobAICreationInfo = Partial<{ [T in keyof typeof MobAIs]: ConstructorParameters<typeof MobAIs[T]>[1] }>;
 
@@ -49,7 +47,7 @@ abstract class Mob extends Entity implements MobInfo {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
-   constructor(position: Point, components: Partial<Components>, entityType: EntityType, visionRange: number) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
       super(position, components, entityType);
 
       this.visionRange = visionRange;
