@@ -1,13 +1,13 @@
 import { GameObject } from "./GameObject";
 import Entity from "./entities/Entity";
-import ItemEntity from "./items/ItemEntity";
+import DroppedItem from "./items/DroppedItem";
 
 class Chunk {
    /** Stores all game objects inside the chunk */
    private readonly gameObjects = new Set<GameObject>();
    
    private readonly entities = new Set<Entity>();
-   private readonly itemEntities = new Set<ItemEntity>();
+   private readonly droppedItems = new Set<DroppedItem>();
 
    public readonly x: number;
    public readonly y: number;
@@ -19,38 +19,44 @@ class Chunk {
 
    public addGameObject(gameObject: GameObject): void {
       this.gameObjects.add(gameObject);
+
+      switch (gameObject.i) {
+         case "entity": {
+            this.entities.add(gameObject);
+            break;
+         }
+         case "droppedItem": {
+            this.droppedItems.add(gameObject);
+            break;
+         }
+      }
    }
 
    public removeGameObject(gameObject: GameObject): void {
       this.gameObjects.delete(gameObject);
-   }
 
-   public addEntity(entity: Entity): void {
-      this.entities.add(entity);
+      switch (gameObject.i) {
+         case "entity": {
+            this.entities.delete(gameObject);
+            break;
+         }
+         case "droppedItem": {
+            this.droppedItems.delete(gameObject);
+            break;
+         }
+      }
    }
-
-   public removeEntity(entity: Entity): void {
-      this.entities.delete(entity);
-   }
-
-   // public hasEntity(entity: Entity): boolean {
-   //    return this.entities.has(entity);
-   // }
 
    public getEntities(): Set<Entity> {
       return this.entities;
    }
 
-   public addItemEntity(item: ItemEntity): void {
-      this.itemEntities.add(item);
+   public getDroppedItems(): Set<DroppedItem> {
+      return this.droppedItems;
    }
 
-   public removeItemEntity(item: ItemEntity): void {
-      this.itemEntities.delete(item);
-   }
-
-   public getItemEntities(): Set<ItemEntity> {
-      return this.itemEntities;
+   public getGameObjects(): Set<GameObject> {
+      return this.gameObjects;
    }
 }
 

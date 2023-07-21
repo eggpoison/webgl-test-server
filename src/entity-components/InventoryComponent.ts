@@ -3,8 +3,9 @@ import Player from "../entities/Player";
 import Item, { itemIsStackable } from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
-import ItemEntity from "../items/ItemEntity";
+import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
+import { GameObject } from "../GameObject";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 
@@ -28,8 +29,10 @@ class InventoryComponent extends Component {
    private readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 
    public onLoad(): void {
-      this.entity.createEvent("enter_collision", (itemEntity: ItemEntity): void => {
-         this.pickupItemEntity(itemEntity);
+      this.entity.createEvent("enter_collision", (collidingGameObject: GameObject): void => {
+         if (collidingGameObject.i === "droppedItem") {
+            this.pickupDroppedItem(collidingGameObject);
+         }
       });
    }
 
@@ -80,29 +83,29 @@ class InventoryComponent extends Component {
 
    /**
     * Attempts to pick up an item and add it to the inventory
-    * @param itemEntity The item entit to attempt to pick up
+    * @param droppedItem The item entit to attempt to pick up
     * @returns Whether the item was picked up or not
     */
-   private pickupItemEntity(itemEntity: ItemEntity): void {
-      // Don't pick up item entities which are on pickup cooldown
-      if (!itemEntity.playerCanPickup(this.entity as Player)) return;
+   private pickupDroppedItem(droppedItem: DroppedItem): void {
+      // Don't pick up dropped items which are on pickup cooldown
+      if (!droppedItem.playerCanPickup(this.entity as Player)) return;
 
       let totalAmountPickedUp = 0;
       for (const [inventoryName, _inventory] of this.inventoryArray) {
-         const amountPickedUp = this.addItemToInventory(inventoryName, itemEntity.item);
+         const amountPickedUp = this.addItemToInventory(inventoryName, droppedItem.item);
 
          totalAmountPickedUp += amountPickedUp
-         itemEntity.item.count -= amountPickedUp;
+         droppedItem.item.count -= amountPickedUp;
 
          // When all of the item stack is picked up, don't attempt to add to any other inventories.
-         if (itemEntity.item.count === 0) {
+         if (droppedItem.item.count === 0) {
             break;
          }
       }
 
-      // If all of the item was added, destroy the item entity
-      if (totalAmountPickedUp === itemEntity.item.count) {
-         itemEntity.destroy();
+      // If all of the item was added, destroy it
+      if (droppedItem.item.count === 0) {
+         droppedItem.remove();
       }
    }
 

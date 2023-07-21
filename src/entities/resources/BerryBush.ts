@@ -2,7 +2,7 @@ import { Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import ItemEntity from "../../items/ItemEntity";
+import DroppedItem from "../../items/DroppedItem";
 import { createItem } from "../../items/item-creation";
 import { SERVER } from "../../server";
 
@@ -95,10 +95,10 @@ class BerryBush extends Entity {
       } while (!SERVER.board.isInBoard(position));
 
       if (SERVER.board.isInBoard(position)) {
-         const itemEntity = new ItemEntity(position, berry);
+         const droppedItem = new DroppedItem(position, berry);
          
          const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
-         itemEntity.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
+         droppedItem.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
       }
    }
 }

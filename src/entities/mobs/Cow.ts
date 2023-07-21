@@ -55,8 +55,7 @@ class Cow extends Mob {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
-         // metabolism: 1,
-         metabolism: 15,
+         metabolism: 1,
          tileTargets: new Map([
             ["grass", {
                resultingTileType: "dirt",

@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, SETTINGS } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -6,7 +6,7 @@ import Item from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import ToolItem from "../items/generic/ToolItem";
 import { createItem } from "../items/item-creation";
-import ItemEntity from "../items/ItemEntity";
+import DroppedItem from "../items/DroppedItem";
 import { SERVER } from "../server";
 import Entity from "./Entity";
 
@@ -264,13 +264,14 @@ class Player extends Entity {
 
    public throwHeldItem(throwDirection: number): void {
       if (this.heldItem !== null) {
-         // Create the item entity
-         const itemEntity = new ItemEntity(this.position.copy(), this.heldItem);
+         // Create the dropped item
+         const droppedItem = new DroppedItem(this.position.copy(), this.heldItem);
 
          // Add a pickup cooldown so the item isn't picked up immediately
-         itemEntity.addPlayerPickupCooldown(this.displayName, Player.THROWN_ITEM_PICKUP_COOLDOWN);
+         droppedItem.addPlayerPickupCooldown(this.displayName, Player.THROWN_ITEM_PICKUP_COOLDOWN);
 
-         itemEntity.addVelocity(Player.ITEM_THROW_FORCE, throwDirection);
+         const throwVector = new Vector(Player.ITEM_THROW_FORCE, throwDirection);
+         droppedItem.addVelocity(throwVector);
          
          this.heldItem = null;
       }

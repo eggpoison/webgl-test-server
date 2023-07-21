@@ -5,6 +5,9 @@ import Player from "./entities/Player";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import { registerCommand } from "./commands";
+import Cow from "./entities/mobs/Cow";
+import { createItem } from "./items/item-creation";
+import DroppedItem from "./items/DroppedItem";
 
 /*
 
@@ -112,7 +115,7 @@ class GameServer {
                tiles: serverTileData,
                spawnPosition: spawnPosition.package(),
                entityDataArray: this.board.bundleEntityDataArray(player),
-               itemEntityDataArray: this.board.bundleItemEntityDataArray(),
+               droppedItemDataArray: this.board.bundleDroppedItemDataArray(),
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
@@ -198,18 +201,15 @@ class GameServer {
       
       this.board.pushJoinBuffer();
 
-      // this.board.updateEntities();
       this.board.updateGameObjects();
       this.board.resolveCollisions();
-
-      // this.board.tickItems();
 
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
          this.board.ageItems();
       }
 
-      this.board.removeEntities();
+      this.board.removeFlaggedGameObjects();
 
       // Run entity census
       if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {
@@ -245,7 +245,7 @@ class GameServer {
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             entityDataArray: this.board.bundleEntityDataArray(player),
-            itemEntityDataArray: this.board.bundleItemEntityDataArray(),
+            droppedItemDataArray: this.board.bundleDroppedItemDataArray(),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,

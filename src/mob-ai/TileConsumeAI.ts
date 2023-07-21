@@ -82,6 +82,8 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
       if (this.canGraze()) {
          this.grazeTimer = this.tileTargets.get(this.mob.tile.type)!.grazeTime;
       }
+
+      this.mob.acceleration = null;
    }
 
    // public onDeactivation(): void {

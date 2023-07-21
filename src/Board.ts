@@ -1,13 +1,11 @@
-import { Mutable, Point, ItemEntityData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType } from "webgl-test-shared";
+import { Mutable, Point, DroppedItemData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
 import Player from "./entities/Player";
-import RectangularHitbox from "./hitboxes/RectangularHitbox";
-import ItemEntity from "./items/ItemEntity";
+import DroppedItem from "./items/DroppedItem";
 import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
-import { removeEntityFromCensus } from "./entity-spawning";
 import { GameObject } from "./GameObject";
 
 export type EntityHitboxInfo = {
@@ -19,7 +17,7 @@ class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
 
-   private readonly gameObjects = new Array<GameObject>();
+   private readonly gameObjects = new Set<GameObject>();
 
    /** Stores entities indexed by the IDs */
    public readonly entities: { [id: number]: Entity } = {};
@@ -28,6 +26,8 @@ class Board {
    private readonly chunks: Array<Array<Chunk>>;
 
    private tileUpdateCoordinates: Set<[x: number, y: number]>;
+
+   private gameObjectsToRemove = new Array<GameObject>();
 
    /** Array of all entities' IDs to be removed at the beginning of the next tick */
    private removedEntities = new Set<number>();
@@ -58,6 +58,10 @@ class Board {
       return chunks;
    }
 
+   public getEntityByID(id: number): Entity {
+      return this.entities[id];
+   }
+
    public worldToTileX(x: number): number {
       return Math.floor(x / SETTINGS.TILE_SIZE);
    }
@@ -86,24 +90,56 @@ class Board {
       return this.tiles;
    }
 
-   /** Removes entities flagged for deletion */
-   public removeEntities(): void {
-      for (const id of this.removedEntities) {
-         const entity = this.entities[id];
-         this.removeEntity(entity);
+   /** Removes game objects flagged for deletion */
+   public removeFlaggedGameObjects(): void {
+      for (const gameObject of this.gameObjectsToRemove) {
+         this.removeGameObject(gameObject);
       }
 
-      this.removedEntities.clear();
+      this.gameObjectsToRemove = new Array<GameObject>();
+      // for (const id of this.removedEntities) {
+      //    const entity = this.entities[id];
+      //    this.removeEntity(entity);
+      // }
+
+      // this.removedEntities.clear();
+   }
+
+   private removeGameObject(gameObject: GameObject): void {
+      if (gameObject.i === "entity") {
+         delete this.entities[gameObject.id];
+      }
+
+      for (const chunk of gameObject.chunks) {
+         chunk.removeGameObject(gameObject);
+      }
+
+      this.gameObjects.delete(gameObject);
+   }
+
+   public addGameObjectToRemoveBuffer(gameObject: GameObject): void {
+      this.gameObjectsToRemove.push(gameObject);
    }
 
    public updateGameObjects(): void {
+      const chunkGroups: { [key: string]: Set<GameObject> } = {};
+
       for (const gameObject of this.gameObjects) {
+         // if (gameObject.i === "entity") console.log(gameObject.type);
          gameObject.tick();
+
+         if (gameObject.isRemoved) {
+            this.gameObjectsToRemove.push(gameObject);
+         }
+
+         gameObject.savePreviousCollidingGameObjects();
+         gameObject.clearCollidingGameObjects();
+         this.setEntityPotentialCollidingEntities(chunkGroups, gameObject);
       }
    }
 
    // public updateEntities(): void {
-   //    const entityChunkGroups: { [key: string]: Set<Entity> } = {};
+      // const entityChunkGroups: { [key: string]: Set<Entity> } = {};
 
    //    for (const entity of Object.values(this.entities)) {
    //       entity.applyPhysics();
@@ -133,54 +169,63 @@ class Board {
    //    }
    // }
 
-   // private setEntityPotentialCollidingEntities(entityChunkGroups: { [key: string]: Set<Entity> }, entity: Entity): void {
-   //    // Generate the chunk group hash
-   //    let chunkGroupHash = "";
-   //    for (const chunk of entity.chunks) {
-   //       chunkGroupHash += chunk.x + "-" + chunk.y + "-";
-   //    }
+   private setEntityPotentialCollidingEntities(chunkGroups: { [key: string]: Set<GameObject> }, gameObject: GameObject): void {
+      // Generate the chunk group hash
+      let chunkGroupHash = "";
+      for (const chunk of gameObject.chunks) {
+         chunkGroupHash += chunk.x + "-" + chunk.y + "-";
+      }
 
-   //    // Set the entity's potential colliding entities based on the chunk group hash
-   //    if (!entityChunkGroups.hasOwnProperty(chunkGroupHash)) {
-   //       // If a chunk group doesn't exist for the hash, create it
-   //       const chunkGroup = new Set<Entity>();
-   //       for (const chunk of entity.chunks) {
-   //          for (const entity of chunk.getEntities()) {
-   //             if (!chunkGroup.has(entity)) {
-   //                chunkGroup.add(entity);
-   //             }
-   //          }
-   //       }
-   //       entityChunkGroups[chunkGroupHash] = chunkGroup;
-   //    }
-   //    entity.potentialCollidingObjects = new Set(entityChunkGroups[chunkGroupHash]);
-   // }
+      // Set the entity's potential colliding entities based on the chunk group hash
+      if (!chunkGroups.hasOwnProperty(chunkGroupHash)) {
+         // If a chunk group doesn't exist for the hash, create it
+         const chunkGroup = new Set<GameObject>();
+         for (const chunk of gameObject.chunks) {
+            for (const gameObject of chunk.getGameObjects()) {
+               if (!chunkGroup.has(gameObject)) {
+                  chunkGroup.add(gameObject);
+               }
+            }
+         }
+         chunkGroups[chunkGroupHash] = chunkGroup;
+      }
+      gameObject.potentialCollidingObjects = new Set(chunkGroups[chunkGroupHash]);
+      // console.log("potential colliding objects:");
+      // console.log(gameObject.potentialCollidingObjects);
+   }
 
    public resolveCollisions(): void {
-      for (const entity of Object.values(this.entities)) {
-         entity.updateCollidingEntities();
-         entity.resolveGameObjectCollisions();
-         entity.resolveWallCollisions();
+      for (const gameObject of this.gameObjects) {
+         gameObject.updateCollidingGameObjects();
+         gameObject.resolveGameObjectCollisions();
+         gameObject.resolveWallCollisions();
 
-         entity.updateTile();
+         gameObject.updateTile();
       }
+      // for (const entity of Object.values(this.entities)) {
+      //    entity.updateCollidingEntities();
+      //    entity.resolveGameObjectCollisions();
+      //    entity.resolveWallCollisions();
+
+      //    entity.updateTile();
+      // }
    }
 
-   /** Removes the entity from the game */
-   private removeEntity(entity: Entity): void {
-      if (entity.isRemoved) {
+   // /** Removes the entity from the game */
+   // private removeEntity(entity: Entity): void {
+   //    if (entity.isRemoved) {
 
-      }
+   //    }
 
-      delete this.entities[entity.id];
+   //    delete this.entities[entity.id];
 
-      // Remove the entity from its chunks
-      for (const chunk of entity.chunks) {
-         chunk.removeEntity(entity);
-      }
+   //    // Remove the entity from its chunks
+   //    for (const chunk of entity.chunks) {
+   //       chunk.removeEntity(entity);
+   //    }
 
-      removeEntityFromCensus(entity.type);
-   }
+   //    removeEntityFromCensus(entity.type);
+   // }
 
    /** Registers a tile update to be sent to the clients */
    public registerNewTileUpdate(x: number, y: number): void {
@@ -225,57 +270,27 @@ class Board {
       this.joinBuffer.push(gameObject);
    }
 
-   // public addEntityToJoinBuffer(entity: Entity): void {
-   //    this.entityJoinBuffer.add(entity);
-   // }
-
    public pushJoinBuffer(): void {
       for (const gameObject of this.joinBuffer) {
          gameObject.updateHitboxes();
          gameObject.updateContainingChunks();
 
-         this.gameObjects.push(gameObject);
+         this.gameObjects.add(gameObject);
+
+         if (gameObject.i === "entity") {
+            this.entities[gameObject.id] = gameObject;
+         }
       }
 
       this.joinBuffer = new Array<GameObject>();
    }
 
-   /** Creates all of the entities in the join buffer and adds them to the board */
-   // public addEntitiesFromJoinBuffer(): void {
-   //    for (const entity of this.entityJoinBuffer) {
-   //       // Add entity to the ID record
-   //       this.entities[entity.id] = entity;
-   //    }
-
-   //    this.entityJoinBuffer.clear();
-   // }
-
-   // public addEntityFromJoinBuffer(entity: Entity): void {
-   //    if (!this.entityJoinBuffer.has(entity)) {
-   //       throw new Error("Tried to add an entity from the join buffer which wasn't there!");
-   //    }
-
-   //    this.entityJoinBuffer.delete(entity);
-   //    this.entities[entity.id] = entity;
-   // }
-
-   // public tickItems(): void {
-   //    for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-   //       for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-   //          const chunk = this.getChunk(chunkX, chunkY);
-   //          for (const itemEntity of chunk.getItemEntities()) {
-   //             itemEntity.tick();
-   //          }
-   //       }
-   //    }
-   // }
-
    public ageItems(): void {
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
          for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
             const chunk = this.getChunk(chunkX, chunkY);
-            for (const itemEntity of chunk.getItemEntities()) {
-               itemEntity.ageItem();
+            for (const droppedItem of chunk.getDroppedItems()) {
+               droppedItem.ageItem();
             }
          }  
       }
@@ -322,43 +337,43 @@ class Board {
       return entityDataArray;
    }
 
-   private bundleItemEntityData(itemEntity: ItemEntity): ItemEntityData {
+   private bundleDroppedItemData(droppedItem: DroppedItem): DroppedItemData {
       const chunkCoordinates = new Array<[number, number]>();
-      for (const chunk of itemEntity.chunks) {
+      for (const chunk of droppedItem.chunks) {
          chunkCoordinates.push([chunk.x, chunk.y]);
       }
 
       return {
-         id: itemEntity.id,
-         itemID: itemEntity.item.type,
-         count: itemEntity.item.count,
-         position: itemEntity.position.package(),
-         velocity: itemEntity.velocity !== null ? itemEntity.velocity.package() : null,
+         id: droppedItem.id,
+         itemID: droppedItem.item.type,
+         count: droppedItem.item.count,
+         position: droppedItem.position.package(),
+         velocity: droppedItem.velocity !== null ? droppedItem.velocity.package() : null,
          chunkCoordinates: chunkCoordinates,
-         rotation: itemEntity.rotation
+         rotation: droppedItem.rotation
       };
    }
 
-   public bundleItemEntityDataArray(): ReadonlyArray<ItemEntityData> {
-      const itemEntityDataArray = new Array<ItemEntityData>();
+   public bundleDroppedItemDataArray(): ReadonlyArray<DroppedItemData> {
+      const droppedItemDataArray = new Array<DroppedItemData>();
 
-      const seenItemEntityIDs = new Array<number>();
+      const seenDroppedItemIDs = new Array<number>();
 
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
          for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
             const chunk = this.getChunk(chunkX, chunkY);
-            for (const itemEntity of chunk.getItemEntities()) {
-               if (!seenItemEntityIDs.includes(itemEntity.id)) {
-                  const data = this.bundleItemEntityData(itemEntity);
-                  itemEntityDataArray.push(data);
+            for (const droppedItem of chunk.getDroppedItems()) {
+               if (!seenDroppedItemIDs.includes(droppedItem.id)) {
+                  const data = this.bundleDroppedItemData(droppedItem);
+                  droppedItemDataArray.push(data);
                   
-                  seenItemEntityIDs.push(itemEntity.id);
+                  seenDroppedItemIDs.push(droppedItem.id);
                }
             }
          }
       }
 
-      return itemEntityDataArray;
+      return droppedItemDataArray;
    }
 
    public isInBoard(position: Point): boolean {

@@ -39,7 +39,7 @@ type StatusEffect = {
 }
 
 abstract class Entity extends _GameObject<"entity", EntityEvents> {
-   public readonly i: "entity" = "entity";
+   public readonly i = "entity" as const;
    
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
    private readonly tickableComponents: ReadonlyArray<Component>;
@@ -89,12 +89,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    // public currentTile!: Tile;
 
-   /** If true, the entity is flagged for deletion at the beginning of the next tick */
-   public isRemoved: boolean = false;
-
-   /** If this flag is set to true, then the entity will not move */
-   public isStatic: boolean = false;
-
    /** Impacts how much force an entity experiences which pushing away from another entity */
    private pushForceMultiplier = 1;
 
@@ -123,9 +117,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       }
 
       addEntityToCensus(this.type);
-
-      // Add the entity to the join buffer
-      // SERVER.board.addEntityToJoinBuffer(this);
    }
 
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
@@ -281,10 +272,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    public removeStatusEffect(type: StatusEffectType): void {
       delete this.statusEffects[type];
-   }
-
-   public remove(): void {
-      this.isRemoved = true;
    }
 }
 

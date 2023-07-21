@@ -6,13 +6,13 @@ import Chunk from "./Chunk";
 import { GameEvent, GameObjectEvents } from "./events";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
-import ItemEntity from "./items/ItemEntity";
+import DroppedItem from "./items/DroppedItem";
 
-export type GameObject = Entity | ItemEntity;
+export type GameObject = Entity | DroppedItem;
 
 interface a {
    entity: Entity,
-   itemEntity: ItemEntity
+   droppedItem: DroppedItem
 }
 
 /** A generic class for any object in the world which has hitbox(es) */
@@ -26,13 +26,13 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    /** Acceleration of the object */
    public acceleration: Vector | null = null;
    /** Limit to the object's velocity */
-   public terminalVelocity: number = 0;
+   public terminalVelocity = 0;
 
    /** Set of all chunks the object is contained in */
    public chunks = new Set<Chunk>();
 
    /** Direction the object is facing in radians */
-   public rotation: number = 0;
+   public rotation = 0;
 
    /** The tile the object is currently standing on. */
    public tile!: Tile;
@@ -47,6 +47,12 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    private previousCollidingObjects = new Set<GameObject>();
 
    protected abstract readonly events: { [E in keyof T]: Array<GameEvent<T, E>> };
+
+   /** If true, the game object is flagged for deletion at the beginning of the next tick */
+   public isRemoved = false;
+
+   /** If this flag is set to true, then the game object will not be able to be moved */
+   public isStatic: boolean = false;
 
    constructor(position: Point) {
       this.position = position;
@@ -73,6 +79,14 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
       }
    }
 
+   public addVelocity(vector: Vector): void {
+      if (this.velocity !== null) {
+         this.velocity.add(vector);
+      } else {
+         this.velocity = vector;
+      }
+   }
+
    public updateHitboxes(): void {
       for (const hitbox of this.hitboxes) {
          if (hitbox.info.type === "rectangular") {
@@ -84,6 +98,7 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    }
 
    public tick(): void {
+      // console.log("ticked da ting " + this.position.x);
       this.applyPhysics();
       this.updateHitboxes();
       this.updateContainingChunks();
@@ -147,7 +162,7 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
       }
    }
 
-   /** Calculates the chunks that contain the entity.  */
+   /** Calculates the chunks that contain the object.  */
    private calculateContainingChunks(): Set<Chunk> {
       const containingChunks = new Set<Chunk>();
 
@@ -170,7 +185,7 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
       return containingChunks;
    }
 
-   /** Called after calculating the entity's hitbox bounds */
+   /** Called after calculating the object's hitbox bounds */
    public updateContainingChunks(): void {
       const containingChunks = this.calculateContainingChunks();
 
@@ -238,12 +253,13 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
       this.collidingObjects = collidingEntities;
    }
 
-   public updateCollidingEntities(): void {
-      this.calculateCollidingEntities();
+   public updateCollidingGameObjects(): void {
+      this.calculateCollidingGameObjects();
 
       // Call collision events
       for (const collidingGameObject of this.collidingObjects) {
          (this.callEvents as any)("during_collision", collidingGameObject);
+         if (collidingGameObject.i === "entity") (this.callEvents as any)("during_entity_collision", collidingGameObject);
          
          if (!this.previousCollidingObjects.has(collidingGameObject)) {
             (this.callEvents as any)("enter_collision", collidingGameObject);
@@ -253,26 +269,26 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
 
    /** Resolves collisions with other game objects */
    public resolveGameObjectCollisions(): void {
-      // if (this.isStatic) return;
+      if (this.isStatic) return;
       
-      // Push away from all colliding entities
-      for (const entity of this.collidingObjects) {
-         // If the two entities are exactly on top of each other, don't do anything
-         if (entity.position.x === this.position.x && entity.position.y === this.position.y) {
+      // Push away from all colliding objects
+      for (const gameObject of this.collidingObjects) {
+         // If the two objects are exactly on top of each other, don't do anything
+         if (gameObject.position.x === this.position.x && gameObject.position.y === this.position.y) {
             continue;
          }
 
          // Calculate the force of the push
-         // Force gets greater the closer together the entities are
-         const distanceBetweenEntities = this.position.calculateDistanceBetween(entity.position);
-         const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(entity);
+         // Force gets greater the closer together the objects are
+         const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
+         const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
          let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
          forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
          
          const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
          // const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
-         const pushAngle = this.position.calculateAngleBetween(entity.position) + Math.PI;
-         // No need to apply force to other entity as they will do it themselves
+         const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
+         // No need to apply force to other object as they will do it themselves
          const pushForce = new Vector(force, pushAngle);
          if (this.velocity !== null) {
             this.velocity.add(pushForce);
@@ -316,29 +332,36 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
       return maxDist;
    }
    
-   private calculateCollidingEntities(): void {
+   private calculateCollidingGameObjects(): void {
       this.potentialCollidingObjects.delete(this as unknown as GameObject);
-      entityLoop: for (const entity of this.potentialCollidingObjects) {
-         if (this.collidingObjects.has(entity)) continue;
+      if (this.i === "entity") {
+         // console.log(this["type"]);
+         // console.log("Potential colliding game objects: " + this.potentialCollidingObjects.size);
+         // for (const a of this.potentialCollidingObjects) {
+         //    console.log("- " + a["type"]);
+         // }
+      }
+      objectLoop: for (const gameObject of this.potentialCollidingObjects) {
+         if (this.collidingObjects.has(gameObject)) continue;
          
          for (const hitbox of this.hitboxes) {
-            for (const otherHitbox of entity.hitboxes) {
-               // If the entities are colliding, add the colliding entity and 
+            for (const otherHitbox of gameObject.hitboxes) {
+               // If the objects are colliding, add the colliding object and this object
                if (hitbox.isColliding(otherHitbox)) {
-                  entity.confirmCollidingGameObject(this as unknown as GameObject);
+                  gameObject.confirmCollidingGameObject(this as unknown as GameObject);
                   
-                  this.collidingObjects.add(entity);
-                  continue entityLoop;
+                  this.collidingObjects.add(gameObject);
+                  continue objectLoop;
                }
             }
          }
       }
    }
 
-   public savePreviousCollidingEntities(): void {
+   public savePreviousCollidingGameObjects(): void {
       this.previousCollidingObjects.clear();
-      for (const entity of this.collidingObjects) {
-         this.previousCollidingObjects.add(entity);
+      for (const gameObject of this.collidingObjects) {
+         this.previousCollidingObjects.add(gameObject);
       }
    }
 
@@ -359,12 +382,12 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
    }
 
    public createEvent<E extends keyof T>(type: E, event: GameEvent<T, E>): void {
-      if (typeof this.events[type] === "undefined") {
-         console.log(type);
-         console.log(this.events);
-         console.log(this);
-      }
       this.events[type].push(event);
+   }
+
+   public remove(): void {
+      this.isRemoved = true;
+      SERVER.board.addGameObjectToRemoveBuffer(this as unknown as GameObject);
    }
 }
 

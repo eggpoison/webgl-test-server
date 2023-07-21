@@ -1,6 +1,6 @@
 import { ItemType, SETTINGS, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
-import ItemEntity from "../items/ItemEntity";
+import DroppedItem from "../items/DroppedItem";
 import { SERVER } from "../server";
 import AI, { BaseAIParams } from "./AI";
 import FoodItem from "../items/generic/FoodItem";
@@ -38,10 +38,10 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
    public readonly metabolism: number;
    public readonly itemTargets: ReadonlySet<ItemType>;
 
-   private readonly itemEntitiesInRange = new Set<ItemEntity>();
+   private readonly droppedItemsInRange = new Set<DroppedItem>();
 
    /** The food source to move towards */
-   private target: ItemEntity | null = null;
+   private target: DroppedItem | null = null;
 
    constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, metabolism, itemTargets }: ItemConsumeAIParams) {
       super(mob, { aiWeightMultiplier });
@@ -52,10 +52,10 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
       this.terminalVelocity = terminalVelocity;
       this.itemTargets = typeof itemTargets !== "undefined" ? itemTargets : new Set();
 
-      this.mob.createEvent("enter_collision", (itemEntity: GameObject): void => {
-         if (itemEntity.i === "itemEntity") {
-            if (!this.mob.isRemoved && this.itemTargets.has(itemEntity.item.type)) {
-               this.consumeItem(itemEntity);
+      this.mob.createEvent("enter_collision", (droppedItem: GameObject): void => {
+         if (droppedItem.i === "droppedItem") {
+            if (!this.mob.isRemoved && this.itemTargets.has(droppedItem.item.type)) {
+               this.consumeItem(droppedItem);
             }
          }
       });
@@ -63,13 +63,13 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
 
    public onRefresh(): void {
       // Move to the closest food sourcee
-      let target: ItemEntity | undefined;
+      let target: DroppedItem | undefined;
       let minDistance: number = Number.MAX_SAFE_INTEGER;
-      for (const itemEntity of this.itemEntitiesInRange) {
-         const distance = this.mob.position.calculateDistanceBetween(itemEntity.position);
+      for (const droppedItem of this.droppedItemsInRange) {
+         const distance = this.mob.position.calculateDistanceBetween(droppedItem.position);
          if (distance < minDistance) {
             minDistance = distance;
-            target = itemEntity;
+            target = droppedItem;
          }
       }
 
@@ -80,7 +80,7 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
          this.target = target;
       }
 
-      // Move to the target item entity
+      // Move to the target dropped item
       super.moveToPosition(this.target.position, this.acceleration, this.terminalVelocity);
    }
 
@@ -93,47 +93,47 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
 
       if (this.target === null) return;
 
-      // Move to the item entity
+      // Move to the dropped item
       super.moveToPosition(this.target.position, this.acceleration, this.terminalVelocity);
    }
 
-   private consumeItem(itemEntity: ItemEntity): void {
-      // If the item entity was a food item, gain health based on the quality of the food
-      if (itemEntity.item.hasOwnProperty("eatTime")) {
+   private consumeItem(droppedItem: DroppedItem): void {
+      // If the dropped item was a food item, gain health based on the quality of the food
+      if (droppedItem.item.hasOwnProperty("eatTime")) {
          const healthComponent = this.mob.getComponent("health");
          if (healthComponent !== null) {
-            healthComponent.heal((itemEntity.item as FoodItem).healAmount);
+            healthComponent.heal((droppedItem.item as FoodItem).healAmount);
          }
       }
       
-      itemEntity.destroy();
+      droppedItem.remove();
    }
 
    protected _getWeight(): number {
       if (this.isActive && this.target === null) return 0;
 
-      // Calculate item entities in range
-      this.itemEntitiesInRange.clear();
+      // Calculate dropped items in range
+      this.droppedItemsInRange.clear();
       const minX = Math.max(Math.min(Math.floor((this.mob.position.x - this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxX = Math.max(Math.min(Math.floor((this.mob.position.x + this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const minY = Math.max(Math.min(Math.floor((this.mob.position.y - this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxY = Math.max(Math.min(Math.floor((this.mob.position.y + this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       for (let chunkX = minX; chunkX <= maxX; chunkX++) {
          for (let chunkY = minY; chunkY <= maxY; chunkY++) {
-            for (const itemEntity of SERVER.board.getChunk(chunkX, chunkY).getItemEntities()) {
-               if (!this.itemTargets.has(itemEntity.item.type)) {
+            for (const droppedItem of SERVER.board.getChunk(chunkX, chunkY).getDroppedItems()) {
+               if (!this.itemTargets.has(droppedItem.item.type)) {
                   continue;
                }
                
-               if (!this.itemEntitiesInRange.has(itemEntity)) {
-                  this.itemEntitiesInRange.add(itemEntity);
+               if (!this.droppedItemsInRange.has(droppedItem)) {
+                  this.droppedItemsInRange.add(droppedItem);
                }
             }
          }
       }
 
       // Try to activate the AI if the entity can see something to eat
-      if (this.itemEntitiesInRange.size > 0) {
+      if (this.droppedItemsInRange.size > 0) {
          return 1;
       }
 
