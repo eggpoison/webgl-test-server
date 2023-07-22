@@ -136,7 +136,7 @@ const getTileTypeCount = (tileType: TileType): number => {
 }
 
 /** Minimum distance a spawn event can occur from another entity */
-const MIN_SPAWN_DISTANCE = 2000;
+export const MIN_SPAWN_DISTANCE = 200;
 
 const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
    // Check if the entity density is right
@@ -218,7 +218,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    }
 }
 
-const spawnPositionIsValid = (position: Point): boolean => {
+export function spawnPositionIsValid(position: Point): boolean {
    const minChunkX = Math.max(Math.min(Math.floor((position.x - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
    const maxChunkX = Math.max(Math.min(Math.floor((position.x + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
    const minChunkY = Math.max(Math.min(Math.floor((position.y - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);

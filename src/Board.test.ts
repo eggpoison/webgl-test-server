@@ -1,9 +1,21 @@
 import { Point, SETTINGS } from "webgl-test-shared";
+import { SERVER } from "./server";
 import Cow from "./entities/mobs/Cow";
-import Game from "./Game";
+
+test("Game objects can be removed immediately after they are created", () => {
+   SERVER;
+
+   const position = new Point(400, 400);
+   const cow = new Cow(position);
+
+   cow.remove();
+   
+   // Check if the cow is in the board
+   expect(SERVER.board.gameObjectIsInBoard(cow)).toBe(false);
+});
 
 test("Game objects are moved inside the world if they are outside the world border", () => {
-   Game;
+   SERVER;
    
    const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
    

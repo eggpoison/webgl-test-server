@@ -77,7 +77,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
    constructor(position: Point) {
       this.position = position;
-      
+
       this.id = findAvailableEntityID();
 
       // Clamp the game object's position to within the world
@@ -410,6 +410,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    public remove(): void {
       this.isRemoved = true;
       SERVER.board.addGameObjectToRemoveBuffer(this as unknown as GameObject);
+      SERVER.board.removeGameObjectFromJoinBuffer(this as unknown as GameObject);
    }
 }
 

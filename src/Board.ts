@@ -218,30 +218,50 @@ class Board {
       this.joinBuffer.push(gameObject);
    }
 
+   public removeGameObjectFromJoinBuffer(gameObject: GameObject): void {
+      const idx = this.joinBuffer.indexOf(gameObject);
+      if (idx !== -1) {
+         this.joinBuffer.splice(idx, 1);
+      }
+   }
+
    public pushJoinBuffer(): void {
       for (const gameObject of this.joinBuffer) {
-         gameObject.updateHitboxes();
-         gameObject.updateContainingChunks();
-
-         this.gameObjects.add(gameObject);
-
-         switch (gameObject.i) {
-            case "entity": {
-               this.entities[gameObject.id] = gameObject;
-               break;
-            }
-            case "droppedItem": {
-               this.droppedItems[gameObject.id] = gameObject;
-               break;
-            }
-            case "projectile": {
-               this.projectiles.add(gameObject);
-               break;
-            }
-         }
+         this.addGameObjectToBoard(gameObject)
       }
 
       this.joinBuffer = new Array<GameObject>();
+   }
+
+   private addGameObjectToBoard(gameObject: GameObject): void {
+      gameObject.updateHitboxes();
+      gameObject.updateContainingChunks();
+
+      this.gameObjects.add(gameObject);
+
+      switch (gameObject.i) {
+         case "entity": {
+            this.entities[gameObject.id] = gameObject;
+            break;
+         }
+         case "droppedItem": {
+            this.droppedItems[gameObject.id] = gameObject;
+            break;
+         }
+         case "projectile": {
+            this.projectiles.add(gameObject);
+            break;
+         }
+      }
+   }
+
+   /** Forcefully adds a game object to the board from the join buffer */
+   public forcePushGameObjectFromJoinBuffer(gameObject: GameObject): void {
+      const idx = this.joinBuffer.indexOf(gameObject);
+      if (idx !== -1) {
+         this.addGameObjectToBoard(gameObject);
+         this.removeGameObjectFromJoinBuffer(gameObject);
+      }
    }
 
    public ageItems(): void {
@@ -255,88 +275,12 @@ class Board {
       }
    }
 
-   // private bundleEntityData(entity: Entity): EntityData<EntityType> {
-   //    const healthComponent = entity.getComponent("health")!;
-      
-   //    const entityData: Mutable<EntityData<EntityType>> = {
-   //       id: entity.id,
-   //       type: entity.type,
-   //       position: entity.position.package(),
-   //       velocity: entity.velocity !== null ? entity.velocity.package() : null,
-   //       acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
-   //       terminalVelocity: entity.terminalVelocity,
-   //       rotation: entity.rotation,
-   //       clientArgs: entity.getClientArgs(),
-   //       secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
-   //       chunkCoordinates: Array.from(entity.chunks).map(chunk => [chunk.x, chunk.y]),
-   //       hitboxes: Array.from(entity.hitboxes).map(hitbox => {
-   //          return this.bundleHitboxData(hitbox.info);
-   //       })
-   //    };
-
-   //    if (entity instanceof Mob) {
-   //       entityData.special = {
-   //          mobAIType: (entity as Mob).getCurrentAIType() || "none"
-   //       };
-   //    }
-
-   //    return entityData;
-   // }
-
-   // public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData<EntityType>> {
-   //    const entityDataArray = new Array<EntityData<EntityType>>();
-
-   //    for (const entity of Object.values(this.entities)) {
-   //       if (entity !== player) {
-   //          const data = this.bundleEntityData(entity);
-   //          entityDataArray.push(data);
-   //       }
-   //    }
-
-   //    return entityDataArray;
-   // }
-
-   // private bundleDroppedItemData(droppedItem: DroppedItem): DroppedItemData {
-   //    const chunkCoordinates = new Array<[number, number]>();
-   //    for (const chunk of droppedItem.chunks) {
-   //       chunkCoordinates.push([chunk.x, chunk.y]);
-   //    }
-
-   //    return {
-   //       id: droppedItem.id,
-   //       itemID: droppedItem.item.type,
-   //       count: droppedItem.item.count,
-   //       position: droppedItem.position.package(),
-   //       velocity: droppedItem.velocity !== null ? droppedItem.velocity.package() : null,
-   //       chunkCoordinates: chunkCoordinates,
-   //       rotation: droppedItem.rotation
-   //    };
-   // }
-
-   // public bundleDroppedItemDataArray(): ReadonlyArray<DroppedItemData> {
-   //    const droppedItemDataArray = new Array<DroppedItemData>();
-
-   //    const seenDroppedItemIDs = new Array<number>();
-
-   //    for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-   //       for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-   //          const chunk = this.getChunk(chunkX, chunkY);
-   //          for (const droppedItem of chunk.getDroppedItems()) {
-   //             if (!seenDroppedItemIDs.includes(droppedItem.id)) {
-   //                const data = this.bundleDroppedItemData(droppedItem);
-   //                droppedItemDataArray.push(data);
-                  
-   //                seenDroppedItemIDs.push(droppedItem.id);
-   //             }
-   //          }
-   //       }
-   //    }
-
-   //    return droppedItemDataArray;
-   // }
-
    public isInBoard(position: Point): boolean {
       return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+   }
+
+   public gameObjectIsInBoard(gameObject: GameObject): boolean {
+      return this.gameObjects.has(gameObject) || this.joinBuffer.includes(gameObject);
    }
 }
 

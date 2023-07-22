@@ -10,6 +10,7 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
+import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -148,7 +149,8 @@ class GameServer {
    private ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public time: number = 6;
+   // public time: number = 6;
+   public time: number = 0;
 
    public board!: Board;
    
@@ -243,6 +245,10 @@ class GameServer {
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
+
+            setTimeout(() => {
+               new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+            }, 1000);
             
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);
