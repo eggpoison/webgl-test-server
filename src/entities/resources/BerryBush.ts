@@ -21,10 +21,10 @@ class BerryBush extends Entity {
 
    private berryGrowTimer = 0;
 
-   constructor(position: Point) {
+   constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(BerryBush.HEALTH, false)
-      }, "berry_bush");
+      }, "berry_bush", isNaturallySpawned);
 
       this.addHitboxes([
          new CircularHitbox({

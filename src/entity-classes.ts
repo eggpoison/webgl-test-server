@@ -12,7 +12,7 @@ import Cactus from "./entities/resources/Cactus";
 import Yeti from "./entities/mobs/Yeti";
 import IceSpikes from "./entities/resources/IceSpikes";
 
-const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any[]) => Entity)> = {
+const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)> = {
    cow: () => Cow,
    zombie: () => Zombie,
    tombstone: () => Tombstone,

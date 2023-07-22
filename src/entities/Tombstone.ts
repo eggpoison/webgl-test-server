@@ -22,10 +22,10 @@ class Tombstone extends Entity {
    /** Amount of spawned zombies that are alive currently */
    private currentSpawnedZombieCount = 0;
    
-   constructor(position: Point) {
+   constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(Tombstone.MAX_HEALTH, false)
-      }, "tombstone");
+      }, "tombstone", isNaturallySpawned);
 
       this.addHitboxes([
          new RectangularHitbox({
@@ -82,7 +82,7 @@ class Tombstone extends Entity {
          // Spawn zombie
          // Copy the position to avoid having multiple zombies quantum entangled together
          const spawnPosition = randItem(this.zombieSpawnPositions).copy();
-         const zombie = new Zombie(spawnPosition, isGolden);
+         const zombie = new Zombie(spawnPosition, false, isGolden);
 
          // Keep track of the zombie
          this.currentSpawnedZombieCount++;

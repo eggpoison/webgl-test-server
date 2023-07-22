@@ -97,13 +97,14 @@ class Board {
 
    private removeGameObject(gameObject: GameObject): void {
       if (!this.gameObjects.has(gameObject)) {
-         throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+         console.warn("Tried to remove a game object which doesn't exist or was already removed.");
+         // throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
       
       switch (gameObject.i) {
          case "entity": {
             delete this.entities[gameObject.id];
-            removeEntityFromCensus(gameObject.type);
+            removeEntityFromCensus(gameObject);
             break;
          }
          case "droppedItem": {

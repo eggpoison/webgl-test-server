@@ -11,13 +11,13 @@ class Boulder extends Entity {
 
    private readonly boulderType: number;
 
-   constructor(position: Point) {
+   constructor(position: Point, isNaturallySpawned: boolean) {
       const itemCreationComponent = new ItemCreationComponent();
 
       super(position, {
          health: new HealthComponent(Boulder.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "boulder");
+      }, "boulder", isNaturallySpawned);
 
       this.addHitboxes([
          new CircularHitbox({

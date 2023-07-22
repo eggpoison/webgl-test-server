@@ -42,7 +42,7 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
       if (!this.canBePlaced(spawnPosition, entity.rotation)) return;
       
       // Spawn the placeable entity
-      const placedEntity = new this.entityClass(spawnPosition);
+      const placedEntity = new this.entityClass(spawnPosition, false);
 
       // Rotate it to match the entity's rotation
       placedEntity.rotation = entity.rotation;

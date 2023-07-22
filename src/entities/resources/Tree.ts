@@ -15,13 +15,13 @@ class Tree extends Entity {
 
    private readonly size: TreeSize;
    
-   constructor(position: Point) {
+   constructor(position: Point, isNaturallySpawned: boolean) {
       const size = randInt(0, 2) >= 1 ? 1 : 0;
 
       super(position, {
          health: new HealthComponent(Tree.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "tree");
+      }, "tree", isNaturallySpawned);
 
       this.addHitboxes([
          new CircularHitbox({

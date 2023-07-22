@@ -47,8 +47,8 @@ abstract class Mob extends Entity implements MobInfo {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
    
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
-      super(position, components, entityType);
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean) {
+      super(position, components, entityType, isNaturallySpawned);
 
       this.visionRange = visionRange;
    }

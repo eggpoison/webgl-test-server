@@ -86,26 +86,43 @@ const entityTypeCounts: Partial<Record<EntityType, number>> = {};
 
 const tileTypeCounts: Partial<Record<TileType, number>> = {};
 
-export function addEntityToCensus(entityType: EntityType): void {
-   if (!entityTypeCounts.hasOwnProperty(entityType)) {
-      entityTypeCounts[entityType] = 1;
+/** Stores the IDs of all entities that are being tracked in the census */
+const trackedEntityIDs = new Set<number>();
+
+export function getNumEntitiesInCensus(entityType: EntityType): number {
+   if (entityTypeCounts.hasOwnProperty(entityType)) {
+      return entityTypeCounts[entityType]!;
    } else {
-      entityTypeCounts[entityType]!++;
+      return 0;
    }
 }
 
-export function removeEntityFromCensus(entityType: EntityType): void {
-   if (!entityTypeCounts.hasOwnProperty(entityType) || entityTypeCounts[entityType]! <= 0) {
+export function addEntityToCensus(entity: Entity): void {
+   if (!entityTypeCounts.hasOwnProperty(entity.type)) {
+      entityTypeCounts[entity.type] = 1;
+   } else {
+      entityTypeCounts[entity.type]!++;
+   }
+
+   trackedEntityIDs.add(entity.id);
+}
+
+export function removeEntityFromCensus(entity: Entity): void {
+   if (!trackedEntityIDs.has(entity.id)) return;
+   
+   if (!entityTypeCounts.hasOwnProperty(entity.type) || entityTypeCounts[entity.type]! <= 0) {
       console.log(Object.assign({}, entityTypeCounts));
-      console.log(entityType);
-      console.warn(`Entity type "${entityType}" is not in the census.`);
+      console.log(entity.type);
+      console.warn(`Entity type "${entity.type}" is not in the census.`);
       console.trace();
    }
 
-   entityTypeCounts[entityType]!--;
-   if (entityTypeCounts[entityType]! === 0) {
+   entityTypeCounts[entity.type]!--;
+   if (entityTypeCounts[entity.type]! === 0) {
       // delete entityTypeCounts[entityType];
    }
+
+   trackedEntityIDs.delete(entity.id);
 }
 
 export function addTileToCensus(tileType: TileType): void {
@@ -180,7 +197,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
-   const baseEntity = new entityClass(spawnOrigin);
+   const baseEntity = new entityClass(spawnOrigin, true);
    if (spawnInfo.entityType === "cow") {
       (baseEntity as Cow).species = cowSpecies;
    }
@@ -204,7 +221,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
       if (spawnPositionIsValid(spawnPosition)) {
-         const entity = new entityClass(spawnPosition);
+         const entity = new entityClass(spawnPosition, true);
          if (spawnInfo.entityType === "cow") {
             (entity as Cow).species = cowSpecies;
          }
@@ -291,15 +308,5 @@ export function spawnInitialEntities(): void {
             throw new Error("we may have an infinite loop on our hands...");
          }
       }
-   }
-}
-
-export function runEntityCensus(): void {
-   for (const key of Object.keys(entityTypeCounts) as ReadonlyArray<EntityType>) {
-      delete entityTypeCounts[key];
-   }
-   
-   for (const entity of Object.values(SERVER.board.entities)) {
-      addEntityToCensus(entity.type);
    }
 }

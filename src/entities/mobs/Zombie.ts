@@ -18,10 +18,10 @@ class Zombie extends Mob {
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
 
-   constructor(position: Point, isGolden: boolean = false) {
+   constructor(position: Point, isNaturallySpawned: boolean, isGolden: boolean = false) {
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false)
-      }, "zombie", SETTINGS.TILE_SIZE * 5);
+      }, "zombie", SETTINGS.TILE_SIZE * 5, isNaturallySpawned);
 
       const speedMultiplier = randFloat(0.9, 1.1);
 

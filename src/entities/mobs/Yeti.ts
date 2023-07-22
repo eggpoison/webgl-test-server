@@ -20,7 +20,7 @@ class Yeti extends Mob {
       super(position, {
          health: new HealthComponent(Yeti.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "yeti", SETTINGS.TILE_SIZE * 7);
+      }, "yeti", SETTINGS.TILE_SIZE * 7, true);
 
       this.addHitboxes([
          new CircularHitbox({

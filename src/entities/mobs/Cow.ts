@@ -10,11 +10,11 @@ class Cow extends Mob {
    public species: CowSpecies;
    public readonly herdMemberHash: number;
 
-   constructor(position: Point) {
+   constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "cow", SETTINGS.TILE_SIZE * 4);
+      }, "cow", SETTINGS.TILE_SIZE * 4, isNaturallySpawned);
 
       this.addAI("wander", {
          aiWeightMultiplier: 0.5,

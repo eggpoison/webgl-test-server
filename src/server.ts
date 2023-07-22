@@ -8,10 +8,9 @@ import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
 import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
-import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
+import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import IceSpikes from "./entities/resources/IceSpikes";
-import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -170,9 +169,6 @@ type PlayerData = {
 
 /** Communicates between the server and players */
 class GameServer {
-   /** Number of seconds between each entity census */
-   private static readonly ENTITY_CENSUS_INTERVAL = 60;
-   
    private ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
@@ -213,11 +209,6 @@ class GameServer {
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
          this.board.ageItems();
-      }
-
-      // Run entity census
-      if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {
-         runEntityCensus();
       }
 
       runSpawnAttempt();
@@ -272,15 +263,12 @@ class GameServer {
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
+            // const spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 201, 200);
 
-            new IceSpikes(new Point(spawnPosition.x + 200, spawnPosition.y));
-
-            for (let i = 0; i < 10; i++) {
-               new IceSpikes(new Point(spawnPosition.x, spawnPosition.y - 200 - i * 35));
-            }
+            // const a = new IceSpikes(new Point(spawnPosition.x + 180, spawnPosition.y), false);
             
             // Spawn the player entity
-            const player = new Player(spawnPosition, clientUsername);
+            const player = new Player(spawnPosition, false, clientUsername);
 
             // Initialise the player's gamedata record
             this.playerData[socket.id] = {
@@ -518,7 +506,7 @@ class GameServer {
       const { username } = this.playerData[socket.id];
 
       const spawnPosition = this.generatePlayerSpawnPosition();
-      const playerEntity = new Player(spawnPosition, username);
+      const playerEntity = new Player(spawnPosition, false, username);
 
       // Update the player data's instance
       this.playerData[socket.id].instance = playerEntity;

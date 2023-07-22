@@ -29,13 +29,13 @@ class IceSpikes extends Entity {
 
    private readonly rootIceSpike: IceSpikes;
 
-   constructor(position: Point, rootIceSpike?: IceSpikes) {
+   constructor(position: Point, isNaturallySpawned: boolean, rootIceSpike?: IceSpikes) {
       const itemCreationComponent = new ItemCreationComponent();
 
       super(position, {
          health: new HealthComponent(IceSpikes.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "ice_spikes");
+      }, "ice_spikes", isNaturallySpawned);
 
       if (typeof rootIceSpike !== "undefined") {
          this.rootIceSpike = rootIceSpike;
@@ -94,7 +94,7 @@ class IceSpikes extends Entity {
 
       const minDistanceToEntity = SERVER.board.distanceToClosestEntity(position);
       if (minDistanceToEntity >= 40) {
-         new IceSpikes(position, this.rootIceSpike);
+         new IceSpikes(position, false, this.rootIceSpike);
          
          this.rootIceSpike.numChildrenIceSpikes++;
       }

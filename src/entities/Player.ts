@@ -40,13 +40,13 @@ class Player extends Entity {
 
    private hitsTaken = new Array<HitData>();
 
-   constructor(position: Point, name: string) {
+   constructor(position: Point, isNaturallySpawned: boolean, name: string) {
       const inventoryComponent = new InventoryComponent();
 
       super(position, {
          health: new HealthComponent(Player.MAX_HEALTH, true),
          inventory: inventoryComponent
-      }, "player");
+      }, "player", isNaturallySpawned);
 
       this.addHitboxes([
          new CircularHitbox({

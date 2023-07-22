@@ -48,12 +48,12 @@ abstract class Entity extends _GameObject<"entity"> {
       during_entity_collision: []
    };
 
-   /** Impacts how much force an entity experiences which pushing away from another entity */
-   private pushForceMultiplier = 1;
+   // /** Impacts how much force an entity experiences which pushing away from another entity */
+   // private pushForceMultiplier = 1;
 
    public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
       super(position);
 
       this.type = entityType;
@@ -71,7 +71,9 @@ abstract class Entity extends _GameObject<"entity"> {
          if (typeof component.onLoad !== "undefined") component.onLoad();
       }
 
-      addEntityToCensus(this.type);
+      if (isNaturallySpawned) {
+         addEntityToCensus(this);
+      }
    }
 
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
@@ -88,9 +90,9 @@ abstract class Entity extends _GameObject<"entity"> {
       this.tickStatusEffects();
    }
 
-   public setPushForceMultiplier(pushForceMultiplier: number): void {
-      this.pushForceMultiplier = pushForceMultiplier;
-   }
+   // public setPushForceMultiplier(pushForceMultiplier: number): void {
+   //    this.pushForceMultiplier = pushForceMultiplier;
+   // }
 
    public setIsStatic(isStatic: boolean): void {
       this.isStatic = isStatic;
