@@ -103,13 +103,15 @@ const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameOb
 
 const bundleEntityDataArray = (player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
    const entityDataArray = new Array<EntityData<EntityType>>();
+   const seenIDs = new Set<number>();
    
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const entity of chunk.getEntities()) {
-            if (entity !== player) {
+            if (entity !== player && !seenIDs.has(entity.id)) {
                entityDataArray.push(bundleGameObjectData("entity", entity));
+               seenIDs.add(entity.id);
             }
          }
       }
@@ -120,12 +122,16 @@ const bundleEntityDataArray = (player: Player, visibleChunkBounds: VisibleChunkB
 
 const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<DroppedItemData> => {
    const droppedItemDataArray = new Array<DroppedItemData>();
+   const seenIDs = new Set<number>();
    
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const droppedItem of chunk.getDroppedItems()) {
-            droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
+            if (!seenIDs.has(droppedItem.id)) {
+               droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
+               seenIDs.add(droppedItem.id);
+            }
          }
       }
    }
@@ -135,12 +141,16 @@ const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): Rea
 
 const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ProjectileData> => {
    const projectileDataArray = new Array<ProjectileData>();
+   const seenIDs = new Set<number>();
    
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const projectile of chunk.getProjectiles()) {
-            projectileDataArray.push(bundleGameObjectData("projectile", projectile));
+            if (!seenIDs.has(projectile.id)) {
+               projectileDataArray.push(bundleGameObjectData("projectile", projectile));
+               seenIDs.add(projectile.id);
+            }
          }
       }
    }
