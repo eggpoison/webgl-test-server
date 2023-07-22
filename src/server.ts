@@ -273,13 +273,11 @@ class GameServer {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
 
-            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
-            
-            // new IceSpikes(new Point(spawnPosition.x + 200, spawnPosition.y));
+            new IceSpikes(new Point(spawnPosition.x + 200, spawnPosition.y));
 
-            // for (let i = 0; i < 10; i++) {
-            //    new IceSpikes(new Point(spawnPosition.x, spawnPosition.y - 200 - i * 35));
-            // }
+            for (let i = 0; i < 10; i++) {
+               new IceSpikes(new Point(spawnPosition.x, spawnPosition.y - 200 - i * 35));
+            }
             
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);

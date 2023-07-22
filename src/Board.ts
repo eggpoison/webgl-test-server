@@ -96,9 +96,9 @@ class Board {
    }
 
    private removeGameObject(gameObject: GameObject): void {
-      // if (!this.gameObjects.has(gameObject)) {
-      //    throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
-      // }
+      if (!this.gameObjects.has(gameObject)) {
+         throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+      }
       
       switch (gameObject.i) {
          case "entity": {
@@ -143,10 +143,6 @@ class Board {
 
       for (const gameObject of this.gameObjects) {
          gameObject.tick();
-
-         if (gameObject.isRemoved) {
-            this.gameObjectsToRemove.push(gameObject);
-         }
 
          gameObject.savePreviousCollidingGameObjects();
          gameObject.clearCollidingGameObjects();
