@@ -107,6 +107,7 @@ class HerdAI extends AI implements HerdAIParams {
             totalYVal += Math.sin(entity.rotation);
          }
          let averageHeading = Math.atan2(totalYVal, totalXVal);
+         averageHeading = Math.PI/2 - averageHeading;
          if (averageHeading < 0) {
             averageHeading += Math.PI * 2;
          }

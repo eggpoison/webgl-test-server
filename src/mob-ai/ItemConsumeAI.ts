@@ -1,10 +1,10 @@
 import { ItemType, SETTINGS, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
-import { SERVER } from "../server";
 import AI, { BaseAIParams } from "./AI";
 import FoodItem from "../items/generic/FoodItem";
 import { GameObject } from "../GameObject";
+import { SERVER } from "../server";
 
 type FoodSource = {
    /** Amount of food given by eating the source */

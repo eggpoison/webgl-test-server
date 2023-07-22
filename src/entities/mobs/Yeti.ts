@@ -42,6 +42,9 @@ class Yeti extends Mob {
          acceleration: 200,
          terminalVelocity: 100,
          entityIsChased(entity: Entity) {
+            // Don't try to attack ice spikes
+            if (entity.type === "ice_spikes") return false;
+            
             // Chase the entity if they are standing on snow
             return Yeti.YETI_TILES.has(entity.tile.type);
          }
@@ -56,6 +59,9 @@ class Yeti extends Mob {
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
+         // Don't damage ice spikes
+         if (collidingEntity.type === "ice_spikes") return;
+         
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);

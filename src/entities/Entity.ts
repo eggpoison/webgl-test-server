@@ -1,18 +1,10 @@
 import { EntityInfoClientArgs, EntityType, Point, SETTINGS } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
-import { EntityEvents } from "../events";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject from "../GameObject";
 import { addEntityToCensus } from "../entity-spawning";
-
-let idCounter = 0;
-
-/** Finds a unique available ID for an entity */
-export function findAvailableEntityID(): number {
-   return idCounter++;
-}
 
 export interface EntityComponents {
    readonly health: HealthComponent;
@@ -38,14 +30,12 @@ type StatusEffect = {
    ticksElapsed: number;
 }
 
-abstract class Entity extends _GameObject<"entity", EntityEvents> {
+abstract class Entity extends _GameObject<"entity"> {
    public readonly i = "entity" as const;
    
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
    private readonly tickableComponents: ReadonlyArray<Component>;
 
-   /** Unique identifier for every entity */
-   public readonly id: number;
    public readonly type: EntityType;
 
    protected readonly events = {
@@ -66,7 +56,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
       super(position);
 
-      this.id = findAvailableEntityID();
       this.type = entityType;
       
       // this.position = position;

@@ -39,7 +39,6 @@ class Boulder extends Entity {
    public getClientArgs(): [boulderType: number] {
       return [this.boulderType];
    }
-
 }
 
 export default Boulder;

@@ -7,8 +7,8 @@ import StackableItem from "../items/generic/StackableItem";
 import ToolItem from "../items/generic/ToolItem";
 import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
-import { SERVER } from "../server";
 import Entity from "./Entity";
+import { SERVER } from "../server";
 
 const bundleItemData = (item: Item): ItemData => {
    return {

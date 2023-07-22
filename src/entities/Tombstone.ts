@@ -1,9 +1,9 @@
 import { Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-import { SERVER } from "../server";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
+import { SERVER } from "../server";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;

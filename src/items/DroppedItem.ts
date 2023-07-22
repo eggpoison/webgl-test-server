@@ -3,19 +3,13 @@ import Player from "../entities/Player";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./generic/Item";
 import _GameObject from "../GameObject";
-import { GameObjectEvents } from "../events";
 
-let nextAvailableItemID = 0;
-
-const findAvailableItemID = (): number => {
-   return nextAvailableItemID++;
-}
 type PlayerPickupCooldown = {
    readonly username: string;
    secondsRemaining: number;
 }
 
-class DroppedItem extends _GameObject<"droppedItem", GameObjectEvents> {
+class DroppedItem extends _GameObject<"droppedItem"> {
    public i = "droppedItem" as const;
 
    protected events = {
@@ -27,9 +21,6 @@ class DroppedItem extends _GameObject<"droppedItem", GameObjectEvents> {
    /** ROUGHLY how long an item will take to despawn */
    private static readonly SECONDS_TO_DESPAWN = 300;
 
-   /** Unique identifier for the dropped item */
-   public readonly id: number;
-
    /** How long the item has existed in seconds */
    private age: number = 0;
 
@@ -39,8 +30,6 @@ class DroppedItem extends _GameObject<"droppedItem", GameObjectEvents> {
 
    constructor(position: Point, item: Item) {
       super(position);
-
-      this.id = findAvailableItemID();
 
       this.position = position;
       this.item = item;

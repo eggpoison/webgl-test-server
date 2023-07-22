@@ -1,7 +1,7 @@
 import { TileType, BiomeName, TileInfo } from "webgl-test-shared";
-import { SERVER } from "../server";
 import { terrainHasBeenGenerated } from "../terrain-generation";
 import { addTileToCensus, removeTileFromCensus } from "../entity-spawning";
+import { SERVER } from "../server";
 
 abstract class Tile implements TileInfo {
    public readonly x: number;

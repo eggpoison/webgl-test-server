@@ -10,6 +10,7 @@ import Zombie from "./entities/mobs/Zombie";
 import BerryBush from "./entities/resources/BerryBush";
 import Cactus from "./entities/resources/Cactus";
 import Yeti from "./entities/mobs/Yeti";
+import IceSpikes from "./entities/resources/IceSpikes";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any[]) => Entity)> = {
    cow: () => Cow,
@@ -21,7 +22,8 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...ar
    boulder: () => Boulder,
    berry_bush: () => BerryBush,
    cactus: () => Cactus,
-   yeti: () => Yeti
+   yeti: () => Yeti,
+   ice_spikes: () => IceSpikes
 };
 
 export default ENTITY_CLASS_RECORD;

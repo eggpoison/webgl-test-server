@@ -1,13 +1,12 @@
-import { Mutable, Point, DroppedItemData, SETTINGS, ServerTileUpdateData, Vector, randInt, EntityData, EntityType, HitboxData, HitboxType, HitboxInfo } from "webgl-test-shared";
+import { Point, SETTINGS, ServerTileUpdateData, Vector, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
-import Mob from "./entities/mobs/Mob";
-import Player from "./entities/Player";
 import DroppedItem from "./items/DroppedItem";
 import generateTerrain from "./terrain-generation";
 import Tile from "./tiles/Tile";
 import { GameObject } from "./GameObject";
 import { removeEntityFromCensus } from "./entity-spawning";
+import Projectile from "./Projectile";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -20,8 +19,9 @@ class Board {
 
    private readonly gameObjects = new Set<GameObject>();
 
-   /** Stores entities indexed by the IDs */
    public readonly entities: { [id: number]: Entity } = {};
+   public readonly droppedItems: { [id: number]: DroppedItem } = {};
+   public readonly projectiles = new Set<Projectile>();
    
    private readonly tiles: Array<Array<Tile>>;
    private readonly chunks: Array<Array<Chunk>>;
@@ -95,9 +95,20 @@ class Board {
    }
 
    private removeGameObject(gameObject: GameObject): void {
-      if (gameObject.i === "entity") {
-         delete this.entities[gameObject.id];
-         removeEntityFromCensus(gameObject.type);
+      switch (gameObject.i) {
+         case "entity": {
+            delete this.entities[gameObject.id];
+            removeEntityFromCensus(gameObject.type);
+            break;
+         }
+         case "droppedItem": {
+            delete this.droppedItems[gameObject.id];
+            break;
+         }
+         case "projectile": {
+            this.projectiles.delete(gameObject);
+            break;
+         }
       }
 
       for (const chunk of gameObject.chunks) {
@@ -214,8 +225,19 @@ class Board {
 
          this.gameObjects.add(gameObject);
 
-         if (gameObject.i === "entity") {
-            this.entities[gameObject.id] = gameObject;
+         switch (gameObject.i) {
+            case "entity": {
+               this.entities[gameObject.id] = gameObject;
+               break;
+            }
+            case "droppedItem": {
+               this.droppedItems[gameObject.id] = gameObject;
+               break;
+            }
+            case "projectile": {
+               this.projectiles.add(gameObject);
+               break;
+            }
          }
       }
 
@@ -233,105 +255,85 @@ class Board {
       }
    }
 
-   private bundleEntityData(entity: Entity): EntityData<EntityType> {
-      const healthComponent = entity.getComponent("health")!;
+   // private bundleEntityData(entity: Entity): EntityData<EntityType> {
+   //    const healthComponent = entity.getComponent("health")!;
       
-      const entityData: Mutable<EntityData<EntityType>> = {
-         id: entity.id,
-         type: entity.type,
-         position: entity.position.package(),
-         velocity: entity.velocity !== null ? entity.velocity.package() : null,
-         acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
-         terminalVelocity: entity.terminalVelocity,
-         rotation: entity.rotation,
-         clientArgs: entity.getClientArgs(),
-         secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
-         chunkCoordinates: Array.from(entity.chunks).map(chunk => [chunk.x, chunk.y]),
-         hitboxes: Array.from(entity.hitboxes).map(hitbox => {
-            return this.bundleHitboxData(hitbox.info);
-         })
-      };
+   //    const entityData: Mutable<EntityData<EntityType>> = {
+   //       id: entity.id,
+   //       type: entity.type,
+   //       position: entity.position.package(),
+   //       velocity: entity.velocity !== null ? entity.velocity.package() : null,
+   //       acceleration: entity.acceleration !== null ? entity.acceleration.package() : null,
+   //       terminalVelocity: entity.terminalVelocity,
+   //       rotation: entity.rotation,
+   //       clientArgs: entity.getClientArgs(),
+   //       secondsSinceLastHit: healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null,
+   //       chunkCoordinates: Array.from(entity.chunks).map(chunk => [chunk.x, chunk.y]),
+   //       hitboxes: Array.from(entity.hitboxes).map(hitbox => {
+   //          return this.bundleHitboxData(hitbox.info);
+   //       })
+   //    };
 
-      if (entity instanceof Mob) {
-         entityData.special = {
-            mobAIType: (entity as Mob).getCurrentAIType() || "none"
-         };
-      }
+   //    if (entity instanceof Mob) {
+   //       entityData.special = {
+   //          mobAIType: (entity as Mob).getCurrentAIType() || "none"
+   //       };
+   //    }
 
-      return entityData;
-   }
+   //    return entityData;
+   // }
 
-   private bundleHitboxData(hitboxInfo: HitboxInfo<HitboxType>): HitboxData<HitboxType> {
-      switch (hitboxInfo.type) {
-         case "circular": {
-            return {
-               type: "circular",
-               radius: hitboxInfo.radius,
-               offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
-            };
-         }
-         case "rectangular": {
-            return {
-               type: "rectangular",
-               width: hitboxInfo.width,
-               height: hitboxInfo.height,
-               offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
-            };
-         }
-      }
-   }
+   // public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData<EntityType>> {
+   //    const entityDataArray = new Array<EntityData<EntityType>>();
 
-   public bundleEntityDataArray(player: Player): ReadonlyArray<EntityData<EntityType>> {
-      const entityDataArray = new Array<EntityData<EntityType>>();
+   //    for (const entity of Object.values(this.entities)) {
+   //       if (entity !== player) {
+   //          const data = this.bundleEntityData(entity);
+   //          entityDataArray.push(data);
+   //       }
+   //    }
 
-      for (const entity of Object.values(this.entities)) {
-         if (entity !== player) {
-            const data = this.bundleEntityData(entity);
-            entityDataArray.push(data);
-         }
-      }
+   //    return entityDataArray;
+   // }
 
-      return entityDataArray;
-   }
+   // private bundleDroppedItemData(droppedItem: DroppedItem): DroppedItemData {
+   //    const chunkCoordinates = new Array<[number, number]>();
+   //    for (const chunk of droppedItem.chunks) {
+   //       chunkCoordinates.push([chunk.x, chunk.y]);
+   //    }
 
-   private bundleDroppedItemData(droppedItem: DroppedItem): DroppedItemData {
-      const chunkCoordinates = new Array<[number, number]>();
-      for (const chunk of droppedItem.chunks) {
-         chunkCoordinates.push([chunk.x, chunk.y]);
-      }
+   //    return {
+   //       id: droppedItem.id,
+   //       itemID: droppedItem.item.type,
+   //       count: droppedItem.item.count,
+   //       position: droppedItem.position.package(),
+   //       velocity: droppedItem.velocity !== null ? droppedItem.velocity.package() : null,
+   //       chunkCoordinates: chunkCoordinates,
+   //       rotation: droppedItem.rotation
+   //    };
+   // }
 
-      return {
-         id: droppedItem.id,
-         itemID: droppedItem.item.type,
-         count: droppedItem.item.count,
-         position: droppedItem.position.package(),
-         velocity: droppedItem.velocity !== null ? droppedItem.velocity.package() : null,
-         chunkCoordinates: chunkCoordinates,
-         rotation: droppedItem.rotation
-      };
-   }
+   // public bundleDroppedItemDataArray(): ReadonlyArray<DroppedItemData> {
+   //    const droppedItemDataArray = new Array<DroppedItemData>();
 
-   public bundleDroppedItemDataArray(): ReadonlyArray<DroppedItemData> {
-      const droppedItemDataArray = new Array<DroppedItemData>();
+   //    const seenDroppedItemIDs = new Array<number>();
 
-      const seenDroppedItemIDs = new Array<number>();
-
-      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            const chunk = this.getChunk(chunkX, chunkY);
-            for (const droppedItem of chunk.getDroppedItems()) {
-               if (!seenDroppedItemIDs.includes(droppedItem.id)) {
-                  const data = this.bundleDroppedItemData(droppedItem);
-                  droppedItemDataArray.push(data);
+   //    for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+   //       for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+   //          const chunk = this.getChunk(chunkX, chunkY);
+   //          for (const droppedItem of chunk.getDroppedItems()) {
+   //             if (!seenDroppedItemIDs.includes(droppedItem.id)) {
+   //                const data = this.bundleDroppedItemData(droppedItem);
+   //                droppedItemDataArray.push(data);
                   
-                  seenDroppedItemIDs.push(droppedItem.id);
-               }
-            }
-         }
-      }
+   //                seenDroppedItemIDs.push(droppedItem.id);
+   //             }
+   //          }
+   //       }
+   //    }
 
-      return droppedItemDataArray;
-   }
+   //    return droppedItemDataArray;
+   // }
 
    public isInBoard(position: Point): boolean {
       return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;

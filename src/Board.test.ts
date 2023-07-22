@@ -1,9 +1,9 @@
 import { Point, SETTINGS } from "webgl-test-shared";
-import { SERVER } from "./server";
 import Cow from "./entities/mobs/Cow";
+import Game from "./Game";
 
 test("Game objects are moved inside the world if they are outside the world border", () => {
-   SERVER;
+   Game;
    
    const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
    

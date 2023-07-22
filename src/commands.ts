@@ -1,7 +1,7 @@
 import { ItemType, parseCommand } from "webgl-test-shared";
 import Player from "./entities/Player";
-import { SERVER } from "./server";
 import { createItem } from "./items/item-creation";
+import { SERVER } from "./server";
 
 const killPlayer = (username: string): void => {
    const player = SERVER.getPlayerFromUsername(username);

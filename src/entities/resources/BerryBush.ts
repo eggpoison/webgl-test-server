@@ -94,12 +94,10 @@ class BerryBush extends Entity {
          position.add(spawnOffset);
       } while (!SERVER.board.isInBoard(position));
 
-      if (SERVER.board.isInBoard(position)) {
-         const droppedItem = new DroppedItem(position, berry);
-         
-         const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
-         droppedItem.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
-      }
+      const droppedItem = new DroppedItem(position, berry);
+      
+      const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
+      droppedItem.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
    }
 }
 

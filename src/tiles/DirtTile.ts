@@ -1,5 +1,4 @@
 import { TileInfo } from "webgl-test-shared";
-import { SERVER } from "../server";
 import GrassTile from "./GrassTile";
 import Tile from "./Tile";
 

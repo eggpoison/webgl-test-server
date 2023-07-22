@@ -1,10 +1,15 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
+import { registerCommand } from "./commands";
+import _GameObject, { GameObjectSubclasses } from "./GameObject";
+import Entity from "./entities/Entity";
+import Mob from "./entities/mobs/Mob";
+import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
-import { registerCommand } from "./commands";
+import Projectile from "./Projectile";
 
 /*
 
@@ -12,6 +17,120 @@ Reference for future self:
 node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
 
 */
+
+const bundleHitboxData = (hitboxInfo: HitboxInfo<HitboxType>): HitboxData<HitboxType> => {
+   switch (hitboxInfo.type) {
+      case "circular": {
+         return {
+            type: "circular",
+            radius: hitboxInfo.radius,
+            offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
+         };
+      }
+      case "rectangular": {
+         return {
+            type: "rectangular",
+            width: hitboxInfo.width,
+            height: hitboxInfo.height,
+            offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
+         };
+      }
+   }
+}
+
+const _GameObjectSubclassData = {
+   entity: (_: EntityData<EntityType>) => {},
+   droppedItem: (_: DroppedItemData) => {},
+   projectile: (_: ProjectileData) => {}
+} satisfies Record<keyof GameObjectSubclasses, (arg: any) => void>;
+
+type GameObjectSubclassData<T extends keyof GameObjectSubclasses> = Parameters<(typeof _GameObjectSubclassData)[T]>[0];
+
+const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameObject: _GameObject<T>): GameObjectSubclassData<T> => {
+   const baseGameObjectData: GameObjectData = {
+      id: gameObject.id,
+      position: gameObject.position.package(),
+      velocity: gameObject.velocity !== null ? gameObject.velocity.package() : null,
+      acceleration: gameObject.acceleration !== null ? gameObject.acceleration.package() : null,
+      terminalVelocity: gameObject.terminalVelocity,
+      rotation: gameObject.rotation,
+      chunkCoordinates: Array.from(gameObject.chunks).map(chunk => [chunk.x, chunk.y]),
+      hitboxes: Array.from(gameObject.hitboxes).map(hitbox => {
+         return bundleHitboxData(hitbox.info);
+      })
+   };
+
+   switch (i) {
+      case "entity": {
+         const entity = gameObject as unknown as Entity;
+
+         const healthComponent = entity.getComponent("health")!;
+
+         const entityData: Mutable<Partial<EntityData<EntityType>>> = baseGameObjectData;
+         entityData.type = entity.type;
+         entityData.clientArgs = entity.getClientArgs();
+         entityData.secondsSinceLastHit = healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null;
+
+         if (entity instanceof Mob) {
+            entityData.special = {
+               mobAIType: (entity as Mob).getCurrentAIType() || "none"
+            };
+         }
+
+         return entityData as EntityData<EntityType>;
+      }
+      case "droppedItem": {
+         const droppedItem = gameObject as unknown as DroppedItem;
+
+         const droppedItemData: Mutable<Partial<DroppedItemData>> = baseGameObjectData;
+         droppedItemData.type = droppedItem.item.type;
+
+         return droppedItemData as DroppedItemData;
+      }
+      case "projectile": {
+         const projectile = gameObject as unknown as Projectile;
+
+         const projectileData: Mutable<Partial<ProjectileData>> = baseGameObjectData;
+         projectileData.type = projectile.type;
+
+         return projectileData as ProjectileData;
+      }
+   }
+
+   throw new Error("bad");
+}
+
+const bundleEntityDataArray = (player: Player): ReadonlyArray<EntityData<EntityType>> => {
+   const entityDataArray = new Array<EntityData<EntityType>>();
+   
+   for (const entity of Object.values(SERVER.board.entities)) {
+      if (entity !== player) {
+         entityDataArray.push(bundleGameObjectData("entity", entity));
+      }
+   }
+
+   return entityDataArray;
+}
+
+const bundleDroppedItemDataArray = (): ReadonlyArray<DroppedItemData> => {
+   const droppedItemDataArray = new Array<DroppedItemData>();
+   
+   for (const droppedItem of Object.values(SERVER.board.droppedItems)) {
+      droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
+   }
+
+   return droppedItemDataArray;
+}
+
+const bundleProjectileDataArray = (): ReadonlyArray<ProjectileData> => {
+   const projectileDataArray = new Array<ProjectileData>();
+   
+   for (const projectile of SERVER.board.projectiles) {
+      projectileDataArray.push(bundleGameObjectData("projectile", projectile));
+   }
+
+   return projectileDataArray;
+}
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -21,9 +140,8 @@ type PlayerData = {
    clientIsActive: boolean;
 }
 
+/** Communicates between the server and players */
 class GameServer {
-   /** Minimum number of units away from the border that the player will spawn at */
-   private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
    /** Number of seconds between each entity census */
    private static readonly ENTITY_CENSUS_INTERVAL = 60;
    
@@ -32,7 +150,10 @@ class GameServer {
    /** The time of day the server is currently in (from 0 to 23) */
    public time: number = 6;
 
-   public readonly board: Board;
+   public board!: Board;
+   
+   /** Minimum number of units away from the border that the player will spawn at */
+   private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
 
    private io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData> | null = null;
 
@@ -40,10 +161,42 @@ class GameServer {
 
    private tickInterval: NodeJS.Timer | undefined;
 
-   constructor() {
+   /** Sets up the various stuff */
+   public setup() {
       // Create the board
       this.board = new Board();
 
+      spawnInitialEntities();
+   }
+
+   private async tick(): Promise<void> {
+      // Update server ticks and time
+      this.ticks++;
+      this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+      
+      this.board.pushJoinBuffer();
+
+      this.board.updateGameObjects();
+      this.board.resolveCollisions();
+
+      // Age items
+      if (this.ticks % SETTINGS.TPS === 0) {
+         this.board.ageItems();
+      }
+
+      this.board.removeFlaggedGameObjects();
+
+      // Run entity census
+      if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {
+         runEntityCensus();
+      }
+
+      runSpawnAttempt();
+
+      this.board.runRandomTickAttempt();
+
+      // Send game data packets to all players
+      this.sendGameDataPackets();
    }
 
    public start(): void {
@@ -63,11 +216,6 @@ class GameServer {
       if (this.tickInterval !== null) {
          clearInterval(this.tickInterval);
       }
-   }
-
-   /** Sets up the various stuff */
-   public setup(): void {
-      spawnInitialEntities();
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -95,7 +243,7 @@ class GameServer {
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
-
+            
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);
 
@@ -127,8 +275,9 @@ class GameServer {
                playerID: player.id,
                tiles: serverTileData,
                spawnPosition: spawnPosition.package(),
-               entityDataArray: this.board.bundleEntityDataArray(player),
-               droppedItemDataArray: this.board.bundleDroppedItemDataArray(),
+               entityDataArray: bundleEntityDataArray(player),
+               droppedItemDataArray: bundleDroppedItemDataArray(),
+               projectileDataArray: bundleProjectileDataArray(),
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
@@ -207,38 +356,8 @@ class GameServer {
       });
    }
 
-   private async tick(): Promise<void> {
-      // Update server ticks and time
-      this.ticks++;
-      this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
-      
-      this.board.pushJoinBuffer();
-
-      this.board.updateGameObjects();
-      this.board.resolveCollisions();
-
-      // Age items
-      if (this.ticks % SETTINGS.TPS === 0) {
-         this.board.ageItems();
-      }
-
-      this.board.removeFlaggedGameObjects();
-
-      // Run entity census
-      if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {
-         runEntityCensus();
-      }
-
-      runSpawnAttempt();
-
-      this.board.runRandomTickAttempt();
-
-      // Send game data packets to all players
-      this.sendGameDataPackets();
-   }
-
    /** Send data about the server to all players */
-   private async sendGameDataPackets(): Promise<void> {
+   public async sendGameDataPackets(): Promise<void> {
       if (this.io === null) return;
 
       const sockets = await this.io.fetchSockets();
@@ -259,8 +378,9 @@ class GameServer {
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
-            entityDataArray: this.board.bundleEntityDataArray(player),
-            droppedItemDataArray: this.board.bundleDroppedItemDataArray(),
+            entityDataArray: bundleEntityDataArray(player),
+            droppedItemDataArray: bundleDroppedItemDataArray(),
+            projectileDataArray: bundleProjectileDataArray(),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
@@ -375,11 +495,11 @@ class GameServer {
    }
 }
 
-// Start the game server
 export const SERVER = new GameServer();
+
 SERVER.setup();
 
-// Don't start the server if jest is running
+// Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
    SERVER.start();
 }

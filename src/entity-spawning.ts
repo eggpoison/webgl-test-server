@@ -73,6 +73,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["snow"],
       spawnRate: 0.004,
       maxDensity: 0.008
+   },
+   {
+      entityType: "ice_spikes",
+      spawnableTiles: ["permafrost"],
+      spawnRate: 0.015,
+      maxDensity: 0.06
    }
 ];
 
@@ -89,7 +95,7 @@ export function addEntityToCensus(entityType: EntityType): void {
 }
 
 export function removeEntityFromCensus(entityType: EntityType): void {
-   if (!entityTypeCounts.hasOwnProperty(entityType)) {
+   if (!entityTypeCounts.hasOwnProperty(entityType) || entityTypeCounts[entityType]! <= 0) {
       console.log(Object.assign({}, entityTypeCounts));
       console.log(entityType);
       console.warn(`Entity type "${entityType}" is not in the census.`);
@@ -98,7 +104,7 @@ export function removeEntityFromCensus(entityType: EntityType): void {
 
    entityTypeCounts[entityType]!--;
    if (entityTypeCounts[entityType]! === 0) {
-      delete entityTypeCounts[entityType];
+      // delete entityTypeCounts[entityType];
    }
 }
 
@@ -257,6 +263,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
 }
 
 export function runSpawnAttempt(): void {
+   // if (1+1==2)return;
    for (const spawnInfo of SPAWN_INFO_RECORD) {
       if (spawnConditionsAreMet(spawnInfo)) {
          for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
@@ -271,6 +278,7 @@ export function runSpawnAttempt(): void {
 }
 
 export function spawnInitialEntities(): void {
+   // if (1+1==2)return;
    let numSpawnAttempts: number;
 
    // For each spawn info object, spawn entities until no more can be spawned
@@ -280,6 +288,7 @@ export function spawnInitialEntities(): void {
          runSpawnEvent(spawnInfo);
 
          if (++numSpawnAttempts >= 9999) {
+            console.log(entityTypeCounts);
             console.log(spawnInfo);
             throw new Error("we may have an infinite loop on our hands...");
          }

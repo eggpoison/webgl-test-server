@@ -1,24 +1,45 @@
 import { HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector, curveWeight } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
-import { SERVER } from "./server";
 import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
-import { GameEvent, GameObjectEvents } from "./events";
+import { EntityEvents, GameEvent, GameObjectEvents } from "./events";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
+import Projectile from "./Projectile";
+import { SERVER } from "./server";
 
-export type GameObject = Entity | DroppedItem;
+let idCounter = 0;
 
-interface a {
-   entity: Entity,
-   droppedItem: DroppedItem
+/** Finds a unique available ID for an entity */
+export function findAvailableEntityID(): number {
+   return idCounter++;
 }
 
+export type GameObject = Entity | DroppedItem | Projectile;
+
+export interface GameObjectSubclasses {
+   entity: Entity;
+   droppedItem: DroppedItem;
+   projectile: Projectile;
+}
+
+interface GameObjectSubclassEvents {
+   entity: EntityEvents;
+   droppedItem: GameObjectEvents;
+   projectile: GameObjectEvents;
+}
+
+type IEvents<I extends keyof GameObjectSubclasses> = GameObjectSubclassEvents[I] extends GameObjectEvents ? GameObjectSubclassEvents[I] : never;
+
 /** A generic class for any object in the world which has hitbox(es) */
-abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
+// abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
+abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    public abstract readonly i: I;
    
+   /** Unique identifier for each game object */
+   public readonly id: number;
+
    /** Position of the object in the world */
    public position: Point;
    /** Velocity of the object */
@@ -46,7 +67,7 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
 
    private previousCollidingObjects = new Set<GameObject>();
 
-   protected abstract readonly events: { [E in keyof T]: Array<GameEvent<T, E>> };
+   protected abstract readonly events: { [E in keyof IEvents<I>]: Array<GameEvent<IEvents<I>, E>> };
 
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
@@ -56,6 +77,8 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
 
    constructor(position: Point) {
       this.position = position;
+      
+      this.id = findAvailableEntityID();
 
       // Clamp the game object's position to within the world
       if (this.position.x < 0) this.position.x = 0;
@@ -372,14 +395,15 @@ abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
       this.collidingObjects.add(gameObject);
    }
 
-   public callEvents<E extends keyof T>(type: E, ...params: Parameters<T[E]>): void {
+   // Type parameters confuse me ;-;... This works somehow
+   public callEvents<E extends keyof IEvents<I>>(type: E, ...params: IEvents<I>[E] extends (...args: any) => void ? Parameters<IEvents<I>[E]> : never): void {
       for (const event of this.events[type]) {
          // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
          (event as any)(...params as any[]);
       }
    }
 
-   public createEvent<E extends keyof T>(type: E, event: GameEvent<T, E>): void {
+   public createEvent<E extends keyof IEvents<I>>(type: E, event: IEvents<I>[E]): void {
       this.events[type].push(event);
    }
 

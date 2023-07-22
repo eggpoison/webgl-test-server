@@ -2,8 +2,8 @@ import { EntityType, ItemType, PlaceableItemInfo, Point, SETTINGS, Vector } from
 import Entity from "../../entities/Entity";
 import ENTITY_CLASS_RECORD from "../../entity-classes";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { SERVER } from "../../server";
 import StackableItem from "./StackableItem";
+import { SERVER } from "../../server";
 
 type PlaceableItemHitboxInfo = {
    readonly width: number;

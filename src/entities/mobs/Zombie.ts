@@ -1,9 +1,9 @@
 import { Point, SETTINGS, randFloat } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { SERVER } from "../../server";
 import Entity from "../Entity";
 import Mob from "./Mob";
+import { SERVER } from "../../server";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */

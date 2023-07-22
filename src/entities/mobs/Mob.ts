@@ -5,11 +5,11 @@ import FollowAI from "../../mob-ai/FollowAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import WanderAI from "../../mob-ai/WanderAI";
 import Entity, { EntityComponents } from "../Entity";
-import { SERVER } from "../../server";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
 import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
+import { SERVER } from "../../server";
 
 export const MobAIs = {
    wander: WanderAI,
