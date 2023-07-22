@@ -7,6 +7,7 @@ import Tile from "./tiles/Tile";
 import { GameObject } from "./GameObject";
 import { removeEntityFromCensus } from "./entity-spawning";
 import Projectile from "./Projectile";
+import { SERVER } from "./server";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -95,9 +96,12 @@ class Board {
    }
 
    private removeGameObject(gameObject: GameObject): void {
+      // if (!this.gameObjects.has(gameObject)) {
+      //    throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+      // }
+      
       switch (gameObject.i) {
          case "entity": {
-            if (gameObject.type === "ice_spikes") console.log("FINAL REMOVAL. " + gameObject.id);
             delete this.entities[gameObject.id];
             removeEntityFromCensus(gameObject.type);
             break;
@@ -129,7 +133,9 @@ class Board {
    }
 
    public addGameObjectToRemoveBuffer(gameObject: GameObject): void {
-      this.gameObjectsToRemove.push(gameObject);
+      if (this.gameObjectsToRemove.indexOf(gameObject) === -1) {
+         this.gameObjectsToRemove.push(gameObject);
+      }
    }
 
    public updateGameObjects(): void {
@@ -316,6 +322,35 @@ class Board {
       }
 
       return false;
+   }
+
+   public distanceToClosestEntity(position: Point): number {
+      let minDistance = 2000;
+
+      const minChunkX = Math.max(Math.min(Math.floor((position.x - 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((position.x + 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((position.y - 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((position.y + 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+      const checkedEntities = new Set<Entity>();
+      
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = SERVER.board.getChunk(chunkX, chunkY);
+            for (const entity of chunk.getEntities()) {
+               if (checkedEntities.has(entity)) continue;
+               
+               const distance = position.calculateDistanceBetween(entity.position);
+               if (distance <= minDistance) {
+                  minDistance = distance;
+               }
+
+               checkedEntities.add(entity);
+            }
+         }
+      }
+
+      return minDistance;
    }
 }
 

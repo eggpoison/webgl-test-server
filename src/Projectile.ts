@@ -23,9 +23,14 @@ class Projectile extends _GameObject<"projectile"> {
 
       this.type = type;
       this.lifetime = lifetime;
+
+      // By default, projectiles aren't affected by friction
+      this.isAffectedByFriction = false;
    }
 
    public tick(): void {
+      super.tick();
+      
       this.age += 1 / SETTINGS.TPS;
       if (this.age >= this.lifetime) {
          this.remove();

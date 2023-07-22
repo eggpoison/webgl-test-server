@@ -60,14 +60,17 @@ class HealthComponent extends Component {
       return this.health;
    }
 
+   public isDead(): boolean {
+      return this.health <= 0;
+   }
+
    /**
     * Attempts to apply damage to an entity
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
    public damage(damage: number, knockback: number, hitDirection: number, attackingEntity: Entity | null, attackHash?: string): boolean {
-      // Don't receive damage if invulnerable
-      if (this.isInvulnerable(attackHash)) return false;
+      if (this.isInvulnerable(attackHash) || this.isDead()) return false;
 
       this.entity.callEvents("hurt", damage, attackingEntity);
 
@@ -76,7 +79,7 @@ class HealthComponent extends Component {
       this.health -= damage;
       
       // If the entity was killed by the attack, destroy the entity
-      if (this.health <= 0) {
+      if (this.isDead()) {
          this.entity.callEvents("death", attackingEntity);
          this.entity.remove();
       }

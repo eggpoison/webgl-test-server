@@ -73,7 +73,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    public isRemoved = false;
 
    /** If this flag is set to true, then the game object will not be able to be moved */
-   public isStatic: boolean = false;
+   public isStatic = false;
+
+   /** If set to false, the game object will not experience friction from moving over tiles. */
+   public isAffectedByFriction = true;
 
    constructor(position: Point) {
       this.position = position;
@@ -139,7 +142,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       const terminalVelocity = this.terminalVelocity * tileMoveSpeedMultiplier;
 
       // Friction
-      if (this.velocity !== null) {
+      if (this.isAffectedByFriction && this.velocity !== null) {
          this.velocity.magnitude /= 1 + 1 / SETTINGS.TPS;
       }
       
@@ -165,7 +168,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
             }
          }
       // Friction
-      } else if (this.velocity !== null) {
+      } else if (this.isAffectedByFriction && this.velocity !== null) {
          this.velocity.magnitude -= SETTINGS.FRICTION_CONSTANT * tileTypeInfo.friction / SETTINGS.TPS;
          if (this.velocity.magnitude <= 0) {
             this.velocity = null;
