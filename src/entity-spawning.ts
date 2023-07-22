@@ -204,7 +204,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
       if (spawnPositionIsValid(spawnPosition)) {
-         const entity = new entityClass(spawnPosition);  
+         const entity = new entityClass(spawnPosition);
          if (spawnInfo.entityType === "cow") {
             (entity as Cow).species = cowSpecies;
          }

@@ -40,7 +40,7 @@ class IceSpikes extends Entity {
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type !== "yeti") {
+         if (collidingEntity.type !== "yeti" && collidingEntity.type !== "ice_spikes") {
             const healthComponent = collidingEntity.getComponent("health");
             if (healthComponent !== null) {
                const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);

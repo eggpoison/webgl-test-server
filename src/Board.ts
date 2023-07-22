@@ -118,6 +118,15 @@ class Board {
       this.gameObjects.delete(gameObject);
    }
 
+   public forceRemoveGameObject(gameObject: GameObject): void {
+      const idx = this.gameObjectsToRemove.indexOf(gameObject);
+      if (idx !== -1) {
+         this.gameObjectsToRemove.splice(idx, 1);
+      }
+      
+      this.removeGameObject(gameObject);
+   }
+
    public addGameObjectToRemoveBuffer(gameObject: GameObject): void {
       this.gameObjectsToRemove.push(gameObject);
    }
@@ -280,7 +289,32 @@ class Board {
    }
 
    public gameObjectIsInBoard(gameObject: GameObject): boolean {
-      return this.gameObjects.has(gameObject) || this.joinBuffer.includes(gameObject);
+      // Check the join buffer and game objects set
+      if (this.gameObjects.has(gameObject) || this.joinBuffer.includes(gameObject)) return true;
+
+      // Check in the entities
+      if (gameObject.i === "entity" && Object.values(this.entities).includes(gameObject)) return true;
+
+      // Check in the dropped items
+      if (gameObject.i === "droppedItem" && Object.values(this.droppedItems).includes(gameObject)) return true;
+
+      // Check in the projectiles
+      if (gameObject.i === "projectile" && this.projectiles.has(gameObject)) return true;
+
+      // Check the chunks
+      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+            const chunk = this.getChunk(chunkX, chunkY);
+
+            // Check if it is in the chunk's game objects
+            if (chunk.getGameObjects().has(gameObject)) return true;
+
+            // If the game object is an entity, check if it is in the chunk's entities
+            if (gameObject.i === "entity" && chunk.getEntities().has(gameObject)) return true;
+         }
+      }
+
+      return false;
    }
 }
 

@@ -149,9 +149,8 @@ class GameServer {
    private ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   // public time: number = 6;
-   public time: number = 0;
-
+   public time: number = 6;
+   
    public board!: Board;
    
    /** Minimum number of units away from the border that the player will spawn at */
