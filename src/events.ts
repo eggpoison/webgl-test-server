@@ -10,7 +10,7 @@ export interface GameObjectEvents {
 
 export interface EntityEvents extends GameObjectEvents {
    hurt: (damage: number, attackingEntity: Entity | null) => void;
-   death: () => void;
+   death: (attackingEntity: Entity | null) => void;
    on_knockback: (knockback: number, knockbackDirection: number) => void;
 }
 

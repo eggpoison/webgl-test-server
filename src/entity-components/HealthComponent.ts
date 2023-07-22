@@ -60,34 +60,6 @@ class HealthComponent extends Component {
       return this.health;
    }
 
-   /*
-const healthComponent = this.getComponent("health")!;
-      
-      // Don't attack during invulnerability
-      if (healthComponent.isInvulnerable(attackHash)) {
-         return false;
-      }
-      
-      const hitWasReceived = healthComponent.damage(damage);
- 
-      if (hitWasReceived) this.callEvents("hurt", damage, knockback, attackDirection, attackingEntity);
-
-      // Push away from the source of damage
-      if (hitWasReceived && !this.isRemoved && !this.isStatic) {
-         if (attackingEntity !== null) {
-            const angle = this.position.calculateAngleBetween(attackingEntity.position) + Math.PI;
-            const force = new Vector(knockback * healthComponent.getKnockbackMultiplier(), angle);
-            if (this.velocity !== null) {
-               this.velocity.add(force);
-            } else {
-               this.velocity = force;
-            }
-         }
-      }
-
-      return true;
-   */
-
    /**
     * Attempts to apply damage to an entity
     * @param damage The amount of damage given
@@ -102,10 +74,10 @@ const healthComponent = this.getComponent("health")!;
       this.secondsSinceLastHit = 0;
 
       this.health -= damage;
-
+      
       // If the entity was killed by the attack, destroy the entity
       if (this.health <= 0) {
-         this.entity.callEvents("death");
+         this.entity.callEvents("death", attackingEntity);
          this.entity.remove();
       }
 

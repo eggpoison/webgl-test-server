@@ -64,7 +64,6 @@ abstract class Mob extends Entity implements MobInfo {
    }
 
    public tick(): void {
-      // console.log("im kinda ticked rn");
       super.tick();
 
       // Refresh AI
@@ -74,7 +73,6 @@ abstract class Mob extends Entity implements MobInfo {
       }
 
       if (this.currentAI !== null) {
-         // console.log("new ai type: " + this.currentAI.type);
          this.currentAI.tick();
       }
    }

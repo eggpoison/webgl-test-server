@@ -11,6 +11,8 @@ import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Cow from "./entities/mobs/Cow";
+import Cactus from "./entities/resources/Cactus";
+import IceSpikes from "./entities/resources/IceSpikes";
 
 /*
 
@@ -150,7 +152,7 @@ class GameServer {
 
    /** The time of day the server is currently in (from 0 to 23) */
    public time: number = 6;
-   
+
    public board!: Board;
    
    /** Minimum number of units away from the border that the player will spawn at */
@@ -174,6 +176,9 @@ class GameServer {
       // Update server ticks and time
       this.ticks++;
       this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+
+      // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
+      this.board.removeFlaggedGameObjects();
       
       this.board.pushJoinBuffer();
 
@@ -184,8 +189,6 @@ class GameServer {
       if (this.ticks % SETTINGS.TPS === 0) {
          this.board.ageItems();
       }
-
-      this.board.removeFlaggedGameObjects();
 
       // Run entity census
       if ((this.ticks / SETTINGS.TPS) % GameServer.ENTITY_CENSUS_INTERVAL === 0) {
@@ -245,9 +248,7 @@ class GameServer {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
 
-            setTimeout(() => {
-               new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
-            }, 1000);
+            new IceSpikes(new Point(spawnPosition.x + 200, spawnPosition.y));
             
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);

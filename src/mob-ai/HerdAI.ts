@@ -103,8 +103,8 @@ class HerdAI extends AI implements HerdAIParams {
          let totalXVal: number = 0;
          let totalYVal: number = 0;
          for (const entity of this.entitiesInVisionRange) {
-            totalXVal += Math.cos(entity.rotation);
-            totalYVal += Math.sin(entity.rotation);
+            totalXVal += Math.sin(entity.rotation);
+            totalYVal += Math.cos(entity.rotation);
          }
          let averageHeading = Math.atan2(totalYVal, totalXVal);
          averageHeading = Math.PI/2 - averageHeading;

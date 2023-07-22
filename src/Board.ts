@@ -97,6 +97,7 @@ class Board {
    private removeGameObject(gameObject: GameObject): void {
       switch (gameObject.i) {
          case "entity": {
+            if (gameObject.type === "ice_spikes") console.log("FINAL REMOVAL. " + gameObject.id);
             delete this.entities[gameObject.id];
             removeEntityFromCensus(gameObject.type);
             break;

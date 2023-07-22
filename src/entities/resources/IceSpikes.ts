@@ -35,8 +35,8 @@ class IceSpikes extends Entity {
       
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.createEvent("death", () => {
-         this.shatter();
+      this.createEvent("death", (attackingEntity: Entity | null) => {
+         this.explode();
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
@@ -53,7 +53,7 @@ class IceSpikes extends Entity {
    }
 
    /** Causes frostcicle projectiles to fly out from the ice spike */
-   private shatter(): void {
+   private explode(): void {
       const numProjectiles = randInt(3, 4);
 
       for (let i = 1; i <= numProjectiles; i++) {
@@ -68,8 +68,19 @@ class IceSpikes extends Entity {
             })
          ]);
 
+         projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
+            const healthComponent = collidingEntity.getComponent("health");
+            if (healthComponent !== null) {
+               const hitDirection = projectile.position.calculateAngleBetween(collidingEntity.position);
+
+               healthComponent.damage(1, 150, hitDirection, null, "ice_shards");
+               healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
+            }
+         });
+
          const velocity = new Vector(1000, Math.random() * 2 * Math.PI);
          projectile.velocity = velocity;
+         projectile.terminalVelocity = 1000;
       }
    }
 
