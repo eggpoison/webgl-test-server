@@ -1,4 +1,5 @@
 import { GameObject } from "./GameObject";
+import Projectile from "./Projectile";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 
@@ -8,6 +9,7 @@ class Chunk {
    
    private readonly entities = new Set<Entity>();
    private readonly droppedItems = new Set<DroppedItem>();
+   private readonly projectiles = new Set<Projectile>();
 
    public readonly x: number;
    public readonly y: number;
@@ -29,6 +31,9 @@ class Chunk {
             this.droppedItems.add(gameObject);
             break;
          }
+         case "projectile": {
+            this.projectiles.add(gameObject);
+         }
       }
    }
 
@@ -44,7 +49,14 @@ class Chunk {
             this.droppedItems.delete(gameObject);
             break;
          }
+         case "projectile": {
+            this.projectiles.delete(gameObject);
+         }
       }
+   }
+
+   public getGameObjects(): Set<GameObject> {
+      return this.gameObjects;
    }
 
    public getEntities(): Set<Entity> {
@@ -55,8 +67,8 @@ class Chunk {
       return this.droppedItems;
    }
 
-   public getGameObjects(): Set<GameObject> {
-      return this.gameObjects;
+   public getProjectiles(): Set<Projectile> {
+      return this.projectiles;
    }
 }
 

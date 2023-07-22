@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import { registerCommand } from "./commands";
@@ -10,8 +10,6 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
-import Cow from "./entities/mobs/Cow";
-import Cactus from "./entities/resources/Cactus";
 import IceSpikes from "./entities/resources/IceSpikes";
 
 /*
@@ -103,33 +101,48 @@ const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameOb
    throw new Error("bad");
 }
 
-const bundleEntityDataArray = (player: Player): ReadonlyArray<EntityData<EntityType>> => {
+const bundleEntityDataArray = (player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
    const entityDataArray = new Array<EntityData<EntityType>>();
    
-   for (const entity of Object.values(SERVER.board.entities)) {
-      if (entity !== player) {
-         entityDataArray.push(bundleGameObjectData("entity", entity));
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
+      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         for (const entity of chunk.getEntities()) {
+            if (entity !== player) {
+               entityDataArray.push(bundleGameObjectData("entity", entity));
+            }
+         }
       }
    }
 
    return entityDataArray;
 }
 
-const bundleDroppedItemDataArray = (): ReadonlyArray<DroppedItemData> => {
+const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<DroppedItemData> => {
    const droppedItemDataArray = new Array<DroppedItemData>();
    
-   for (const droppedItem of Object.values(SERVER.board.droppedItems)) {
-      droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
+      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         for (const droppedItem of chunk.getDroppedItems()) {
+            droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
+         }
+      }
    }
 
    return droppedItemDataArray;
 }
 
-const bundleProjectileDataArray = (): ReadonlyArray<ProjectileData> => {
+const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ProjectileData> => {
    const projectileDataArray = new Array<ProjectileData>();
    
-   for (const projectile of SERVER.board.projectiles) {
-      projectileDataArray.push(bundleGameObjectData("projectile", projectile));
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
+      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         for (const projectile of chunk.getProjectiles()) {
+            projectileDataArray.push(bundleGameObjectData("projectile", projectile));
+         }
+      }
    }
 
    return projectileDataArray;
@@ -141,6 +154,7 @@ type PlayerData = {
    readonly username: string;
    instance: Player;
    clientIsActive: boolean;
+   visibleChunkBounds: VisibleChunkBounds;
 }
 
 /** Communicates between the server and players */
@@ -261,7 +275,8 @@ class GameServer {
             this.playerData[socket.id] = {
                username: clientUsername,
                instance: player,
-               clientIsActive: true
+               clientIsActive: true,
+               visibleChunkBounds: [0, 0, 0, 0]
             };
 
             const tiles = this.board.getTiles();
@@ -285,9 +300,9 @@ class GameServer {
                playerID: player.id,
                tiles: serverTileData,
                spawnPosition: spawnPosition.package(),
-               entityDataArray: bundleEntityDataArray(player),
-               droppedItemDataArray: bundleDroppedItemDataArray(),
-               projectileDataArray: bundleProjectileDataArray(),
+               entityDataArray: bundleEntityDataArray(player, [0, 0, 0, 0]),
+               droppedItemDataArray: bundleDroppedItemDataArray([0, 0, 0, 0]),
+               projectileDataArray: bundleProjectileDataArray([0, 0, 0, 0]),
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
@@ -388,9 +403,9 @@ class GameServer {
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
-            entityDataArray: bundleEntityDataArray(player),
-            droppedItemDataArray: bundleDroppedItemDataArray(),
-            projectileDataArray: bundleProjectileDataArray(),
+            entityDataArray: bundleEntityDataArray(player, playerData.visibleChunkBounds),
+            droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
+            projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
@@ -478,6 +493,7 @@ class GameServer {
       playerData.instance.acceleration = playerDataPacket.acceleration !== null ? Vector.unpackage(playerDataPacket.acceleration) : null;
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
+      playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
    }
 
    private generatePlayerSpawnPosition(): Point {
