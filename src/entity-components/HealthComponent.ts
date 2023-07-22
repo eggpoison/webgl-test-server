@@ -69,7 +69,7 @@ class HealthComponent extends Component {
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
-   public damage(damage: number, knockback: number, hitDirection: number, attackingEntity: Entity | null, attackHash?: string): boolean {
+   public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, attackHash?: string): boolean {
       if (this.isInvulnerable(attackHash) || this.isDead()) return false;
 
       this.entity.callEvents("hurt", damage, attackingEntity);
@@ -88,7 +88,7 @@ class HealthComponent extends Component {
          this.globalInvulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
       }
 
-      if (attackingEntity !== null && !this.entity.isStatic) {
+      if (hitDirection !== null && !this.entity.isStatic) {
          this.applyKnockback(knockback, hitDirection);
       }
 

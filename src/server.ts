@@ -11,6 +11,7 @@ import Board from "./Board";
 import { runEntityCensus, runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import IceSpikes from "./entities/resources/IceSpikes";
+import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -105,7 +106,7 @@ const bundleEntityDataArray = (player: Player, visibleChunkBounds: VisibleChunkB
    const entityDataArray = new Array<EntityData<EntityType>>();
    const seenIDs = new Set<number>();
    
-   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const entity of chunk.getEntities()) {
@@ -124,7 +125,7 @@ const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): Rea
    const droppedItemDataArray = new Array<DroppedItemData>();
    const seenIDs = new Set<number>();
    
-   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const droppedItem of chunk.getDroppedItems()) {
@@ -143,7 +144,7 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    const projectileDataArray = new Array<ProjectileData>();
    const seenIDs = new Set<number>();
    
-   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[2]; chunkX++) {
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const projectile of chunk.getProjectiles()) {
@@ -272,11 +273,13 @@ class GameServer {
             // Spawn the player in a random position in the world
             const spawnPosition = this.generatePlayerSpawnPosition();
 
-            new IceSpikes(new Point(spawnPosition.x + 200, spawnPosition.y));
+            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+            
+            // new IceSpikes(new Point(spawnPosition.x + 200, spawnPosition.y));
 
-            for (let i = 0; i < 10; i++) {
-               new IceSpikes(new Point(spawnPosition.x, spawnPosition.y - 200 - i * 35));
-            }
+            // for (let i = 0; i < 10; i++) {
+            //    new IceSpikes(new Point(spawnPosition.x, spawnPosition.y - 200 - i * 35));
+            // }
             
             // Spawn the player entity
             const player = new Player(spawnPosition, clientUsername);

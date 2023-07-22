@@ -8,7 +8,7 @@ const killPlayer = (username: string): void => {
    if (player === null) return;
 
    // Kill the player
-   player.getComponent("health")!.damage(999999, 0, 0,null);
+   player.getComponent("health")!.damage(999999, 0, null, null);
 }
 
 const damagePlayer = (username: string, damage: number): void => {
@@ -16,7 +16,7 @@ const damagePlayer = (username: string, damage: number): void => {
    if (player === null) return;
 
    // Damage the player
-   player.getComponent("health")!.damage(damage, 0, 0, null);
+   player.getComponent("health")!.damage(damage, 0, null, null);
 }
 
 const setTime = (time: number): void => {

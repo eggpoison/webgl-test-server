@@ -119,7 +119,7 @@ abstract class Entity extends _GameObject<"entity"> {
       if (this.statusEffects.hasOwnProperty("fire")) {
          if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
             // Fire tick
-            this.getComponent("health")!.damage(1, 0, 0, null);
+            this.getComponent("health")!.damage(1, 0, null, null);
          }
       }
    }
