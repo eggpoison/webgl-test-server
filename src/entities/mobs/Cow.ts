@@ -16,6 +16,9 @@ class Cow extends Mob {
          item_creation: new ItemCreationComponent()
       }, "cow", SETTINGS.TILE_SIZE * 4, isNaturallySpawned);
 
+      this.setAIParam("hunger", 0);
+      this.setAIParam("metabolism", 2.5);
+
       this.addAI("wander", {
          aiWeightMultiplier: 0.5,
          wanderRate: 0.6,
@@ -55,7 +58,6 @@ class Cow extends Mob {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 1,
          tileTargets: new Map([
             ["grass", {
                resultingTileType: "dirt",

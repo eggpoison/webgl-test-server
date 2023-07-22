@@ -21,30 +21,23 @@ export interface TileFoodSource extends FoodSource {
 interface TileConsumeAIParams extends BaseAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
-   readonly metabolism: number;
    readonly tileTargets?: ReadonlyMap<TileType, TileFoodSource>;
 }
 
 class TileConsumeAI extends AI implements TileConsumeAIParams {
-   private static readonly STOMACH_CAPACITY = 100;
-
    public readonly type = "tileConsume";
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly metabolism: number;
    public readonly tileTargets: ReadonlyMap<TileType, TileFoodSource>;
-
-   private hunger: number = 0;
 
    private grazeTimer: number = 0;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, metabolism, tileTargets }: TileConsumeAIParams) {
+   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, tileTargets }: TileConsumeAIParams) {
       super(mob, { aiWeightMultiplier });
 
       this.acceleration = acceleration;
       this.terminalVelocity = terminalVelocity;
-      this.metabolism = metabolism;
       this.tileTargets = typeof tileTargets !== "undefined" ? tileTargets : new Map();
    }
 
@@ -84,17 +77,14 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
       };
       createGenericTile(previousTile.x, previousTile.y, newTileInfo);
 
-      this.hunger = 0;
+      this.mob.setAIParam("hunger", 0);
    }
 
    protected _getWeight(): number {
-      this.hunger += this.metabolism / SETTINGS.TPS * Mob.AI_REFRESH_TIME;
-      if (this.hunger > TileConsumeAI.STOMACH_CAPACITY) {
-         this.hunger = TileConsumeAI.STOMACH_CAPACITY;
-      }
+      const hunger = this.mob.getAIParam("hunger")!;
 
       // Try to activate the AI if the entity is on a tile it can eat
-      if (this.canGraze() && this.hunger === TileConsumeAI.STOMACH_CAPACITY) {
+      if (this.canGraze() && hunger >= 95) {
          return 1;
       }
 

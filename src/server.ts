@@ -10,7 +10,8 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
-import IceSpikes from "./entities/resources/IceSpikes";
+import Cow from "./entities/mobs/Cow";
+import BerryBush from "./entities/resources/BerryBush";
 
 /*
 
@@ -101,12 +102,12 @@ const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameOb
    throw new Error("bad");
 }
 
-const bundleEntityDataArray = (player: Player, visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
+const bundleEntityDataArray = (player: Player, chunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
    const entityDataArray = new Array<EntityData<EntityType>>();
    const seenIDs = new Set<number>();
    
-   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
-      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+   for (let chunkX = chunkBounds[0]; chunkX <= chunkBounds[1]; chunkX++) {
+      for (let chunkY = chunkBounds[2]; chunkY <= chunkBounds[3]; chunkY++) {
          const chunk = SERVER.board.getChunk(chunkX, chunkY);
          for (const entity of chunk.getEntities()) {
             if (entity !== player && !seenIDs.has(entity.id)) {
@@ -265,7 +266,8 @@ class GameServer {
             const spawnPosition = this.generatePlayerSpawnPosition();
             // const spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 201, 200);
 
-            // const a = new IceSpikes(new Point(spawnPosition.x + 180, spawnPosition.y), false);
+            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y), false);
+            new BerryBush(new Point(spawnPosition.x + 200, spawnPosition.y + 250), false);
             
             // Spawn the player entity
             const player = new Player(spawnPosition, false, clientUsername);
@@ -401,11 +403,18 @@ class GameServer {
          const hitsTaken = player.getHitsTaken();
          player.clearHitsTaken();
 
+         const extendedVisibleChunkBounds: VisibleChunkBounds = [
+            Math.max(playerData.visibleChunkBounds[0] - 1, 0),
+            Math.min(playerData.visibleChunkBounds[1] + 1, SETTINGS.BOARD_SIZE - 1),
+            Math.max(playerData.visibleChunkBounds[2] - 1, 0),
+            Math.min(playerData.visibleChunkBounds[3] + 1, SETTINGS.BOARD_SIZE - 1)
+         ];
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
-            entityDataArray: bundleEntityDataArray(player, playerData.visibleChunkBounds),
-            droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
-            projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
+            entityDataArray: bundleEntityDataArray(player, extendedVisibleChunkBounds),
+            droppedItemDataArray: bundleDroppedItemDataArray(extendedVisibleChunkBounds),
+            projectileDataArray: bundleProjectileDataArray(extendedVisibleChunkBounds),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,

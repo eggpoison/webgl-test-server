@@ -8,6 +8,7 @@ import { GameObject } from "./GameObject";
 import { removeEntityFromCensus } from "./entity-spawning";
 import Projectile from "./Projectile";
 import { SERVER } from "./server";
+import CircularHitbox from "./hitboxes/CircularHitbox";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -348,6 +349,33 @@ class Board {
       }
 
       return minDistance;
+   }
+
+   public getEntitiesAtPosition(position: Point): Set<Entity> {
+      const testHitbox = new CircularHitbox({
+         type: "circular",
+         radius: 1
+      });
+
+      testHitbox.setPosition(position);
+      testHitbox.updateHitboxBounds();
+
+      const chunkX = Math.floor(position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkY = Math.floor(position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+
+      const entities = new Set<Entity>();
+      
+      const chunk = this.getChunk(chunkX, chunkY);
+      entityLoop: for (const entity of chunk.getEntities()) {
+         for (const hitbox of entity.hitboxes) {
+            if (testHitbox.isColliding(hitbox)) {
+               entities.add(entity);
+               continue entityLoop;
+            }
+         }
+      }
+
+      return entities;
    }
 }
 

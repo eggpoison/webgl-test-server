@@ -34,11 +34,16 @@ abstract class Hitbox<T extends HitboxType> {
       this.bounds = this.calculateHitboxBounds();
    }
 
+   /** Updates the hitboxes position to match the position of its hitbox object */
    public updatePosition(): void {
       this.position = this.hitboxObject.position.copy();
       if (typeof this.info.offset !== "undefined") {
          this.position.add(this.info.offset);
       }
+   }
+
+   public setPosition(position: Point): void {
+      this.position = position;
    }
 
    public abstract isColliding(otherHitbox: Hitbox<HitboxType>): boolean;

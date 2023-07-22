@@ -46,6 +46,8 @@ abstract class Mob extends Entity implements MobInfo {
    public readonly herdMemberHash?: number;
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
+
+   private aiParams: Record<string, number> = {};
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean) {
       super(position, components, entityType, isNaturallySpawned);
@@ -65,6 +67,17 @@ abstract class Mob extends Entity implements MobInfo {
 
    public tick(): void {
       super.tick();
+
+      if (this.hasAIParam("hunger")) {
+         const previousNumber = this.getAIParam("hunger")!;
+         const metabolism = this.getAIParam("metabolism")!;
+
+         let newHunger = previousNumber + metabolism / SETTINGS.TPS;
+         if (newHunger > 100) {
+            newHunger = 100;
+         }
+         this.setAIParam("hunger", newHunger);
+      }
 
       // Refresh AI
       if (++this.aiRefreshTicker === Mob.AI_REFRESH_TIME) {
@@ -147,6 +160,18 @@ abstract class Mob extends Entity implements MobInfo {
 
    public getCurrentAIType(): keyof typeof MobAIs | null {
       return this.currentAI !== null ? this.currentAI.type : null;
+   }
+
+   public getAIParam(param: string): number | undefined {
+      return this.aiParams[param];
+   }
+
+   public setAIParam(param: string, value: number): void {
+      this.aiParams[param] = value;
+   }
+
+   public hasAIParam(param: string): boolean {
+      return this.aiParams.hasOwnProperty(param);
    }
 }
 

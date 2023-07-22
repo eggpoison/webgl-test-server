@@ -3,10 +3,10 @@ import Hitbox, { HitboxBounds } from "./Hitbox";
 
 class CircularHitbox extends Hitbox<"circular"> {
    protected calculateHitboxBounds(): HitboxBounds {
-      const minX = this.hitboxObject.position.x - this.info.radius;
-      const maxX = this.hitboxObject.position.x + this.info.radius;
-      const minY = this.hitboxObject.position.y - this.info.radius;
-      const maxY = this.hitboxObject.position.y + this.info.radius;
+      const minX = this.position.x - this.info.radius;
+      const maxX = this.position.x + this.info.radius;
+      const minY = this.position.y - this.info.radius;
+      const maxY = this.position.y + this.info.radius;
       return [minX, maxX, minY, maxY];
    }
 

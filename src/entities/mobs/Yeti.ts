@@ -22,6 +22,9 @@ class Yeti extends Mob {
          item_creation: new ItemCreationComponent()
       }, "yeti", SETTINGS.TILE_SIZE * 7, true);
 
+      this.setAIParam("hunger", 0);
+      this.setAIParam("metabolism", 1);
+
       this.addHitboxes([
          new CircularHitbox({
             type: "circular",

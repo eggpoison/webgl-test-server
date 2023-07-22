@@ -112,6 +112,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
    public updateHitboxes(): void {
       for (const hitbox of this.hitboxes) {
+         hitbox.updatePosition();
          if (hitbox.info.type === "rectangular") {
             (hitbox as RectangularHitbox).computeVertexPositions();
             (hitbox as RectangularHitbox).calculateSideAxes();
