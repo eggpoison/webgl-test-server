@@ -96,15 +96,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
          hitbox.setHitboxObject(this);
 
          this.hitboxes.add(hitbox);
-
-         // // If the hitbox is already active, add it to the list of active hitboxes
-         // if (hitbox.isActive) {
-         //    this.hitboxes.add(hitbox);
-         // } else {
-         //    // Otherwise add it to the list of inactive hitboxes and wait for it to become active
-         //    this.inactiveHitboxes.add(hitbox);
-         //    hitbox.addActivationCallback(() => this.activateHitbox(hitbox));
-         // }
       }
    }
 
