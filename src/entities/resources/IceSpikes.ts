@@ -68,6 +68,8 @@ class IceSpikes extends Entity {
                
                healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, "ice_spikes");
                healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
+
+               collidingEntity.applyStatusEffect("freezing", 5);
             }
          }
       })
@@ -138,6 +140,8 @@ class IceSpikes extends Entity {
    
                   healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, "ice_shards");
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
+
+                  collidingEntity.applyStatusEffect("freezing", 3);
                }
 
                // Shatter the ice spike

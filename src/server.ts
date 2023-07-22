@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import { registerCommand } from "./commands";
@@ -313,7 +313,8 @@ class GameServer {
                serverTicks: this.ticks,
                serverTime: this.time,
                hitsTaken: [],
-               playerHealth: 20
+               playerHealth: 20,
+               statusEffects: []
             };
 
             socket.emit("initial_game_data_packet", initialGameDataPacket);
@@ -410,7 +411,8 @@ class GameServer {
             serverTicks: this.ticks,
             serverTime: this.time,
             hitsTaken: hitsTaken,
-            playerHealth: player.getComponent("health")!.getHealth()
+            playerHealth: player.getComponent("health")!.getHealth(),
+            statusEffects: player.getStatusEffects() as Array<StatusEffectType>
          };
 
          // Send the game data to the player

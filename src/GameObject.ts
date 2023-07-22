@@ -134,12 +134,18 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       this.tile = SERVER.board.getTile(tileX, tileY);
    }
 
+   /** Function optionally implemented by game object subclasses */
+   public getMoveSpeedMultiplier?(): number;
+
    public applyPhysics(): void {
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.tile.type];
 
-      const tileMoveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
+      let moveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
+      if (typeof this.getMoveSpeedMultiplier !== "undefined") {
+         moveSpeedMultiplier *= this.getMoveSpeedMultiplier();
+      }
 
-      const terminalVelocity = this.terminalVelocity * tileMoveSpeedMultiplier;
+      const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
 
       // Friction
       if (this.isAffectedByFriction && this.velocity !== null) {
@@ -149,7 +155,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       // Accelerate
       if (this.acceleration !== null) {
          const acceleration = this.acceleration.copy();
-         acceleration.magnitude *= tileTypeInfo.friction * tileMoveSpeedMultiplier / SETTINGS.TPS;
+         acceleration.magnitude *= tileTypeInfo.friction * moveSpeedMultiplier / SETTINGS.TPS;
 
          const magnitudeBeforeAdd = this.velocity?.magnitude || 0;
          // Add acceleration to velocity

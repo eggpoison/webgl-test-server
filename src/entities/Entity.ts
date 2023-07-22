@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, Point, SETTINGS } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -22,9 +22,7 @@ const filterTickableComponents = (components: Partial<EntityComponents>): Readon
    return tickableComponents;
 }
 
-type StatusEffectType = "fire";
-
-type StatusEffect = {
+interface StatusEffect {
    durationSeconds: number;
    secondsRemaining: number;
    ticksElapsed: number;
@@ -51,7 +49,7 @@ abstract class Entity extends _GameObject<"entity"> {
    // /** Impacts how much force an entity experiences which pushing away from another entity */
    // private pushForceMultiplier = 1;
 
-   public readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
+   private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
       super(position);
@@ -96,6 +94,16 @@ abstract class Entity extends _GameObject<"entity"> {
 
    public setIsStatic(isStatic: boolean): void {
       this.isStatic = isStatic;
+   }
+
+   public getMoveSpeedMultiplier(): number {
+      let moveSpeedMultiplier = 1;
+
+      for (const statusEffect of Object.keys(this.statusEffects) as ReadonlyArray<StatusEffectType>) {
+         moveSpeedMultiplier *= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
+      }
+
+      return moveSpeedMultiplier;
    }
 
    public getComponent<C extends keyof EntityComponents>(name: C): EntityComponents[C] | null {
@@ -147,6 +155,10 @@ abstract class Entity extends _GameObject<"entity"> {
 
    public removeStatusEffect(type: StatusEffectType): void {
       delete this.statusEffects[type];
+   }
+
+   public getStatusEffects(): ReadonlyArray<StatusEffectType> {
+      return Object.keys(this.statusEffects) as ReadonlyArray<StatusEffectType>;
    }
 }
 
