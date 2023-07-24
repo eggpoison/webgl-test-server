@@ -411,7 +411,7 @@ abstract class Board {
    }
 
    public static tileIsInBoard(tileX: number, tileY: number): boolean {
-      return tileX >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
+      return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
    }
 }
 
