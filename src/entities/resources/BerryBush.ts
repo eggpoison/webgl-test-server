@@ -5,6 +5,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import DroppedItem from "../../items/DroppedItem";
 import { createItem } from "../../items/item-creation";
 import { SERVER } from "../../server";
+import Board from "../../Board";
 
 class BerryBush extends Entity {
    private static readonly HEALTH = 10;
@@ -92,7 +93,7 @@ class BerryBush extends Entity {
          const spawnOffset = new Vector(BerryBush.BERRY_DROP_OFFSET, spawnDirection).convertToPoint();
 
          position.add(spawnOffset);
-      } while (!SERVER.board.isInBoard(position));
+      } while (!Board.isInBoard(position));
 
       const droppedItem = new DroppedItem(position, berry);
       

@@ -1,4 +1,4 @@
-import { HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector, curveWeight } from "webgl-test-shared";
+import { GameObjectDebugData, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector, curveWeight } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
 import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
@@ -7,7 +7,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Projectile from "./Projectile";
-import { SERVER } from "./server";
+import Board from "./Board";
 
 let idCounter = 0;
 
@@ -91,7 +91,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
       this.updateTile();
 
-      SERVER.board.addGameObjectToJoinBuffer(this as unknown as GameObject);
+      Board.addGameObjectToJoinBuffer(this as unknown as GameObject);
    }
 
    public addHitboxes(hitboxes: ReadonlyArray<Hitbox<HitboxType>>): void {
@@ -132,7 +132,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
 
-      this.tile = SERVER.board.getTile(tileX, tileY);
+      this.tile = Board.getTile(tileX, tileY);
    }
 
    /** Function optionally implemented by game object subclasses */
@@ -148,9 +148,15 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
       const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
 
+      let tileFrictionReduceAmount: number;
+      
       // Friction
       if (this.isAffectedByFriction && this.velocity !== null) {
+         const amountBefore = this.velocity.magnitude
          this.velocity.magnitude /= 1 + 3 / SETTINGS.TPS * tileTypeInfo.friction;
+         tileFrictionReduceAmount = amountBefore - this.velocity.magnitude;
+      } else {
+         tileFrictionReduceAmount = 0;
       }
       
       // Accelerate
@@ -158,7 +164,18 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
          const acceleration = this.acceleration.copy();
          acceleration.magnitude *= tileTypeInfo.friction * moveSpeedMultiplier / SETTINGS.TPS;
 
+         // Make acceleration slow as the game object reaches its terminal velocity
+         if (this.velocity !== null) {
+            const progressToTerminalVelocity = this.velocity.magnitude / terminalVelocity;
+            if (progressToTerminalVelocity < 1) {
+               acceleration.magnitude *= 1 - Math.pow(progressToTerminalVelocity * 1.1, 2);
+            }
+         }
+
+         acceleration.magnitude += tileFrictionReduceAmount;
+
          const magnitudeBeforeAdd = this.velocity?.magnitude || 0;
+
          // Add acceleration to velocity
          if (this.velocity !== null) {
             this.velocity.add(acceleration);
@@ -203,7 +220,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-               const chunk = SERVER.board.getChunk(chunkX, chunkY);
+               const chunk = Board.getChunk(chunkX, chunkY);
                if (!containingChunks.has(chunk)) {
                   containingChunks.add(chunk);
                }
@@ -410,8 +427,17 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
    public remove(): void {
       this.isRemoved = true;
-      SERVER.board.addGameObjectToRemoveBuffer(this as unknown as GameObject);
-      SERVER.board.removeGameObjectFromJoinBuffer(this as unknown as GameObject);
+      Board.addGameObjectToRemoveBuffer(this as unknown as GameObject);
+      Board.removeGameObjectFromJoinBuffer(this as unknown as GameObject);
+   }
+
+   public getDebugData(): GameObjectDebugData {
+      return {
+         gameObjectID: this.id,
+         lines: [],
+         circles: [],
+         tileHighlights: []
+      }
    }
 }
 

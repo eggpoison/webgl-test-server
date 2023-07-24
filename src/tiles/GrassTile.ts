@@ -2,6 +2,7 @@ import { SETTINGS } from "webgl-test-shared";
 import DirtTile from "./DirtTile";
 import Tile from "./Tile";
 import { SERVER } from "../server";
+import Board from "../Board";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -22,7 +23,7 @@ class GrassTile extends Tile {
          const tileY = this.y + offset[1];
          if (tileY < 0 || tileY >= SETTINGS.BOARD_DIMENSIONS) continue;
 
-         const tile = SERVER.board.getTile(tileX, tileY);
+         const tile = Board.getTile(tileX, tileY);
          if (tile.type === "dirt") {
             (tile as DirtTile).incrementGrowProgress();
          }

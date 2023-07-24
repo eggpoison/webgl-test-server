@@ -1,4 +1,4 @@
-import { EntityType, Vector } from "webgl-test-shared";
+import { EntityType, GameObjectDebugData, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -15,6 +15,8 @@ class ChaseAI extends AI implements ChaseAIParams {
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
    public entityIsChased: (entity: Entity) => boolean;
+
+   private target: Entity | null = null;
 
    constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, entityIsChased }: ChaseAIParams) {
       super(mob, { aiWeightMultiplier });
@@ -39,12 +41,17 @@ class ChaseAI extends AI implements ChaseAIParams {
             minDistance = distance;
          }
       }
+      this.target = closestEntity;
 
       // Move to target
       const angle = this.mob.position.calculateAngleBetween(closestEntity.position);
       this.mob.rotation = angle;
       this.mob.acceleration = new Vector(this.acceleration, this.mob.rotation);
       this.mob.terminalVelocity = this.terminalVelocity;
+   }
+
+   public onDeactivation(): void {
+      this.target = null;
    }
 
    protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
@@ -64,6 +71,17 @@ class ChaseAI extends AI implements ChaseAIParams {
          return 1;
       }
       return 0;
+   }
+
+   public addDebugData(debugData: GameObjectDebugData): void {
+      if (this.target === null) return;
+
+      debugData.lines.push(
+         {
+            targetPosition: this.target.position.package(),
+            colour: [0, 0, 1]
+         }
+      );
    }
 }
 

@@ -4,7 +4,7 @@ import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject from "../GameObject";
-import { addEntityToCensus } from "../entity-spawning";
+import { addEntityToCensus } from "../census";
 
 export interface EntityComponents {
    readonly health: HealthComponent;

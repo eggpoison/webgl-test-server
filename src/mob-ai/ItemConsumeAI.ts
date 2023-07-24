@@ -1,10 +1,11 @@
-import { ItemType, SETTINGS, TileType } from "webgl-test-shared";
+import { GameObjectDebugData, ItemType, SETTINGS, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
 import FoodItem from "../items/generic/FoodItem";
 import { GameObject } from "../GameObject";
 import { SERVER } from "../server";
+import Board from "../Board";
 
 type FoodSource = {
    /** Amount of food given by eating the source */
@@ -127,7 +128,7 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
       const maxY = Math.max(Math.min(Math.floor((this.mob.position.y + this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       for (let chunkX = minX; chunkX <= maxX; chunkX++) {
          for (let chunkY = minY; chunkY <= maxY; chunkY++) {
-            for (const droppedItem of SERVER.board.getChunk(chunkX, chunkY).getDroppedItems()) {
+            for (const droppedItem of Board.getChunk(chunkX, chunkY).getDroppedItems()) {
                if (!this.itemTargets.has(droppedItem.item.type)) {
                   continue;
                }
@@ -145,6 +146,17 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
       }
 
       return 0;
+   }
+
+   public addDebugData(debugData: GameObjectDebugData): void {
+      if (this.target === null) return;
+
+      debugData.lines.push(
+         {
+            targetPosition: this.target.position.package(),
+            colour: [0, 0, 1]
+         }
+      );
    }
 }
 

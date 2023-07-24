@@ -6,6 +6,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Projectile from "../../Projectile";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { SERVER } from "../../server";
+import Board from "../../Board";
 
 class IceSpikes extends Entity {
    private static readonly RADIUS = 40;
@@ -94,7 +95,7 @@ class IceSpikes extends Entity {
       const position = this.position.copy();
       position.add(new Vector(IceSpikes.GROWTH_OFFSET, 2 * Math.PI * Math.random()).convertToPoint());
 
-      const minDistanceToEntity = SERVER.board.distanceToClosestEntity(position);
+      const minDistanceToEntity = Board.distanceToClosestEntity(position);
       if (minDistanceToEntity >= 40) {
          new IceSpikes(position, false, this.rootIceSpike);
          

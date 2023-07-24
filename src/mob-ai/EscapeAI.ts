@@ -1,4 +1,4 @@
-import { SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -61,6 +61,17 @@ class EscapeAI extends AI implements EscapeAIParams {
       }
 
       return this.attacker !== null ? 1 : 0;
+   }
+
+   public addDebugData(debugData: GameObjectDebugData): void {
+      if (this.attacker === null) return;
+
+      debugData.lines.push(
+         {
+            targetPosition: this.attacker.position.package(),
+            colour: [1, 0, 1]
+         }
+      );
    }
 }
 

@@ -1,7 +1,7 @@
 import { TileType, BiomeName, TileInfo } from "webgl-test-shared";
 import { terrainHasBeenGenerated } from "../terrain-generation";
-import { addTileToCensus, removeTileFromCensus } from "../entity-spawning";
-import { SERVER } from "../server";
+import Board from "../Board";
+import { addTileToCensus, removeTileFromCensus } from "../census";
 
 abstract class Tile implements TileInfo {
    public readonly x: number;
@@ -23,13 +23,13 @@ abstract class Tile implements TileInfo {
 
       if (terrainHasBeenGenerated) {
          // Remove the previous tile from the census
-         const previousTile = SERVER.board.getTile(x, y);
+         const previousTile = Board.getTile(x, y);
          removeTileFromCensus(previousTile.type);
          
          // Add the tile to the tile array
-         SERVER.board.setTile(x, y, this);
+         Board.setTile(x, y, this);
 
-         SERVER.board.registerNewTileUpdate(x, y);
+         Board.registerNewTileUpdate(x, y);
       }
    }
    /** Runs every time a tile receives a random tick */

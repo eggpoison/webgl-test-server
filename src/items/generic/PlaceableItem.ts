@@ -4,6 +4,7 @@ import ENTITY_CLASS_RECORD from "../../entity-classes";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import StackableItem from "./StackableItem";
 import { SERVER } from "../../server";
+import Board from "../../Board";
 
 type PlaceableItemHitboxInfo = {
    readonly width: number;
@@ -79,7 +80,7 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
 
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
+            const chunk = Board.getChunk(chunkX, chunkY);
             for (const entity of chunk.getEntities()) {
                if (!previouslyCheckedEntityIDs.has(entity.id)) {
                   for (const hitbox of entity.hitboxes) {   

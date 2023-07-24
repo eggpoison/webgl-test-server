@@ -9,6 +9,7 @@ import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
 import Entity from "./Entity";
 import { SERVER } from "../server";
+import Board from "../Board";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -223,7 +224,7 @@ class Player extends Entity {
 
    public processAttackPacket(attackPacket: AttackPacket): void {
       // Calculate the attack's target entity
-      const targetEntities = attackPacket.targetEntities.map(id => SERVER.board.entities[id]);
+      const targetEntities = attackPacket.targetEntities.map(id => Board.entities[id]);
       const attackTarget = this.calculateAttackedEntity(targetEntities);
       // Don't attack if the attack didn't hit anything
       if (attackTarget === null) return;

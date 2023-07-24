@@ -1,4 +1,4 @@
-import { EntityType, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { EntityType, GameObjectDebugData, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -120,6 +120,17 @@ class FollowAI extends AI implements HerdAIParams {
          return 0;
       }
       return this.weight;
+   }
+
+   public addDebugData(debugData: GameObjectDebugData): void {
+      if (this.followTarget === null) return;
+
+      debugData.lines.push(
+         {
+            targetPosition: this.followTarget.position.package(),
+            colour: [0, 0, 1]
+         }
+      );
    }
 }
 

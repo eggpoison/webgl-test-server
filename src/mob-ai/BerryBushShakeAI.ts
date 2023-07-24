@@ -1,8 +1,9 @@
-import { SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import BerryBush from "../entities/resources/BerryBush";
 import AI from "./AI";
 import { SERVER } from "../server";
+import Board from "../Board";
 
 class BerryBushShakeAI extends AI {
    private static readonly SAMPLE_DISTANCE = 60;
@@ -25,7 +26,7 @@ class BerryBushShakeAI extends AI {
       testPosition.add(new Vector(BerryBushShakeAI.SAMPLE_DISTANCE, this.mob.rotation).convertToPoint());
 
       // If the target entity is directly in front of the cow, start eatin it
-      const entities = SERVER.board.getEntitiesAtPosition(testPosition);
+      const entities = Board.getEntitiesAtPosition(testPosition);
       if (entities.has(this.target)) {
          this.shakeTimer++;
          if (this.shakeTimer >= BerryBushShakeAI.TICKS_TO_SHAKE) {
@@ -78,6 +79,16 @@ class BerryBushShakeAI extends AI {
       return this.entitiesInVisionRange.size > 0 ? 1 : 0;
    }
 
+   public addDebugData(debugData: GameObjectDebugData): void {
+      if (this.target === null) return;
+      
+      debugData.lines.push(
+         {
+            targetPosition: this.target.position.package(),
+            colour: [0, 0, 1]
+         }
+      );
+   }
 }
 
 export default BerryBushShakeAI;

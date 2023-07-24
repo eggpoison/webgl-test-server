@@ -1,4 +1,4 @@
-import { EntityType, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import EscapeAI from "../../mob-ai/EscapeAI";
 import FollowAI from "../../mob-ai/FollowAI";
@@ -10,6 +10,7 @@ import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
 import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import { SERVER } from "../../server";
+import Board from "../../Board";
 
 export const MobAIs = {
    wander: WanderAI,
@@ -140,7 +141,7 @@ abstract class Mob extends Entity implements MobInfo {
       const entitiesInVisionRange = new Set<Entity>();
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = SERVER.board.getChunk(chunkX, chunkY);
+            const chunk = Board.getChunk(chunkX, chunkY);
             for (const entity of chunk.getEntities()) {
                // Don't add existing entities
                if (entitiesInVisionRange.has(entity)) continue;
@@ -172,6 +173,24 @@ abstract class Mob extends Entity implements MobInfo {
 
    public hasAIParam(param: string): boolean {
       return this.aiParams.hasOwnProperty(param);
+   }
+
+   public getDebugData(): GameObjectDebugData {
+      const debugData = super.getDebugData();
+
+      // Circle for vision range
+      debugData.circles.push(
+         {
+            radius: this.visionRange,
+            colour: [1, 0.5, 0]
+         }
+      );
+
+      if (typeof this.currentAI?.addDebugData !== "undefined") {
+         this.currentAI.addDebugData(debugData);
+      }
+
+      return debugData;
    }
 }
 

@@ -39,6 +39,10 @@ const giveItem = (username: string, itemType: ItemType, amount: number): void =>
    player.getComponent("inventory")!.addItem(item);
 }
 
+const trackGameObject = (id: number): void => {
+   SERVER.setTrackedGameObject(id);
+}
+
 export function registerCommand(command: string, player: Player): void {
    const commandComponents = parseCommand(command);
    const numParameters = commandComponents.length - 1;
@@ -98,6 +102,12 @@ export function registerCommand(command: string, player: Player): void {
 
             giveItem(player.displayName, itemType, amount);
          }
+         
+         break;
+      }
+
+      case "track": {
+         trackGameObject(commandComponents[1] as number);
          
          break;
       }

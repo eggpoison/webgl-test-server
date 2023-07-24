@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import { registerCommand } from "./commands";
@@ -109,7 +109,7 @@ const bundleEntityDataArray = (player: Player, chunkBounds: VisibleChunkBounds):
    
    for (let chunkX = chunkBounds[0]; chunkX <= chunkBounds[1]; chunkX++) {
       for (let chunkY = chunkBounds[2]; chunkY <= chunkBounds[3]; chunkY++) {
-         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         const chunk = Board.getChunk(chunkX, chunkY);
          for (const entity of chunk.getEntities()) {
             if (entity !== player && !seenIDs.has(entity.id)) {
                entityDataArray.push(bundleGameObjectData("entity", entity));
@@ -128,7 +128,7 @@ const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): Rea
    
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         const chunk = Board.getChunk(chunkX, chunkY);
          for (const droppedItem of chunk.getDroppedItems()) {
             if (!seenIDs.has(droppedItem.id)) {
                droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
@@ -147,7 +147,7 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-         const chunk = SERVER.board.getChunk(chunkX, chunkY);
+         const chunk = Board.getChunk(chunkX, chunkY);
          for (const projectile of chunk.getProjectiles()) {
             if (!seenIDs.has(projectile.id)) {
                projectileDataArray.push(bundleGameObjectData("projectile", projectile));
@@ -176,7 +176,7 @@ class GameServer {
    /** The time of day the server is currently in (from 0 to 23) */
    public time: number = 6;
 
-   public board!: Board;
+   // public board!: Board;
    
    /** Minimum number of units away from the border that the player will spawn at */
    private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
@@ -187,12 +187,15 @@ class GameServer {
 
    private tickInterval: NodeJS.Timer | undefined;
 
+   private trackedGameObjectID: number | null = null;
+
    /** Sets up the various stuff */
    public setup() {
-      // Create the board
-      this.board = new Board();
-
       spawnInitialEntities();
+   }
+
+   public setTrackedGameObject(id: number): void {
+      this.trackedGameObjectID = id;
    }
 
    private async tick(): Promise<void> {
@@ -201,21 +204,21 @@ class GameServer {
       this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
-      this.board.removeFlaggedGameObjects();
+      Board.removeFlaggedGameObjects();
       
-      this.board.pushJoinBuffer();
+      Board.pushJoinBuffer();
 
-      this.board.updateGameObjects();
-      this.board.resolveCollisions();
+      Board.updateGameObjects();
+      Board.resolveCollisions();
 
       // Age items
       if (this.ticks % SETTINGS.TPS === 0) {
-         this.board.ageItems();
+         Board.ageItems();
       }
 
       runSpawnAttempt();
 
-      this.board.runRandomTickAttempt();
+      Board.runRandomTickAttempt();
 
       // Send game data packets to all players
       this.sendGameDataPackets();
@@ -256,15 +259,22 @@ class GameServer {
       if (this.io === null) return;
       this.io.on("connection", (socket: ISocket) => {
          let clientUsername: string;
+         let initialVisibleChunkBounds: VisibleChunkBounds
          
-         socket.on("initial_player_data", (username: string) => {
+         socket.on("initial_player_data", (username: string, visibleChunkBounds: VisibleChunkBounds) => {
             clientUsername = username;
+            initialVisibleChunkBounds = visibleChunkBounds;
+         });
+
+         const spawnPosition = this.generatePlayerSpawnPosition();
+
+         socket.on("spawn_position_request", () => {
+            socket.emit("spawn_position", spawnPosition.package());
          });
 
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
             // Spawn the player in a random position in the world
-            const spawnPosition = this.generatePlayerSpawnPosition();
             // const spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 201, 200);
 
             new Cow(new Point(spawnPosition.x + 200, spawnPosition.y), false);
@@ -281,7 +291,7 @@ class GameServer {
                visibleChunkBounds: [0, 0, 0, 0]
             };
 
-            const tiles = this.board.getTiles();
+            const tiles = Board.getTiles();
             const serverTileData = new Array<Array<ServerTileData>>();
             for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
                serverTileData[y] = new Array<ServerTileData>();
@@ -301,10 +311,9 @@ class GameServer {
             const initialGameDataPacket: InitialGameDataPacket = {
                playerID: player.id,
                tiles: serverTileData,
-               spawnPosition: spawnPosition.package(),
-               entityDataArray: bundleEntityDataArray(player, [0, 0, 0, 0]),
-               droppedItemDataArray: bundleDroppedItemDataArray([0, 0, 0, 0]),
-               projectileDataArray: bundleProjectileDataArray([0, 0, 0, 0]),
+               entityDataArray: bundleEntityDataArray(player, initialVisibleChunkBounds),
+               droppedItemDataArray: bundleDroppedItemDataArray(initialVisibleChunkBounds),
+               projectileDataArray: bundleProjectileDataArray(initialVisibleChunkBounds),
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
@@ -388,6 +397,16 @@ class GameServer {
    public async sendGameDataPackets(): Promise<void> {
       if (this.io === null) return;
 
+      if (this.trackedGameObjectID !== null && !Board.hasGameObject(this.trackedGameObjectID)) {
+         this.trackedGameObjectID = null;
+      }
+
+      let gameObjectDebugData: GameObjectDebugData | undefined;
+      if (this.trackedGameObjectID !== null) {
+         const gameObject = Board.getGameObject(this.trackedGameObjectID);
+         gameObjectDebugData = gameObject.getDebugData();
+      }
+
       const sockets = await this.io.fetchSockets();
       for (const socket of sockets) {
          // Skip clients which haven't been properly loaded yet
@@ -399,7 +418,7 @@ class GameServer {
          const playerData = this.playerData[socket.id];
          const player = playerData.instance;
 
-         const tileUpdates = this.board.popTileUpdates();
+         const tileUpdates = Board.popTileUpdates();
          
          const hitsTaken = player.getHitsTaken();
          player.clearHitsTaken();
@@ -422,7 +441,8 @@ class GameServer {
             serverTime: this.time,
             hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth(),
-            statusEffects: player.getStatusEffects() as Array<StatusEffectType>
+            statusEffects: player.getStatusEffects() as Array<StatusEffectType>,
+            gameObjectDebugData: gameObjectDebugData
          };
 
          // Send the game data to the player
@@ -535,6 +555,7 @@ class GameServer {
 export const SERVER = new GameServer();
 
 SERVER.setup();
+Board.setup();
 
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {

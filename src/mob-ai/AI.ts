@@ -1,4 +1,4 @@
-import { Point, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Point, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob, { MobAIs } from "../entities/mobs/Mob";
 
@@ -80,6 +80,8 @@ abstract class AI {
       this.mob.terminalVelocity = terminalVelocity;
       this.mob.rotation = _direction;
    }
+
+   public addDebugData?(debugData: GameObjectDebugData): void;
 }
 
 export default AI;

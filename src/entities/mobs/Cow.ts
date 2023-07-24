@@ -82,8 +82,8 @@ class Cow extends Mob {
 
       this.addAI("escape", {
          aiWeightMultiplier: 1.5,
-         acceleration: 400,
-         terminalVelocity: 250,
+         acceleration: 200,
+         terminalVelocity: 200,
          attackSubsideTime: 5
       });
 

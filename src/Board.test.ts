@@ -1,6 +1,7 @@
 import { Point, SETTINGS } from "webgl-test-shared";
 import { SERVER } from "./server";
 import Cow from "./entities/mobs/Cow";
+import Board from "./Board";
 
 test("Game objects can be created", () => {
    SERVER;
@@ -8,13 +9,13 @@ test("Game objects can be created", () => {
    const position = new Point(400, 400);
    const cow = new Cow(position, false);
 
-   SERVER.board.forcePushGameObjectFromJoinBuffer(cow);
+   Board.forcePushGameObjectFromJoinBuffer(cow);
    
    // Check if the cow is in the board
-   expect(SERVER.board.gameObjectIsInBoard(cow)).toBe(true);
+   expect(Board.gameObjectIsInBoard(cow)).toBe(true);
 
    cow.remove();
-   SERVER.board.forceRemoveGameObject(cow);
+   Board.forceRemoveGameObject(cow);
 });
 
 test("Game objects can be removed", () => {
@@ -23,13 +24,13 @@ test("Game objects can be removed", () => {
    const position = new Point(400, 400);
    const cow = new Cow(position, false);
 
-   SERVER.board.forcePushGameObjectFromJoinBuffer(cow);
+   Board.forcePushGameObjectFromJoinBuffer(cow);
 
    cow.remove();
-   SERVER.board.forceRemoveGameObject(cow);
+   Board.forceRemoveGameObject(cow);
    
    // Check if the cow is in the board
-   expect(SERVER.board.gameObjectIsInBoard(cow)).toBe(false);
+   expect(Board.gameObjectIsInBoard(cow)).toBe(false);
 });
 
 test("Game objects can be removed immediately after they are created", () => {
@@ -41,7 +42,7 @@ test("Game objects can be removed immediately after they are created", () => {
    cow.remove();
    
    // Check if the cow is in the board
-   expect(SERVER.board.gameObjectIsInBoard(cow)).toBe(false);
+   expect(Board.gameObjectIsInBoard(cow)).toBe(false);
 });
 
 test("Game objects are moved inside the world if they are outside the world border", () => {
