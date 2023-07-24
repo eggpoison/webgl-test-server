@@ -157,8 +157,8 @@ abstract class Entity extends _GameObject<"entity"> {
       delete this.statusEffects[type];
    }
 
-   public getStatusEffects(): ReadonlyArray<StatusEffectType> {
-      return Object.keys(this.statusEffects) as ReadonlyArray<StatusEffectType>;
+   public getStatusEffects(): Array<StatusEffectType> {
+      return Object.keys(this.statusEffects) as Array<StatusEffectType>;
    }
 }
 

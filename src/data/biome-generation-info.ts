@@ -56,7 +56,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
                isWall: false
             },
             minWeight: 0.2,
-            minDist: 5
+            minDist: 6
          },
          {
             info: {

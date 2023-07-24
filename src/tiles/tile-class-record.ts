@@ -19,6 +19,8 @@ const TILE_CLASS_RECORD: Record<TileType, new(x: number, y: number, info: TileIn
    dirt: DirtTile,
    water: WaterTile,
    sludge: SludgeTile,
+   // TODO: make actual slime tile
+   slime: RockTile,
    rock: RockTile,
    sand: SandTile,
    sandstone: SandstoneTile,

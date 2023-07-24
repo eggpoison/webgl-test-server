@@ -107,11 +107,18 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
       }
       
       droppedItem.remove();
+
+      this.mob.setAIParam("hunger", 0);
    }
 
    protected _getWeight(): number {
       if (this.isActive && this.target === null) return 0;
 
+      const hunger = this.mob.getAIParam("hunger")!;
+      if (hunger < 50) {
+         return 0;
+      }
+      
       // Calculate dropped items in range
       this.droppedItemsInRange.clear();
       const minX = Math.max(Math.min(Math.floor((this.mob.position.x - this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);

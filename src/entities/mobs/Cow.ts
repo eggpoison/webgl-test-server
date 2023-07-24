@@ -16,7 +16,7 @@ class Cow extends Mob {
          item_creation: new ItemCreationComponent()
       }, "cow", SETTINGS.TILE_SIZE * 4, isNaturallySpawned);
 
-      this.setAIParam("hunger", 0);
+      this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 2.5);
 
       this.addAI("wander", {
@@ -82,8 +82,8 @@ class Cow extends Mob {
 
       this.addAI("escape", {
          aiWeightMultiplier: 1.5,
-         acceleration: 150,
-         terminalVelocity: 100,
+         acceleration: 400,
+         terminalVelocity: 250,
          attackSubsideTime: 5
       });
 

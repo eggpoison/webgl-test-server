@@ -19,6 +19,14 @@ const damagePlayer = (username: string, damage: number): void => {
    player.getComponent("health")!.damage(damage, 0, null, null);
 }
 
+const healPlayer = (username: string, healing: number): void => {
+   const player = SERVER.getPlayerFromUsername(username);
+   if (player === null) return;
+
+   // Damage the player
+   player.getComponent("health")!.heal(healing);
+}
+
 const setTime = (time: number): void => {
    SERVER.time = time;
 }
@@ -55,6 +63,19 @@ export function registerCommand(command: string, player: Player): void {
             const username = commandComponents[1] as string;
             const damage = commandComponents[2] as number;
             damagePlayer(username, damage);
+         }
+
+         break;
+      }
+
+      case "heal": {
+         if (numParameters === 1) {
+            const healing = commandComponents[1] as number;
+            healPlayer(player.displayName, healing);
+         } else if (numParameters === 2) {
+            const username = commandComponents[1] as string;
+            const healing = commandComponents[2] as number;
+            healPlayer(username, healing);
          }
 
          break;

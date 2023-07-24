@@ -72,6 +72,7 @@ const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameOb
          entityData.type = entity.type;
          entityData.clientArgs = entity.getClientArgs();
          entityData.secondsSinceLastHit = healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null;
+         entityData.statusEffects = entity.getStatusEffects();
 
          if (entity instanceof Mob) {
             entityData.special = {

@@ -90,11 +90,9 @@ class InventoryComponent extends Component {
       // Don't pick up dropped items which are on pickup cooldown
       if (!droppedItem.playerCanPickup(this.entity as Player)) return;
 
-      let totalAmountPickedUp = 0;
       for (const [inventoryName, _inventory] of this.inventoryArray) {
          const amountPickedUp = this.addItemToInventory(inventoryName, droppedItem.item);
 
-         totalAmountPickedUp += amountPickedUp
          droppedItem.item.count -= amountPickedUp;
 
          // When all of the item stack is picked up, don't attempt to add to any other inventories.
@@ -160,24 +158,6 @@ class InventoryComponent extends Component {
             inventory.itemSlots[i] = createItem(item.type, remainingAmountToAdd);
             amountAdded = item.count;
             break;
-         }
-
-         // If the slot contains an item of the same type, add as much of the item as possible
-         if (inventory.itemSlots[i].type === item.type) {
-            if (!itemIsStackable) {
-               // If the item can't be stacked then nothing can be added to the slot
-               continue;
-            } else {
-               const maxAddAmount = Math.min((item as StackableItem).stackSize - item.count, remainingAmountToAdd);
-               inventory.itemSlots[i].count += maxAddAmount;
-               amountAdded += maxAddAmount;
-               remainingAmountToAdd -= maxAddAmount;
-
-               // If there is none of the item left to add, exit
-               if (remainingAmountToAdd === 0) {
-                  return amountAdded;
-               }
-            }
          }
       }
 

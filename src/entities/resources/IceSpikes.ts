@@ -50,7 +50,7 @@ class IceSpikes extends Entity {
          })
       ]);
 
-      itemCreationComponent.createItemOnDeath("frostcicle", randInt(1, 2));
+      itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1));
 
       this.setIsStatic(true);
       
@@ -141,7 +141,9 @@ class IceSpikes extends Entity {
                   healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, "ice_shards");
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
-                  collidingEntity.applyStatusEffect("freezing", 3);
+                  if (collidingEntity.type !== "yeti") {
+                     collidingEntity.applyStatusEffect("freezing", 3);
+                  }
                }
 
                // Shatter the ice spike

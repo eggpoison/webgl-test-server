@@ -73,13 +73,18 @@ class Zombie extends Mob {
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          if (collidingEntity.type === "player") {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
+            const playerHealthComponent = collidingEntity.getComponent("health")!;
+
+            const healthBeforeAttack = playerHealthComponent.getHealth();
 
             // Damage and knock back the player
-            const playerHealthComponent = collidingEntity.getComponent("health")!;
-            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this);
+            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this, "zombie");
+            playerHealthComponent.addLocalInvulnerabilityHash("zombie", 0.3);
 
             // Push the zombie away from the entity
-            this.getComponent("health")!.applyKnockback(Zombie.ATTACK_SELF_KNOCKBACK, hitDirection + Math.PI);
+            if (playerHealthComponent.getHealth() < healthBeforeAttack) {
+               this.getComponent("health")!.applyKnockback(Zombie.ATTACK_SELF_KNOCKBACK, hitDirection + Math.PI);
+            }
          }
       });
    }

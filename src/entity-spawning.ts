@@ -76,7 +76,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "ice_spikes",
-      spawnableTiles: ["permafrost"],
+      spawnableTiles: ["ice", "permafrost"],
       spawnRate: 0.015,
       maxDensity: 0.06
    }
