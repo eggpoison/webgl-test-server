@@ -1,6 +1,7 @@
 import { ItemType, WeaponItemInfo } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
-import ToolItem, { MOB_ENTITY_TYPES } from "./ToolItem";
+import ToolItem from "./ToolItem";
+import Mob from "../../entities/mobs/Mob";
 
 class WeaponItem extends ToolItem implements WeaponItemInfo {
    public readonly toolType: "weapon";
@@ -12,7 +13,7 @@ class WeaponItem extends ToolItem implements WeaponItemInfo {
    }
 
    public getAttackDamage(entityToAttack: Entity): number {
-      if (MOB_ENTITY_TYPES.includes(entityToAttack.type)) {
+      if (entityToAttack instanceof Mob) {
          return this.damage;
       }
       return 1;

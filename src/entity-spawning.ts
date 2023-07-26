@@ -85,25 +85,31 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["ice", "permafrost"],
       spawnRate: 0.015,
       maxDensity: 0.06
+   },
+   {
+      entityType: "slime",
+      spawnableTiles: ["sludge", "slime"],
+      spawnRate: 0.01,
+      maxDensity: 0.06
    }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */
-export const MIN_SPAWN_DISTANCE = 200;
+export const MIN_SPAWN_DISTANCE = 150;
 
 const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
-   // Check if the entity density is right
-
    let numEligibleTiles = 0;
    for (const tileType of spawnInfo.spawnableTiles) {
       numEligibleTiles += getTileTypeCount(tileType);
    }
-
+   
    // If there are no tiles upon which the entity is able to be spawned, the spawn conditions aren't valid
    if (numEligibleTiles === 0) return false;
-
+   
+   // Check if the entity density is right
    const entityCount = getEntityCount(spawnInfo.entityType);
-   const density = entityCount / numEligibleTiles;
+   // const density = entityCount / numEligibleTiles;
+   const density = entityCount / numEligibleTiles / 10;
    if (density > spawnInfo.maxDensity) {
       return false;
    }
@@ -240,9 +246,8 @@ export function spawnInitialEntities(): void {
          runSpawnEvent(spawnInfo);
 
          if (++numSpawnAttempts >= 9999) {
-            console.log("Num entities: " + getEntityCount(spawnInfo.entityType));
-            console.log(spawnInfo);
-            throw new Error("we may have an infinite loop on our hands...");
+            console.warn("Exceeded maximum number of spawn attempts for " + spawnInfo.entityType + " with " + getEntityCount(spawnInfo.entityType) + " entities.");
+            break;
          }
       }
    }

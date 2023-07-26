@@ -1,0 +1,715 @@
+xStatistical profiling result from isolate-0x140008000-19249-v8.log, (17069 ticks, 37 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+     57    0.3%          /usr/lib/system/libsystem_malloc.dylib
+     54    0.3%          /usr/lib/system/libsystem_c.dylib
+     33    0.2%          /usr/lib/system/libsystem_kernel.dylib
+     31    0.2%          /usr/lib/system/libsystem_pthread.dylib
+     29    0.2%          /usr/lib/libc++.1.dylib
+      6    0.0%          /usr/lib/system/libsystem_m.dylib
+      5    0.0%          /usr/lib/system/libsystem_platform.dylib
+      3    0.0%          /usr/lib/system/libdyld.dylib
+      2    0.0%          /usr/lib/libc++abi.dylib
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+   1474    8.6%    8.7%  LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+    868    5.1%    5.2%  LazyCompile: *calculateEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:100:35
+    726    4.3%    4.3%  LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+    463    2.7%    2.7%  LazyCompile: *rotatePoint /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:113:21
+    182    1.1%    1.1%  LazyCompile: *setEntityPotentialCollidingEntities /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:113:47
+    165    1.0%    1.0%  LazyCompile: *applyPhysics /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:90:17
+    123    0.7%    0.7%  LazyCompile: *updateHitboxes /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:69:19
+    102    0.6%    0.6%  LazyCompile: *findMin /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:5:17
+     99    0.6%    0.6%  LazyCompile: *calculateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:153:30
+     96    0.6%    0.6%  LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+     69    0.4%    0.4%  LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     69    0.4%    0.4%  LazyCompile: *findMax /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:15:17
+     54    0.3%    0.3%  LazyCompile: *resolveGameObjectCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:245:32
+     52    0.3%    0.3%  LazyCompile: *computeVertexPositions /Users/adammagee/Desktop/development/webgl-test-server/src/hitboxes/RectangularHitbox.ts:13:27
+     45    0.3%    0.3%  LazyCompile: *getTileDist /Users/adammagee/Desktop/development/webgl-test-server/src/terrain-generation.ts:77:21
+     38    0.2%    0.2%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+     34    0.2%    0.2%  LazyCompile: *updateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:172:27
+     28    0.2%    0.2%  LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+     27    0.2%    0.2%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     25    0.1%    0.1%  LazyCompile: *generatePerlinNoise /Users/adammagee/Desktop/development/webgl-test-server/src/perlin-noise.ts:18:29
+     24    0.1%    0.1%  LazyCompile: *filterEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/HerdAI.ts:188:32
+     18    0.1%    0.1%  LazyCompile: *filterEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/FollowAI.ts:59:32
+     18    0.1%    0.1%  LazyCompile: *add /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:70:8
+     15    0.1%    0.1%  LazyCompile: *filterEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/BerryBushShakeAI.ts:53:32
+     13    0.1%    0.1%  LazyCompile: *scanJsDocToken /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:12243:32
+     12    0.1%    0.1%  LazyCompile: *scan /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:11494:22
+     12    0.1%    0.1%  LazyCompile: *onRefresh /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/HerdAI.ts:26:14
+     12    0.1%    0.1%  LazyCompile: *copy /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:84:9
+     10    0.1%    0.1%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/WanderAI.ts:25:9
+      9    0.1%    0.1%  LazyCompile: *getTileWanderPositions /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/WanderAI.ts:63:27
+      8    0.0%    0.0%  LazyCompile: *calculateDotProduct /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:32:24
+      7    0.0%    0.0%  LazyCompile: *subtract /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:28:13
+      7    0.0%    0.0%  LazyCompile: *runRandomTickAttempt /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:163:32
+      6    0.0%    0.0%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/HerdAI.ts:171:9
+      6    0.0%    0.0%  LazyCompile: *runSpawnAttempt /Users/adammagee/Desktop/development/webgl-test-server/src/entity-spawning.ts:180:25
+      5    0.0%    0.0%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      5    0.0%    0.0%  LazyCompile: *iterateCommentRanges /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:10713:34
+      5    0.0%    0.0%  LazyCompile: *hasBinary /Users/adammagee/Desktop/development/webgl-test-server/node_modules/socket.io-parser/dist/is-binary.js:28:19
+      5    0.0%    0.0%  LazyCompile: *distanceToClosestEntity /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:258:35
+      5    0.0%    0.0%  LazyCompile: *_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/ItemConsumeAI.ts:70:15
+      4    0.0%    0.0%  LazyCompile: *calculateAngleBetween /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:38:26
+      4    0.0%    0.0%  LazyCompile: *bindChildren /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:46232:30
+      4    0.0%    0.0%  Function: ^generateYetiTerritoryTiles /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:130:38
+      4    0.0%    0.0%  Function: ^calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+      3    0.0%    0.0%  LazyCompile: *getFlowTypeOfReference /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:71860:40
+      3    0.0%    0.0%  LazyCompile: *bindWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:47826:28
+      3    0.0%    0.0%  LazyCompile: *bindEach /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:46222:26
+      3    0.0%    0.0%  Function: ^updateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:172:27
+      2    0.0%    0.0%  RegExp: ^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)
+      2    0.0%    0.0%  LazyCompile: *write /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:18413:23
+      2    0.0%    0.0%  LazyCompile: *token /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32747:23
+      2    0.0%    0.0%  LazyCompile: *setParentRecursive /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:21396:32
+      2    0.0%    0.0%  LazyCompile: *randInt /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:10:17
+      2    0.0%    0.0%  LazyCompile: *isListElement /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:33272:31
+      2    0.0%    0.0%  LazyCompile: *getTypeAtFlowNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:71893:39
+      2    0.0%    0.0%  LazyCompile: *getTransformFlagsSubtreeExclusions /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:27710:48
+      2    0.0%    0.0%  LazyCompile: *getLinesBetweenNodes /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116931:38
+      2    0.0%    0.0%  LazyCompile: *generateBiomeInfo /Users/adammagee/Desktop/development/webgl-test-server/src/terrain-generation.ts:41:27
+      2    0.0%    0.0%  LazyCompile: *createIdentifier /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:33118:34
+      2    0.0%    0.0%  LazyCompile: *commitPendingMapping /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:92192:38
+      2    0.0%    0.0%  LazyCompile: *combinePaths /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:7942:26
+      2    0.0%    0.0%  LazyCompile: *calculateDistanceBetween /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:35:29
+      2    0.0%    0.0%  LazyCompile: *bind /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:47734:22
+      2    0.0%    0.0%  LazyCompile: *assert /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:2579:24
+      2    0.0%    0.0%  LazyCompile: *_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/HerdAI.ts:202:15
+      2    0.0%    0.0%  LazyCompile: *_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/FollowAI.ts:69:15
+      2    0.0%    0.0%  LazyCompile: *<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:38338:74
+      2    0.0%    0.0%  Function: ^scanJsDocToken /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:12243:32
+      2    0.0%    0.0%  Function: ^scan /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:11494:22
+      2    0.0%    0.0%  Function: ^recursiveTypeRelatedTo /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:66876:44
+      2    0.0%    0.0%  Function: ^pipelineEmitWithHintWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:113722:44
+      2    0.0%    0.0%  Function: ^checkExpressionWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:81562:39
+      2    0.0%    0.0%  Function: ^bindChildren /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:46232:30
+      2    0.0%    0.0%  Function: ^ItemConsumeAI /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/ItemConsumeAI.ts:10:16
+      1    0.0%    0.0%  RegExp: {(\d+)}
+      1    0.0%    0.0%  RegExp: (?:\/\/)|(?:^|\/)\.\.?(?:$|\/)
+      1    0.0%    0.0%  LazyCompile: *writeBase /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116662:27
+      1    0.0%    0.0%  LazyCompile: *updatePosition /Users/adammagee/Desktop/development/webgl-test-server/src/hitboxes/Hitbox.ts:19:19
+      1    0.0%    0.0%  LazyCompile: *trampoline /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:31021:28
+      1    0.0%    0.0%  LazyCompile: *tileIsValid /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:135:29
+      1    0.0%    0.0%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/ChaseAI.ts:17:9
+      1    0.0%    0.0%  LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entity-components/HealthComponent.ts:21:9
+      1    0.0%    0.0%  LazyCompile: *spawnPositionIsValid /Users/adammagee/Desktop/development/webgl-test-server/src/entity-spawning.ts:143:30
+      1    0.0%    0.0%  LazyCompile: *skipTrivia /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:10543:24
+      1    0.0%    0.0%  LazyCompile: *scanString /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:11129:28
+      1    0.0%    0.0%  LazyCompile: *scanIdentifier /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:11977:32
+      1    0.0%    0.0%  LazyCompile: *runSpawnEvent /Users/adammagee/Desktop/development/webgl-test-server/src/entity-spawning.ts:166:23
+      1    0.0%    0.0%  LazyCompile: *resolveNameHelper /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:50683:35
+      1    0.0%    0.0%  LazyCompile: *randItem /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:103:18
+      1    0.0%    0.0%  LazyCompile: *pushComment /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:38590:41
+      1    0.0%    0.0%  LazyCompile: *pipelineEmitWithHintWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:113722:44
+      1    0.0%    0.0%  LazyCompile: *parseStatement /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:37088:32
+      1    0.0%    0.0%  LazyCompile: *parseParameters /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:34315:33
+      1    0.0%    0.0%  LazyCompile: *parseParameterWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:34240:38
+      1    0.0%    0.0%  LazyCompile: *parseOptional /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:33013:31
+      1    0.0%    0.0%  LazyCompile: *parseNonArrayType /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:34706:35
+      1    0.0%    0.0%  LazyCompile: *parseModifiers /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:37617:32
+      1    0.0%    0.0%  LazyCompile: *parseMemberExpressionRest /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:36325:43
+      1    0.0%    0.0%  LazyCompile: *parseIdentifierName /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:33153:37
+      1    0.0%    0.0%  LazyCompile: *parseIdentifier /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:33150:33
+      1    0.0%    0.0%  LazyCompile: *normalizeString node:path:66:25
+      1    0.0%    0.0%  LazyCompile: *nextTokenJSDoc /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32765:32
+      1    0.0%    0.0%  LazyCompile: *nextToken /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32757:27
+      1    0.0%    0.0%  LazyCompile: *isStatementKindButNotDeclarationKind /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:14196:50
+      1    0.0%    0.0%  LazyCompile: *isStatement /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:14241:25
+      1    0.0%    0.0%  LazyCompile: *isSimpleTypeRelatedTo /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:65950:39
+      1    0.0%    0.0%  LazyCompile: *isRelatedTo /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:66390:33
+      1    0.0%    0.0%  LazyCompile: *isExpression /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:14020:26
+      1    0.0%    0.0%  LazyCompile: *isColliding /Users/adammagee/Desktop/development/webgl-test-server/src/hitboxes/CircularHitbox.ts:16:16
+      1    0.0%    0.0%  LazyCompile: *hasSyntacticModifier /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:19065:34
+      1    0.0%    0.0%  LazyCompile: *hasDynamicName /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:17677:28
+      1    0.0%    0.0%  LazyCompile: *getTile /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:41:19
+      1    0.0%    0.0%  LazyCompile: *getThisContainer /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:16045:30
+      1    0.0%    0.0%  LazyCompile: *getTextOfNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116960:31
+      1    0.0%    0.0%  LazyCompile: *getResolvedSymbol /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:70787:35
+      1    0.0%    0.0%  LazyCompile: *getNonAssignedNameOfDeclaration /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:12967:45
+      1    0.0%    0.0%  LazyCompile: *getNodeLinks /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:50384:30
+      1    0.0%    0.0%  LazyCompile: *getMergedSymbol /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:52730:33
+      1    0.0%    0.0%  LazyCompile: *getEffectiveModifierFlags /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:19127:39
+      1    0.0%    0.0%  LazyCompile: *getChunk /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:51:20
+      1    0.0%    0.0%  LazyCompile: *getBiome /Users/adammagee/Desktop/development/webgl-test-server/src/terrain-generation.ts:33:18
+      1    0.0%    0.0%  LazyCompile: *getApparentType /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:60374:33
+      1    0.0%    0.0%  LazyCompile: *generateTerrain /Users/adammagee/Desktop/development/webgl-test-server/src/terrain-generation.ts:113:25
+      1    0.0%    0.0%  LazyCompile: *generateOctavePerlinNoise /Users/adammagee/Desktop/development/webgl-test-server/src/perlin-noise.ts:67:35
+      1    0.0%    0.0%  LazyCompile: *fade /Users/adammagee/Desktop/development/webgl-test-server/src/perlin-noise.ts:15:14
+      1    0.0%    0.0%  LazyCompile: *emitSourcePos /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:117799:31
+      1    0.0%    0.0%  LazyCompile: *emitNodeList /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116501:30
+      1    0.0%    0.0%  LazyCompile: *createToken /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:23288:29
+      1    0.0%    0.0%  LazyCompile: *createNodeArray /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:22956:33
+      1    0.0%    0.0%  LazyCompile: *createBaseTokenNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32160:43
+      1    0.0%    0.0%  LazyCompile: *copy /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:48:9
+      1    0.0%    0.0%  LazyCompile: *convertToVector /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:42:20
+      1    0.0%    0.0%  LazyCompile: *convertToPoint /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:64:19
+      1    0.0%    0.0%  LazyCompile: *computeLineOfPosition /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:10429:35
+      1    0.0%    0.0%  LazyCompile: *charSize /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:12429:22
+      1    0.0%    0.0%  LazyCompile: *bundleGameObjectData /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:55:30
+      1    0.0%    0.0%  LazyCompile: *bundleEntityDataArray /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:99:31
+      1    0.0%    0.0%  LazyCompile: *assertEqual /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:2589:29
+      1    0.0%    0.0%  LazyCompile: *appendIfUnique /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:1041:28
+      1    0.0%    0.0%  LazyCompile: *appendBase64VLQ /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:92255:33
+      1    0.0%    0.0%  LazyCompile: *_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/TileConsumeAI.ts:49:15
+      1    0.0%    0.0%  LazyCompile: *_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/BerryBushShakeAI.ts:64:15
+      1    0.0%    0.0%  LazyCompile: *Tile /Users/adammagee/Desktop/development/webgl-test-server/src/tiles/Tile.ts:10:16
+      1    0.0%    0.0%  LazyCompile: *Point /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:19:16
+      1    0.0%    0.0%  LazyCompile: *<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:76467:53
+      1    0.0%    0.0%  LazyCompile: *<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:72956:58
+      1    0.0%    0.0%  LazyCompile: *<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:1788:25
+      1    0.0%    0.0%  Function: ^visitTypeScript /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:93992:33
+      1    0.0%    0.0%  Function: ^visitParameter /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:99613:32
+      1    0.0%    0.0%  Function: ^updateHitboxes /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:69:19
+      1    0.0%    0.0%  Function: ^updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+      1    0.0%    0.0%  Function: ^trySubstituteNamespaceExportedName /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:95529:52
+      1    0.0%    0.0%  Function: ^transformSourceFile /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:95668:37
+      1    0.0%    0.0%  Function: ^toPath /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:119738:24
+      1    0.0%    0.0%  Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      1    0.0%    0.0%  Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      1    0.0%    0.0%  Function: ^substituteExpressionIdentifier /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:98394:48
+      1    0.0%    0.0%  Function: ^startsWith /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:2279:24
+      1    0.0%    0.0%  Function: ^setEntityPotentialCollidingEntities /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:113:47
+      1    0.0%    0.0%  Function: ^setContextFlag /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32604:32
+      1    0.0%    0.0%  Function: ^sendPacket /Users/adammagee/Desktop/development/webgl-test-server/node_modules/engine.io/build/socket.js:365:15
+      1    0.0%    0.0%  Function: ^savePreviousCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:320:37
+      1    0.0%    0.0%  Function: ^resolveNewExpression /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:78207:38
+      1    0.0%    0.0%  Function: ^resolveNameHelper /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:50683:35
+      1    0.0%    0.0%  Function: ^resolveAnonymousTypeMembers /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:59583:45
+      1    0.0%    0.0%  Function: ^requestEmitHelper /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:112494:35
+      1    0.0%    0.0%  Function: ^registerYetiTerritory /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:18:31
+      1    0.0%    0.0%  Function: ^processImportedModules /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:121290:40
+      1    0.0%    0.0%  Function: ^parseHeritageClauses /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:37735:38
+      1    0.0%    0.0%  Function: ^parseFunctionDeclaration /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:37380:42
+      1    0.0%    0.0%  Function: ^parseExpected /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32863:31
+      1    0.0%    0.0%  Function: ^onSubstituteNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:98380:34
+      1    0.0%    0.0%  Function: ^onRefresh /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/ItemConsumeAI.ts:28:14
+      1    0.0%    0.0%  Function: ^onRefresh /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/HerdAI.ts:26:14
+      1    0.0%    0.0%  Function: ^nodeLoadModuleByRelativeName /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:44409:42
+      1    0.0%    0.0%  Function: ^nextTokenJSDoc /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:32765:32
+      1    0.0%    0.0%  Function: ^nextState /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:30967:27
+      1    0.0%    0.0%  Function: ^maybeEmitExpression /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:115026:41
+      1    0.0%    0.0%  Function: ^mapType /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:71479:25
+      1    0.0%    0.0%  Function: ^isUnconstrainedTypeParameter /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:68485:46
+      1    0.0%    0.0%  Function: ^isParseTreeNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:12851:29
+      1    0.0%    0.0%  Function: ^isOuterExpression /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:30322:31
+      1    0.0%    0.0%  Function: ^isNonLocalAlias /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:51908:33
+      1    0.0%    0.0%  Function: ^isInPropertyInitializerOrClassStaticBlock /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:76466:59
+      1    0.0%    0.0%  Function: ^isImportClause /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:29656:28
+      1    0.0%    0.0%  Function: ^isIdentifierName /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:17417:30
+      1    0.0%    0.0%  Function: ^isFunctionLikeDeclarationKind /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:13681:43
+      1    0.0%    0.0%  Function: ^isEnumDeclaration /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:29628:31
+      1    0.0%    0.0%  Function: ^isConflictMarkerTrivia /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:10636:36
+      1    0.0%    0.0%  Function: ^isColliding /Users/adammagee/Desktop/development/webgl-test-server/src/hitboxes/RectangularHitbox.ts:48:16
+      1    0.0%    0.0%  Function: ^hasBinary /Users/adammagee/Desktop/development/webgl-test-server/node_modules/socket.io-parser/dist/is-binary.js:28:19
+      1    0.0%    0.0%  Function: ^getWidenedType /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:69238:32
+      1    0.0%    0.0%  Function: ^getTypeOfVariableOrParameterOrPropertyWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:57743:62
+      1    0.0%    0.0%  Function: ^getTypeListId /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:61454:31
+      1    0.0%    0.0%  Function: ^getTypeAtFlowNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:71893:39
+      1    0.0%    0.0%  Function: ^getTileInfo /Users/adammagee/Desktop/development/webgl-test-server/src/terrain-generation.ts:68:21
+      1    0.0%    0.0%  Function: ^getTextOfNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116960:31
+      1    0.0%    0.0%  Function: ^getResolvedSymbol /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:70787:35
+      1    0.0%    0.0%  Function: ^getModifiersTypeFromMappedType /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:59881:48
+      1    0.0%    0.0%  Function: ^getLeadingLineTerminatorCount /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116782:47
+      1    0.0%    0.0%  Function: ^getEmitFlags /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:14974:26
+      1    0.0%    0.0%  Function: ^getBinaryOperatorPrecedence /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:18118:41
+      1    0.0%    0.0%  Function: ^forEachChildInPropertyAccessExpression /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:31495:108
+      1    0.0%    0.0%  Function: ^forEachChildInImportClause /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:31705:84
+      1    0.0%    0.0%  Function: ^forEachChild /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:31983:26
+      1    0.0%    0.0%  Function: ^findSourceFile /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:120916:32
+      1    0.0%    0.0%  Function: ^filterType /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:71445:28
+      1    0.0%    0.0%  Function: ^emitTrailingCommentsOfNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:117460:44
+      1    0.0%    0.0%  Function: ^emitSourcePos /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:117799:31
+      1    0.0%    0.0%  Function: ^emitSourceMapsBeforeNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:117739:42
+      1    0.0%    0.0%  Function: ^emitPrologueDirectives /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116203:40
+      1    0.0%    0.0%  Function: ^emitNodeListItems /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116546:35
+      1    0.0%    0.0%  Function: ^emitNodeList /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:116501:30
+      1    0.0%    0.0%  Function: ^emitLeadingComments /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:117555:37
+      1    0.0%    0.0%  Function: ^emitCommentsAfterNode /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:117416:39
+      1    0.0%    0.0%  Function: ^emit /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:113625:22
+      1    0.0%    0.0%  Function: ^declareSymbol /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:45921:31
+      1    0.0%    0.0%  Function: ^createExportExpression /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:108204:40
+      1    0.0%    0.0%  Function: ^createEvent /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:340:16
+      1    0.0%    0.0%  Function: ^createBlock /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:25076:29
+      1    0.0%    0.0%  Function: ^createBaseClassLikeDeclaration /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:23077:48
+      1    0.0%    0.0%  Function: ^contains /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:368:22
+      1    0.0%    0.0%  Function: ^computeVertexPositions /Users/adammagee/Desktop/development/webgl-test-server/src/hitboxes/RectangularHitbox.ts:13:27
+      1    0.0%    0.0%  Function: ^checkNestedBlockScopedBinding /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:73376:47
+      1    0.0%    0.0%  Function: ^checkGrammarDecorators /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:89622:40
+      1    0.0%    0.0%  Function: ^checkBinaryLikeExpressionWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:80662:49
+      1    0.0%    0.0%  Function: ^canFollowModifier /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:33257:35
+      1    0.0%    0.0%  Function: ^calculateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:153:30
+      1    0.0%    0.0%  Function: ^bindWorker /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:47826:28
+      1    0.0%    0.0%  Function: ^bindContainer /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:46109:31
+      1    0.0%    0.0%  Function: ^assertEqual /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:2589:29
+      1    0.0%    0.0%  Function: ^asNodeArray /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:27580:29
+      1    0.0%    0.0%  Function: ^applyPhysics /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:90:17
+      1    0.0%    0.0%  Function: ^addHitboxes /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:55:16
+      1    0.0%    0.0%  Function: ^activate /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/AI.ts:18:13
+      1    0.0%    0.0%  Function: ^_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/ItemConsumeAI.ts:70:15
+      1    0.0%    0.0%  Function: ^_getWeight /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/EscapeAI.ts:35:15
+      1    0.0%    0.0%  Function: ^<anonymous> node:internal/validators:168:39
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/ItemConsumeAI.ts:20:49
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:81:53
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:86308:111
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:80234:49
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:74633:59
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:68492:97
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:38338:74
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:22451:91
+      1    0.0%    0.0%  Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:1788:25
+      1    0.0%    0.0%  Function: ^0 /Users/adammagee/Desktop/development/webgl-test-server/node_modules/typescript/lib/typescript.js:173900:25
+
+ [C++]:
+   ticks  total  nonlib   name
+  10945   64.1%   65.0%  t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    153    0.9%    0.9%  T node::contextify::ContextifyScript::New(v8::FunctionCallbackInfo<v8::Value> const&)
+    109    0.6%    0.6%  t ___pfz_setup
+     61    0.4%    0.4%  T _semaphore_destroy
+     59    0.3%    0.4%  T _mach_port_type
+     57    0.3%    0.3%  T _task_dyld_process_info_notify_get
+     51    0.3%    0.3%  T node::contextify::ContextifyContext::CompileFunction(v8::FunctionCallbackInfo<v8::Value> const&)
+     42    0.2%    0.2%  T _mach_get_times
+     18    0.1%    0.1%  t __os_once_gate_broadcast
+     17    0.1%    0.1%  T _mig_dealloc_reply_port
+     15    0.1%    0.1%  t void node::Buffer::(anonymous namespace)::StringSlice<(node::encoding)1>(v8::FunctionCallbackInfo<v8::Value> const&)
+     12    0.1%    0.1%  T ___bsdthread_terminate
+      7    0.0%    0.0%  t std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long)
+      6    0.0%    0.0%  T _necp_client_action
+      5    0.0%    0.0%  t std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char)
+      5    0.0%    0.0%  t node::fs::InternalModuleStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      5    0.0%    0.0%  t node::Buffer::(anonymous namespace)::ByteLengthUtf8(v8::FunctionCallbackInfo<v8::Value> const&)
+      5    0.0%    0.0%  T __simple_getenv
+      4    0.0%    0.0%  t void std::__1::__tree_balance_after_insert<std::__1::__tree_node_base<void*>*>(std::__1::__tree_node_base<void*>*, std::__1::__tree_node_base<void*>*)
+      4    0.0%    0.0%  t node::fs::Stat(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    0.0%    0.0%  t node::fs::Open(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    0.0%    0.0%  t node::Buffer::(anonymous namespace)::CreateFromString(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    0.0%    0.0%  T _os_unfair_recursive_lock_unlock
+      4    0.0%    0.0%  T _mach_port_allocate
+      3    0.0%    0.0%  t __os_once_gate_wait
+      2    0.0%    0.0%  t node::fs::Read(v8::FunctionCallbackInfo<v8::Value> const&)
+      2    0.0%    0.0%  t _mach_msg_destroy_port
+      2    0.0%    0.0%  T _semaphore_create
+      2    0.0%    0.0%  T __simple_putline
+      2    0.0%    0.0%  T _OSAtomicDecrement32
+      1    0.0%    0.0%  t std::__1::__tree<int, std::__1::less<int>, std::__1::allocator<int> >::destroy(std::__1::__tree_node<int, void*>*)
+      1    0.0%    0.0%  t node::EnvGetter(v8::Local<v8::Name>, v8::PropertyCallbackInfo<v8::Value> const&)
+      1    0.0%    0.0%  T node::AsyncWrap::EmitTraceEventBefore()
+      1    0.0%    0.0%  T _task_set_special_port
+      1    0.0%    0.0%  T _posix_spawnattr_setmacpolicyinfo_np
+      1    0.0%    0.0%  T __platform_strlen
+      1    0.0%    0.0%  T _OSAtomicIncrement32
+
+ [Summary]:
+   ticks  total  nonlib   name
+   5196   30.4%   30.8%  JavaScript
+  11616   68.1%   68.9%  C++
+   1363    8.0%    8.1%  GC
+    220    1.3%          Shared libraries
+     37    0.2%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+   9997   96.8%   58.6%  t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    153    1.5%    0.9%  T node::contextify::ContextifyScript::New(v8::FunctionCallbackInfo<v8::Value> const&)
+     51    0.5%    0.3%  T node::contextify::ContextifyContext::CompileFunction(v8::FunctionCallbackInfo<v8::Value> const&)
+     41    0.4%    0.2%  T _semaphore_destroy
+     15    0.1%    0.1%  t void node::Buffer::(anonymous namespace)::StringSlice<(node::encoding)1>(v8::FunctionCallbackInfo<v8::Value> const&)
+      7    0.1%    0.0%  t std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long)
+      7    0.1%    0.0%  T _mach_get_times
+      6    0.1%    0.0%  T _task_dyld_process_info_notify_get
+      5    0.0%    0.0%  t node::fs::InternalModuleStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      5    0.0%    0.0%  t node::Buffer::(anonymous namespace)::ByteLengthUtf8(v8::FunctionCallbackInfo<v8::Value> const&)
+      5    0.0%    0.0%  T _mig_dealloc_reply_port
+      4    0.0%    0.0%  t node::fs::Stat(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    0.0%    0.0%  t node::fs::Open(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    0.0%    0.0%  t node::Buffer::(anonymous namespace)::CreateFromString(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    0.0%    0.0%  T __simple_getenv
+      3    0.0%    0.0%  t void std::__1::__tree_balance_after_insert<std::__1::__tree_node_base<void*>*>(std::__1::__tree_node_base<void*>*, std::__1::__tree_node_base<void*>*)
+      3    0.0%    0.0%  t __os_once_gate_broadcast
+      3    0.0%    0.0%  T _necp_client_action
+      2    0.0%    0.0%  t std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char)
+      2    0.0%    0.0%  t node::fs::Read(v8::FunctionCallbackInfo<v8::Value> const&)
+      2    0.0%    0.0%  T __simple_putline
+      2    0.0%    0.0%  T _OSAtomicDecrement32
+      1    0.0%    0.0%  t std::__1::__tree<int, std::__1::less<int>, std::__1::allocator<int> >::destroy(std::__1::__tree_node<int, void*>*)
+      1    0.0%    0.0%  t node::EnvGetter(v8::Local<v8::Name>, v8::PropertyCallbackInfo<v8::Value> const&)
+      1    0.0%    0.0%  t ___pfz_setup
+      1    0.0%    0.0%  T _task_set_special_port
+      1    0.0%    0.0%  T _os_unfair_recursive_lock_unlock
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+  10945   64.1%  t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+   1763   16.1%    LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+   1760   99.8%      LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+   1740   98.9%        LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+   1588   91.3%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+   1588  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    152    8.7%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    152  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     20    1.1%        Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+     11   55.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     11  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      9   45.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      9  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+   1464   13.4%    t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    956   65.3%      LazyCompile: *setEntityPotentialCollidingEntities /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:113:47
+    940   98.3%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    851   90.5%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    851  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     89    9.5%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     89  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     16    1.7%        Function: ^updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     16  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     16  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    272   18.6%      t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    233   85.7%        LazyCompile: *setEntityPotentialCollidingEntities /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:113:47
+    232   99.6%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    204   87.9%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     28   12.1%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     37   13.6%        LazyCompile: *filterEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/FollowAI.ts:59:32
+     37  100.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     37  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     89    6.1%      LazyCompile: *filterEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/FollowAI.ts:59:32
+     86   96.6%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     86  100.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     83   96.5%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      3    3.5%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2    2.2%        Function: ^updateValues /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/AI.ts:27:17
+      2  100.0%          Function: ^refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+      2  100.0%            Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      1    1.1%        LazyCompile: *updateValues /Users/adammagee/Desktop/development/webgl-test-server/src/mob-ai/AI.ts:27:17
+      1  100.0%          Function: ^refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+      1  100.0%            Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     35    2.4%      LazyCompile: *calculateEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:100:35
+     34   97.1%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     34  100.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     30   88.2%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      4   11.8%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1    2.9%        Function: ^refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+      1  100.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      1  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+   1086    9.9%    LazyCompile: *setEntityPotentialCollidingEntities /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:113:47
+   1071   98.6%      LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    986   92.1%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    986  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    986  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     85    7.9%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     85  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     54   63.5%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     31   36.5%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     15    1.4%      Function: ^updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     15  100.0%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     15  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     15  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+   1019    9.3%    LazyCompile: *rotatePoint /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:113:21
+   1017   99.8%      LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+   1015   99.8%        LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+   1007   99.2%          LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+    986   97.9%            LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+     21    2.1%            Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    671    6.1%    LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+    655   97.6%      LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    603   92.1%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    603  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    603  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     52    7.9%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     52  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     29   55.8%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     23   44.2%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     16    2.4%      Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      9   56.3%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      9  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      9  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      7   43.8%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      7  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      7  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+    558    5.1%    LazyCompile: *calculateEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:100:35
+    537   96.2%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    528   98.3%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    498   94.3%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    498  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     30    5.7%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     30  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      9    1.7%        Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:103:9
+      9  100.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      8   88.9%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1   11.1%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     15    2.7%      Function: ^refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+     13   86.7%        Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     11   84.6%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      7   63.6%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      4   36.4%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2   15.4%          Function: ^updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      2  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2   13.3%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      2  100.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      2  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      6    1.1%      LazyCompile: *refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+      6  100.0%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      6  100.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      6  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    343    3.1%    LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    318   92.7%      Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    318  100.0%        t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    318  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+    318  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     25    7.3%      LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     25  100.0%        t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     15   60.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     15  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     10   40.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     10  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    199    1.8%    LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    180   90.5%      Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    180  100.0%        t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    180  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+    180  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     19    9.5%      LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     19  100.0%        t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     13   68.4%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     13  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      6   31.6%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      6  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    163    1.5%    LazyCompile: *add /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:70:8
+    130   79.8%      LazyCompile: *resolveGameObjectCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:245:32
+    127   97.7%        LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    117   92.1%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    117  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     10    7.9%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     10  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      3    2.3%        Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      2   66.7%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      1   33.3%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     32   19.6%      LazyCompile: *applyPhysics /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:90:17
+     31   96.9%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+     31  100.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     30   96.8%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      1    3.2%            Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:103:9
+      1    3.1%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      1  100.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      1  100.0%            LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    158    1.4%    LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    158  100.0%      LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    143   90.5%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    143  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    143  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     15    9.5%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     15  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     12   80.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      3   20.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+    156    1.4%    LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+     69   44.2%      LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     65   94.2%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     65  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     65  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      4    5.8%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      4  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      2   50.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      2   50.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     59   37.8%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     59  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     55   93.2%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     55  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    6.8%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      4  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     17   10.9%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/resources/BerryBush.ts:36:9
+     17  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     17  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     17  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      4    2.6%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/resources/IceSpikes.ts:54:9
+      4  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      4  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      4  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      3    1.9%      Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/resources/BerryBush.ts:36:9
+      3  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      3  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      3  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      2    1.3%      Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/resources/IceSpikes.ts:54:9
+      2  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      1   50.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      1   50.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      2    1.3%      Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      2  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      1   50.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      1   50.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    140    1.3%    LazyCompile: *computeVertexPositions /Users/adammagee/Desktop/development/webgl-test-server/src/hitboxes/RectangularHitbox.ts:13:27
+    139   99.3%      LazyCompile: *updateHitboxes /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:69:19
+    124   89.2%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+    122   98.4%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    122  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      2    1.6%          Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      2  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      7    5.0%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      7  100.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      6   85.7%            LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      1   14.3%            Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      5    3.6%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      4   80.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      4  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1   20.0%          Function: ^updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      1  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      3    2.2%        Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      3  100.0%          Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      3  100.0%            LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    126    1.2%    LazyCompile: *calculateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:153:30
+    119   94.4%      LazyCompile: *updateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:172:27
+    118   99.2%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+     60   50.8%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     58   96.7%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2    3.3%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     46   39.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     46  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     11    9.3%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/resources/BerryBush.ts:36:9
+     11  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      5    4.0%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      5  100.0%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      4   80.0%          LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      4  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1   20.0%          Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      1  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      2    1.6%      Function: ^updateContainingChunks /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:172:27
+      1   50.0%        LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      1  100.0%          LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      1  100.0%            LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      1   50.0%        Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:79:9
+      1  100.0%          Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/Entity.ts:52:9
+      1  100.0%            Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    121    1.1%    LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+    121  100.0%      LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+    121  100.0%        LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+    118   97.5%          LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    109   92.4%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      9    7.6%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      3    2.5%          Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      3  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+
+   1474    8.6%  LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+   1472   99.9%    LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+   1440   97.8%      LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+   1327   92.2%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+   1327  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+   1327  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+    113    7.8%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    113  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     66   58.4%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     47   41.6%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     32    2.2%      Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+     26   81.3%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     26  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     26  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      6   18.8%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      6  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      6  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+
+    868    5.1%  LazyCompile: *calculateEntitiesInVisionRange /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:100:35
+    815   93.9%    LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+    798   97.9%      LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    762   95.5%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    762  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    762  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     36    4.5%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     36  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     22   61.1%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     14   38.9%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+     17    2.1%      Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Yeti.ts:103:9
+     17  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     17  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     17  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     36    4.1%    Function: ^refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+     33   91.7%      Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     22   66.7%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     18   81.8%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     18  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      4   18.2%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      4  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     11   33.3%        Function: ^updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     11  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     11  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      3    8.3%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      2   66.7%        Function: ^updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      2  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      1   33.3%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      1  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     17    2.0%    LazyCompile: *refreshAI /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:66:14
+     14   82.4%      LazyCompile: *tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+     14  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+     14  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     14  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      3   17.6%      Function: ^tick /Users/adammagee/Desktop/development/webgl-test-server/src/entities/mobs/Mob.ts:46:9
+      3  100.0%        LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+      3  100.0%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      3  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+
+    726    4.3%  LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+    688   94.8%    LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+    688  100.0%      LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+    682   99.1%        LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    615   90.2%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    615  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     67    9.8%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     67  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     25    3.4%    LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+     25  100.0%      LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+     24   96.0%        Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     24  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     24  100.0%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      1    4.0%        LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      1  100.0%          t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      1  100.0%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      9    1.2%    LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+      9  100.0%      LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+      9  100.0%        LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+      9  100.0%          LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      7   77.8%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      2   22.2%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+
+    463    2.7%  LazyCompile: *rotatePoint /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:113:21
+    337   72.8%    LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+    337  100.0%      LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+    334   99.1%        LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+    332   99.4%          LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+    310   93.4%            Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     22    6.6%            LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    121   26.1%    LazyCompile: *rotatePoint /Users/adammagee/Desktop/development/webgl-test-shared/lib/utils.js:113:21
+    121  100.0%      LazyCompile: *circleAndRectangleDoIntersect /Users/adammagee/Desktop/development/webgl-test-shared/lib/collision-detection.js:31:39
+    121  100.0%        LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+    121  100.0%          LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+    118   97.5%            LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      3    2.5%            Function: ^resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      5    1.1%    LazyCompile: *calculateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:303:34
+      5  100.0%      LazyCompile: *updateCollidingGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/GameObject.ts:232:31
+      5  100.0%        LazyCompile: *resolveCollisions /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:134:29
+      5  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+      5  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+
+    182    1.1%  LazyCompile: *setEntityPotentialCollidingEntities /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:113:47
+    182  100.0%    LazyCompile: *updateGameObjects /Users/adammagee/Desktop/development/webgl-test-server/src/Board.ts:101:29
+    171   94.0%      Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+    171  100.0%        t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+    171  100.0%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+    171  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+     11    6.0%      LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:181:58
+     11  100.0%        t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      7   63.6%          LazyCompile: ~<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      7  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+      4   36.4%          Function: ^<anonymous> /Users/adammagee/Desktop/development/webgl-test-server/src/server.ts:4:46
+      4  100.0%            t node::fs::LStat(v8::FunctionCallbackInfo<v8::Value> const&)
+

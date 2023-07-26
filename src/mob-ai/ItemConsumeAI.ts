@@ -132,6 +132,11 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
                if (!this.itemTargets.has(droppedItem.item.type)) {
                   continue;
                }
+
+               const distance = this.mob.position.calculateDistanceBetween(droppedItem.position);
+               if (distance > this.mob.visionRange) {
+                  continue;
+               }
                
                if (!this.droppedItemsInRange.has(droppedItem)) {
                   this.droppedItemsInRange.add(droppedItem);

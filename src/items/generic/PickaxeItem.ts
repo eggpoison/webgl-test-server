@@ -1,9 +1,9 @@
 import Entity from "../../entities/Entity";
-import ToolItem, { RESOURCE_ENTITY_TYPES } from "./ToolItem";
+import ToolItem from "./ToolItem";
 
 class PickaxeItem extends ToolItem {
    public getAttackDamage(entityToAttack: Entity): number {
-      if (RESOURCE_ENTITY_TYPES.includes(entityToAttack.type)) {
+      if (entityToAttack.type === "boulder") {
          return this.damage;
       } else {
          return Math.ceil(this.damage / 2);

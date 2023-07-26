@@ -26,11 +26,15 @@ class BerryBushShakeAI extends AI {
       testPosition.add(new Vector(BerryBushShakeAI.SAMPLE_DISTANCE, this.mob.rotation).convertToPoint());
 
       // If the target entity is directly in front of the cow, start eatin it
-      const entities = Board.getEntitiesAtPosition(testPosition);
-      if (entities.has(this.target)) {
-         this.shakeTimer++;
-         if (this.shakeTimer >= BerryBushShakeAI.TICKS_TO_SHAKE) {
-            this.shakeBush(this.target);
+      if (Board.isInBoard(testPosition)) {
+         const entities = Board.getEntitiesAtPosition(testPosition);
+         if (entities.has(this.target)) {
+            this.shakeTimer++;
+            if (this.shakeTimer >= BerryBushShakeAI.TICKS_TO_SHAKE) {
+               this.shakeBush(this.target);
+               this.shakeTimer = 0;
+            }
+         } else {
             this.shakeTimer = 0;
          }
       } else {

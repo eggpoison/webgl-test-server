@@ -1,8 +1,9 @@
-import { GameObjectDebugData, Point, SETTINGS, TileType, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Point, SETTINGS, TileType, Vector, randInt, randItem } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import { SERVER } from "../server";
 import Board from "../Board";
+import Tile from "../tiles/Tile";
 
 /** Number of points to sample when finding a tile to wander to */
 const NUM_SAMPLE_POINTS = 20;
@@ -47,42 +48,73 @@ class WanderAI extends AI implements WanderAIParams {
 
       // Only try to wander if not moving
       if (this.mob.velocity === null && Math.random() < this.wanderRate / SETTINGS.TPS) {
-         let targetPosition!: Point;
+         this.wander();
+      }
+   }
 
-         const dist = this.mob.visionRange * Math.random();
-         let direction = 2 * Math.PI * Math.random();
-         for (let i = 0; i < NUM_SAMPLE_POINTS; i++) {
-            // Calculate sample position
-            const samplePosition = this.mob.position.copy();
-            samplePosition.add(new Vector(dist, direction).convertToPoint());
+   private wander(): void {
+      let targetPosition: Point | undefined;
 
-            // Don't move to out-of-board positions
-            if (!Board.isInBoard(samplePosition)) {
+      const wanderPositions = this.getTileWanderPositions();
+
+      const indexes = wanderPositions.map((_, i) => i);
+      while (indexes.length > 0) {
+         const tempIdx = randInt(0, indexes.length - 1);
+         const idx = indexes[tempIdx];
+         indexes.splice(tempIdx, 1);
+
+         const position = wanderPositions[idx];
+
+         // Make sure the mob only moves to valid tile targets
+         if (typeof this.validTileTargets !== "undefined") {
+            const tile = Board.getTile(Math.floor(position.x / SETTINGS.TILE_SIZE), Math.floor(position.y / SETTINGS.TILE_SIZE));
+            if (!this.validTileTargets.has(tile.type)) {
                continue;
             }
-
-            if (typeof this.shouldWander !== "undefined" && !this.shouldWander(samplePosition)) {
-               continue;
-            }
-
-            if (typeof this.validTileTargets === "undefined") {
-               targetPosition = samplePosition;
-               break;
-            } else {
-               const tile = Board.getTile(Board.worldToTileX(samplePosition.x), Board.worldToTileY(samplePosition.y));
-               if (this.validTileTargets.has(tile.type)) {
-                  targetPosition = samplePosition;
-                  break;
-               }
-            }
-
-            direction += sampleStepSize;
          }
 
-         if (typeof targetPosition !== "undefined") {
-            super.moveToPosition(targetPosition, this.acceleration, this.terminalVelocity, direction);
+         if (typeof this.shouldWander !== "undefined" && !this.shouldWander(position)) {
+            continue;
+         }
+
+         targetPosition = position;
+         break;
+      }
+
+      if (typeof targetPosition !== "undefined") {
+         super.moveToPosition(targetPosition, this.acceleration, this.terminalVelocity);
+      } else {
+         // If no valid positions can be found then move to a random position
+         const position = randItem(wanderPositions);
+         super.moveToPosition(position, this.acceleration, this.terminalVelocity);
+      }
+   }
+
+   private getTileWanderPositions(): Array<Point> {
+      const wanderPositions = new Array<Point>();
+
+      const minTileX = Math.max(Math.min(Math.floor((this.mob.position.x - this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+      const maxTileX = Math.max(Math.min(Math.floor((this.mob.position.x + this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+      const minTileY = Math.max(Math.min(Math.floor((this.mob.position.y - this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+      const maxTileY = Math.max(Math.min(Math.floor((this.mob.position.y + this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+
+      // console.log("-=-=-=-=-=--=-");
+      // console.log("coords:", this.mob.tile.x, this.mob.tile.y);
+      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+         for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+            // console.log(tileX, tileY);
+            const position = new Point((tileX + Math.random()) * SETTINGS.TILE_SIZE, (tileY + Math.random()) * SETTINGS.TILE_SIZE);
+            const distance = this.mob.position.calculateDistanceBetween(position);
+            // if (tileX === this.mob.tile.x && tileY === this.mob.tile.y) {
+            //    console.log(distance, distance <= this.mob.visionRange);
+            // }
+            if (distance <= this.mob.visionRange) {
+               wanderPositions.push(position);
+            }
          }
       }
+
+      return wanderPositions;
    }
 
    protected _getWeight(): number {

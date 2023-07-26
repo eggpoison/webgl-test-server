@@ -127,7 +127,9 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    },
    swamp: {
       spawnRequirements: {
-         minTemperature: 0.7,
+         // minTemperature: 0.7,
+         // minHumidity: 0.8
+         minTemperature: 0.5,
          minHumidity: 0.8
       },
       tiles: [
@@ -135,32 +137,38 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             info: {
                type: "sludge",
                isWall: false
-            },
-            minWeight: 0.25,
-            minDist: 3
-         },
-         {
-            info: {
-               type: "sludge",
-               isWall: false
-            },
-            minWeight: 0.4,
-            minDist: 2
-         },
-         {
-            info: {
-               type: "sludge",
-               isWall: false
-            },
-            minWeight: 0.6,
-            minDist: 1
-         },
-         {
-            info: {
-               type: "dirt",
-               isWall: false
             }
          }
+         // {
+         //    info: {
+         //       type: "sludge",
+         //       isWall: false
+         //    },
+         //    minWeight: 0.25,
+         //    minDist: 3
+         // },
+         // {
+         //    info: {
+         //       type: "sludge",
+         //       isWall: false
+         //    },
+         //    minWeight: 0.4,
+         //    minDist: 2
+         // },
+         // {
+         //    info: {
+         //       type: "sludge",
+         //       isWall: false
+         //    },
+         //    minWeight: 0.6,
+         //    minDist: 1
+         // },
+         // {
+         //    info: {
+         //       type: "dirt",
+         //       isWall: false
+         //    }
+         // }
       ]
    },
    grasslands: {

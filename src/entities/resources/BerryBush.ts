@@ -4,7 +4,6 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import DroppedItem from "../../items/DroppedItem";
 import { createItem } from "../../items/item-creation";
-import { SERVER } from "../../server";
 import Board from "../../Board";
 
 class BerryBush extends Entity {

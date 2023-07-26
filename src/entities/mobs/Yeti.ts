@@ -42,7 +42,12 @@ class Yeti extends Mob {
    private static readonly MIN_TERRITORY_SIZE = 50;
    private static readonly MAX_TERRITORY_SIZE = 100;
 
+   private static readonly ATTACK_PURSUE_TIME = 5;
+
    private readonly territory: ReadonlyArray<Tile>;
+
+   // Stores the ids of all entities which have recently attacked the yeti
+   private readonly attackingEntities: Record<number, number> = {};
 
    constructor(position: Point) {
       super(position, {
@@ -82,8 +87,8 @@ class Yeti extends Mob {
             // Don't chase ice spikes
             if (entity.type === "ice_spikes") return false;
             
-            // Chase the entity if they are in the yeti's territory
-            return this.territory.includes(entity.tile);
+            // Chase the entity if they are in the yeti's territory or have recently attacked the yeti
+            return this.territory.includes(entity.tile) || this.attackingEntities.hasOwnProperty(entity.id);
          }
       });
 
@@ -93,6 +98,12 @@ class Yeti extends Mob {
          terminalVelocity: 50,
          metabolism: 1,
          itemTargets: new Set(["raw_beef", "leather"])
+      });
+
+      this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
+         if (attackingEntity !== null) {
+            this.attackingEntities[attackingEntity.id] = Yeti.ATTACK_PURSUE_TIME;
+         }
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
@@ -122,6 +133,17 @@ class Yeti extends Mob {
       });
    }
 
+   public tick(): void {
+      super.tick();
+
+      for (const id of Object.keys(this.attackingEntities) as unknown as ReadonlyArray<number>) {
+         this.attackingEntities[id] -= 1 / SETTINGS.TPS;
+         if (this.attackingEntities[id] <= 0) {
+            delete this.attackingEntities[id];
+         }
+      }
+   }
+
    public getClientArgs(): [] {
       return [];
    }
@@ -134,7 +156,7 @@ class Yeti extends Mob {
       // Generate rgb based on second, third and fourth digits of the hash
       const r = (Math.floor(hash / 10) % 10) / 10;
       const g = (Math.floor(hash / 10) % 100) / 100;
-      const b = (Math.floor(hash / 10) % 1000) / 1000;
+      const b = (Math.floor(hash / 10) % 1000) / 1000 * 0.5; // Generate less blue so the colour doesnt blend in with the tundra
       
       for (const tile of this.territory) {
          debugData.tileHighlights.push(

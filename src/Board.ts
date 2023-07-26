@@ -105,13 +105,7 @@ abstract class Board {
 
    private static removeGameObject(gameObject: GameObject): void {
       if (!this.gameObjects.has(gameObject)) {
-         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-         console.log(gameObject);
-         console.trace();
-         console.warn("Tried to remove a game object which doesn't exist or was already removed.");
-         // throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+         throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
       
       switch (gameObject.i) {
@@ -142,7 +136,7 @@ abstract class Board {
       if (idx !== -1) {
          this.gameObjectsToRemove.splice(idx, 1);
       }
-      
+
       this.removeGameObject(gameObject);
    }
 
@@ -193,8 +187,8 @@ abstract class Board {
 
    public static resolveCollisions(): void {
       for (const gameObject of this.gameObjects) {
-         gameObject.updateCollidingGameObjects();
-         gameObject.resolveGameObjectCollisions();
+         // gameObject.updateCollidingGameObjects();
+         // gameObject.resolveGameObjectCollisions();
          gameObject.resolveWallCollisions();
 
          gameObject.updateTile();
@@ -364,6 +358,10 @@ abstract class Board {
    }
 
    public static getEntitiesAtPosition(position: Point): Set<Entity> {
+      if (!this.isInBoard(position)) {
+         throw new Error("Position isn't in the board");
+      }
+      
       const testHitbox = new CircularHitbox({
          type: "circular",
          radius: 1

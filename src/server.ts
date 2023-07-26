@@ -194,8 +194,27 @@ class GameServer {
       spawnInitialEntities();
    }
 
-   public setTrackedGameObject(id: number): void {
+   public setTrackedGameObject(id: number | null): void {
       this.trackedGameObjectID = id;
+   }
+
+   public start(): void {
+      if (this.io === null) {
+         // Start the server
+         this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
+         this.handlePlayerConnections();
+         console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
+      }
+
+      if (typeof this.tickInterval === "undefined") {
+         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+      }
+   }
+
+   public stop(): void {
+      if (this.tickInterval !== null) {
+         clearInterval(this.tickInterval);
+      }
    }
 
    private async tick(): Promise<void> {
@@ -222,25 +241,6 @@ class GameServer {
 
       // Send game data packets to all players
       this.sendGameDataPackets();
-   }
-
-   public start(): void {
-      if (typeof this.tickInterval === "undefined") {
-         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-      }
-
-      if (this.io === null) {
-         // Start the server
-         this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
-         this.handlePlayerConnections();
-         console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
-      }
-   }
-
-   public stop(): void {
-      if (this.tickInterval !== null) {
-         clearInterval(this.tickInterval);
-      }
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -390,6 +390,10 @@ class GameServer {
 
             registerCommand(command, player);
          });
+
+         socket.on("track_game_object", (id: number | null): void => {
+            this.setTrackedGameObject(id);
+         })
       });
    }
 
@@ -453,7 +457,9 @@ class GameServer {
    private handlePlayerDisconnect(socket: ISocket): void {
       if (this.playerData.hasOwnProperty(socket.id)) {
          const playerData = this.playerData[socket.id];
-         playerData.instance.remove();
+         if (Board.gameObjectIsInBoard(playerData.instance)) {
+            playerData.instance.remove();
+         }
          delete this.playerData[socket.id];
       }
    }
@@ -554,8 +560,8 @@ class GameServer {
 
 export const SERVER = new GameServer();
 
-SERVER.setup();
 Board.setup();
+SERVER.setup();
 
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
