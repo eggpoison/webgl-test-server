@@ -146,53 +146,91 @@ abstract class Board {
       }
    }
 
+   private static a: Record<number, Array<GameObject>> = {};
+
    public static updateGameObjects(): void {
-      const chunkGroups: { [key: string]: Set<GameObject> } = {};
+      // const chunkGroups: { [key: string]: Set<GameObject> } = {};
+      this.a = {};
 
       for (const gameObject of this.gameObjects) {
          gameObject.tick();
 
-         gameObject.savePreviousCollidingGameObjects();
-         gameObject.clearCollidingGameObjects();
-         this.setEntityPotentialCollidingEntities(chunkGroups, gameObject);
+         gameObject.calculateBoundingVolume();
 
-         for (const hitbox of gameObject.hitboxes) {
-            hitbox.updatePosition();
+         for (const chunk of gameObject.boundingChunks) {
+            const n = chunk.y * SETTINGS.BOARD_SIZE + chunk.x;
+            if (!this.a.hasOwnProperty(n)) {
+               this.a[n] = new Array<GameObject>();
+            }
+            this.a[n].push(gameObject);
          }
+
+         // gameObject.savePreviousCollidingGameObjects();
+         // gameObject.clearCollidingGameObjects();
+         // this.setEntityPotentialCollidingEntities(chunkGroups, gameObject);
+
+         // for (const hitbox of gameObject.hitboxes) {
+         //    hitbox.updatePosition();
+         // }
       }
    }
 
-   private static setEntityPotentialCollidingEntities(chunkGroups: { [key: string]: Set<GameObject> }, gameObject: GameObject): void {
-      // Generate the chunk group hash
-      let chunkGroupHash = "";
-      for (const chunk of gameObject.chunks) {
-         chunkGroupHash += chunk.x + "-" + chunk.y + "-";
-      }
+   // private static setEntityPotentialCollidingEntities(chunkGroups: { [key: string]: Set<GameObject> }, gameObject: GameObject): void {
+   //    // Generate the chunk group hash
+   //    let chunkGroupHash = "";
+   //    for (const chunk of gameObject.chunks) {
+   //       chunkGroupHash += chunk.x + "-" + chunk.y + "-";
+   //    }
 
-      // Set the entity's potential colliding entities based on the chunk group hash
-      if (!chunkGroups.hasOwnProperty(chunkGroupHash)) {
-         // If a chunk group doesn't exist for the hash, create it
-         const chunkGroup = new Set<GameObject>();
-         for (const chunk of gameObject.chunks) {
-            for (const gameObject of chunk.getGameObjects()) {
-               if (!chunkGroup.has(gameObject)) {
-                  chunkGroup.add(gameObject);
+   //    // Set the entity's potential colliding entities based on the chunk group hash
+   //    if (!chunkGroups.hasOwnProperty(chunkGroupHash)) {
+   //       // If a chunk group doesn't exist for the hash, create it
+   //       const chunkGroup = new Set<GameObject>();
+   //       for (const chunk of gameObject.chunks) {
+   //          for (const gameObject of chunk.getGameObjects()) {
+   //             if (!chunkGroup.has(gameObject)) {
+   //                chunkGroup.add(gameObject);
+   //             }
+   //          }
+   //       }
+   //       chunkGroups[chunkGroupHash] = chunkGroup;
+   //    }
+   //    gameObject.potentialCollidingObjects = new Set(chunkGroups[chunkGroupHash]);
+   // }
+
+   public static resolveCollisions(): void {
+      for (const gameObjectsInChunk of Object.values(this.a)) {
+         for (let i = 0; i <= gameObjectsInChunk.length - 2; i++) {
+            const gameObject1 = gameObjectsInChunk[i];
+            for (let j = i + 1; j <= gameObjectsInChunk.length - 1; j++) {
+               const gameObject2 = gameObjectsInChunk[j];
+
+               if (!gameObject1.collidingObjects.has(gameObject2) && gameObject1.isColliding(gameObject2)) {
+                  gameObject1.collide(gameObject2);
+                  gameObject2.collide(gameObject1);
+
+                  gameObject1.collidingObjects.add(gameObject2);
+                  gameObject2.collidingObjects.add(gameObject1);
                }
             }
          }
-         chunkGroups[chunkGroupHash] = chunkGroup;
       }
-      gameObject.potentialCollidingObjects = new Set(chunkGroups[chunkGroupHash]);
-   }
 
-   public static resolveCollisions(): void {
       for (const gameObject of this.gameObjects) {
-         // gameObject.updateCollidingGameObjects();
-         // gameObject.resolveGameObjectCollisions();
          gameObject.resolveWallCollisions();
-
          gameObject.updateTile();
+
+         gameObject.previousCollidingObjects = gameObject.collidingObjects;
+         gameObject.collidingObjects = new Set();
       }
+      
+      // for (const gameObject of this.gameObjects) {
+      //    gameObject.updateCollidingGameObjects();
+      //    gameObject.resolveGameObjectCollisions();
+      //    gameObject.resolveWallCollisions();
+
+      //    gameObject.updateTile();
+      // }
    }
 
    /** Registers a tile update to be sent to the clients */

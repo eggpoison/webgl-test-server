@@ -108,8 +108,7 @@ const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
    
    // Check if the entity density is right
    const entityCount = getEntityCount(spawnInfo.entityType);
-   // const density = entityCount / numEligibleTiles;
-   const density = entityCount / numEligibleTiles / 10;
+   const density = entityCount / numEligibleTiles;
    if (density > spawnInfo.maxDensity) {
       return false;
    }

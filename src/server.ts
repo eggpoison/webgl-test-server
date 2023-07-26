@@ -12,6 +12,7 @@ import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Cow from "./entities/mobs/Cow";
 import BerryBush from "./entities/resources/BerryBush";
+import Cactus from "./entities/resources/Cactus";
 
 /*
 
@@ -220,6 +221,7 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
+      // console.log(this.ticks);
       this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
@@ -266,6 +268,7 @@ class GameServer {
             initialVisibleChunkBounds = visibleChunkBounds;
          });
 
+         // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
          socket.on("spawn_position_request", () => {
@@ -274,12 +277,6 @@ class GameServer {
 
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
-            // Spawn the player in a random position in the world
-            // const spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 201, 200);
-
-            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y), false);
-            new BerryBush(new Point(spawnPosition.x + 200, spawnPosition.y + 250), false);
-            
             // Spawn the player entity
             const player = new Player(spawnPosition, false, clientUsername);
 

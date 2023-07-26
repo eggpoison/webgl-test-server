@@ -84,6 +84,9 @@ class WanderAI extends AI implements WanderAIParams {
       if (typeof targetPosition !== "undefined") {
          super.moveToPosition(targetPosition, this.acceleration, this.terminalVelocity);
       } else {
+         // If there are no possible positions, don't wander
+         if (wanderPositions.length === 0) return;
+         
          // If no valid positions can be found then move to a random position
          const position = randItem(wanderPositions);
          super.moveToPosition(position, this.acceleration, this.terminalVelocity);

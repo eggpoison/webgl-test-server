@@ -5,7 +5,6 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Projectile from "../../Projectile";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { SERVER } from "../../server";
 import Board from "../../Board";
 
 class IceSpikes extends Entity {

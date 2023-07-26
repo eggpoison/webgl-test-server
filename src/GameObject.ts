@@ -61,11 +61,11 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    /** All hitboxes attached to the game object */
    public hitboxes = new Set<Hitbox<HitboxType>>();
 
-   /** Stores which other objects could be colliding with the object */
-   public potentialCollidingObjects = new Set<GameObject>();
+   public previousCollidingObjects = new Set<GameObject>();
    public collidingObjects = new Set<GameObject>();
-
-   private previousCollidingObjects = new Set<GameObject>();
+   
+   // /** Stores which other objects could be colliding with the object */
+   // public potentialCollidingObjects = new Set<GameObject>();
 
    protected abstract readonly events: { [E in keyof IEvents<I>]: Array<GameEvent<IEvents<I>, E>> };
 
@@ -77,6 +77,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
    /** If set to false, the game object will not experience friction from moving over tiles. */
    public isAffectedByFriction = true;
+
+   public boundingChunks = new Array<Chunk>();
 
    constructor(position: Point) {
       this.position = position;
@@ -231,6 +233,27 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       return containingChunks;
    }
 
+   public calculateBoundingVolume(): void {
+      const containingChunks = new Array<Chunk>();
+      for (const hitbox of this.hitboxes) {
+         const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+         for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+               const chunk = Board.getChunk(chunkX, chunkY);
+               if (!containingChunks.includes(chunk)) {
+                  containingChunks.push(chunk);
+               }
+            }
+         }
+      }
+
+      this.boundingChunks = containingChunks;
+   }
+
    /** Called after calculating the object's hitbox bounds */
    public updateContainingChunks(): void {
       const containingChunks = this.calculateContainingChunks();
@@ -299,31 +322,20 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       this.collidingObjects = collidingEntities;
    }
 
-   public updateCollidingGameObjects(): void {
-      this.calculateCollidingGameObjects();
-
-      // Call collision events
-      for (const collidingGameObject of this.collidingObjects) {
-         (this.callEvents as any)("during_collision", collidingGameObject);
-         if (collidingGameObject.i === "entity") (this.callEvents as any)("during_entity_collision", collidingGameObject);
-         
-         if (!this.previousCollidingObjects.has(collidingGameObject)) {
-            (this.callEvents as any)("enter_collision", collidingGameObject);
+   public isColliding(gameObject: GameObject): boolean {
+      for (const hitbox of this.hitboxes) {
+         for (const otherHitbox of gameObject.hitboxes) {
+            // If the objects are colliding, add the colliding object and this object
+            if (hitbox.isColliding(otherHitbox)) {
+               return true;
+            }
          }
       }
+      return false;
    }
 
-   /** Resolves collisions with other game objects */
-   public resolveGameObjectCollisions(): void {
-      if (this.isStatic) return;
-      
-      // Push away from all colliding objects
-      for (const gameObject of this.collidingObjects) {
-         // If the two objects are exactly on top of each other, don't do anything
-         if (gameObject.position.x === this.position.x && gameObject.position.y === this.position.y) {
-            continue;
-         }
-
+   public collide(gameObject: GameObject): void {
+      if (!this.isStatic) {
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
@@ -342,7 +354,60 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
             this.velocity = pushForce;
          }
       }
+
+      // Call collision events
+      (this.callEvents as any)("during_collision", gameObject);
+      if (gameObject.i === "entity") (this.callEvents as any)("during_entity_collision", gameObject);
+      
+      if (!this.previousCollidingObjects.has(gameObject)) {
+         (this.callEvents as any)("enter_collision", gameObject);
+      }
    }
+
+   // public updateCollidingGameObjects(): void {
+   //    this.calculateCollidingGameObjects();
+
+   //    // Call collision events
+   //    for (const collidingGameObject of this.collidingObjects) {
+   //       (this.callEvents as any)("during_collision", collidingGameObject);
+   //       if (collidingGameObject.i === "entity") (this.callEvents as any)("during_entity_collision", collidingGameObject);
+         
+   //       if (!this.previousCollidingObjects.has(collidingGameObject)) {
+   //          (this.callEvents as any)("enter_collision", collidingGameObject);
+   //       }
+   //    }
+   // }
+
+   // /** Resolves collisions with other game objects */
+   // public resolveGameObjectCollisions(): void {
+   //    if (this.isStatic) return;
+      
+   //    // Push away from all colliding objects
+   //    for (const gameObject of this.collidingObjects) {
+   //       // If the two objects are exactly on top of each other, don't do anything
+   //       if (gameObject.position.x === this.position.x && gameObject.position.y === this.position.y) {
+   //          continue;
+   //       }
+
+   //       // Calculate the force of the push
+   //       // Force gets greater the closer together the objects are
+   //       const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
+   //       const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
+   //       let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
+   //       forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
+         
+   //       const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
+   //       // const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
+   //       const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
+   //       // No need to apply force to other object as they will do it themselves
+   //       const pushForce = new Vector(force, pushAngle);
+   //       if (this.velocity !== null) {
+   //          this.velocity.add(pushForce);
+   //       } else {
+   //          this.velocity = pushForce;
+   //       }
+   //    }
+   // }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {
       let maxDist = 0;
@@ -378,40 +443,40 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       return maxDist;
    }
    
-   private calculateCollidingGameObjects(): void {
-      this.potentialCollidingObjects.delete(this as unknown as GameObject);
-      objectLoop: for (const gameObject of this.potentialCollidingObjects) {
-         if (this.collidingObjects.has(gameObject)) continue;
+   // private calculateCollidingGameObjects(): void {
+   //    this.potentialCollidingObjects.delete(this as unknown as GameObject);
+   //    objectLoop: for (const gameObject of this.potentialCollidingObjects) {
+   //       if (this.collidingObjects.has(gameObject)) continue;
          
-         for (const hitbox of this.hitboxes) {
-            for (const otherHitbox of gameObject.hitboxes) {
-               // If the objects are colliding, add the colliding object and this object
-               if (hitbox.isColliding(otherHitbox)) {
-                  gameObject.confirmCollidingGameObject(this as unknown as GameObject);
+   //       for (const hitbox of this.hitboxes) {
+   //          for (const otherHitbox of gameObject.hitboxes) {
+   //             // If the objects are colliding, add the colliding object and this object
+   //             if (hitbox.isColliding(otherHitbox)) {
+   //                gameObject.confirmCollidingGameObject(this as unknown as GameObject);
                   
-                  this.collidingObjects.add(gameObject);
-                  continue objectLoop;
-               }
-            }
-         }
-      }
-   }
+   //                this.collidingObjects.add(gameObject);
+   //                continue objectLoop;
+   //             }
+   //          }
+   //       }
+   //    }
+   // }
 
-   public savePreviousCollidingGameObjects(): void {
-      this.previousCollidingObjects.clear();
-      for (const gameObject of this.collidingObjects) {
-         this.previousCollidingObjects.add(gameObject);
-      }
-   }
+   // public savePreviousCollidingGameObjects(): void {
+   //    this.previousCollidingObjects.clear();
+   //    for (const gameObject of this.collidingObjects) {
+   //       this.previousCollidingObjects.add(gameObject);
+   //    }
+   // }
 
-   public clearCollidingGameObjects(): void {
-      this.collidingObjects.clear();
-   }
+   // public clearCollidingGameObjects(): void {
+   //    this.collidingObjects.clear();
+   // }
 
-   public confirmCollidingGameObject(gameObject: GameObject): void {
-      this.potentialCollidingObjects.delete(gameObject);
-      this.collidingObjects.add(gameObject);
-   }
+   // public confirmCollidingGameObject(gameObject: GameObject): void {
+   //    this.potentialCollidingObjects.delete(gameObject);
+   //    this.collidingObjects.add(gameObject);
+   // }
 
    // Type parameters confuse me ;-;... This works somehow
    public callEvents<E extends keyof IEvents<I>>(type: E, ...params: IEvents<I>[E] extends (...args: any) => void ? Parameters<IEvents<I>[E]> : never): void {

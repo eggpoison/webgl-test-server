@@ -8,7 +8,6 @@ import ToolItem from "../items/generic/ToolItem";
 import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
 import Entity from "./Entity";
-import { SERVER } from "../server";
 import Board from "../Board";
 
 const bundleItemData = (item: Item): ItemData => {
