@@ -1,5 +1,5 @@
 import { SETTINGS } from "webgl-test-shared/lib/settings";
-import { generateOctavePerlinNoise, generatePerlinNoise } from "./perlin-noise";
+import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "./perlin-noise";
 import { BiomeName } from "webgl-test-shared/lib/biomes";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./data/biome-generation-info";
 import Tile from "./tiles/Tile";
@@ -9,7 +9,6 @@ import { createGenericTile } from "./tiles/tile-class-record";
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
 const HUMIDITY_NOISE_SCALE = 30;
-const TILE_TYPE_NOISE_SCALE = 7;
 
 const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height: number, temperature: number, humidity: number): boolean => {
    // Height
@@ -57,8 +56,10 @@ const generateBiomeInfo = (tileArray: Array<Array<Partial<TileInfo>>>): void => 
 }
 
 const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: number, dist: number): boolean => {
-   if (typeof generationInfo.minWeight !== "undefined" && weight < generationInfo.minWeight) return false;
-   if (typeof generationInfo.maxWeight !== "undefined" && weight > generationInfo.maxWeight) return false;
+   if (typeof generationInfo.noiseRequirements !== "undefined") {
+      if (typeof generationInfo.noiseRequirements.minWeight !== "undefined" && weight < generationInfo.noiseRequirements.minWeight) return false;
+      if (typeof generationInfo.noiseRequirements.maxWeight !== "undefined" && weight > generationInfo.noiseRequirements.maxWeight) return false;
+   }
 
    if (typeof generationInfo.minDist !== "undefined" && dist < generationInfo.minDist) return false;
    if (typeof generationInfo.maxDist !== "undefined" && dist > generationInfo.maxDist) return false;
@@ -66,15 +67,23 @@ const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: num
    return true;
 }
 
-const getTileInfo = (biomeName: BiomeName, weight: number, dist: number): Omit<TileInfo, "biomeName" | "fogAmount"> => {
+const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): Omit<TileInfo, "biomeName" | "fogAmount"> => {
    const biomeGenerationInfo = BIOME_GENERATION_INFO[biomeName];
    for (const tileGenerationInfo of biomeGenerationInfo.tiles) {
+      let weight = 0;
+      if (typeof tileGenerationInfo.noiseRequirements !== "undefined") {
+         weight = generatePointPerlinNoise(x, y, tileGenerationInfo.noiseRequirements.scale, tileGenerationInfo.tileType + "-" + tileGenerationInfo.noiseRequirements.scale);
+      }
+      
       if (matchesTileRequirements(tileGenerationInfo, weight, dist)) {
-         return tileGenerationInfo.info;
+         return {
+            type: tileGenerationInfo.tileType,
+            isWall: tileGenerationInfo.isWall
+         };
       }
    }
 
-   throw new Error(`Couldn't find a valid tile info! Biome: ${biomeName}, weight: ${weight}`);
+   throw new Error(`Couldn't find a valid tile info! Biome: ${biomeName}`);
 }
 
 const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: number, tileY: number): number => {
@@ -108,16 +117,19 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 /** Generate the tile array's tile types based on their biomes */
 const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void => {
    // Generate the noise
-   const noise = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TILE_TYPE_NOISE_SCALE);
+   // const noise = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TILE_TYPE_NOISE_SCALE);
 
    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const tileInfo = tileInfoArray[x][y];
-         const weight = noise[x][y];
+         // const weight = noise[x][y];
+         // let weight = 0;
+         // if (typeof tileInfo.)
+         // const weight = generatePointPerlinNoise(x, y, )
 
          const dist = getTileDist(tileInfoArray, x, y);
 
-         Object.assign(tileInfo, getTileInfo(tileInfo.biomeName!, weight, dist));
+         Object.assign(tileInfo, getTileInfo(tileInfo.biomeName!, dist, x, y));
       }
    }
 }

@@ -3,6 +3,7 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Mob from "./Mob";
+import Entity from "../Entity";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;

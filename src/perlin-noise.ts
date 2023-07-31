@@ -1,4 +1,4 @@
-import { Point, Vector } from "webgl-test-shared";
+import { Point, Vector, veryBadHash } from "webgl-test-shared";
 
 const lerp = (start: number, end: number, amount: number): number => {
    return start * (1 - amount) + end * amount;
@@ -108,4 +108,55 @@ export function generateOctavePerlinNoise(width: number, height: number, startin
    }
 
    return totalNoise;
+}
+
+const a: Record<string, Record<string, Vector>> = {};
+
+export function generatePointPerlinNoise(x: number, y: number, scale: number, name: string): number {
+   if (!a.hasOwnProperty(name)) {
+      a[name] = {};
+   }
+
+   const sampleX = x / scale;
+   const sampleY = y / scale;
+   const samplePoint = new Point(sampleX, sampleY);
+
+   const x0 = Math.floor(sampleX);
+   const x1 = x0 + 1;
+   const y0 = Math.floor(sampleY);
+   const y1 = y0 + 1;
+
+   const cornerCoords: ReadonlyArray<[number, number]> = [[y0, x0], [y0, x1], [y1, x0], [y1, x1]];
+
+   const dotProducts = new Array<number>();
+   for (let i = 0; i < 4; i++) {
+      const coords = cornerCoords[i];
+
+      let corner: Vector;
+      const key = coords[0] + "-" + coords[1];
+      if (!a[name].hasOwnProperty(key)) {
+         corner = new Vector(1, 2 * Math.PI * Math.random());
+         a[name][key] = corner;
+      } else {
+         corner = a[name][key];
+      }
+      // const hash = veryBadHash(coords[0] + "-" + coords[1]);
+      // const val = ((hash / 100000) % 1) * 2 * Math.PI;
+      // const corner = new Vector(val, 1);
+
+      // const corner = grid[coords[0]][coords[1]];
+      const cornerPos = new Point(coords[1], coords[0]);
+      const offsetVector = samplePoint.convertToVector(cornerPos);
+
+      // Calculate the dot product
+      const cornerCartesian = corner.convertToPoint();
+      const dotProduct = cornerCartesian.calculateDotProduct(offsetVector.convertToPoint());
+      dotProducts.push(dotProduct);
+   }
+
+   const u = fade(sampleX % 1);
+   const v = fade(sampleY % 1);
+   let val = interpolate(dotProducts[0], dotProducts[1], dotProducts[2], dotProducts[3], u, v);
+   val = Math.min(Math.max(val, -0.5), 0.5);
+   return val + 0.5;
 }

@@ -13,6 +13,7 @@ import Projectile from "./Projectile";
 import Cow from "./entities/mobs/Cow";
 import BerryBush from "./entities/resources/BerryBush";
 import Cactus from "./entities/resources/Cactus";
+import Slime from "./entities/mobs/Slime";
 
 /*
 
@@ -221,7 +222,6 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
-      // console.log(this.ticks);
       this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
@@ -279,6 +279,8 @@ class GameServer {
          socket.on("initial_game_data_request", () => {
             // Spawn the player entity
             const player = new Player(spawnPosition, false, clientUsername);
+
+            new Slime(new Point(spawnPosition.x + 200, spawnPosition.y), false);
 
             // Initialise the player's gamedata record
             this.playerData[socket.id] = {

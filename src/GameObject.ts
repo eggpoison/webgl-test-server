@@ -442,41 +442,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
 
       return maxDist;
    }
-   
-   // private calculateCollidingGameObjects(): void {
-   //    this.potentialCollidingObjects.delete(this as unknown as GameObject);
-   //    objectLoop: for (const gameObject of this.potentialCollidingObjects) {
-   //       if (this.collidingObjects.has(gameObject)) continue;
-         
-   //       for (const hitbox of this.hitboxes) {
-   //          for (const otherHitbox of gameObject.hitboxes) {
-   //             // If the objects are colliding, add the colliding object and this object
-   //             if (hitbox.isColliding(otherHitbox)) {
-   //                gameObject.confirmCollidingGameObject(this as unknown as GameObject);
-                  
-   //                this.collidingObjects.add(gameObject);
-   //                continue objectLoop;
-   //             }
-   //          }
-   //       }
-   //    }
-   // }
-
-   // public savePreviousCollidingGameObjects(): void {
-   //    this.previousCollidingObjects.clear();
-   //    for (const gameObject of this.collidingObjects) {
-   //       this.previousCollidingObjects.add(gameObject);
-   //    }
-   // }
-
-   // public clearCollidingGameObjects(): void {
-   //    this.collidingObjects.clear();
-   // }
-
-   // public confirmCollidingGameObject(gameObject: GameObject): void {
-   //    this.potentialCollidingObjects.delete(gameObject);
-   //    this.collidingObjects.add(gameObject);
-   // }
 
    // Type parameters confuse me ;-;... This works somehow
    public callEvents<E extends keyof IEvents<I>>(type: E, ...params: IEvents<I>[E] extends (...args: any) => void ? Parameters<IEvents<I>[E]> : never): void {

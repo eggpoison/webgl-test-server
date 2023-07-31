@@ -49,6 +49,8 @@ abstract class Mob extends Entity implements MobInfo {
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
 
    private aiParams: Record<string, number> = {};
+
+   protected entitiesInVisionRange = new Set<Entity>();
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean) {
       super(position, components, entityType, isNaturallySpawned);
@@ -92,11 +94,11 @@ abstract class Mob extends Entity implements MobInfo {
    }
 
    public refreshAI(): void {
-      const entitiesInVisionRange = this.calculateEntitiesInVisionRange();
+      this.entitiesInVisionRange = this.calculateEntitiesInVisionRange();
 
       // Update the values of all AI's
       for (const ai of this.ais) {
-         ai.updateValues(entitiesInVisionRange);
+         ai.updateValues(this.entitiesInVisionRange);
       }
 
       // The new AI is the one with the highest weight.
