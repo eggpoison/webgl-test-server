@@ -60,10 +60,10 @@ class Player extends Entity {
 
       this.displayName = name;
 
-      this.createEvent("on_knockback", (knockback: number, knockbackDirection: number): void => {
+      this.createEvent("hurt", (_1, _2, knockback: number, hitDirection: number | null): void => {
          this.hitsTaken.push({
             knockback: knockback,
-            knockbackDirection: knockbackDirection
+            hitDirection: hitDirection
          });
       });
    }

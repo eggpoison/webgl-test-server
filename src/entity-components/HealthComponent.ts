@@ -72,7 +72,7 @@ class HealthComponent extends Component {
    public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, attackHash?: string): boolean {
       if (this.isInvulnerable(attackHash) || this.isDead()) return false;
 
-      this.entity.callEvents("hurt", damage, attackingEntity);
+      this.entity.callEvents("hurt", damage, attackingEntity, knockback, hitDirection);
 
       this.secondsSinceLastHit = 0;
 
@@ -102,8 +102,6 @@ class HealthComponent extends Component {
       } else {
          this.entity.velocity = force;
       }
-
-      this.entity.callEvents("on_knockback", knockback, knockbackDirection);
    }
 
    public heal(healAmount: number): void {

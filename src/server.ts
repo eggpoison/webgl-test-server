@@ -10,9 +10,6 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
-import Cow from "./entities/mobs/Cow";
-import BerryBush from "./entities/resources/BerryBush";
-import Cactus from "./entities/resources/Cactus";
 import Slime from "./entities/mobs/Slime";
 
 /*
