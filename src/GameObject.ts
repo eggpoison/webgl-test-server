@@ -64,9 +64,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    public previousCollidingObjects = new Set<GameObject>();
    public collidingObjects = new Set<GameObject>();
    
-   // /** Stores which other objects could be colliding with the object */
-   // public potentialCollidingObjects = new Set<GameObject>();
-
    protected abstract readonly events: { [E in keyof IEvents<I>]: Array<GameEvent<IEvents<I>, E>> };
 
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
@@ -363,51 +360,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
          (this.callEvents as any)("enter_collision", gameObject);
       }
    }
-
-   // public updateCollidingGameObjects(): void {
-   //    this.calculateCollidingGameObjects();
-
-   //    // Call collision events
-   //    for (const collidingGameObject of this.collidingObjects) {
-   //       (this.callEvents as any)("during_collision", collidingGameObject);
-   //       if (collidingGameObject.i === "entity") (this.callEvents as any)("during_entity_collision", collidingGameObject);
-         
-   //       if (!this.previousCollidingObjects.has(collidingGameObject)) {
-   //          (this.callEvents as any)("enter_collision", collidingGameObject);
-   //       }
-   //    }
-   // }
-
-   // /** Resolves collisions with other game objects */
-   // public resolveGameObjectCollisions(): void {
-   //    if (this.isStatic) return;
-      
-   //    // Push away from all colliding objects
-   //    for (const gameObject of this.collidingObjects) {
-   //       // If the two objects are exactly on top of each other, don't do anything
-   //       if (gameObject.position.x === this.position.x && gameObject.position.y === this.position.y) {
-   //          continue;
-   //       }
-
-   //       // Calculate the force of the push
-   //       // Force gets greater the closer together the objects are
-   //       const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
-   //       const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
-   //       let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
-   //       forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
-         
-   //       const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
-   //       // const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
-   //       const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
-   //       // No need to apply force to other object as they will do it themselves
-   //       const pushForce = new Vector(force, pushAngle);
-   //       if (this.velocity !== null) {
-   //          this.velocity.add(pushForce);
-   //       } else {
-   //          this.velocity = pushForce;
-   //       }
-   //    }
-   // }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {
       let maxDist = 0;

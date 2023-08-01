@@ -18,13 +18,13 @@ export interface TileFoodSource extends FoodSource {
    readonly healAmount: number;
 }
 
-interface TileConsumeAIParams extends BaseAIParams {
+interface TileConsumeAIParams extends BaseAIParams<"tileConsume"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly tileTargets?: ReadonlyMap<TileType, TileFoodSource>;
 }
 
-class TileConsumeAI extends AI implements TileConsumeAIParams {
+class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
    public readonly type = "tileConsume";
 
    public readonly acceleration: number;
@@ -89,6 +89,10 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
       }
 
       return 0;
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

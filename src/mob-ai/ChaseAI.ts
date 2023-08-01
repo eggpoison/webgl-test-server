@@ -3,13 +3,13 @@ import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 
-interface ChaseAIParams extends BaseAIParams {
+interface ChaseAIParams extends BaseAIParams<"chase"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly entityIsChased: (entity: Entity) => boolean;
 }
 
-class ChaseAI extends AI implements ChaseAIParams {
+class ChaseAI extends AI<"chase"> implements ChaseAIParams {
    public readonly type = "chase";
 
    public readonly acceleration: number;
@@ -82,6 +82,10 @@ class ChaseAI extends AI implements ChaseAIParams {
             colour: [0, 0, 1]
          }
       );
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

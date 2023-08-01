@@ -10,7 +10,7 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
-import Slime from "./entities/mobs/Slime";
+import Slimewisp from "./entities/mobs/Slimewisp";
 
 /*
 
@@ -276,8 +276,6 @@ class GameServer {
          socket.on("initial_game_data_request", () => {
             // Spawn the player entity
             const player = new Player(spawnPosition, false, clientUsername);
-
-            new Slime(new Point(spawnPosition.x + 200, spawnPosition.y), false);
 
             // Initialise the player's gamedata record
             this.playerData[socket.id] = {

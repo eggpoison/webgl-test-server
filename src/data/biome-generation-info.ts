@@ -140,7 +140,16 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             isWall: false,
             noiseRequirements: {
                scale: 3,
-               minWeight: 0.6
+               minWeight: 0.4
+            },
+            minDist: 4
+         },
+         {
+            tileType: "slime",
+            isWall: false,
+            noiseRequirements: {
+               scale: 3,
+               minWeight: 0.7
             },
             minDist: 2
          },

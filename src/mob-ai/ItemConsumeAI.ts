@@ -1,29 +1,12 @@
-import { GameObjectDebugData, ItemType, SETTINGS, TileType } from "webgl-test-shared";
+import { GameObjectDebugData, ItemType, SETTINGS } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
 import FoodItem from "../items/generic/FoodItem";
 import { GameObject } from "../GameObject";
-import { SERVER } from "../server";
 import Board from "../Board";
 
-type FoodSource = {
-   /** Amount of food given by eating the source */
-   readonly foodUnits: number;
-}
-
-export interface TileFoodSource extends FoodSource {
-   /** What the tile turns into after being eaten */
-   readonly resultingTileType: TileType;
-   /** Time it takes to eat the tile */
-   readonly grazeTime: number;
-}
-
-export interface ItemFoodSource extends FoodSource {
-
-}
-
-interface ItemConsumeAIParams extends BaseAIParams {
+interface ItemConsumeAIParams extends BaseAIParams<"itemConsume"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Amount of food units used every second */
@@ -31,7 +14,7 @@ interface ItemConsumeAIParams extends BaseAIParams {
    readonly itemTargets: ReadonlySet<ItemType>;
 }
 
-class ItemConsumeAI extends AI implements ItemConsumeAIParams {
+class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
    public readonly type = "itemConsume";
 
    public readonly acceleration: number;
@@ -162,6 +145,10 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
             colour: [0, 0, 1]
          }
       );
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

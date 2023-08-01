@@ -2,10 +2,9 @@ import { GameObjectDebugData, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import BerryBush from "../entities/resources/BerryBush";
 import AI from "./AI";
-import { SERVER } from "../server";
 import Board from "../Board";
 
-class BerryBushShakeAI extends AI {
+class BerryBushShakeAI extends AI<"berryBushShake"> {
    private static readonly SAMPLE_DISTANCE = 60;
 
    /** Number of ticks for the entity to shake the berry bush */
@@ -92,6 +91,10 @@ class BerryBushShakeAI extends AI {
             colour: [0, 0, 1]
          }
       );
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

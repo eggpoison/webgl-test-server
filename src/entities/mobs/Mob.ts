@@ -9,7 +9,6 @@ import ChaseAI from "../../mob-ai/ChaseAI";
 import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
 import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
-import { SERVER } from "../../server";
 import Board from "../../Board";
 
 export const MobAIs = {
@@ -21,7 +20,9 @@ export const MobAIs = {
    escape: EscapeAI,
    chase: ChaseAI,
    berryBushShake: BerryBushShakeAI
-}
+};
+
+export type AIType = keyof typeof MobAIs;
 
 export interface MobInfo {
    readonly visionRange: number;
@@ -40,8 +41,8 @@ abstract class Mob extends Entity implements MobInfo {
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
    
-   private readonly ais = new Set<AI>();
-   private currentAI: AI | null = null;
+   private readonly ais = new Set<AI<AIType>>();
+   private currentAI: AI<AIType> | null = null;
 
    /** Used to further distinguish between herd members in the HerdAI AI component */
    public readonly herdMemberHash?: number;
@@ -118,8 +119,8 @@ abstract class Mob extends Entity implements MobInfo {
       this.currentAI = newAI;
    }
 
-   private findAIWithHighestWeight(): AI {
-      let aiWithHighestWeight!: AI;
+   private findAIWithHighestWeight(): AI<AIType> {
+      let aiWithHighestWeight!: AI<AIType>;
       let maxWeight = -1;
 
       for (const ai of this.ais) {

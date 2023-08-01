@@ -1,24 +1,36 @@
 import { GameObjectDebugData, Point, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
-import Mob, { MobAIs } from "../entities/mobs/Mob";
+import Mob, { AIType} from "../entities/mobs/Mob";
 
-export type BaseAIParams = {
+export interface AICallbackFunctions {
+   wander: () => void,
+   follow: () => void,
+   herd: () => void,
+   tileConsume: () => void,
+   itemConsume: () => void,
+   escape: () => void,
+   chase: () => void,
+   berryBushShake: () => void
+}
+
+export interface BaseAIParams<T extends AIType> {
    readonly aiWeightMultiplier: number;
-};
+   readonly callback?: AICallbackFunctions[T];
+}
 
-abstract class AI {
+abstract class AI<T extends AIType> {
    protected readonly mob: Mob;
    
    public readonly aiWeightMultiplier: number;
 
-   public abstract readonly type: keyof typeof MobAIs;
+   public abstract readonly type: T;
    protected abstract _getWeight(): number;
 
    protected isActive: boolean = false;
    protected targetPosition: Point | null = null;
    protected entitiesInVisionRange!: Set<Entity>;
 
-   constructor(mob: Mob, { aiWeightMultiplier }: BaseAIParams) {
+   constructor(mob: Mob, { aiWeightMultiplier }: BaseAIParams<T>) {
       this.mob = mob;
       this.aiWeightMultiplier = aiWeightMultiplier;
    }
@@ -82,6 +94,8 @@ abstract class AI {
    }
 
    public addDebugData?(debugData: GameObjectDebugData): void;
+
+   public abstract callCallback(callback: AICallbackFunctions[T]): void;
 }
 
 export default AI;

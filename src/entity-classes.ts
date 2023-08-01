@@ -12,6 +12,7 @@ import Cactus from "./entities/resources/Cactus";
 import Yeti from "./entities/mobs/Yeti";
 import IceSpikes from "./entities/resources/IceSpikes";
 import Slime from "./entities/mobs/Slime";
+import Slimewisp from "./entities/mobs/Slimewisp";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)> = {
    cow: () => Cow,
@@ -25,7 +26,8 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNat
    cactus: () => Cactus,
    yeti: () => Yeti,
    ice_spikes: () => IceSpikes,
-   slime: () => Slime
+   slime: () => Slime,
+   slimewisp: () => Slimewisp
 };
 
 export default ENTITY_CLASS_RECORD;

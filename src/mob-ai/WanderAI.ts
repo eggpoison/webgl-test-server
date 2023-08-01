@@ -1,16 +1,9 @@
-import { GameObjectDebugData, Point, SETTINGS, TileType, Vector, randInt, randItem } from "webgl-test-shared";
+import { GameObjectDebugData, Point, SETTINGS, TileType, randInt, randItem } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
-import { SERVER } from "../server";
 import Board from "../Board";
-import Tile from "../tiles/Tile";
 
-/** Number of points to sample when finding a tile to wander to */
-const NUM_SAMPLE_POINTS = 20;
-
-const sampleStepSize = Math.PI * 2 / NUM_SAMPLE_POINTS;
-
-interface WanderAIParams extends BaseAIParams {
+interface WanderAIParams extends BaseAIParams<"wander"> {
    /** The average number of times that an entity will wander in a second */
    readonly wanderRate: number;
    readonly acceleration: number;
@@ -20,7 +13,7 @@ interface WanderAIParams extends BaseAIParams {
    readonly shouldWander?: (position: Point) => boolean;
 }
 
-class WanderAI extends AI implements WanderAIParams {
+class WanderAI extends AI<"wander"> implements WanderAIParams {
    public readonly type = "wander";
    
    public readonly wanderRate: number;
@@ -133,6 +126,10 @@ class WanderAI extends AI implements WanderAIParams {
             colour: [0, 0, 1]
          }
       );
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

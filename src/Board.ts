@@ -164,39 +164,8 @@ abstract class Board {
             }
             this.a[n].push(gameObject);
          }
-
-         // gameObject.savePreviousCollidingGameObjects();
-         // gameObject.clearCollidingGameObjects();
-         // this.setEntityPotentialCollidingEntities(chunkGroups, gameObject);
-
-         // for (const hitbox of gameObject.hitboxes) {
-         //    hitbox.updatePosition();
-         // }
       }
    }
-
-   // private static setEntityPotentialCollidingEntities(chunkGroups: { [key: string]: Set<GameObject> }, gameObject: GameObject): void {
-   //    // Generate the chunk group hash
-   //    let chunkGroupHash = "";
-   //    for (const chunk of gameObject.chunks) {
-   //       chunkGroupHash += chunk.x + "-" + chunk.y + "-";
-   //    }
-
-   //    // Set the entity's potential colliding entities based on the chunk group hash
-   //    if (!chunkGroups.hasOwnProperty(chunkGroupHash)) {
-   //       // If a chunk group doesn't exist for the hash, create it
-   //       const chunkGroup = new Set<GameObject>();
-   //       for (const chunk of gameObject.chunks) {
-   //          for (const gameObject of chunk.getGameObjects()) {
-   //             if (!chunkGroup.has(gameObject)) {
-   //                chunkGroup.add(gameObject);
-   //             }
-   //          }
-   //       }
-   //       chunkGroups[chunkGroupHash] = chunkGroup;
-   //    }
-   //    gameObject.potentialCollidingObjects = new Set(chunkGroups[chunkGroupHash]);
-   // }
 
    public static resolveCollisions(): void {
       for (const gameObjectsInChunk of Object.values(this.a)) {

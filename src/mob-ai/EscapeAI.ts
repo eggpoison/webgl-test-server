@@ -3,13 +3,13 @@ import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 
-interface EscapeAIParams extends BaseAIParams {
+interface EscapeAIParams extends BaseAIParams<"escape"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly attackSubsideTime: number;
 }
 
-class EscapeAI extends AI implements EscapeAIParams {
+class EscapeAI extends AI<"escape"> implements EscapeAIParams {
    public readonly type = "escape";
    
    public readonly acceleration: number;
@@ -72,6 +72,10 @@ class EscapeAI extends AI implements EscapeAIParams {
             colour: [1, 0, 1]
          }
       );
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

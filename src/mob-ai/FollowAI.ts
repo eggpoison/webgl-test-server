@@ -3,7 +3,7 @@ import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 
-interface HerdAIParams extends BaseAIParams {
+interface HerdAIParams extends BaseAIParams<"follow"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Maximum distance to keep from the target */
@@ -18,7 +18,7 @@ interface HerdAIParams extends BaseAIParams {
    readonly followableEntityTypes: ReadonlySet<EntityType>;
 }
 
-class FollowAI extends AI implements HerdAIParams {
+class FollowAI extends AI<"follow"> implements HerdAIParams {
    public readonly type = "follow";
    
    public readonly acceleration: number;
@@ -131,6 +131,10 @@ class FollowAI extends AI implements HerdAIParams {
             colour: [0, 0, 1]
          }
       );
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 

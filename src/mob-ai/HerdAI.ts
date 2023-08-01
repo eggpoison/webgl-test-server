@@ -10,7 +10,7 @@ type InfluenceFalloff = {
    readonly duration: number;
 }
 
-interface HerdAIParams extends BaseAIParams {
+interface HerdAIParams extends BaseAIParams<"herd"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Minimum distance from other members to try and maintain */
@@ -30,7 +30,7 @@ interface HerdAIParams extends BaseAIParams {
    readonly cohesionInfluence: number;
 }
 
-class HerdAI extends AI implements HerdAIParams {
+class HerdAI extends AI<"herd"> implements HerdAIParams {
    private static readonly WALL_AVOIDANCE_MULTIPLIER = 1.5;
    private static readonly TURN_CONSTANT = Math.PI / SETTINGS.TPS;
 
@@ -278,6 +278,10 @@ class HerdAI extends AI implements HerdAIParams {
       }
 
       return weight;
+   }
+
+   public callCallback(callback: () => void): void {
+      callback();
    }
 }
 
