@@ -9,7 +9,7 @@ export interface AICallbackFunctions {
    tileConsume: () => void,
    itemConsume: () => void,
    escape: () => void,
-   chase: () => void,
+   chase: (targetEntity: Entity | null) => void,
    berryBushShake: () => void
 }
 
@@ -18,10 +18,11 @@ export interface BaseAIParams<T extends AIType> {
    readonly callback?: AICallbackFunctions[T];
 }
 
-abstract class AI<T extends AIType> {
+abstract class AI<T extends AIType> implements BaseAIParams<T> {
    protected readonly mob: Mob;
    
    public readonly aiWeightMultiplier: number;
+   public readonly callback?: AICallbackFunctions[T];
 
    public abstract readonly type: T;
    protected abstract _getWeight(): number;
@@ -30,9 +31,10 @@ abstract class AI<T extends AIType> {
    protected targetPosition: Point | null = null;
    protected entitiesInVisionRange!: Set<Entity>;
 
-   constructor(mob: Mob, { aiWeightMultiplier }: BaseAIParams<T>) {
+   constructor(mob: Mob, { aiWeightMultiplier, callback }: BaseAIParams<T>) {
       this.mob = mob;
       this.aiWeightMultiplier = aiWeightMultiplier;
+      this.callback = callback;
    }
 
    public tick(): void {
@@ -95,7 +97,13 @@ abstract class AI<T extends AIType> {
 
    public addDebugData?(debugData: GameObjectDebugData): void;
 
-   public abstract callCallback(callback: AICallbackFunctions[T]): void;
+   public callCallback(): void {
+      if (typeof this.callback !== "undefined") {
+         this._callCallback(this.callback);
+      }
+   }
+
+   protected abstract _callCallback(callback: AICallbackFunctions[T]): void;
 }
 
 export default AI;

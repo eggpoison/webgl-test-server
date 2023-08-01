@@ -18,7 +18,7 @@ class Slimewisp extends Mob {
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)
-      }, "slimewisp", SETTINGS.TILE_SIZE * 1.25, isNaturallySpawned);
+      }, "slimewisp", SETTINGS.TILE_SIZE * 1.5, isNaturallySpawned);
 
       this.addAI("wander", {
          aiWeightMultiplier: 0.5,

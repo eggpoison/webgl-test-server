@@ -1,4 +1,4 @@
-import { EntityType, GameObjectDebugData, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -18,12 +18,12 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
 
    private target: Entity | null = null;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, entityIsChased }: ChaseAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: ChaseAIParams) {
+      super(mob, aiParams);
 
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.entityIsChased = entityIsChased;
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.entityIsChased = aiParams.entityIsChased;
    }
 
    public tick(): void {
@@ -84,8 +84,8 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       );
    }
 
-   public callCallback(callback: () => void): void {
-      callback();
+   protected _callCallback(callback: (targetEntity: Entity | null) => void): void {
+      callback(this.target);
    }
 }
 

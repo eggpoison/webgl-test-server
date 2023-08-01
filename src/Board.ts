@@ -168,6 +168,14 @@ abstract class Board {
    }
 
    public static resolveCollisions(): void {
+      for (const gameObject of this.gameObjects) {
+         gameObject.resolveWallCollisions();
+         gameObject.updateTile();
+
+         gameObject.previousCollidingObjects = gameObject.collidingObjects;
+         gameObject.collidingObjects = new Set();
+      }
+
       for (const gameObjectsInChunk of Object.values(this.a)) {
          for (let i = 0; i <= gameObjectsInChunk.length - 2; i++) {
             const gameObject1 = gameObjectsInChunk[i];
@@ -184,22 +192,6 @@ abstract class Board {
             }
          }
       }
-
-      for (const gameObject of this.gameObjects) {
-         gameObject.resolveWallCollisions();
-         gameObject.updateTile();
-
-         gameObject.previousCollidingObjects = gameObject.collidingObjects;
-         gameObject.collidingObjects = new Set();
-      }
-      
-      // for (const gameObject of this.gameObjects) {
-      //    gameObject.updateCollidingGameObjects();
-      //    gameObject.resolveGameObjectCollisions();
-      //    gameObject.resolveWallCollisions();
-
-      //    gameObject.updateTile();
-      // }
    }
 
    /** Registers a tile update to be sent to the clients */

@@ -27,7 +27,7 @@ class Slime extends Mob {
       1  // large
    ];
 
-   // Weights of each type of slime and slimewisp used when merging
+   /** Weights of each type of slime and slimewisp used when merging */
    private static readonly SLIME_WEIGHTS: ReadonlyArray<number> = [
       1, // slimewisp
       2, // small slime
@@ -35,17 +35,30 @@ class Slime extends Mob {
       11 // large slime
    ];
 
+   private static readonly VISION: ReadonlyArray<number> = [
+      200, // small
+      250, // medium
+      300 // large
+   ];
+
+   private static readonly MERGE_TIME = 1.5;
+
+   private mergeTimer = Slime.MERGE_TIME;
+
    private eyeRotation = 0;
 
-   private size: SlimeSize;
+   public readonly size: SlimeSize;
+   public mergeWeight: number;
 
    constructor(position: Point, isNaturallySpawned: boolean, size: SlimeSize = SlimeSize.small) {
       super(position, {
          health: new HealthComponent(Slime.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "slime", 250, isNaturallySpawned);
+      }, "slime", Slime.VISION[size], isNaturallySpawned);
 
       const speedMultiplier = Slime.SPEED_MULTIPLIERS[size];
+
+      this.mergeWeight = Slime.SLIME_WEIGHTS[size];
 
       this.addAI("wander", {
          aiWeightMultiplier: 0.5,
@@ -66,9 +79,29 @@ class Slime extends Mob {
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             return entity.type !== "slime" && entity.type !== "slimewisp";
+         }
+      });
+      this.addAI("chase", {
+         aiWeightMultiplier: 1.5,
+         acceleration: 60 * speedMultiplier,
+         terminalVelocity: 30 * speedMultiplier,
+         entityIsChased: (entity: Entity) => {
+            if (entity.type === "slime") {
+               return this.wantsToMerge(entity as Slime);
+            }
+            return false;
          },
-         callback: (): void => {
+         callback: (targetEntity: Entity | null): void => {
+            if (targetEntity === null) return;
             
+            if (this.collidingObjects.has(targetEntity)) {
+               this.mergeTimer -= 1 / SETTINGS.TPS;
+               if (this.mergeTimer <= 0) {
+                  this.merge(targetEntity as Slime);
+               }
+            } else {
+               this.mergeTimer = Slime.MERGE_TIME;
+            }
          }
       });
 
@@ -100,7 +133,7 @@ class Slime extends Mob {
       let closestEntity: Entity | null = null;
       let distanceToClosestEntity = Number.MAX_SAFE_INTEGER;
       for (const entity of this.entitiesInVisionRange) {
-         if (entity.type === "slime" || entity.type === "slimewisp") continue;
+         if ((entity.type === "slime" && !this.wantsToMerge(entity as Slime)) || entity.type === "slimewisp") continue;
          
          const distance = this.position.calculateDistanceBetween(entity.position);
          if (distance < distanceToClosestEntity) {
@@ -119,6 +152,31 @@ class Slime extends Mob {
             }
          }
       }
+   }
+
+   /**
+    * Determines whether the slime wants to merge with the other slime.
+    */
+   private wantsToMerge(_otherSlime: Slime): boolean {
+      // Slimes only want to merge with smaller/equal slimes
+      return _otherSlime.size <= this.size;
+   }
+
+   private merge(otherSlime: Slime): void {
+      if (otherSlime.isRemoved) return;
+
+      this.mergeWeight += otherSlime.mergeWeight;
+
+      if (this.size < SlimeSize.large) {
+         const weightToIncreaseSize = Slime.SLIME_WEIGHTS[this.size + 1];
+         if (this.mergeWeight >= weightToIncreaseSize) {
+            new Slime(new Point((this.position.x + otherSlime.position.x) / 2, (this.position.y + otherSlime.position.y) / 2), false, this.size + 1);
+            
+            this.remove();
+         }
+      }
+      
+      otherSlime.remove();
    }
    
    public getClientArgs(): [size: SlimeSize, eyeRotation: number] {

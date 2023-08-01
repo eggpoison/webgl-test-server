@@ -139,8 +139,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             tileType: "slime",
             isWall: false,
             noiseRequirements: {
-               scale: 3,
-               minWeight: 0.4
+               scale: 2.5,
+               minWeight: 0.2
             },
             minDist: 4
          },
@@ -148,8 +148,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             tileType: "slime",
             isWall: false,
             noiseRequirements: {
-               scale: 3,
-               minWeight: 0.7
+               scale: 2.5,
+               minWeight: 0.6
             },
             minDist: 2
          },

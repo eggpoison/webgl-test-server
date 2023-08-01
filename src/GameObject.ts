@@ -315,10 +315,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       }
    }
 
-   public setCollidingGameObjects(collidingEntities: Set<GameObject>): void {
-      this.collidingObjects = collidingEntities;
-   }
-
    public isColliding(gameObject: GameObject): boolean {
       for (const hitbox of this.hitboxes) {
          for (const otherHitbox of gameObject.hitboxes) {

@@ -33,12 +33,12 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
 
    private grazeTimer: number = 0;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, tileTargets }: TileConsumeAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: TileConsumeAIParams) {
+      super(mob, aiParams);
 
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.tileTargets = typeof tileTargets !== "undefined" ? tileTargets : new Map();
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.tileTargets = typeof aiParams.tileTargets !== "undefined" ? aiParams.tileTargets : new Map();
    }
 
    protected onActivation(): void {
@@ -91,7 +91,7 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
       return 0;
    }
 
-   public callCallback(callback: () => void): void {
+   protected _callCallback(callback: () => void): void {
       callback();
    }
 }

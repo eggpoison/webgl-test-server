@@ -33,16 +33,16 @@ class FollowAI extends AI<"follow"> implements HerdAIParams {
 
    private weight = 0;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, minDistanceFromFollowTarget, weightBuildupTime, interestDuration, chanceToGainInterest, followableEntityTypes: followableEntityTypes }: HerdAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: HerdAIParams) {
+      super(mob, aiParams);
 
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.minDistanceFromFollowTarget = minDistanceFromFollowTarget;
-      this.weightBuildupTime = weightBuildupTime;
-      this.interestDuration = interestDuration;
-      this.chanceToGainInterest = chanceToGainInterest;
-      this.followableEntityTypes = followableEntityTypes;
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.minDistanceFromFollowTarget = aiParams.minDistanceFromFollowTarget;
+      this.weightBuildupTime = aiParams.weightBuildupTime;
+      this.interestDuration = aiParams.interestDuration;
+      this.chanceToGainInterest = aiParams.chanceToGainInterest;
+      this.followableEntityTypes = aiParams.followableEntityTypes;
    }
 
    public tick(): void {
@@ -133,7 +133,7 @@ class FollowAI extends AI<"follow"> implements HerdAIParams {
       );
    }
 
-   public callCallback(callback: () => void): void {
+   protected _callCallback(callback: () => void): void {
       callback();
    }
 }

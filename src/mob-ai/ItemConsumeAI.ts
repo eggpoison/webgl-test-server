@@ -27,14 +27,14 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
    /** The food source to move towards */
    private target: DroppedItem | null = null;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, metabolism, itemTargets }: ItemConsumeAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: ItemConsumeAIParams) {
+      super(mob, aiParams);
       
-      this.metabolism = metabolism;
+      this.metabolism = aiParams.metabolism;
 
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.itemTargets = typeof itemTargets !== "undefined" ? itemTargets : new Set();
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.itemTargets = typeof aiParams.itemTargets !== "undefined" ? aiParams.itemTargets : new Set();
 
       this.mob.createEvent("enter_collision", (droppedItem: GameObject): void => {
          if (droppedItem.i === "droppedItem") {
@@ -147,7 +147,7 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       );
    }
 
-   public callCallback(callback: () => void): void {
+   protected _callCallback(callback: () => void): void {
       callback();
    }
 }

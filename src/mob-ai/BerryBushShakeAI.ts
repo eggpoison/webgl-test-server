@@ -93,7 +93,7 @@ class BerryBushShakeAI extends AI<"berryBushShake"> {
       );
    }
 
-   public callCallback(callback: () => void): void {
+   public _callCallback(callback: () => void): void {
       callback();
    }
 }

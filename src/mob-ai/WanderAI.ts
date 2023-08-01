@@ -22,14 +22,14 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
    public readonly validTileTargets?: ReadonlySet<TileType>;
    public readonly shouldWander?: ((position: Point) => boolean) | undefined;
 
-   constructor(mob: Mob, { aiWeightMultiplier, wanderRate, acceleration, terminalVelocity, validTileTargets, shouldWander }: WanderAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: WanderAIParams) {
+      super(mob, aiParams);
 
-      this.wanderRate = wanderRate;
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.validTileTargets = validTileTargets;
-      this.shouldWander = shouldWander;
+      this.wanderRate = aiParams.wanderRate;
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.validTileTargets = aiParams.validTileTargets;
+      this.shouldWander = aiParams.shouldWander;
    }
    
    protected onActivation(): void {
@@ -94,16 +94,10 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
       const minTileY = Math.max(Math.min(Math.floor((this.mob.position.y - this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
       const maxTileY = Math.max(Math.min(Math.floor((this.mob.position.y + this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
 
-      // console.log("-=-=-=-=-=--=-");
-      // console.log("coords:", this.mob.tile.x, this.mob.tile.y);
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-            // console.log(tileX, tileY);
             const position = new Point((tileX + Math.random()) * SETTINGS.TILE_SIZE, (tileY + Math.random()) * SETTINGS.TILE_SIZE);
             const distance = this.mob.position.calculateDistanceBetween(position);
-            // if (tileX === this.mob.tile.x && tileY === this.mob.tile.y) {
-            //    console.log(distance, distance <= this.mob.visionRange);
-            // }
             if (distance <= this.mob.visionRange) {
                wanderPositions.push(position);
             }
@@ -128,7 +122,7 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
       );
    }
 
-   public callCallback(callback: () => void): void {
+   protected _callCallback(callback: () => void): void {
       callback();
    }
 }

@@ -20,14 +20,14 @@ class EscapeAI extends AI<"escape"> implements EscapeAIParams {
    /** Counts down the time it takes for the mob to forget about the attacker */
    private attackSubsideTimer: number;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, attackSubsideTime }: EscapeAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: EscapeAIParams) {
+      super(mob, aiParams);
 
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.attackSubsideTime = attackSubsideTime;
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.attackSubsideTime = aiParams.attackSubsideTime;
 
-      this.attackSubsideTimer = attackSubsideTime;
+      this.attackSubsideTimer = aiParams.attackSubsideTime;
 
       this.mob.createEvent("hurt", (_: unknown, attackingEntity: Entity | null): void => {
          if (attackingEntity !== null) {
@@ -74,7 +74,7 @@ class EscapeAI extends AI<"escape"> implements EscapeAIParams {
       );
    }
 
-   public callCallback(callback: () => void): void {
+   protected _callCallback(callback: () => void): void {
       callback();
    }
 }

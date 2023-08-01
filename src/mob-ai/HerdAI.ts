@@ -51,21 +51,21 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
    /** Amount of radians to add to the mob's rotation each tick */
    private angularVelocity = 0;
 
-   constructor(mob: Mob, { aiWeightMultiplier, acceleration, terminalVelocity, minSeperationDistance, turnRate, maxWeightInflenceCount, weightInfluenceFalloff, validHerdMembers, seperationInfluence: seperationWeight, alignmentInfluence: alignmentWeight, cohesionInfluence: cohesionWeight }: HerdAIParams) {
-      super(mob, { aiWeightMultiplier });
+   constructor(mob: Mob, aiParams: HerdAIParams) {
+      super(mob, aiParams);
       
-      this.acceleration = acceleration;
-      this.terminalVelocity = terminalVelocity;
-      this.minSeperationDistance = minSeperationDistance;
-      this.turnRate = turnRate;
-      this.validHerdMembers = validHerdMembers;
-      this.maxWeightInflenceCount = maxWeightInflenceCount;
-      this.weightInfluenceFalloff = weightInfluenceFalloff;
-      this.seperationInfluence = seperationWeight;
-      this.alignmentInfluence = alignmentWeight;
-      this.cohesionInfluence = cohesionWeight;
+      this.acceleration = aiParams.acceleration;
+      this.terminalVelocity = aiParams.terminalVelocity;
+      this.minSeperationDistance = aiParams.minSeperationDistance;
+      this.turnRate = aiParams.turnRate;
+      this.validHerdMembers = aiParams.validHerdMembers;
+      this.maxWeightInflenceCount = aiParams.maxWeightInflenceCount;
+      this.weightInfluenceFalloff = aiParams.weightInfluenceFalloff;
+      this.seperationInfluence = aiParams.seperationInfluence;
+      this.alignmentInfluence = aiParams.alignmentInfluence;
+      this.cohesionInfluence = aiParams.cohesionInfluence;
 
-      this.wallAvoidanceInfluence = Math.max(seperationWeight, alignmentWeight, cohesionWeight) * HerdAI.WALL_AVOIDANCE_MULTIPLIER;
+      this.wallAvoidanceInfluence = Math.max(aiParams.seperationInfluence, aiParams.alignmentInfluence, aiParams.cohesionInfluence) * HerdAI.WALL_AVOIDANCE_MULTIPLIER;
    }
 
    public onRefresh(): void {
@@ -280,7 +280,7 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
       return weight;
    }
 
-   public callCallback(callback: () => void): void {
+   protected _callCallback(callback: () => void): void {
       callback();
    }
 }

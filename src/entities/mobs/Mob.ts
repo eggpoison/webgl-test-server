@@ -41,7 +41,7 @@ abstract class Mob extends Entity implements MobInfo {
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
    
-   private readonly ais = new Set<AI<AIType>>();
+   private readonly ais = new Array<AI<AIType>>();
    private currentAI: AI<AIType> | null = null;
 
    /** Used to further distinguish between herd members in the HerdAI AI component */
@@ -66,7 +66,7 @@ abstract class Mob extends Entity implements MobInfo {
    protected addAI<T extends keyof typeof MobAIs>(aiType: T, aiParams: ConstructorParameters<typeof MobAIs[T]>[1]): void {
       const constructor = MobAIs[aiType];
       const ai = new constructor(this, aiParams as any);
-      this.ais.add(ai);
+      this.ais.push(ai);
    }
 
    public tick(): void {
@@ -91,6 +91,7 @@ abstract class Mob extends Entity implements MobInfo {
 
       if (this.currentAI !== null) {
          this.currentAI.tick();
+         this.currentAI.callCallback();
       }
    }
 
