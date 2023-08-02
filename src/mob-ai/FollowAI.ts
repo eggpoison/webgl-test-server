@@ -128,7 +128,8 @@ class FollowAI extends AI<"follow"> implements HerdAIParams {
       debugData.lines.push(
          {
             targetPosition: this.followTarget.position.package(),
-            colour: [0, 0, 1]
+            colour: [0, 0, 1],
+            thickness: 2
          }
       );
    }

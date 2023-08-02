@@ -149,7 +149,6 @@ abstract class Board {
    private static a: Record<number, Array<GameObject>> = {};
 
    public static updateGameObjects(): void {
-      // const chunkGroups: { [key: string]: Set<GameObject> } = {};
       this.a = {};
 
       for (const gameObject of this.gameObjects) {

@@ -142,7 +142,8 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       debugData.lines.push(
          {
             targetPosition: this.target.position.package(),
-            colour: [0, 0, 1]
+            colour: [0, 0, 1],
+            thickness: 2
          }
       );
    }

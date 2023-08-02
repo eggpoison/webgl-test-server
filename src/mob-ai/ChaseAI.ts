@@ -83,7 +83,8 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       debugData.lines.push(
          {
             targetPosition: this.target.position.package(),
-            colour: [0, 0, 1]
+            colour: [0, 0, 1],
+            thickness: 2
          }
       );
    }

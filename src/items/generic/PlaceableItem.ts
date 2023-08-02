@@ -68,6 +68,7 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
          height: height
       });
 
+      PlaceableItem.placeTestHitbox.updatePosition();
       PlaceableItem.placeTestHitbox.computeVertexPositions();
       PlaceableItem.placeTestHitbox.calculateSideAxes();
 

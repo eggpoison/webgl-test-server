@@ -69,7 +69,8 @@ class EscapeAI extends AI<"escape"> implements EscapeAIParams {
       debugData.lines.push(
          {
             targetPosition: this.attacker.position.package(),
-            colour: [1, 0, 1]
+            colour: [1, 0, 1],
+            thickness: 2
          }
       );
    }

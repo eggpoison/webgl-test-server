@@ -190,7 +190,8 @@ abstract class Mob extends Entity implements MobInfo {
       debugData.circles.push(
          {
             radius: this.visionRange,
-            colour: [1, 0.5, 0]
+            colour: [1, 0, 1],
+            thickness: 2
          }
       );
 

@@ -224,7 +224,7 @@ class Slime extends Mob {
       otherSlime.remove();
    }
 
-   private createNewOrb(size: SlimeSize): void {
+   public createNewOrb(size: SlimeSize): void {
       this.orbs.push({
          size: size,
          rotation: 2 * Math.PI * Math.random()

@@ -117,7 +117,8 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
       debugData.lines.push(
          {
             targetPosition: this.targetPosition.package(),
-            colour: [0, 0, 1]
+            colour: [0, 0, 1],
+            thickness: 2
          }
       );
    }
