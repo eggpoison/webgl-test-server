@@ -35,8 +35,7 @@ class Player extends Entity {
    public heldItem: Item | null = null;
    public craftingOutputItem: Item | null = null;
 
-   /** Player nametag. Used when sending player data to the client */
-   public readonly displayName: string;
+   public readonly username: string;
 
    private hitsTaken = new Array<HitData>();
 
@@ -58,7 +57,7 @@ class Player extends Entity {
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE);
       inventoryComponent.createNewInventory("backpack", 0);
 
-      this.displayName = name;
+      this.username = name;
 
       this.createEvent("hurt", (_1, _2, knockback: number, hitDirection: number | null): void => {
          this.hitsTaken.push({
@@ -69,7 +68,7 @@ class Player extends Entity {
    }
 
    public getClientArgs(): [displayName: string] {
-      return [this.displayName];
+      return [this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -268,7 +267,7 @@ class Player extends Entity {
          const droppedItem = new DroppedItem(this.position.copy(), this.heldItem);
 
          // Add a pickup cooldown so the item isn't picked up immediately
-         droppedItem.addPlayerPickupCooldown(this.displayName, Player.THROWN_ITEM_PICKUP_COOLDOWN);
+         droppedItem.addPlayerPickupCooldown(this.username, Player.THROWN_ITEM_PICKUP_COOLDOWN);
 
          const throwVector = new Vector(Player.ITEM_THROW_FORCE, throwDirection);
          droppedItem.addVelocity(throwVector);

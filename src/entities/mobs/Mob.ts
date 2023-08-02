@@ -96,6 +96,11 @@ abstract class Mob extends Entity implements MobInfo {
    }
 
    public refreshAI(): void {
+      // If the mob has no AI's, don't try to change the current AI
+      if (this.ais.length === 0) {
+         return;
+      }
+      
       this.entitiesInVisionRange = this.calculateEntitiesInVisionRange();
 
       // Update the values of all AI's

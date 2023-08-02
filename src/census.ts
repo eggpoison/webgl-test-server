@@ -1,9 +1,18 @@
-import { EntityType, TileType } from "webgl-test-shared";
+import { BiomeName, EntityType, TileType } from "webgl-test-shared";
 import Entity from "./entities/Entity";
+import Tile from "./tiles/Tile";
 
 const entityTypeCounts: Partial<Record<EntityType, number>> = {};
 
-const tileTypeCounts: Partial<Record<TileType, number>> = {};
+interface TileCensus {
+   readonly types: Partial<Record<TileType, Array<Tile>>>;
+   readonly biomes: Partial<Record<BiomeName, Array<Tile>>>;
+}
+
+const tileCensus: TileCensus = {
+   types: {},
+   biomes: {}
+};
 
 /** Stores the IDs of all entities that are being tracked in the census */
 const trackedEntityIDs = new Set<number>();
@@ -30,7 +39,7 @@ export function removeEntityFromCensus(entity: Entity): void {
 
    entityTypeCounts[entity.type]!--;
    if (entityTypeCounts[entity.type]! === 0) {
-      // delete entityTypeCounts[entityType];
+      delete entityTypeCounts[entity.type];
    }
 
    trackedEntityIDs.delete(entity.id);
@@ -44,29 +53,48 @@ export function getEntityCount(entityType: EntityType): number {
    return entityTypeCounts[entityType]!;
 }
 
-export function addTileToCensus(tileType: TileType): void {
-   if (!tileTypeCounts.hasOwnProperty(tileType)) {
-      tileTypeCounts[tileType] = 1;
+export function addTileToCensus(tile: Tile): void {
+   if (!tileCensus.types.hasOwnProperty(tile.type)) {
+      tileCensus.types[tile.type] = [tile];
    } else {
-      tileTypeCounts[tileType]!++;
+      tileCensus.types[tile.type]!.push(tile);
+   }
+
+   if (!tileCensus.biomes.hasOwnProperty(tile.biomeName)) {
+      tileCensus.biomes[tile.biomeName] = [tile];
+   } else {
+      tileCensus.biomes[tile.biomeName]!.push(tile);
    }
 }
 
-export function removeTileFromCensus(tileType: TileType): void {
-   if (!tileTypeCounts.hasOwnProperty(tileType)) {
+export function removeTileFromCensus(tile: Tile): void {
+   if (!tileCensus.types.hasOwnProperty(tile.type)) {
       throw new Error("Tile type is not in the census.")
    }
 
-   tileTypeCounts[tileType]!--;
-   if (tileTypeCounts[tileType]! === 0) {
-      delete tileTypeCounts[tileType];
+   tileCensus.types[tile.type]!.splice(tileCensus.types[tile.type]!.indexOf(tile));
+   if (tileCensus.types[tile.type]!.length === 0) {
+      delete tileCensus.types[tile.type];
+   }
+
+   tileCensus.biomes[tile.biomeName]!.splice(tileCensus.biomes[tile.biomeName]!.indexOf(tile));
+   if (tileCensus.biomes[tile.biomeName]!.length === 0) {
+      delete tileCensus.biomes[tile.biomeName];
    }
 }
 
 export function getTileTypeCount(tileType: TileType): number {
-   if (!tileTypeCounts.hasOwnProperty(tileType)) {
+   if (!tileCensus.types.hasOwnProperty(tileType)) {
       return 0;
    }
 
-   return tileTypeCounts[tileType]!;
+   return tileCensus.types[tileType]!.length;
+}
+
+export function getTilesOfBiome(biomeName: BiomeName): ReadonlyArray<Tile> {
+   if (!tileCensus.biomes.hasOwnProperty(biomeName)) {
+      return [];
+   }
+   
+   return tileCensus.biomes[biomeName]!;
 }

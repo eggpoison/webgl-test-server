@@ -75,7 +75,7 @@ class DroppedItem extends _GameObject<"droppedItem"> {
    public playerCanPickup(player: Player): boolean {
       // If the player's username exists in the player pickup cooldowns, then the player can't pickup the item.
       for (const playerPickupCooldown of this.playerPickupCooldowns) {
-         if (playerPickupCooldown.username === player.displayName) return false;
+         if (playerPickupCooldown.username === player.username) return false;
       }
       return true;
    }

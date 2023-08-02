@@ -10,7 +10,6 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
-import Slimewisp from "./entities/mobs/Slimewisp";
 import Slime from "./entities/mobs/Slime";
 
 /*
@@ -164,6 +163,7 @@ type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEve
 
 type PlayerData = {
    readonly username: string;
+   readonly socket: ISocket;
    instance: Player;
    clientIsActive: boolean;
    visibleChunkBounds: VisibleChunkBounds;
@@ -255,6 +255,17 @@ class GameServer {
       return null;
    }
 
+   private getPlayerDataFromUsername(username: string): PlayerData | null {
+      for (const data of Object.values(this.playerData)) {
+         if (data.username === username) {
+            // Found the player!
+            return data;
+         }
+      }
+
+      return null;
+   }
+
    private handlePlayerConnections(): void {
       if (this.io === null) return;
       this.io.on("connection", (socket: ISocket) => {
@@ -284,6 +295,7 @@ class GameServer {
             // Initialise the player's gamedata record
             this.playerData[socket.id] = {
                username: clientUsername,
+               socket: socket,
                instance: player,
                clientIsActive: true,
                visibleChunkBounds: [0, 0, 0, 0]
@@ -553,6 +565,15 @@ class GameServer {
       };
 
       socket.emit("respawn_data_packet", dataPacket);
+   }
+
+   public sendForcePositionUpdatePacket(playerUsername: string, position: Point): void {
+      const playerData = this.getPlayerDataFromUsername(playerUsername);
+      if (playerData === null) {
+         return;
+      }
+      
+      playerData.socket.emit("force_position_update", position.package());
    }
 }
 

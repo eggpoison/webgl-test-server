@@ -19,12 +19,12 @@ abstract class Tile implements TileInfo {
       this.biomeName = tileInfo.biomeName;
       this.isWall = tileInfo.isWall;
 
-      addTileToCensus(this.type);
+      addTileToCensus(this);
 
       if (terrainHasBeenGenerated) {
          // Remove the previous tile from the census
          const previousTile = Board.getTile(x, y);
-         removeTileFromCensus(previousTile.type);
+         removeTileFromCensus(previousTile);
          
          // Add the tile to the tile array
          Board.setTile(x, y, this);
