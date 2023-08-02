@@ -163,8 +163,12 @@ abstract class Mob extends Entity implements MobInfo {
       return entitiesInVisionRange;
    }
 
-   public getCurrentAIType(): keyof typeof MobAIs | null {
+   public getCurrentAIType(): AIType | null {
       return this.currentAI !== null ? this.currentAI.type : null;
+   }
+
+   public getCurrentAI(): AI<AIType> | null {
+      return this.currentAI;   
    }
 
    public getAIParam(param: string): number | undefined {

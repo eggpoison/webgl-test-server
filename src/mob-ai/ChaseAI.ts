@@ -73,6 +73,10 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       return 0;
    }
 
+   public getChaseTarget(): Entity | null {
+      return this.target;
+   }
+
    public addDebugData(debugData: GameObjectDebugData): void {
       if (this.target === null) return;
 

@@ -333,8 +333,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
-         let forceMultiplier = 1 - distanceBetweenEntities / maxDistanceBetweenEntities;
-         forceMultiplier = curveWeight(forceMultiplier, 2, 0.2);
+         const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
+         const forceMultiplier = 1 / dist - 1;
          
          const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
          // const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
