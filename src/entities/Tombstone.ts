@@ -3,7 +3,7 @@ import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
-import { SERVER } from "../server";
+import Board from "../Board";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
@@ -62,8 +62,8 @@ class Tombstone extends Entity {
       super.tick();
 
       // If in the daytime, chance to crumble
-      if (SERVER.time > 6 && SERVER.time < 18) {
-         const dayProgress = (SERVER.time - 6) / 12;
+      if (Board.time > 6 && Board.time < 18) {
+         const dayProgress = (Board.time - 6) / 12;
          const crumbleChance = Math.exp(dayProgress * 12 - 6);
          if (Math.random() < crumbleChance / SETTINGS.TPS) {
             // Crumble

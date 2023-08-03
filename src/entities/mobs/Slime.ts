@@ -55,8 +55,8 @@ class Slime extends Mob {
 
    private static readonly MAX_MERGE_WANT: ReadonlyArray<number> = [
       15,
-      25,
-      35
+      40,
+      75
    ];
 
    private mergeTimer = Slime.MERGE_TIME;

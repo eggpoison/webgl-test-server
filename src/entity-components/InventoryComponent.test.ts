@@ -1,11 +1,8 @@
-import { SERVER } from "../server";
-import { ITEM_INFO_RECORD } from "webgl-test-shared";
-import { createItem } from "../items/item-creation";
 import InventoryComponent from "./InventoryComponent";
+import { createItem } from "../items/item-creation";
+import { ITEM_INFO_RECORD } from "webgl-test-shared";
 
 test("Items can't be added past their stack size", () => {
-   SERVER;
-   
    // Create a test inventory
    const inventoryComponent = new InventoryComponent();
    inventoryComponent.createNewInventory("inventory", 10);

@@ -3,8 +3,6 @@ import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 
 class Workbench extends Entity {
-   // private static readonly PUSH_FORCE_MULTIPLIER = 0.4;
-   
    constructor(position: Point) {
       super(position, {}, "workbench", false);
 
@@ -15,8 +13,6 @@ class Workbench extends Entity {
             height: 80
          })
       ]);
-
-      // this.setPushForceMultiplier(Workbench.PUSH_FORCE_MULTIPLIER);
    }
 
    public getClientArgs(): [] {

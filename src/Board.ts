@@ -18,6 +18,9 @@ abstract class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
 
+   /** The time of day the server is currently in (from 0 to 23) */
+   public static time: number = 6;
+
    private static readonly gameObjects = new Set<GameObject>();
 
    public static readonly entities: { [id: number]: Entity } = {};
@@ -40,14 +43,6 @@ abstract class Board {
 
       this.chunks = this.initialiseChunks();
    }
-
-   // constructor() {
-   //    this.tiles = generateTerrain();
-
-   //    this.tileUpdateCoordinates = new Set<[number, number]>();
-
-   //    this.chunks = this.initialiseChunks();
-   // }
 
    private static initialiseChunks(): Array<Array<Chunk>> {
       const chunks = new Array<Array<Chunk>>(SETTINGS.BOARD_SIZE);

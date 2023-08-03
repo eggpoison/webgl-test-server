@@ -328,7 +328,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    }
 
    public collide(gameObject: GameObject): void {
-      if (!this.isStatic) {
+      if (!this.isStatic && gameObject.i !== "droppedItem" && this.i !== "droppedItem") {
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
@@ -337,7 +337,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
          const forceMultiplier = 1 / dist - 1;
          
          const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
-         // const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * this.pushForceMultiplier;
          const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
          // No need to apply force to other object as they will do it themselves
          const pushForce = new Vector(force, pushAngle);

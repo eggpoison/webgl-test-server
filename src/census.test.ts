@@ -1,8 +1,8 @@
-import { SERVER } from "./server";
-import { Point } from "webgl-test-shared";
 import Board from "./Board";
+import { Point } from "webgl-test-shared";
 import Cow from "./entities/mobs/Cow";
 import { getEntityCount } from "./census";
+import { SERVER } from "./server";
 
 test("Entities can be added to the census", () => {
    SERVER;

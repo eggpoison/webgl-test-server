@@ -2,7 +2,6 @@ import { EntityType, Point, randInt, SETTINGS, TileType } from "webgl-test-share
 import Cow from "./entities/mobs/Cow";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
-import { SERVER } from "./server";
 import Board from "./Board";
 import Yeti from "./entities/mobs/Yeti";
 import { getEntityCount, getTileTypeCount } from "./census";
@@ -117,7 +116,7 @@ const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
    if (typeof spawnInfo.spawnTimeRanges !== "undefined") {
       let spawnTimeIsValid = false;
       for (const [minSpawnTime, maxSpawnTime] of spawnInfo.spawnTimeRanges) {
-         if (SERVER.time >= minSpawnTime && SERVER.time <= maxSpawnTime) {
+         if (Board.time >= minSpawnTime && Board.time <= maxSpawnTime) {
             spawnTimeIsValid = true;
             break;
          }

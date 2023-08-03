@@ -3,7 +3,6 @@ import Entity from "../../entities/Entity";
 import ENTITY_CLASS_RECORD from "../../entity-classes";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import StackableItem from "./StackableItem";
-import { SERVER } from "../../server";
 import Board from "../../Board";
 
 type PlaceableItemHitboxInfo = {

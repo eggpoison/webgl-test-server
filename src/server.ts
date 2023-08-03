@@ -10,7 +10,6 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
-import Slime from "./entities/mobs/Slime";
 
 /*
 
@@ -173,11 +172,6 @@ type PlayerData = {
 class GameServer {
    private ticks: number = 0;
 
-   /** The time of day the server is currently in (from 0 to 23) */
-   public time: number = 6;
-
-   // public board!: Board;
-   
    /** Minimum number of units away from the border that the player will spawn at */
    private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
 
@@ -220,7 +214,7 @@ class GameServer {
    private async tick(): Promise<void> {
       // Update server ticks and time
       this.ticks++;
-      this.time = (this.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+      Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
       Board.removeFlaggedGameObjects();
@@ -334,7 +328,7 @@ class GameServer {
                },
                tileUpdates: [],
                serverTicks: this.ticks,
-               serverTime: this.time,
+               serverTime: Board.time,
                hitsTaken: [],
                playerHealth: 20,
                statusEffects: []
@@ -455,7 +449,7 @@ class GameServer {
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
-            serverTime: this.time,
+            serverTime: Board.time,
             hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth(),
             statusEffects: player.getStatusEffects() as Array<StatusEffectType>,
@@ -587,5 +581,17 @@ SERVER.setup();
 
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
+   // Board.setup();
+   // SERVER.setup();
    SERVER.start();
 }
+
+// beforeAll(() => {
+//    // return new Promise<void>(resolve => {
+
+//       console.log("REEREEREE");
+//       Board.setup();
+//       SERVER.setup();
+//    //    resolve();
+//    // })
+// }, 1000);

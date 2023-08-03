@@ -1,8 +1,9 @@
-import { BiomeName, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, commandComponentMatchesParameter, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/Player";
 import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
+import Board from "./Board";
 
 const killPlayer = (username: string): void => {
    const player = SERVER.getPlayerFromUsername(username);
@@ -29,7 +30,7 @@ const healPlayer = (username: string, healing: number): void => {
 }
 
 const setTime = (time: number): void => {
-   SERVER.time = time;
+   Board.time = time;
 }
 
 const giveItem = (username: string, itemType: ItemType, amount: number): void => {

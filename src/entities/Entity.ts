@@ -46,9 +46,6 @@ abstract class Entity extends _GameObject<"entity"> {
       during_entity_collision: []
    };
 
-   // /** Impacts how much force an entity experiences which pushing away from another entity */
-   // private pushForceMultiplier = 1;
-
    private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
@@ -87,10 +84,6 @@ abstract class Entity extends _GameObject<"entity"> {
       
       this.tickStatusEffects();
    }
-
-   // public setPushForceMultiplier(pushForceMultiplier: number): void {
-   //    this.pushForceMultiplier = pushForceMultiplier;
-   // }
 
    public setIsStatic(isStatic: boolean): void {
       this.isStatic = isStatic;

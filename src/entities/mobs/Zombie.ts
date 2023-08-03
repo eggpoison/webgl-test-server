@@ -3,7 +3,7 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Mob from "./Mob";
-import { SERVER } from "../../server";
+import Board from "../../Board";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -93,7 +93,7 @@ class Zombie extends Mob {
       super.tick();
 
       // If day time, ignite
-      if (SERVER.time >= 6 && SERVER.time < 18) {
+      if (Board.time >= 6 && Board.time < 18) {
          // Ignite randomly or stay on fire if already on fire
          if (super.hasStatusEffect("fire") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
             super.applyStatusEffect("fire", 5);
