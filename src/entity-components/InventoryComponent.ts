@@ -1,5 +1,4 @@
 import { ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
-import Player from "../entities/Player";
 import Item, { itemIsStackable } from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
@@ -88,7 +87,7 @@ class InventoryComponent extends Component {
     */
    private pickupDroppedItem(droppedItem: DroppedItem): void {
       // Don't pick up dropped items which are on pickup cooldown
-      if (!droppedItem.playerCanPickup(this.entity as Player)) return;
+      if (!droppedItem.canBePickedUp(this.entity.id)) return;
 
       for (const [inventoryName, _inventory] of this.inventoryArray) {
          const amountPickedUp = this.addItemToInventory(inventoryName, droppedItem.item);

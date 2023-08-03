@@ -1,4 +1,4 @@
-import { Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, randInt } from "webgl-test-shared";
+import { Mutable, Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -6,6 +6,21 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Board from "../../Board";
 import ChaseAI from "../../mob-ai/ChaseAI";
+import WanderAI from "../../mob-ai/WanderAI";
+import MoveAI from "../../mob-ai/MoveAI";
+
+interface MovingOrbData extends Mutable<SlimeOrbData> {
+   angularVelocity: number;
+}
+
+interface EntityAnger {
+   angerAmount: number;
+   readonly target: Entity;
+}
+
+interface AngerPropagationInfo {
+   chainLength: number;
+}
 
 class Slime extends Mob {
    private static readonly MAX_HEALTH: ReadonlyArray<number> = [
@@ -59,6 +74,10 @@ class Slime extends Mob {
       75
    ];
 
+   private static readonly ANGER_DIFFUSE_MULTIPLIER = 0.15;
+   
+   private static readonly MAX_ANGER_PROPAGATION_CHAIN_LENGTH = 5;
+   
    private mergeTimer = Slime.MERGE_TIME;
 
    private eyeRotation = 0;
@@ -68,7 +87,9 @@ class Slime extends Mob {
 
    private mergeWant = 0;
 
-   private readonly orbs = new Array<SlimeOrbData>();
+   private readonly orbs = new Array<MovingOrbData>();
+
+   private readonly angeredEntities = new Array<EntityAnger>();
 
    constructor(position: Point, isNaturallySpawned: boolean, size: SlimeSize = SlimeSize.small) {
       const itemCreationComponent = new ItemCreationComponent();
@@ -82,7 +103,7 @@ class Slime extends Mob {
 
       this.mergeWeight = Slime.SLIME_WEIGHTS[size];
 
-      this.addAI("wander", {
+      this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
          acceleration: 60 * speedMultiplier,
          terminalVelocity: 30 * speedMultiplier,
@@ -94,18 +115,29 @@ class Slime extends Mob {
             const tile = Board.getTile(tileX, tileY);
             return tile.biomeName === "swamp";
          }
-      });
-      // Regular chase AI
-      this.addAI("chase", {
+      }));
+      this.addAI(new MoveAI(this, {
          aiWeightMultiplier: 1.5,
+         acceleration: 100 * speedMultiplier,
+         terminalVelocity: 50 * speedMultiplier,
+         getMoveTargetPosition: (): Point | null => {
+            for (const a of this.angeredEntities) {
+               return a.target.position.copy();
+            }
+            return null;
+         }
+      }));
+      // Regular chase AI
+      this.addAI(new ChaseAI(this, {
+         aiWeightMultiplier: 1.25,
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_TYPES.includes(entity.type);
          }
-      });
+      }));
       // Merge AI
-      this.addAI("chase", {
+      this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 60 * speedMultiplier,
          terminalVelocity: 30 * speedMultiplier,
@@ -127,7 +159,7 @@ class Slime extends Mob {
                this.mergeTimer = Slime.MERGE_TIME;
             }
          }
-      });
+      }));
 
       const dropAmount = randInt(...Slime.SLIME_DROP_AMOUNTS[size]);
       itemCreationComponent.createItemOnDeath("slimeball", dropAmount);
@@ -152,6 +184,13 @@ class Slime extends Mob {
             healthComponent.addLocalInvulnerabilityHash("slime", 0.3);
          }
       });
+
+      this.createEvent("hurt", (_damage: number, attackingEntity: Entity | null): void => {
+         if (attackingEntity === null) return;
+
+         this.addEntityAnger(attackingEntity, 1, { chainLength: 0 });
+         this.propagateAnger(attackingEntity, 1);
+      });
    }
 
    public tick(): void {
@@ -160,6 +199,30 @@ class Slime extends Mob {
       this.mergeWant += 1 / SETTINGS.TPS;
       if (this.mergeWant >= Slime.MAX_MERGE_WANT[this.size]) {
          this.mergeWant = Slime.MAX_MERGE_WANT[this.size];
+      }
+
+      for (const orb of this.orbs) {
+         if (Math.random() < 0.3 / SETTINGS.TPS) {
+            orb.angularVelocity = randFloat(-3, 3);
+         }
+      }
+
+      // Update orb angular velocity
+      for (const orb of this.orbs) {
+         orb.rotation += orb.angularVelocity / SETTINGS.TPS;
+         orb.angularVelocity -= 3 / SETTINGS.TPS;
+         if (orb.angularVelocity < 0) {
+            orb.angularVelocity = 0;
+         }
+      }
+
+      // Decrease anger
+      for (let i = this.angeredEntities.length - 1; i >= 0; i--) {
+         const angerInfo = this.angeredEntities[i];
+         angerInfo.angerAmount -= 1 / SETTINGS.TPS * Slime.ANGER_DIFFUSE_MULTIPLIER;
+         if (angerInfo.angerAmount <= 0) {
+            this.angeredEntities.splice(i, 1);
+         }
       }
 
       // If the slime is chasing an entity make its eye point towards that entity
@@ -230,12 +293,67 @@ class Slime extends Mob {
       this.orbs.push({
          size: size,
          rotation: 2 * Math.PI * Math.random(),
-         offset: Math.random()
+         offset: Math.random(),
+         angularVelocity: 0
       });
+   }
+
+   private addEntityAnger(entity: Entity, amount: number, propagationInfo: AngerPropagationInfo): void {
+      let alreadyIsAngry = false;
+      for (const entityAnger of this.angeredEntities) {
+         if (entityAnger.target === entity) {
+            const angerOverflow = Math.max(entityAnger.angerAmount + amount - 1, 0);
+
+            entityAnger.angerAmount = Math.min(entityAnger.angerAmount + amount, 1);
+
+            if (angerOverflow > 0) {
+               this.propagateAnger(entity, angerOverflow, propagationInfo);
+            }
+
+            alreadyIsAngry = true;
+            break;
+         }
+      }
+
+      if (!alreadyIsAngry) {
+         this.angeredEntities.push({
+            angerAmount: amount,
+            target: entity
+         });
+      }
+   }
+
+   private propagateAnger(angeredEntity: Entity, amount: number, propagationInfo: AngerPropagationInfo = { chainLength: 0 }): void {
+      // Propagate the anger
+      for (const entity of this.entitiesInVisionRange) {
+         if (entity.type === "slime") {
+            const distance = this.position.calculateDistanceBetween(entity.position);
+            const distanceFactor = distance / this.visionRange;
+
+            propagationInfo.chainLength++;
+
+            if (propagationInfo.chainLength <= Slime.MAX_ANGER_PROPAGATION_CHAIN_LENGTH) {
+               const propogatedAnger = lerp(amount * 1, amount * 0.4, Math.sqrt(distanceFactor));
+               (entity as Slime).addEntityAnger(angeredEntity, propogatedAnger, propagationInfo);
+            }
+
+            propagationInfo.chainLength--;
+         }
+      }
    }
    
    public getClientArgs(): [size: SlimeSize, eyeRotation: number, orbs: ReadonlyArray<SlimeOrbData>] {
-      return [this.size, this.eyeRotation, this.orbs];
+      const orbs = new Array<SlimeOrbData>();
+      // Convert from moving orbs to regular orbs
+      for (const orb of this.orbs) {
+         orbs.push({
+            offset: orb.offset,
+            rotation: orb.rotation,
+            size: orb.size
+         });
+      }
+      
+      return [this.size, this.eyeRotation, orbs];
    }
 }
 

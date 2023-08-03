@@ -5,6 +5,8 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Slime from "./Slime";
 import Board from "../../Board";
+import WanderAI from "../../mob-ai/WanderAI";
+import ChaseAI from "../../mob-ai/ChaseAI";
 
 class Slimewisp extends Mob {
    private static readonly MAX_HEALTH = 3;
@@ -20,7 +22,7 @@ class Slimewisp extends Mob {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)
       }, "slimewisp", SETTINGS.TILE_SIZE * 1.5, isNaturallySpawned);
 
-      this.addAI("wander", {
+      this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
          wanderRate: 99999,
          acceleration: 50,
@@ -31,16 +33,16 @@ class Slimewisp extends Mob {
             const tile = Board.getTile(tileX, tileY);
             return tile.biomeName === "swamp";
          }
-      });
+      }));
 
-      this.addAI("chase", {
+      this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 50,
          terminalVelocity: 25,
          entityIsChased: (entity: Entity): boolean => {
             return entity.type === "slimewisp";
          }
-      });
+      }));
 
       this.addHitboxes([
          new CircularHitbox({

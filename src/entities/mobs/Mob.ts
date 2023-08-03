@@ -1,40 +1,10 @@
 import { EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
-import EscapeAI from "../../mob-ai/EscapeAI";
-import FollowAI from "../../mob-ai/FollowAI";
-import HerdAI from "../../mob-ai/HerdAI";
-import WanderAI from "../../mob-ai/WanderAI";
 import Entity, { EntityComponents } from "../Entity";
-import ChaseAI from "../../mob-ai/ChaseAI";
-import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
-import TileConsumeAI from "../../mob-ai/TileConsumeAI";
-import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Board from "../../Board";
+import { AIType } from "../../mob-ai/ai-types";
 
-export const MobAIs = {
-   wander: WanderAI,
-   follow: FollowAI,
-   herd: HerdAI,
-   tileConsume: TileConsumeAI,
-   itemConsume: ItemConsumeAI,
-   escape: EscapeAI,
-   chase: ChaseAI,
-   berryBushShake: BerryBushShakeAI
-};
-
-export type AIType = keyof typeof MobAIs;
-
-export interface MobInfo {
-   readonly visionRange: number;
-}
-
-export type MobAICreationInfo = Partial<{ [T in keyof typeof MobAIs]: ConstructorParameters<typeof MobAIs[T]>[1] }>;
-
-export type MobAIData = {
-   readonly info: MobInfo;
-   readonly aiCreationInfo: MobAICreationInfo;
-}
-abstract class Mob extends Entity implements MobInfo {
+abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
    public static readonly AI_REFRESH_TIME = 4;
    
@@ -59,13 +29,16 @@ abstract class Mob extends Entity implements MobInfo {
       this.visionRange = visionRange;
    }
 
+   // protected addAI<T extends keyof typeof MobAIs>(aiType: T, aiParams: ConstructorParameters<typeof MobAIs[T]>[1]): void {
+   //    const constructor = MobAIs[aiType];
+   //    const ai = new constructor(this, aiParams as any);
+   //    this.ais.push(ai);
+   // }
    /**
     * Adds a new AI component to the mob.
     * @param aiData AI information to use.
     */
-   protected addAI<T extends keyof typeof MobAIs>(aiType: T, aiParams: ConstructorParameters<typeof MobAIs[T]>[1]): void {
-      const constructor = MobAIs[aiType];
-      const ai = new constructor(this, aiParams as any);
+   protected addAI(ai: AI<AIType>): void {
       this.ais.push(ai);
    }
 

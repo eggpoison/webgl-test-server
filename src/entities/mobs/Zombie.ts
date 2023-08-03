@@ -4,6 +4,9 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Mob from "./Mob";
 import Board from "../../Board";
+import WanderAI from "../../mob-ai/WanderAI";
+import HerdAI from "../../mob-ai/HerdAI";
+import ChaseAI from "../../mob-ai/ChaseAI";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -25,13 +28,13 @@ class Zombie extends Mob {
 
       const speedMultiplier = randFloat(0.9, 1.1);
 
-      this.addAI("wander", {
+      this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
          wanderRate: 0.4,
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50
-      });
-      this.addAI("herd", {
+      }));
+      this.addAI(new HerdAI(this, {
          aiWeightMultiplier: 0.8,
          acceleration: 100,
          terminalVelocity: 50 * speedMultiplier,
@@ -46,15 +49,15 @@ class Zombie extends Mob {
          seperationInfluence: 0.4,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.8
-      });
-     this.addAI("chase", {
+      }));
+     this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 200,
          terminalVelocity: 100 * speedMultiplier,
          entityIsChased(entity: Entity) {
             return entity.type === "player";
          }
-     });
+     }));
 
       this.addHitboxes([
          new CircularHitbox({

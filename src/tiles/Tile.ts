@@ -1,5 +1,4 @@
 import { TileType, BiomeName, TileInfo } from "webgl-test-shared";
-import { terrainHasBeenGenerated } from "../terrain-generation";
 import Board from "../Board";
 import { addTileToCensus, removeTileFromCensus } from "../census";
 
@@ -21,7 +20,7 @@ abstract class Tile implements TileInfo {
 
       addTileToCensus(this);
 
-      if (terrainHasBeenGenerated) {
+      if (Board.terrainHasBeenGenerated()) {
          // Remove the previous tile from the census
          const previousTile = Board.getTile(x, y);
          removeTileFromCensus(previousTile);

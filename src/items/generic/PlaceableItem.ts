@@ -1,9 +1,9 @@
+import Board from "../../Board";
 import { EntityType, ItemType, PlaceableItemInfo, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import ENTITY_CLASS_RECORD from "../../entity-classes";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import StackableItem from "./StackableItem";
-import Board from "../../Board";
 
 type PlaceableItemHitboxInfo = {
    readonly width: number;

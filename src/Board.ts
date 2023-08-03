@@ -44,6 +44,10 @@ abstract class Board {
       this.chunks = this.initialiseChunks();
    }
 
+   public static terrainHasBeenGenerated(): boolean {
+      return typeof this.tiles !== "undefined";
+   }
+
    private static initialiseChunks(): Array<Array<Chunk>> {
       const chunks = new Array<Array<Chunk>>(SETTINGS.BOARD_SIZE);
 

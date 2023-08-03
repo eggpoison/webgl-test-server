@@ -1,4 +1,4 @@
-import { SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Mutable, SETTINGS, Vector } from "webgl-test-shared";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 
@@ -133,6 +133,11 @@ class HealthComponent extends Component {
 
    public getSecondsSinceLastHit(): number | null {
       return this.secondsSinceLastHit;
+   }
+
+   public addDebugData(debugData: Mutable<GameObjectDebugData>): void {
+      debugData.health = this.health;
+      debugData.maxHealth = this.maxHealth;
    }
 }
 

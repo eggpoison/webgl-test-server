@@ -1,3 +1,4 @@
+import { GameObjectDebugData } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 
 abstract class Component {
@@ -10,6 +11,8 @@ abstract class Component {
    public tick?(): void;
 
    public onLoad?(): void;
+
+   public addDebugData?(debugData: GameObjectDebugData): void;
 }
 
 export default Component;

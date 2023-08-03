@@ -271,7 +271,7 @@ class Player extends Entity {
          const droppedItem = new DroppedItem(dropPosition, this.heldItem);
 
          // Add a pickup cooldown so the item isn't picked up immediately
-         droppedItem.addPlayerPickupCooldown(this.username, Player.THROWN_ITEM_PICKUP_COOLDOWN);
+         droppedItem.addPlayerPickupCooldown(this.id, Player.THROWN_ITEM_PICKUP_COOLDOWN);
 
          const throwVector = new Vector(Player.ITEM_THROW_FORCE, throwDirection);
          droppedItem.addVelocity(throwVector);

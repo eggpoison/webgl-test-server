@@ -4,6 +4,13 @@ import ItemCreationComponent from "../../entity-components/ItemCreationComponent
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Mob from "./Mob";
 import Entity from "../Entity";
+import EscapeAI from "../../mob-ai/EscapeAI";
+import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
+import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
+import TileConsumeAI from "../../mob-ai/TileConsumeAI";
+import HerdAI from "../../mob-ai/HerdAI";
+import FollowAI from "../../mob-ai/FollowAI";
+import WanderAI from "../../mob-ai/WanderAI";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
@@ -20,14 +27,14 @@ class Cow extends Mob {
       this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 2.5);
 
-      this.addAI("wander", {
+      this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
          wanderRate: 0.6,
          acceleration: 100,
          terminalVelocity: 50
-      });
+      }));
 
-      this.addAI("follow", {
+      this.addAI(new FollowAI(this, {
          aiWeightMultiplier: 0.75,
          acceleration: 50,
          terminalVelocity: 25,
@@ -36,9 +43,9 @@ class Cow extends Mob {
          interestDuration: 7,
          chanceToGainInterest: 0.2,
          followableEntityTypes: new Set(["player", "zombie"])
-      });
+      }));
 
-      this.addAI("herd", {
+      this.addAI(new HerdAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 100,
          terminalVelocity: 50,
@@ -53,9 +60,9 @@ class Cow extends Mob {
          seperationInfluence: 0.7,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.3
-      });
+      }));
 
-      this.addAI("tileConsume", {
+      this.addAI(new TileConsumeAI(this, {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
@@ -67,26 +74,26 @@ class Cow extends Mob {
                healAmount: 3
             }]
          ])
-      });
+      }));
 
-      this.addAI("itemConsume", {
+      this.addAI(new ItemConsumeAI(this, {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
          metabolism: 1,
          itemTargets: new Set(["berry"])
-      });
+      }));
 
-      this.addAI("berryBushShake", {
+      this.addAI(new BerryBushShakeAI(this, {
          aiWeightMultiplier: 1.1
-      });
+      }));
 
-      this.addAI("escape", {
+      this.addAI(new EscapeAI(this, {
          aiWeightMultiplier: 1.5,
          acceleration: 200,
          terminalVelocity: 200,
          attackSubsideTime: 5
-      });
+      }));
 
       this.addHitboxes([
          new RectangularHitbox({

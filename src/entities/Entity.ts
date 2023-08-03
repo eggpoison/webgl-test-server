@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -152,6 +152,18 @@ abstract class Entity extends _GameObject<"entity"> {
 
    public getStatusEffects(): Array<StatusEffectType> {
       return Object.keys(this.statusEffects) as Array<StatusEffectType>;
+   }
+
+   public getDebugData(): GameObjectDebugData {
+      const debugData = super.getDebugData();
+
+      for (const component of Object.values(this.components)) {
+         if (typeof component.addDebugData !== "undefined") {
+            component.addDebugData(debugData);
+         }
+      }
+      
+      return debugData;
    }
 }
 

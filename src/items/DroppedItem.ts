@@ -1,11 +1,10 @@
 import { Point, SETTINGS } from "webgl-test-shared";
-import Player from "../entities/Player";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./generic/Item";
 import _GameObject from "../GameObject";
 
-type PlayerPickupCooldown = {
-   readonly username: string;
+interface EntityPickupCooldown {
+   readonly entityID: number;
    secondsRemaining: number;
 }
 
@@ -26,7 +25,7 @@ class DroppedItem extends _GameObject<"droppedItem"> {
 
    public readonly item: Item;
 
-   private readonly playerPickupCooldowns = new Set<PlayerPickupCooldown>();
+   private readonly entityPickupCooldowns = new Set<EntityPickupCooldown>();
 
    constructor(position: Point, item: Item) {
       super(position);
@@ -49,10 +48,10 @@ class DroppedItem extends _GameObject<"droppedItem"> {
       super.tick();
       
       // Update player pickup cooldowns
-      for (const playerPickupCooldown of this.playerPickupCooldowns) {
+      for (const playerPickupCooldown of this.entityPickupCooldowns) {
          playerPickupCooldown.secondsRemaining -= 1 / SETTINGS.TPS;
          if (playerPickupCooldown.secondsRemaining <= 0) {
-            this.playerPickupCooldowns.delete(playerPickupCooldown);
+            this.entityPickupCooldowns.delete(playerPickupCooldown);
          }
       }
    }
@@ -64,18 +63,18 @@ class DroppedItem extends _GameObject<"droppedItem"> {
       }
    }
 
-   public addPlayerPickupCooldown(playerUsername: string, cooldownDuration: number): void {
-      const pickupCooldown: PlayerPickupCooldown = {
-         username: playerUsername,
+   public addPlayerPickupCooldown(entityID: number, cooldownDuration: number): void {
+      const pickupCooldown: EntityPickupCooldown = {
+         entityID: entityID,
          secondsRemaining: cooldownDuration
       };
-      this.playerPickupCooldowns.add(pickupCooldown);
+      this.entityPickupCooldowns.add(pickupCooldown);
    }
 
-   public playerCanPickup(player: Player): boolean {
+   public canBePickedUp(entityID: number): boolean {
       // If the player's username exists in the player pickup cooldowns, then the player can't pickup the item.
-      for (const playerPickupCooldown of this.playerPickupCooldowns) {
-         if (playerPickupCooldown.username === player.username) return false;
+      for (const playerPickupCooldown of this.entityPickupCooldowns) {
+         if (playerPickupCooldown.entityID === entityID) return false;
       }
       return true;
    }

@@ -1,5 +1,5 @@
-import { Point, SETTINGS } from "webgl-test-shared";
 import { SERVER } from "./server";
+import { Point, SETTINGS } from "webgl-test-shared";
 import Cow from "./entities/mobs/Cow";
 import Board from "./Board";
 

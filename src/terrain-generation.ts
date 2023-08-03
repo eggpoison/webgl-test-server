@@ -5,7 +5,6 @@ import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, Til
 import Tile from "./tiles/Tile";
 import { TileInfo } from "webgl-test-shared";
 import { createGenericTile } from "./tiles/tile-class-record";
-import DirtTile from "./tiles/DirtTile";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
@@ -117,25 +116,16 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 
 /** Generate the tile array's tile types based on their biomes */
 const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void => {
-   // Generate the noise
-   // const noise = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TILE_TYPE_NOISE_SCALE);
 
    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const tileInfo = tileInfoArray[x][y];
-         // const weight = noise[x][y];
-         // let weight = 0;
-         // if (typeof tileInfo.)
-         // const weight = generatePointPerlinNoise(x, y, )
-
          const dist = getTileDist(tileInfoArray, x, y);
 
          Object.assign(tileInfo, getTileInfo(tileInfo.biomeName!, dist, x, y));
       }
    }
 }
-
-export let terrainHasBeenGenerated: boolean = false;
 
 function generateTerrain(): Array<Array<Tile>> {
    // Initialise the tile info array
@@ -162,8 +152,6 @@ function generateTerrain(): Array<Array<Tile>> {
          tiles[x][y] = tile;
       }
    }
-
-   terrainHasBeenGenerated = true;
 
    return tiles;
 }

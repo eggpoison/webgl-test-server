@@ -7,6 +7,9 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import _GameObject from "../../GameObject";
 import Board from "../../Board";
 import Tile from "../../tiles/Tile";
+import WanderAI from "../../mob-ai/WanderAI";
+import ChaseAI from "../../mob-ai/ChaseAI";
+import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 
 /** Stores which tiles belong to which yetis' territories */
 const yetiTerritoryTiles: Record<number, Yeti> = {};
@@ -65,7 +68,7 @@ class Yeti extends Mob {
          })
       ]);
 
-      this.addAI("wander", {
+      this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
          wanderRate: 0.6,
          acceleration: 100,
@@ -77,9 +80,9 @@ class Yeti extends Mob {
             const tile = Board.getTile(tileX, tileY);
             return this.territory.includes(tile);
          }
-      });
+      }));
 
-      this.addAI("chase", {
+      this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 200,
          terminalVelocity: 100,
@@ -90,15 +93,15 @@ class Yeti extends Mob {
             // Chase the entity if they are in the yeti's territory or have recently attacked the yeti
             return this.territory.includes(entity.tile) || this.attackingEntities.hasOwnProperty(entity.id);
          }
-      });
+      }));
 
-      this.addAI("itemConsume", {
+      this.addAI(new ItemConsumeAI(this, {
          aiWeightMultiplier: 0.8,
          acceleration: 100,
          terminalVelocity: 50,
          metabolism: 1,
          itemTargets: new Set(["raw_beef", "leather"])
-      });
+      }));
 
       this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
          if (attackingEntity !== null) {
