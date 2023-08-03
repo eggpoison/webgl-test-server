@@ -1,7 +1,6 @@
 import { SETTINGS } from "webgl-test-shared";
 import DirtTile from "./DirtTile";
 import Tile from "./Tile";
-import { SERVER } from "../server";
 import Board from "../Board";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [

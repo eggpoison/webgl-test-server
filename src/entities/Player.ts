@@ -30,6 +30,7 @@ class Player extends Entity {
 
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
    private static readonly ITEM_THROW_FORCE = 100;
+   private static readonly ITEM_THROW_OFFSET = 32;
 
    public backpackItemSlot: Item | null = null;
    public heldItem: Item | null = null;
@@ -263,8 +264,11 @@ class Player extends Entity {
 
    public throwHeldItem(throwDirection: number): void {
       if (this.heldItem !== null) {
+         const dropPosition = this.position.copy();
+         dropPosition.add(new Vector(Player.ITEM_THROW_OFFSET, throwDirection).convertToPoint());
+
          // Create the dropped item
-         const droppedItem = new DroppedItem(this.position.copy(), this.heldItem);
+         const droppedItem = new DroppedItem(dropPosition, this.heldItem);
 
          // Add a pickup cooldown so the item isn't picked up immediately
          droppedItem.addPlayerPickupCooldown(this.username, Player.THROWN_ITEM_PICKUP_COOLDOWN);

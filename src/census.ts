@@ -72,12 +72,12 @@ export function removeTileFromCensus(tile: Tile): void {
       throw new Error("Tile type is not in the census.")
    }
 
-   tileCensus.types[tile.type]!.splice(tileCensus.types[tile.type]!.indexOf(tile));
+   tileCensus.types[tile.type]!.splice(tileCensus.types[tile.type]!.indexOf(tile), 1);
    if (tileCensus.types[tile.type]!.length === 0) {
       delete tileCensus.types[tile.type];
    }
 
-   tileCensus.biomes[tile.biomeName]!.splice(tileCensus.biomes[tile.biomeName]!.indexOf(tile));
+   tileCensus.biomes[tile.biomeName]!.splice(tileCensus.biomes[tile.biomeName]!.indexOf(tile), 1);
    if (tileCensus.biomes[tile.biomeName]!.length === 0) {
       delete tileCensus.biomes[tile.biomeName];
    }

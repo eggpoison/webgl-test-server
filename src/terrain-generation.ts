@@ -5,6 +5,7 @@ import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, Til
 import Tile from "./tiles/Tile";
 import { TileInfo } from "webgl-test-shared";
 import { createGenericTile } from "./tiles/tile-class-record";
+import DirtTile from "./tiles/DirtTile";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;

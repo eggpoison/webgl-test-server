@@ -3,7 +3,7 @@ import ToolItem from "./ToolItem";
 
 class PickaxeItem extends ToolItem {
    public getAttackDamage(entityToAttack: Entity): number {
-      if (entityToAttack.type === "boulder") {
+      if (entityToAttack.type === "boulder" || entityToAttack.type === "tombstone") {
          return this.damage;
       } else {
          return Math.ceil(this.damage / 2);

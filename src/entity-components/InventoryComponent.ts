@@ -155,9 +155,20 @@ class InventoryComponent extends Component {
       for (let i = 1; i <= inventory.size; i++) {
          // If the slot is empty then add the rest of the item
          if (!inventory.itemSlots.hasOwnProperty(i)) {
-            inventory.itemSlots[i] = createItem(item.type, remainingAmountToAdd);
-            amountAdded = item.count;
-            break;
+            let addAmount: number;
+            if (itemIsStackable) {
+               addAmount = Math.min((item as StackableItem).stackSize, remainingAmountToAdd);
+            } else {
+               addAmount = 1;
+            }
+
+            inventory.itemSlots[i] = createItem(item.type, addAmount);
+
+            amountAdded += addAmount;
+            remainingAmountToAdd -= addAmount;
+            if (remainingAmountToAdd === 0) {
+               break;
+            }
          }
       }
 

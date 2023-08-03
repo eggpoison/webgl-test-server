@@ -1,4 +1,4 @@
-import { Point, SETTINGS, SlimeOrbData, SlimeSize, randInt } from "webgl-test-shared";
+import { Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -95,14 +95,16 @@ class Slime extends Mob {
             return tile.biomeName === "swamp";
          }
       });
+      // Regular chase AI
       this.addAI("chase", {
          aiWeightMultiplier: 1.5,
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
-            return entity.type !== "slime" && entity.type !== "slimewisp";
+            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_TYPES.includes(entity.type);
          }
       });
+      // Merge AI
       this.addAI("chase", {
          aiWeightMultiplier: 1,
          acceleration: 60 * speedMultiplier,
@@ -141,7 +143,7 @@ class Slime extends Mob {
       ]);
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type === "slime" || collidingEntity.type === "slimewisp") return;
+         if (collidingEntity.type === "slime" || collidingEntity.type === "slimewisp" || RESOURCE_TYPES.includes(collidingEntity.type)) return;
          
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
@@ -227,7 +229,8 @@ class Slime extends Mob {
    public createNewOrb(size: SlimeSize): void {
       this.orbs.push({
          size: size,
-         rotation: 2 * Math.PI * Math.random()
+         rotation: 2 * Math.PI * Math.random(),
+         offset: Math.random()
       });
    }
    
