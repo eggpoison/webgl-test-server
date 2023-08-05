@@ -1,4 +1,4 @@
-import { ParticleType, Point, randFloat, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { ParticleType, Point, randFloat, randItem, randSign, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
@@ -11,13 +11,13 @@ class Tombstone extends Entity {
 
    /** Average number of zombies that are created by the tombstone in a second */
    // private static readonly ZOMBIE_SPAWN_RATE = 0.05;
-   private static readonly ZOMBIE_SPAWN_RATE = 1;
+   private static readonly ZOMBIE_SPAWN_RATE = 0.75;
    /** Distance the zombies spawn from the tombstone */
    private static readonly ZOMBIE_SPAWN_DISTANCE = 48;
    /** Maximum amount of zombies that can be spawned by one tombstone */
    private static readonly MAX_SPAWNED_ZOMBIES = 4;
    /** Seconds it takes for a tombstone to spawn a zombie */
-   private static readonly ZOMBIE_SPAWN_TIME = 1.5;
+   private static readonly ZOMBIE_SPAWN_TIME = 3;
    
    private readonly tombstoneType: number;
 
@@ -92,7 +92,9 @@ class Tombstone extends Entity {
       }
 
       if (this.isSpawningZombie) {
-         this.createDirtParticle();
+         if (Math.random() < 10 / SETTINGS.TPS) {
+            this.createDirtParticle();
+         }
          
          this.zombieSpawnTimer += 1 / SETTINGS.TPS;
          if (this.zombieSpawnTimer >= Tombstone.ZOMBIE_SPAWN_TIME) {
@@ -103,16 +105,24 @@ class Tombstone extends Entity {
 
    private createDirtParticle(): void {
       const spawnPosition = this.zombieSpawnPosition.copy();
+      const offset = new Vector(10 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+      spawnPosition.add(offset);
+
+      if (!Board.isInBoard(spawnPosition)) return;
+
+      const speedMultiplier = randFloat(1, 2.2);
       
       new Particle({
          type: ParticleType.dirt,
          spawnPosition: spawnPosition,
-         initialVelocity: new Vector(randFloat(120, 180), 2 * Math.PI * Math.random()),
+         initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
          initialAcceleration: null,
          initialRotation: 2 * Math.PI * Math.random(),
+         angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
+         angularDrag: 4 * speedMultiplier,
          opacity: 1,
          drag: 300,
-         lifetime: 1
+         lifetime: 1.5
       });
    }
 

@@ -14,6 +14,8 @@ export interface ParticleInfo {
    readonly initialVelocity: Vector | null;
    readonly initialAcceleration: Vector | null;
    readonly initialRotation: number;
+   readonly angularVelocity?: number;
+   readonly angularDrag?: number;
    readonly opacity: number | ((age: number) => number);
    /** Amount the particle's velocity gets decreased each second */
    readonly drag?: number;
@@ -30,6 +32,8 @@ class Particle {
    public velocity: Vector | null;
    public acceleration: Vector | null;
    public rotation: number;
+   public angularVelocity: number;
+   public readonly angularDrag: number;
    public opacity: number | ((age: number) => number);
    public readonly drag: number;
    public readonly lifetime: number;
@@ -47,6 +51,8 @@ class Particle {
       this.velocity = info.initialVelocity;
       this.acceleration = info.initialAcceleration;
       this.rotation = info.initialRotation;
+      this.angularVelocity = typeof info.angularVelocity !== "undefined" ? info.angularVelocity : 0;
+      this.angularDrag = typeof info.angularDrag !== "undefined" ? info.angularDrag : 0;
       this.opacity = info.opacity;
       this.drag = typeof info.drag !== "undefined" ? info.drag : 0;
       this.lifetime = info.lifetime;
@@ -59,6 +65,14 @@ class Particle {
 
    public tick(): void {
       this.applyPhysics();
+
+      this.rotation += this.angularVelocity / SETTINGS.TPS;
+
+      const signBefore = Math.sign(this.angularVelocity);
+      this.angularVelocity -= this.angularDrag * signBefore / SETTINGS.TPS;
+      if (Math.sign(this.angularVelocity) !== signBefore) {
+         this.angularVelocity = 0;
+      }
 
       // TODO: Find better way than this shittiness
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) return;
