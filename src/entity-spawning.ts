@@ -128,9 +128,12 @@ const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
 }
 
 const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => {
-   if (!spawnPositionIsValid(spawnOrigin)) return;
+   if (!spawnPositionIsValid(spawnOrigin)) {
+      return;
+   }
 
    if (typeof spawnInfo.spawnValidationFunction !== "undefined" && !spawnInfo.spawnValidationFunction(spawnOrigin)) {
+      
       return;
    }
 

@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize, ParticleData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/Player";
 import { registerCommand } from "./commands";
@@ -158,6 +158,36 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    return projectileDataArray;
 }
 
+const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ParticleData> => {
+   const particles = new Array<ParticleData>();
+
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
+      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+         for (const particle of chunk.getParticles()) {
+            let opacity: number;
+            if (typeof particle.opacity === "number") {
+               opacity = particle.opacity;
+            } else {
+               opacity = particle.opacity(particle.getAge());
+            }
+            
+            particles.push({
+               id: particle.id,
+               type: particle.type,
+               position: particle.position.package(),
+               velocity: particle.velocity?.package() || null,
+               acceleration: particle.acceleration?.package() || null,
+               rotation: particle.rotation,
+               opacity: opacity
+            });
+         }
+      }
+   }
+
+   return particles;
+}
+
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 type PlayerData = {
@@ -220,6 +250,8 @@ class GameServer {
       Board.removeFlaggedGameObjects();
       
       Board.pushJoinBuffer();
+
+      Board.updateParticles();
 
       Board.updateGameObjects();
       Board.resolveCollisions();
@@ -319,6 +351,7 @@ class GameServer {
                entityDataArray: bundleEntityDataArray(player, playerData.visibleChunkBounds),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
+               particles: packagePlayerParticles(playerData.visibleChunkBounds),
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
@@ -446,6 +479,7 @@ class GameServer {
             entityDataArray: bundleEntityDataArray(player, extendedVisibleChunkBounds),
             droppedItemDataArray: bundleDroppedItemDataArray(extendedVisibleChunkBounds),
             projectileDataArray: bundleProjectileDataArray(extendedVisibleChunkBounds),
+            particles: packagePlayerParticles(extendedVisibleChunkBounds),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
             serverTicks: this.ticks,
@@ -581,17 +615,5 @@ SERVER.setup();
 
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
-   // Board.setup();
-   // SERVER.setup();
    SERVER.start();
 }
-
-// beforeAll(() => {
-//    // return new Promise<void>(resolve => {
-
-//       console.log("REEREEREE");
-//       Board.setup();
-//       SERVER.setup();
-//    //    resolve();
-//    // })
-// }, 1000);

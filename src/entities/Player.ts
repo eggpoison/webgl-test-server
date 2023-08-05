@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, ParticleType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, randFloat, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -9,6 +9,7 @@ import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
 import Entity from "./Entity";
 import Board from "../Board";
+import Particle from "../Particle";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -65,6 +66,51 @@ class Player extends Entity {
             knockback: knockback,
             hitDirection: hitDirection
          });
+
+         const lifetime = 15;
+
+         for (let i = 0; i < 3; i++) {
+            const spawnPosition = this.position.copy();
+            const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+            spawnPosition.add(offset);
+
+            const type = randItem([ParticleType.bloodPoolSmall, ParticleType.bloodPoolMedium, ParticleType.bloodPoolLarge])
+            new Particle({
+               type: type,
+               spawnPosition: spawnPosition,
+               initialVelocity: null,
+               initialAcceleration: null,
+               initialRotation: 2 * Math.PI * Math.random(),
+               opacity: (age: number) => {
+                  return 1 - age / lifetime;
+               },
+               lifetime: lifetime
+            });
+         }
+
+         if (hitDirection !== null) {
+            for (let i = 0; i < 10; i++) {
+               const spawnPosition = this.position.copy();
+               const offset = new Vector(32, hitDirection + Math.PI + 0.2 * Math.PI * (Math.random() - 0.5)).convertToPoint();
+               spawnPosition.add(offset);
+   
+               const lifetime = randFloat(0.3, 0.4)
+   
+               new Particle({
+                  type: ParticleType.blood,
+                  spawnPosition: spawnPosition,
+                  // initialVelocity: new Vector(randFloat(60, 100), hitDirection + Math.PI + 0.5 * Math.PI * (Math.random() - 0.5)),
+                  initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
+                  initialAcceleration: null,
+                  initialRotation: 2 * Math.PI * Math.random(),
+                  opacity: 1,
+                  // opacity: (age: number) => {
+                  //    return 1 - age / lifetime;
+                  // },
+                  lifetime: lifetime
+               });
+            }
+         }
       });
    }
 

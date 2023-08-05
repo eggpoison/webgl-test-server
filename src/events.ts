@@ -2,6 +2,7 @@ import _GameObject, { GameObject } from "./GameObject";
 import Entity from "./entities/Entity";
 
 export interface GameObjectEvents {
+   on_destroy: () => void;
    enter_collision: (collidingGameObject: GameObject) => void;
    during_collision: (collidingGameObject: GameObject) => void;
    enter_entity_collision: (collidingEntity: Entity) => void;

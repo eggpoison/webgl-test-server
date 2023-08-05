@@ -96,6 +96,10 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
 
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+            // Don't try to wander to wall tiles
+            const tile = Board.getTile(tileX, tileY);
+            if (tile.isWall) continue;
+            
             const position = new Point((tileX + Math.random()) * SETTINGS.TILE_SIZE, (tileY + Math.random()) * SETTINGS.TILE_SIZE);
             const distance = this.mob.position.calculateDistanceBetween(position);
             if (distance <= this.mob.visionRange) {

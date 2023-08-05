@@ -8,6 +8,7 @@ import Board from "../../Board";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import WanderAI from "../../mob-ai/WanderAI";
 import MoveAI from "../../mob-ai/MoveAI";
+import { errorMonitor } from "ws";
 
 interface MovingOrbData extends Mutable<SlimeOrbData> {
    angularVelocity: number;
@@ -116,13 +117,15 @@ class Slime extends Mob {
             return tile.biomeName === "swamp";
          }
       }));
+      // Anger AI
       this.addAI(new MoveAI(this, {
          aiWeightMultiplier: 1.5,
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          getMoveTargetPosition: (): Point | null => {
-            for (const a of this.angeredEntities) {
-               return a.target.position.copy();
+            const target = this.getAngerTarget();
+            if (target !== null) {
+               return target.position.copy();
             }
             return null;
          }
@@ -225,22 +228,28 @@ class Slime extends Mob {
          }
       }
 
-      // If the slime is chasing an entity make its eye point towards that entity
-      let isChasing = false;
-      const currentAI = this.getCurrentAI();
-      if (currentAI !== null && currentAI.type === "chase") {
-         const target = (currentAI as ChaseAI).getChaseTarget();
-         if (target !== null) {
-            this.eyeRotation = this.position.calculateAngleBetween(target.position);
-            isChasing = true;
+      // If the slime is angry at an entity, make its eye point towards that entity
+      const angerTarget = this.getAngerTarget();
+      if (angerTarget !== null) {
+         this.eyeRotation = this.position.calculateAngleBetween(angerTarget.position);
+      } else {
+         // If the slime is chasing an entity make its eye point towards that entity
+         let isChasing = false;
+         const currentAI = this.getCurrentAI();
+         if (currentAI !== null && currentAI.type === "chase") {
+            const target = (currentAI as ChaseAI).getChaseTarget();
+            if (target !== null) {
+               this.eyeRotation = this.position.calculateAngleBetween(target.position);
+               isChasing = true;
+            }
          }
-      }
-
-      // When the slime isn't chasing an entity, make it look at random positions
-      if (!isChasing) {
-         if (this.getCurrentAIType() !== "chase") {
-            if (Math.random() < 0.25 / SETTINGS.TPS) {
-               this.eyeRotation = 2 * Math.PI * Math.random();
+   
+         // When the slime isn't chasing an entity, make it look at random positions
+         if (!isChasing) {
+            if (this.getCurrentAIType() !== "chase") {
+               if (Math.random() < 0.25 / SETTINGS.TPS) {
+                  this.eyeRotation = 2 * Math.PI * Math.random();
+               }
             }
          }
       }
@@ -296,6 +305,24 @@ class Slime extends Mob {
          offset: Math.random(),
          angularVelocity: 0
       });
+   }
+
+   private getAngerTarget(): Entity | null {
+      if (this.angeredEntities.length === 0) {
+         return null;
+      }
+
+      // Target the entity which the slime is angry with the most
+      let maxAnger = 0;
+      let target!: Entity;
+      for (const angerInfo of this.angeredEntities) {
+         if (angerInfo.angerAmount > maxAnger) {
+            maxAnger = angerInfo.angerAmount;
+            target = angerInfo.target;
+         }
+      }
+      
+      return target;
    }
 
    private addEntityAnger(entity: Entity, amount: number, propagationInfo: AngerPropagationInfo): void {

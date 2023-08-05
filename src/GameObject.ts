@@ -288,6 +288,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
          this.velocity = pointVelocity.convertToVector();
       }
    }
+
+   public resolveWallTileCollisions(): void {
+      for (const hitbox of this.hitboxes) {
+         let minTileX
+      }
+   }
    
    public resolveWallCollisions(): void {
       const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;

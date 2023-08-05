@@ -92,15 +92,15 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             },
             minDist: 2
          },
-         {
-            tileType: "sandstone",
-            isWall: false,
-            noiseRequirements: {
-               scale: 7,
-               minWeight: 0.5
-            },
-            minDist: 1
-         },
+         // {
+         //    tileType: "sandstone",
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 7,
+         //       minWeight: 0.5
+         //    },
+         //    minDist: 1
+         // },
          {
             tileType: "sand",
             isWall: false

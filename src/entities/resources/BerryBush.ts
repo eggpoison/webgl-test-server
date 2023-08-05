@@ -11,8 +11,8 @@ class BerryBush extends Entity {
 
    private static readonly RADIUS = 40;
 
-   private static readonly BERRY_DROP_OFFSET = 30;
-   private static readonly BERRY_DROP_VELOCITY = 40;
+   private static readonly BERRY_DROP_OFFSET = 40;
+   private static readonly BERRY_DROP_VELOCITY = 70;
 
    /** Number of seconds it takes for a berry bush to regrow one of its berries */
    private static readonly BERRY_GROW_TIME = 30;

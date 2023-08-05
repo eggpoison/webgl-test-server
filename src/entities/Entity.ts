@@ -40,6 +40,7 @@ abstract class Entity extends _GameObject<"entity"> {
       hurt: [],
       death: [],
       on_knockback: [],
+      on_destroy: [],
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],

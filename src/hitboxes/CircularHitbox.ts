@@ -20,6 +20,10 @@ class CircularHitbox extends Hitbox<"circular"> {
          }
       }
    }
+   
+   public resolveTileCollision(tileX: number, tileY: number): void {
+      throw new Error("Method not implemented.");
+   }
 }
 
 export default CircularHitbox;

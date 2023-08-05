@@ -1,0 +1,114 @@
+import { ParticleType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import Chunk from "./Chunk";
+import Board from "./Board";
+
+let idCounter = 0;
+
+const getAvailableID = (): number => {
+   return idCounter++;
+}
+
+export interface ParticleInfo {
+   readonly type: ParticleType;
+   readonly spawnPosition: Point;
+   readonly initialVelocity: Vector | null;
+   readonly initialAcceleration: Vector | null;
+   readonly initialRotation: number;
+   readonly opacity: number | ((age: number) => number);
+   /** Number of seconds the particle lasts before being destroyed */
+   readonly lifetime: number;
+}
+
+class Particle {
+   public readonly id: number;
+
+   public readonly type: ParticleType;
+   
+   public position: Point;
+   public velocity: Vector | null;
+   public acceleration: Vector | null;
+   public rotation: number;
+   public opacity: number | ((age: number) => number);
+   public readonly lifetime: number;
+
+   private chunk: Chunk;
+
+   private _age = 0;
+
+   constructor(info: ParticleInfo) {
+      this.id = getAvailableID();
+
+      this.type = info.type;
+      
+      this.position = info.spawnPosition;
+      this.velocity = info.initialVelocity;
+      this.acceleration = info.initialAcceleration;
+      this.rotation = info.initialRotation;
+      this.opacity = info.opacity;
+      this.lifetime = info.lifetime;
+
+      this.chunk = this.calculateContainingChunk();
+      this.chunk.addParticle(this);
+
+      Board.addParticle(this);
+   }
+
+   public tick(): void {
+      this.applyPhysics();
+
+      // TODO: Find better way than this shittiness
+      if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) return;
+      
+      const newChunk = this.calculateContainingChunk();
+
+      // If the particle has changed chunks, add it to the new one and remove it from the old one
+      if (newChunk !== this.chunk) {
+         this.chunk.removeParticle(this);
+         newChunk.addParticle(this);
+         this.chunk = newChunk;
+      }
+   }
+
+   private applyPhysics(): void {
+      // Accelerate
+      if (this.acceleration !== null) {
+         const acceleration = this.acceleration.copy();
+         acceleration.magnitude *= 1 / SETTINGS.TPS;
+
+         // Add acceleration to velocity
+         if (this.velocity !== null) {
+            this.velocity.add(acceleration);
+         } else {
+            this.velocity = acceleration;
+         }
+      }
+
+      // Apply velocity
+      if (this.velocity !== null) {
+         const velocity = this.velocity.copy();
+         velocity.magnitude /= SETTINGS.TPS;
+         
+         this.position.add(velocity.convertToPoint());
+      }
+   }
+
+   public age(): void {
+      this._age += 1 / SETTINGS.TPS;
+   }
+
+   public getAge(): number {
+      return this._age;
+   }
+
+   private calculateContainingChunk(): Chunk {
+      const chunkX = Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkY = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      return Board.getChunk(chunkX, chunkY);
+   }
+
+   public getChunk(): Chunk {
+      return this.chunk;
+   }
+}
+
+export default Particle;

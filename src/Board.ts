@@ -8,6 +8,7 @@ import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
+import Particle from "./Particle";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -26,6 +27,8 @@ abstract class Board {
    public static readonly entities: { [id: number]: Entity } = {};
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
    public static readonly projectiles = new Set<Projectile>();
+
+   public static readonly particles = new Set<Particle>();
    
    private static tiles: Array<Array<Tile>>;
    private static chunks: Array<Array<Chunk>>;
@@ -84,8 +87,10 @@ abstract class Board {
       this.tiles[tileX][tileY] = tile;
    }
 
-   public static getChunk(x: number, y: number): Chunk {
-      return this.chunks[x][y];
+   public static getChunk(chunkX: number, chunkY: number): Chunk {
+      if (chunkX < 0 || chunkX >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Chunk x '${chunkX}' is not a valid chunk coordinate.`);
+      if (chunkY < 0 || chunkY >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Chunk y '${chunkY}' is not a valid chunk coordinate.`);
+      return this.chunks[chunkX][chunkY];
    }
 
    /** Returns a reference to the tiles array */
@@ -93,6 +98,31 @@ abstract class Board {
       return this.tiles;
    }
 
+   public static addParticle(particle: Particle): void {
+      this.particles.add(particle);
+   }
+
+   public static removeParticle(particle: Particle): void {
+      this.particles.delete(particle);
+   }
+
+   public static updateParticles(): void {
+      const removedParticles = new Array<Particle>();
+      
+      for (const particle of this.particles) {
+         particle.tick();
+         particle.age();
+         if (particle.getAge() >= particle.lifetime) {
+            removedParticles.push(particle);
+         }
+      }
+
+      for (const particle of removedParticles) {
+         this.particles.delete(particle);
+         particle.getChunk().removeParticle(particle);
+      }
+   }
+   
    /** Removes game objects flagged for deletion */
    public static removeFlaggedGameObjects(): void {
       for (const gameObject of this.gameObjectsToRemove) {
@@ -167,6 +197,7 @@ abstract class Board {
 
    public static resolveCollisions(): void {
       for (const gameObject of this.gameObjects) {
+         gameObject.resolveWallTileCollisions();
          gameObject.resolveWallCollisions();
          gameObject.updateTile();
 

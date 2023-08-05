@@ -5,6 +5,7 @@ class Projectile extends _GameObject<"projectile"> {
    public readonly i = "projectile" as const;
    
    protected readonly events = {
+      on_destroy: [],
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],

@@ -12,6 +12,7 @@ class DroppedItem extends _GameObject<"droppedItem"> {
    public i = "droppedItem" as const;
 
    protected events = {
+      on_destroy: [],
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],

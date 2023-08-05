@@ -47,6 +47,8 @@ abstract class Hitbox<T extends HitboxType> {
    }
 
    public abstract isColliding(otherHitbox: Hitbox<HitboxType>): boolean;
+
+   public abstract resolveTileCollision(tileX: number, tileY: number): void;
 }
 
 export default Hitbox;

@@ -72,6 +72,10 @@ class RectangularHitbox extends Hitbox<"rectangular"> {
          }
       }
    }
+   
+   public resolveTileCollision(tileX: number, tileY: number): void {
+      throw new Error("Method not implemented.");
+   }
 }
 
 export default RectangularHitbox;
