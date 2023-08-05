@@ -1,19 +1,23 @@
-import { Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { ParticleType, Point, randFloat, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
 import Board from "../Board";
+import Particle from "../Particle";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
 
    /** Average number of zombies that are created by the tombstone in a second */
-   private static readonly ZOMBIE_SPAWN_RATE = 0.05;
+   // private static readonly ZOMBIE_SPAWN_RATE = 0.05;
+   private static readonly ZOMBIE_SPAWN_RATE = 1;
    /** Distance the zombies spawn from the tombstone */
    private static readonly ZOMBIE_SPAWN_DISTANCE = 48;
    /** Maximum amount of zombies that can be spawned by one tombstone */
    private static readonly MAX_SPAWNED_ZOMBIES = 4;
+   /** Seconds it takes for a tombstone to spawn a zombie */
+   private static readonly ZOMBIE_SPAWN_TIME = 1.5;
    
    private readonly tombstoneType: number;
 
@@ -21,7 +25,12 @@ class Tombstone extends Entity {
 
    /** Amount of spawned zombies that are alive currently */
    private currentSpawnedZombieCount = 0;
-   
+
+   /** Whether or not the tombstone is spawning a zombie */
+   private isSpawningZombie = false;
+   private zombieSpawnTimer = 0;
+   private zombieSpawnPosition!: Point;
+
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(Tombstone.MAX_HEALTH, false)
@@ -44,7 +53,7 @@ class Tombstone extends Entity {
       // Calculate the zombie spawn positions based off the tombstone's position and rotation
       const zombieSpawnPositions = new Array<Point>();
       for (let i = 0, angleFromTombstone = this.rotation; i < 4; i++, angleFromTombstone += Math.PI / 2) {
-         const offset = new Vector(Tombstone.ZOMBIE_SPAWN_DISTANCE, angleFromTombstone).convertToPoint();
+         const offset = new Vector(Tombstone.ZOMBIE_SPAWN_DISTANCE + (i % 2 === 0 ? 15 : 0), angleFromTombstone).convertToPoint();
          const spawnPosition = this.position.copy();
          spawnPosition.add(offset);
 
@@ -73,21 +82,53 @@ class Tombstone extends Entity {
       }
 
       // Don't spawn zombies past the max spawn limit
-      if (this.currentSpawnedZombieCount >= Tombstone.MAX_SPAWNED_ZOMBIES) return;
-
-      if (Math.random() < Tombstone.ZOMBIE_SPAWN_RATE / SETTINGS.TPS) {
-         // Note: tombstone type 0 is the golden tombstone
-         const isGolden = this.tombstoneType === 0 && Math.random() < 0.001;
-         
-         // Spawn zombie
-         // Copy the position to avoid having multiple zombies quantum entangled together
-         const spawnPosition = randItem(this.zombieSpawnPositions).copy();
-         const zombie = new Zombie(spawnPosition, false, isGolden);
-
-         // Keep track of the zombie
-         this.currentSpawnedZombieCount++;
-         zombie.createEvent("death", () => this.currentSpawnedZombieCount--);
+      if (this.currentSpawnedZombieCount < Tombstone.MAX_SPAWNED_ZOMBIES && !this.isSpawningZombie) {
+         if (Math.random() < Tombstone.ZOMBIE_SPAWN_RATE / SETTINGS.TPS) {
+            // Start spawning a zombie
+            this.isSpawningZombie = true;
+            this.zombieSpawnTimer = 0;
+            this.zombieSpawnPosition = randItem(this.zombieSpawnPositions).copy();
+         }
       }
+
+      if (this.isSpawningZombie) {
+         this.createDirtParticle();
+         
+         this.zombieSpawnTimer += 1 / SETTINGS.TPS;
+         if (this.zombieSpawnTimer >= Tombstone.ZOMBIE_SPAWN_TIME) {
+            this.spawnZombie();
+         }
+      }
+   }
+
+   private createDirtParticle(): void {
+      const spawnPosition = this.zombieSpawnPosition.copy();
+      
+      new Particle({
+         type: ParticleType.dirt,
+         spawnPosition: spawnPosition,
+         initialVelocity: new Vector(randFloat(120, 180), 2 * Math.PI * Math.random()),
+         initialAcceleration: null,
+         initialRotation: 2 * Math.PI * Math.random(),
+         opacity: 1,
+         drag: 300,
+         lifetime: 1
+      });
+   }
+
+   private spawnZombie(): void {
+      // Note: tombstone type 0 is the golden tombstone
+      const isGolden = this.tombstoneType === 0 && Math.random() < 0.001;
+      
+      // Spawn zombie
+      // Copy the position to avoid having multiple zombies quantum entangled together
+      const zombie = new Zombie(this.zombieSpawnPosition, false, isGolden);
+
+      // Keep track of the zombie
+      this.currentSpawnedZombieCount++;
+      zombie.createEvent("death", () => this.currentSpawnedZombieCount--);
+
+      this.isSpawningZombie = false;
    }
 
    public getClientArgs(): [tombstoneType: number] {

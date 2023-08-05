@@ -72,6 +72,8 @@ class Zombie extends Mob {
          this.zombieType = Math.floor(Math.random() * 3);
       }
 
+      this.rotation = 2 * Math.PI * Math.random();
+
       // Hurt players on collision
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          if (collidingEntity.type === "player") {

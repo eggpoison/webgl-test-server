@@ -15,6 +15,8 @@ export interface ParticleInfo {
    readonly initialAcceleration: Vector | null;
    readonly initialRotation: number;
    readonly opacity: number | ((age: number) => number);
+   /** Amount the particle's velocity gets decreased each second */
+   readonly drag?: number;
    /** Number of seconds the particle lasts before being destroyed */
    readonly lifetime: number;
 }
@@ -29,6 +31,7 @@ class Particle {
    public acceleration: Vector | null;
    public rotation: number;
    public opacity: number | ((age: number) => number);
+   public readonly drag: number;
    public readonly lifetime: number;
 
    private chunk: Chunk;
@@ -45,6 +48,7 @@ class Particle {
       this.acceleration = info.initialAcceleration;
       this.rotation = info.initialRotation;
       this.opacity = info.opacity;
+      this.drag = typeof info.drag !== "undefined" ? info.drag : 0;
       this.lifetime = info.lifetime;
 
       this.chunk = this.calculateContainingChunk();
@@ -83,11 +87,18 @@ class Particle {
          }
       }
 
+      // Drag
+      if (this.velocity !== null) {
+         this.velocity.magnitude -= this.drag / SETTINGS.TPS;
+         if (this.velocity.magnitude < 0) {
+            this.velocity = null;
+         }
+      }
+      
       // Apply velocity
       if (this.velocity !== null) {
          const velocity = this.velocity.copy();
          velocity.magnitude /= SETTINGS.TPS;
-         
          this.position.add(velocity.convertToPoint());
       }
    }
