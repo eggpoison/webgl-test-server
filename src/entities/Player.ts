@@ -99,14 +99,10 @@ class Player extends Entity {
                new Particle({
                   type: ParticleType.blood,
                   spawnPosition: spawnPosition,
-                  // initialVelocity: new Vector(randFloat(60, 100), hitDirection + Math.PI + 0.5 * Math.PI * (Math.random() - 0.5)),
                   initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
                   initialAcceleration: null,
                   initialRotation: 2 * Math.PI * Math.random(),
                   opacity: 1,
-                  // opacity: (age: number) => {
-                  //    return 1 - age / lifetime;
-                  // },
                   lifetime: lifetime
                });
             }
