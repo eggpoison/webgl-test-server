@@ -7,6 +7,7 @@ import Board from "../../Board";
 import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
+import { SERVER } from "../../server";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -20,6 +21,8 @@ class Zombie extends Mob {
 
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
+
+   private numFootstepsTaken = 0;
 
    constructor(position: Point, isNaturallySpawned: boolean, isGolden: boolean = false) {
       super(position, {
@@ -92,6 +95,18 @@ class Zombie extends Mob {
             }
          }
       });
+
+      this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
+         for (let i = 0; i < 3; i++) {
+            this.createBloodPoolParticle();
+         }
+
+         if (hitDirection !== null) {
+            for (let i = 0; i < 10; i++) {
+               this.createBloodParticle(hitDirection);
+            }
+         }
+      });
    }
 
    public tick(): void {
@@ -103,6 +118,13 @@ class Zombie extends Mob {
          if (super.hasStatusEffect("fire") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
             super.applyStatusEffect("fire", 5);
          }
+      }
+
+      // Create footsteps
+      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.3)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 20);
+
+         this.numFootstepsTaken++;
       }
    }
 

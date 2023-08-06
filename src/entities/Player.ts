@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, ParticleType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, randFloat, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, lerp, ParticleType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, randFloat, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -10,6 +10,7 @@ import DroppedItem from "../items/DroppedItem";
 import Entity from "./Entity";
 import Board from "../Board";
 import Particle from "../Particle";
+import { SERVER } from "../server";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -41,6 +42,8 @@ class Player extends Entity {
 
    private hitsTaken = new Array<HitData>();
 
+   private numFootstepsTaken = 0;
+
    constructor(position: Point, isNaturallySpawned: boolean, name: string) {
       const inventoryComponent = new InventoryComponent();
 
@@ -67,47 +70,26 @@ class Player extends Entity {
             hitDirection: hitDirection
          });
 
-         const lifetime = 15;
-
          for (let i = 0; i < 3; i++) {
-            const spawnPosition = this.position.copy();
-            const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-            spawnPosition.add(offset);
-
-            const type = randItem([ParticleType.bloodPoolSmall, ParticleType.bloodPoolMedium, ParticleType.bloodPoolLarge])
-            new Particle({
-               type: type,
-               spawnPosition: spawnPosition,
-               initialVelocity: null,
-               initialAcceleration: null,
-               initialRotation: 2 * Math.PI * Math.random(),
-               opacity: (age: number) => {
-                  return 1 - age / lifetime;
-               },
-               lifetime: lifetime
-            });
+            this.createBloodPoolParticle();
          }
 
          if (hitDirection !== null) {
             for (let i = 0; i < 10; i++) {
-               const spawnPosition = this.position.copy();
-               const offset = new Vector(32, hitDirection + Math.PI + 0.2 * Math.PI * (Math.random() - 0.5)).convertToPoint();
-               spawnPosition.add(offset);
-   
-               const lifetime = randFloat(0.3, 0.4)
-   
-               new Particle({
-                  type: ParticleType.blood,
-                  spawnPosition: spawnPosition,
-                  initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
-                  initialAcceleration: null,
-                  initialRotation: 2 * Math.PI * Math.random(),
-                  opacity: 1,
-                  lifetime: lifetime
-               });
+               this.createBloodParticle(hitDirection);
             }
          }
       });
+   }
+
+   public tick(): void {
+      super.tick();
+
+      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.15)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 20);
+
+         this.numFootstepsTaken++;
+      }
    }
 
    public getClientArgs(): [displayName: string] {

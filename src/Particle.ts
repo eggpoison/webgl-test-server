@@ -15,8 +15,9 @@ export interface ParticleInfo {
    readonly initialAcceleration: Vector | null;
    readonly initialRotation: number;
    readonly angularVelocity?: number;
-   readonly angularDrag?: number;
+   readonly angularAcceleration?: number;
    readonly opacity: number | ((age: number) => number);
+   readonly scale?: number | ((age: number) => number);
    /** Amount the particle's velocity gets decreased each second */
    readonly drag?: number;
    /** Number of seconds the particle lasts before being destroyed */
@@ -33,8 +34,9 @@ class Particle {
    public acceleration: Vector | null;
    public rotation: number;
    public angularVelocity: number;
-   public readonly angularDrag: number;
-   public opacity: number | ((age: number) => number);
+   public readonly angularAcceleration: number;
+   public readonly opacity: number | ((age: number) => number);
+   public readonly scale: number | ((age: number) => number);
    public readonly drag: number;
    public readonly lifetime: number;
 
@@ -52,8 +54,9 @@ class Particle {
       this.acceleration = info.initialAcceleration;
       this.rotation = info.initialRotation;
       this.angularVelocity = typeof info.angularVelocity !== "undefined" ? info.angularVelocity : 0;
-      this.angularDrag = typeof info.angularDrag !== "undefined" ? info.angularDrag : 0;
+      this.angularAcceleration = typeof info.angularAcceleration !== "undefined" ? info.angularAcceleration : 0;
       this.opacity = info.opacity;
+      this.scale = typeof info.scale !== "undefined" ? info.scale : 1;
       this.drag = typeof info.drag !== "undefined" ? info.drag : 0;
       this.lifetime = info.lifetime;
 
@@ -68,9 +71,11 @@ class Particle {
 
       this.rotation += this.angularVelocity / SETTINGS.TPS;
 
+      // Angular acceleration
+      const a = this.angularVelocity;
       const signBefore = Math.sign(this.angularVelocity);
-      this.angularVelocity -= this.angularDrag * signBefore / SETTINGS.TPS;
-      if (Math.sign(this.angularVelocity) !== signBefore) {
+      this.angularVelocity += this.angularAcceleration / SETTINGS.TPS;
+      if (Math.sign(this.angularVelocity) !== signBefore && signBefore !== 0) {
          this.angularVelocity = 0;
       }
 

@@ -10,6 +10,7 @@ import Tile from "../../tiles/Tile";
 import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
+import { SERVER } from "../../server";
 
 /** Stores which tiles belong to which yetis' territories */
 const yetiTerritoryTiles: Record<number, Yeti> = {};
@@ -51,6 +52,8 @@ class Yeti extends Mob {
 
    // Stores the ids of all entities which have recently attacked the yeti
    private readonly attackingEntities: Record<number, number> = {};
+
+   private numFootstepsTaken = 0;
 
    constructor(position: Point) {
       super(position, {
@@ -134,6 +137,18 @@ class Yeti extends Mob {
             removeYetiTerritory(tile.x, tile.y);
          }
       });
+
+      this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
+         for (let i = 0; i < 3; i++) {
+            this.createBloodPoolParticle();
+         }
+
+         if (hitDirection !== null) {
+            for (let i = 0; i < 10; i++) {
+               this.createBloodParticle(hitDirection);
+            }
+         }
+      });
    }
 
    public tick(): void {
@@ -144,6 +159,13 @@ class Yeti extends Mob {
          if (this.attackingEntities[id] <= 0) {
             delete this.attackingEntities[id];
          }
+      }
+
+      // Create footsteps
+      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.25)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 40);
+
+         this.numFootstepsTaken++;
       }
    }
 

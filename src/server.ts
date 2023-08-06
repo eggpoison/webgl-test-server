@@ -171,7 +171,7 @@ const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): Readonl
             } else {
                opacity = particle.opacity(particle.getAge());
             }
-            
+
             particles.push({
                id: particle.id,
                type: particle.type,
@@ -179,7 +179,8 @@ const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): Readonl
                velocity: particle.velocity?.package() || null,
                acceleration: particle.acceleration?.package() || null,
                rotation: particle.rotation,
-               opacity: opacity
+               opacity: opacity,
+               scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale
             });
          }
       }
@@ -220,6 +221,14 @@ class GameServer {
 
    public setTrackedGameObject(id: number | null): void {
       this.trackedGameObjectID = id;
+   }
+
+   public tickIntervalHasPassed(intervalSeconds: number): boolean {
+      const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
+      
+      const previousCheck = (this.ticks - 1) / ticksPerInterval;
+      const check = this.ticks / ticksPerInterval;
+      return Math.floor(previousCheck) !== Math.floor(check);
    }
 
    public start(): void {

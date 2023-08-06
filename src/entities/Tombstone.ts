@@ -92,8 +92,15 @@ class Tombstone extends Entity {
       }
 
       if (this.isSpawningZombie) {
-         if (Math.random() < 10 / SETTINGS.TPS) {
-            this.createDirtParticle();
+         const spawnProgress = this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME;
+         if (spawnProgress < 0.8) {
+            if (Math.random() < 7.5 / SETTINGS.TPS) {
+               this.createDirtParticle();
+            }
+         } else {
+            if (Math.random() < 20 / SETTINGS.TPS) {
+               this.createDirtParticle();
+            }
          }
          
          this.zombieSpawnTimer += 1 / SETTINGS.TPS;
@@ -119,7 +126,7 @@ class Tombstone extends Entity {
          initialAcceleration: null,
          initialRotation: 2 * Math.PI * Math.random(),
          angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
-         angularDrag: 4 * speedMultiplier,
+         angularAcceleration: -4 * speedMultiplier,
          opacity: 1,
          drag: 300,
          lifetime: 1.5

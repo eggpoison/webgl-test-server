@@ -75,7 +75,7 @@ class Tree extends Entity {
          drag: 75,
          initialRotation: 2 * Math.PI * Math.random(),
          angularVelocity: Math.PI * randFloat(-1, 1),
-         angularDrag: 1.5 * Math.PI,
+         angularAcceleration: -1.5 * Math.PI,
          opacity: 1,
          lifetime: randFloat(2, 2.5)
       });

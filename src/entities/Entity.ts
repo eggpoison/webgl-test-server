@@ -1,10 +1,11 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType, Vector, lerp, randFloat, randItem } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject from "../GameObject";
 import { addEntityToCensus } from "../census";
+import Particle from "../Particle";
 
 export interface EntityComponents {
    readonly health: HealthComponent;
@@ -125,6 +126,32 @@ abstract class Entity extends _GameObject<"entity"> {
             // Fire tick
             this.getComponent("health")!.damage(1, 0, null, null);
          }
+
+         // Fire particle effects
+         if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
+            const spawnPosition = this.position.copy();
+            const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+            spawnPosition.add(offset);
+
+            const lifetime = 1.5;
+            
+            new Particle({
+               type: ParticleType.smoke,
+               spawnPosition: spawnPosition,
+               initialVelocity: null,
+               initialAcceleration: new Vector(120, 0),
+               initialRotation: 2 * Math.PI * Math.random(),
+               angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
+               opacity: (age: number): number => {
+                  return lerp(0.75, 0, age / lifetime);
+               },
+               scale: (age: number): number => {
+                  const deathProgress = age / lifetime
+                  return 1 + deathProgress * 2;
+               },
+               lifetime: lifetime
+            });
+         }
       }
    }
 
@@ -153,6 +180,70 @@ abstract class Entity extends _GameObject<"entity"> {
 
    public getStatusEffects(): Array<StatusEffectType> {
       return Object.keys(this.statusEffects) as Array<StatusEffectType>;
+   }
+
+   protected createBloodPoolParticle(): void {
+      const lifetime = 7.5;
+
+      const spawnPosition = this.position.copy();
+      const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+      spawnPosition.add(offset);
+
+      const type = randItem([ParticleType.bloodPoolSmall, ParticleType.bloodPoolMedium, ParticleType.bloodPoolLarge])
+      new Particle({
+         type: type,
+         spawnPosition: spawnPosition,
+         initialVelocity: null,
+         initialAcceleration: null,
+         initialRotation: 2 * Math.PI * Math.random(),
+         opacity: (age: number) => {
+            return 1 - age / lifetime;
+         },
+         lifetime: lifetime
+      });
+   }
+
+   protected createBloodParticle(hitDirection: number): void {
+      const spawnPosition = this.position.copy();
+      const offset = new Vector(32, hitDirection + Math.PI + 0.2 * Math.PI * (Math.random() - 0.5)).convertToPoint();
+      spawnPosition.add(offset);
+
+      const lifetime = randFloat(0.25, 0.4)
+
+      new Particle({
+         type: ParticleType.blood,
+         spawnPosition: spawnPosition,
+         initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
+         initialAcceleration: null,
+         initialRotation: 2 * Math.PI * Math.random(),
+         opacity: 1,
+         lifetime: lifetime
+      });
+   }
+
+   protected createFootprintParticle(numFootstepsTaken: number, footstepSpacing: number): void {
+      if (this.velocity === null) {
+         return;
+      }
+      
+      const footstepAngleOffset = numFootstepsTaken % 2 === 0 ? Math.PI : 0;
+      const spawnPosition = this.position.copy();
+      const offset = new Vector(footstepSpacing / 2, this.velocity!.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
+      spawnPosition.add(offset);
+
+      const lifetime = 4;
+      
+      new Particle({
+         type: ParticleType.footprint,
+         spawnPosition: spawnPosition,
+         initialVelocity: null,
+         initialAcceleration: null,
+         initialRotation: 0,
+         opacity: (age: number): number => {
+            return lerp(0.75, 0, age / lifetime);
+         },
+         lifetime: lifetime
+      });
    }
 
    public getDebugData(): GameObjectDebugData {

@@ -181,7 +181,7 @@ class Cactus extends Entity {
          initialAcceleration: null,
          initialRotation: rotation,
          angularVelocity: Math.PI * randFloat(-1, 1),
-         angularDrag: 1.5 * Math.PI,
+         angularAcceleration: -1.5 * Math.PI,
          opacity: (age: number): number => {
             if (age < lifetime - Cactus.FLOWER_PARTICLE_FADE_TIME) {
                return 1;
