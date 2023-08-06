@@ -14,6 +14,10 @@ const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxIn
    workbench: {
       width: 80,
       height: 80
+   },
+   tribe_totem: {
+      width: 100,
+      height: 100
    }
 };
 
@@ -48,6 +52,8 @@ class PlaceableItem extends StackableItem implements PlaceableItemInfo {
       placedEntity.rotation = entity.rotation;
 
       super.consumeItem(entity.getComponent("inventory")!, inventoryName, 1);
+
+      entity.callEvents("on_item_place", placedEntity);
    }
 
    private canBePlaced(spawnPosition: Point, rotation: number): boolean {

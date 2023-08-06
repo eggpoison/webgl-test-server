@@ -41,7 +41,7 @@ const getRunTarget = (droppedItem: DroppedItem, visibleEntities: ReadonlyArray<E
    let runTarget: Entity | null = null;
 
    for (const entity of visibleEntities) {
-      if (entity.type === "player") {
+      if (entity.type === "player" || entity.type === "ai_tribesman") {
          const distance = droppedItem.position.calculateDistanceBetween(entity.position);
          if (distance < closestRunTargetDistance) {
             closestRunTargetDistance = distance;

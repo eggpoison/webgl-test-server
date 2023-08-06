@@ -1,16 +1,13 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, lerp, ParticleType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, randFloat, randItem, SETTINGS, Vector } from "webgl-test-shared";
-import HealthComponent from "../entity-components/HealthComponent";
-import InventoryComponent from "../entity-components/InventoryComponent";
-import CircularHitbox from "../hitboxes/CircularHitbox";
-import Item from "../items/generic/Item";
-import StackableItem from "../items/generic/StackableItem";
-import ToolItem from "../items/generic/ToolItem";
-import { createItem } from "../items/item-creation";
-import DroppedItem from "../items/DroppedItem";
-import Entity from "./Entity";
-import Board from "../Board";
-import Particle from "../Particle";
-import { SERVER } from "../server";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import Item from "../../items/generic/Item";
+import StackableItem from "../../items/generic/StackableItem";
+import ToolItem from "../../items/generic/ToolItem";
+import { createItem } from "../../items/item-creation";
+import DroppedItem from "../../items/DroppedItem";
+import Entity from "../Entity";
+import Board from "../../Board";
+import TribeMember from "./TribeMember";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -26,8 +23,7 @@ const bundleItemSlotData = (itemSlot: Item | null): ItemSlotData => {
    return bundleItemData(itemSlot);
 }
 
-class Player extends Entity {
-   private static readonly MAX_HEALTH = 20;
+class Player extends TribeMember {
    private static readonly DEFAULT_KNOCKBACK = 100;
 
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
@@ -42,15 +38,8 @@ class Player extends Entity {
 
    private hitsTaken = new Array<HitData>();
 
-   private numFootstepsTaken = 0;
-
    constructor(position: Point, isNaturallySpawned: boolean, name: string) {
-      const inventoryComponent = new InventoryComponent();
-
-      super(position, {
-         health: new HealthComponent(Player.MAX_HEALTH, true),
-         inventory: inventoryComponent
-      }, "player", isNaturallySpawned);
+      super(position, "player", isNaturallySpawned, TribeType.plainspeople);
 
       this.addHitboxes([
          new CircularHitbox({
@@ -59,6 +48,7 @@ class Player extends Entity {
          })
       ]);
 
+      const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE);
       inventoryComponent.createNewInventory("backpack", 0);
 
@@ -69,25 +59,7 @@ class Player extends Entity {
             knockback: knockback,
             hitDirection: hitDirection
          });
-
-         this.createBloodPoolParticle();
-
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
-            }
-         }
       });
-   }
-
-   public tick(): void {
-      super.tick();
-
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.15)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20);
-
-         this.numFootstepsTaken++;
-      }
    }
 
    public getClientArgs(): [displayName: string] {

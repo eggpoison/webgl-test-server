@@ -45,7 +45,8 @@ abstract class Entity extends _GameObject<"entity"> {
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],
-      during_entity_collision: []
+      during_entity_collision: [],
+      on_item_place: []
    };
 
    private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
@@ -85,10 +86,6 @@ abstract class Entity extends _GameObject<"entity"> {
       }
       
       this.tickStatusEffects();
-   }
-
-   public setIsStatic(isStatic: boolean): void {
-      this.isStatic = isStatic;
    }
 
    public getMoveSpeedMultiplier(): number {

@@ -50,9 +50,9 @@ class IceSpikes extends Entity {
          })
       ]);
 
-      itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1));
+      itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1), false);
 
-      this.setIsStatic(true);
+      this.isStatic = true;
       
       this.rotation = 2 * Math.PI * Math.random();
 

@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize, ParticleData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
-import Player from "./entities/Player";
+import Player from "./entities/tribes/Player";
 import { registerCommand } from "./commands";
 import _GameObject, { GameObjectSubclasses } from "./GameObject";
 import Entity from "./entities/Entity";

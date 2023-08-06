@@ -42,7 +42,7 @@ class BerryBush extends Entity {
          }
       });
 
-      this.setIsStatic(true);
+      this.isStatic = true;
       
       this.rotation = 2 * Math.PI * Math.random();
    }

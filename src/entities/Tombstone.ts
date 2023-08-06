@@ -46,7 +46,7 @@ class Tombstone extends Entity {
 
       this.tombstoneType = Math.floor(Math.random() * 3);
 
-      this.setIsStatic(true);
+      this.isStatic = true;
  
       this.rotation = Math.PI * 2 * Math.random();
 

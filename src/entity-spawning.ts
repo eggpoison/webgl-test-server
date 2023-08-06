@@ -91,12 +91,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.2,
       maxDensity: 0.3
    },
-   {
-      entityType: "zombie",
-      spawnableTiles: ["grass"],
-      spawnRate: 0.03 / 2,
-      maxDensity: 0.06 / 2
-   }
+   // {
+   //    entityType: "zombie",
+   //    spawnableTiles: ["grass"],
+   //    spawnRate: 0.03 / 2,
+   //    maxDensity: 0.06 / 2
+   // }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */
@@ -139,7 +139,6 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    }
 
    if (typeof spawnInfo.spawnValidationFunction !== "undefined" && !spawnInfo.spawnValidationFunction(spawnOrigin)) {
-      
       return;
    }
 

@@ -165,7 +165,7 @@ class Slime extends Mob {
       }));
 
       const dropAmount = randInt(...Slime.SLIME_DROP_AMOUNTS[size]);
-      itemCreationComponent.createItemOnDeath("slimeball", dropAmount);
+      itemCreationComponent.createItemOnDeath("slimeball", dropAmount, true);
 
       this.size = size;
 

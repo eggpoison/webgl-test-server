@@ -1,9 +1,10 @@
-import { BiomeName, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, parseCommand, randItem } from "webgl-test-shared";
-import Player from "./entities/Player";
+import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, parseCommand, randItem } from "webgl-test-shared";
+import Player from "./entities/tribes/Player";
 import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
+import ENTITY_CLASS_RECORD from "./entity-classes";
 
 const killPlayer = (username: string): void => {
    const player = SERVER.getPlayerFromUsername(username);
@@ -65,6 +66,23 @@ const tpBiome = (username: string, biomeName: BiomeName): void => {
 
    const newPosition = new Point(x, y);
    SERVER.sendForcePositionUpdatePacket(username, newPosition);
+}
+
+const summonEntities = (username: string, unguardedEntityType: string, amount: number): void => {
+   const player = SERVER.getPlayerFromUsername(username);
+   if (player === null) return;
+
+   if (!ENTITY_CLASS_RECORD.hasOwnProperty(unguardedEntityType)) {
+      return;
+   }
+
+   const entityType = unguardedEntityType as EntityType;
+   const entityClass = ENTITY_CLASS_RECORD[entityType]();
+   
+   for (let i = 0; i < amount; i++) {
+      const spawnPosition = player.position.copy();
+      new entityClass(spawnPosition, false);
+   }
 }
 
 export function registerCommand(command: string, player: Player): void {
@@ -147,6 +165,14 @@ export function registerCommand(command: string, player: Player): void {
       case "tpbiome": {
          const biomeName = commandComponents[1] as BiomeName;
          tpBiome(player.username, biomeName);
+         break;
+      }
+      
+      case "summon": {
+         const unguardedEntityType = commandComponents[1] as string;
+         const amount = commandComponents[2] as number;
+         
+         summonEntities(player.username, unguardedEntityType, amount);
          break;
       }
    }

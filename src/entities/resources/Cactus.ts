@@ -110,9 +110,9 @@ class Cactus extends Entity {
       }
 
       const spineDropCount = randInt(2, 5);
-      itemCreationComponent.createItemOnDeath("cactus_spine", spineDropCount);
+      itemCreationComponent.createItemOnDeath("cactus_spine", spineDropCount, true);
 
-      this.setIsStatic(true);
+      this.isStatic = true;
       
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
          const healthComponent = collidingEntity.getComponent("health");

@@ -20,6 +20,7 @@ import Frostcicle from "./specific/Frostcicle";
 import Slimeball from "./specific/Slimeball";
 import Eyeball from "./specific/Eyeball";
 import FleshSword from "./specific/FleshSword";
+import TribeTotemItem from "./specific/TribeTotemItem";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
@@ -41,7 +42,8 @@ const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: numbe
    frostcicle: () => Frostcicle,
    slimeball: () => Slimeball,
    eyeball: () => Eyeball,
-   flesh_sword: () => FleshSword
+   flesh_sword: () => FleshSword,
+   tribe_totem: () => TribeTotemItem
 };
 
 export function createItem(itemType: ItemType, count: number): Item {

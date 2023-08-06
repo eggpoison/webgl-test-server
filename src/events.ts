@@ -12,6 +12,7 @@ export interface GameObjectEvents {
 export interface EntityEvents extends GameObjectEvents {
    hurt: (damage: number, attackingEntity: Entity | null, knockback: number, hitDirection: number | null) => void;
    death: (attackingEntity: Entity | null) => void;
+   on_item_place: (placedEntity: Entity) => void;
 }
 
 export interface ProjectileEvents extends GameObjectEvents {

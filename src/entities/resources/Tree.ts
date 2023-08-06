@@ -36,9 +36,9 @@ class Tree extends Entity {
          })
       ]);
 
-      this.setIsStatic(true);
+      this.isStatic = true;
 
-      this.getComponent("item_creation")!.createItemOnDeath("wood", randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]));
+      this.getComponent("item_creation")!.createItemOnDeath("wood", randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]), true);
       
       this.rotation = Math.PI * 2 * Math.random();
 

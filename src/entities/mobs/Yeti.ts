@@ -126,8 +126,8 @@ class Yeti extends Mob {
 
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(4, 7));
-      this.getComponent("item_creation")!.createItemOnDeath("yeti_hide", randInt(2, 3));
+      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(4, 7), false);
+      this.getComponent("item_creation")!.createItemOnDeath("yeti_hide", randInt(2, 3), true);
 
       this.territory = Yeti.generateYetiTerritoryTiles(this.tile.x, this.tile.y);
       registerYetiTerritory(this.territory, this);

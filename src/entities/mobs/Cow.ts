@@ -44,7 +44,7 @@ class Cow extends Mob {
          weightBuildupTime: 10,
          interestDuration: 7,
          chanceToGainInterest: 0.2,
-         followableEntityTypes: new Set(["player", "zombie"])
+         followableEntityTypes: new Set(["player", "ai_tribesman", "zombie"])
       }));
 
       this.addAI(new HerdAI(this, {
@@ -110,11 +110,13 @@ class Cow extends Mob {
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
 
-      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2));
-      this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2));
+      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2), true);
+      this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2), true);
 
       this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
-         this.createBloodPoolParticle();
+         for (let i = 0; i < 2; i++) {
+            this.createBloodPoolParticle();
+         }
 
          if (hitDirection !== null) {
             for (let i = 0; i < 10; i++) {
