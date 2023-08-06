@@ -79,6 +79,16 @@ const getTileWanderTargets = (droppedItem: DroppedItem): Array<Tile> => {
    return wanderTargets;
 }
 
+const hasReachedTargetPosition = (droppedItem: DroppedItem, targetPosition: Point): boolean => {
+   if (droppedItem.velocity === null) return true;
+   
+   const relativeTargetPosition = droppedItem.position.copy();
+   relativeTargetPosition.subtract(targetPosition);
+
+   const dotProduct = droppedItem.velocity.convertToPoint().calculateDotProduct(relativeTargetPosition);
+   return dotProduct > 0;
+}
+
 interface FleshSwordInfo {
    internalWiggleTicks: number;
    tileTargetPosition: Point | null;
@@ -98,34 +108,40 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
    let moveSpeed: number | undefined;
    let wiggleSpeed: number | undefined;
 
-   if (info.tileTargetPosition !== null) {
-      targetPosition = info.tileTargetPosition;
-      moveSpeed = FLESH_SWORD_WANDER_MOVE_SPEED;
-      wiggleSpeed = 1;
-   } else {
-      const visibleEntities = getVisibleEntities(droppedItem);
-   
-      const runTarget = getRunTarget(droppedItem, visibleEntities);
+   const visibleEntities = getVisibleEntities(droppedItem);
 
-      // Run away from the run target
-      if (runTarget !== null) {
-         const angleFromTarget = droppedItem.position.calculateAngleBetween(runTarget.position);
-   
-         targetPosition = droppedItem.position.copy();
-         targetPosition.add(new Vector(100, angleFromTarget + Math.PI).convertToPoint());
-         
-         const distance = droppedItem.position.calculateDistanceBetween(runTarget.position);
-         let dist = distance / FLESH_SWORD_VISION_RANGE;
-         dist = Math.pow(1 - dist, 2);
-         wiggleSpeed = lerp(1, 4, dist);
-         moveSpeed = FLESH_SWORD_ESCAPE_MOVE_SPEED * lerp(1, 3.5, dist);
+   const runTarget = getRunTarget(droppedItem, visibleEntities);
+
+   // Run away from the run target
+   if (runTarget !== null) {
+      const angleFromTarget = droppedItem.position.calculateAngleBetween(runTarget.position);
+
+      targetPosition = droppedItem.position.copy();
+      targetPosition.add(new Vector(100, angleFromTarget + Math.PI).convertToPoint());
+      
+      const distance = droppedItem.position.calculateDistanceBetween(runTarget.position);
+      let dist = distance / FLESH_SWORD_VISION_RANGE;
+      dist = Math.pow(1 - dist, 2);
+      wiggleSpeed = lerp(1, 4, dist);
+      moveSpeed = FLESH_SWORD_ESCAPE_MOVE_SPEED * lerp(1, 3.5, dist);
+
+      info.tileTargetPosition = null;
+   } else {
+      if (info.tileTargetPosition !== null) {
+         if (hasReachedTargetPosition(droppedItem, info.tileTargetPosition)) {
+            info.tileTargetPosition = null;
+         } else {
+            targetPosition = info.tileTargetPosition;
+            moveSpeed = FLESH_SWORD_WANDER_MOVE_SPEED;
+            wiggleSpeed = 1;
+         }
       } else {
          // Chance to try to wander to a nearby tile
          if (Math.random() < FLESH_SWORD_WANDER_RATE / SETTINGS.TPS) {
             const tileWanderTargets = getTileWanderTargets(droppedItem);
-
+   
             let targetTile!: Tile;
-
+   
             // If any of the tiles are in a swamp, move to them
             for (const tile of tileWanderTargets) {
                if (tile.biomeName === "swamp") {
@@ -133,16 +149,18 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
                   break;
                }
             }
-
+   
             if (typeof targetTile === "undefined") {
                targetTile = randItem(tileWanderTargets);
             }
-
+   
             const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE
             const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE
             targetPosition = new Point(x, y);
             moveSpeed = FLESH_SWORD_WANDER_MOVE_SPEED;
             wiggleSpeed = 1;
+            
+            info.tileTargetPosition = targetPosition;
          }
       }
    }
