@@ -3,6 +3,7 @@ import TribeMember from "./entities/tribes/TribeMember";
 import TribeHut from "./entities/tribes/TribeHut";
 import Tribesman from "./entities/tribes/Tribesman";
 import TribeTotem from "./entities/tribes/TribeTotem";
+import Board from "./Board";
 
 class Tribe {
    public readonly tribeType: TribeType;
@@ -19,6 +20,10 @@ class Tribe {
    constructor(tribeType: TribeType, totem: TribeTotem) {
       this.tribeType = tribeType;
       this.totem = totem;
+
+      totem.createEvent("death", () => {
+         this.destroyBuildings();
+      });
    }
 
    public addTribeMember(member: TribeMember): void {
@@ -51,7 +56,10 @@ class Tribe {
 
       // Attempt to respawn the tribesman when it is killed
       tribesman.createEvent("death", () => {
-         this.respawnTribesman(hut);
+         // Only respawn the tribesman if their hut is alive
+         if (Board.gameObjectIsInBoard(hut)) {
+            this.respawnTribesman(hut);
+         }
       });
    }
 
@@ -61,6 +69,13 @@ class Tribe {
 
    public getNumHuts(): number {
       return this.huts.length;
+   }
+
+   /** Destroys all the tribe's associated buildings */
+   private destroyBuildings(): void {
+      for (const hut of this.huts) {
+         hut.remove();
+      }
    }
 }
 

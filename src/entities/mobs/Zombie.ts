@@ -10,6 +10,10 @@ import ChaseAI from "../../mob-ai/ChaseAI";
 import { SERVER } from "../../server";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 
+const zombieShouldTargetEntity = (entity: Entity): boolean => {
+   return entity.type === "player" || entity.type === "tribesman" || entity.type === "tribe_totem" || entity.type === "tribe_hut";
+}
+
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
    private static readonly SPONTANEOUS_COMBUSTION_CHANCE = 0.5;
@@ -61,9 +65,7 @@ class Zombie extends Mob {
          aiWeightMultiplier: 1,
          acceleration: 200,
          terminalVelocity: 100 * speedMultiplier,
-         entityIsChased(entity: Entity) {
-            return entity.type === "player" || entity.type === "tribesman";
-         }
+         entityIsChased: zombieShouldTargetEntity
      }));
 
       this.addHitboxes([
@@ -83,7 +85,7 @@ class Zombie extends Mob {
 
       // Hurt players on collision
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
-         if (collidingEntity.type === "player" || collidingEntity.type === "tribesman") {
+         if (zombieShouldTargetEntity(collidingEntity)) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
             const playerHealthComponent = collidingEntity.getComponent("health")!;
 
