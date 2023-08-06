@@ -8,6 +8,7 @@ import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
 import TribeMember from "./TribeMember";
+import { SERVER } from "../../server";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -62,8 +63,8 @@ class Player extends TribeMember {
       });
    }
 
-   public getClientArgs(): [displayName: string] {
-      return [this.username];
+   public getClientArgs(): [tribeType: TribeType, displayName: string] {
+      return [this.tribeType, this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -74,6 +75,11 @@ class Player extends TribeMember {
 
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
+
+         // Don't attack fellow tribe members
+         if (this.tribe !== null && entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
+            continue;
+         }
 
          const dist = this.position.calculateDistanceBetween(entity.position);
          if (dist < minDistance) {
@@ -303,6 +309,10 @@ class Player extends TribeMember {
       }
 
       return inventoryData;
+   }
+
+   protected onJoinTribe(): void {
+      SERVER.updatePlayerTribe(this, this.tribe);
    }
 }
 

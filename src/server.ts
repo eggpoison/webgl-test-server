@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize, ParticleData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize, ParticleData, TribeData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
 import { registerCommand } from "./commands";
@@ -10,6 +10,7 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
+import Tribe from "./Tribe";
 
 /*
 
@@ -191,12 +192,13 @@ const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): Readonl
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
-type PlayerData = {
+interface PlayerData {
    readonly username: string;
    readonly socket: ISocket;
    instance: Player;
    clientIsActive: boolean;
    visibleChunkBounds: VisibleChunkBounds;
+   tribe: Tribe | null;
 }
 
 /** Communicates between the server and players */
@@ -310,8 +312,9 @@ class GameServer {
       this.io.on("connection", (socket: ISocket) => {
          const playerData: Mutable<Partial<PlayerData>> = {
             socket: socket,
-            clientIsActive: true
-         }
+            clientIsActive: true,
+            tribe: null
+         };
          
          socket.on("initial_player_data", (username: string, visibleChunkBounds: VisibleChunkBounds) => {
             playerData.username = username;
@@ -320,9 +323,6 @@ class GameServer {
 
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
-
-         // const slime = new Slime(new Point(spawnPosition.x + 300, spawnPosition.y), false);
-         // slime.createNewOrb(SlimeSize.small);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
@@ -377,7 +377,8 @@ class GameServer {
                serverTime: Board.time,
                hitsTaken: [],
                playerHealth: 20,
-               statusEffects: []
+               statusEffects: [],
+               tribeData: null
             };
 
             this.playerDataRecord[socket.id] = playerData as PlayerData;
@@ -487,6 +488,12 @@ class GameServer {
             Math.min(playerData.visibleChunkBounds[3] + 1, SETTINGS.BOARD_SIZE - 1)
          ];
 
+         const tribeData: TribeData | null = player.tribe !== null ? {
+            tribeType: player.tribe.tribeType,
+            numHuts: player.tribe.getNumHuts(),
+            tribesmanCap: player.tribe.tribesmanCap
+         } : null;
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             entityDataArray: bundleEntityDataArray(player, extendedVisibleChunkBounds),
@@ -500,7 +507,8 @@ class GameServer {
             hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth(),
             statusEffects: player.getStatusEffects() as Array<StatusEffectType>,
-            gameObjectDebugData: gameObjectDebugData
+            gameObjectDebugData: gameObjectDebugData,
+            tribeData: tribeData
          };
 
          // Send the game data to the player
@@ -595,9 +603,16 @@ class GameServer {
    }
 
    private respawnPlayer(socket: ISocket): void {
-      const { username } = this.playerDataRecord[socket.id];
+      const { username, tribe } = this.playerDataRecord[socket.id];
 
-      const spawnPosition = this.generatePlayerSpawnPosition();
+      // Calculate spawn position
+      let spawnPosition: Point;
+      if (tribe !== null) {
+         spawnPosition = tribe.totem.position.copy();
+      } else {
+         spawnPosition = this.generatePlayerSpawnPosition();
+      }
+
       const playerEntity = new Player(spawnPosition, false, username);
 
       // Update the player data's instance
@@ -618,6 +633,15 @@ class GameServer {
       }
       
       playerData.socket.emit("force_position_update", position.package());
+   }
+
+   public updatePlayerTribe(player: Player, tribe: Tribe | null): void {
+      const playerData = this.getPlayerDataFromUsername(player.username);
+      if (playerData === null) {
+         return;
+      }
+
+      playerData.tribe = tribe;
    }
 }
 

@@ -62,7 +62,7 @@ class Zombie extends Mob {
          acceleration: 200,
          terminalVelocity: 100 * speedMultiplier,
          entityIsChased(entity: Entity) {
-            return entity.type === "player" || entity.type === "ai_tribesman";
+            return entity.type === "player" || entity.type === "tribesman";
          }
      }));
 
@@ -83,7 +83,7 @@ class Zombie extends Mob {
 
       // Hurt players on collision
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
-         if (collidingEntity.type === "player" || collidingEntity.type === "ai_tribesman") {
+         if (collidingEntity.type === "player" || collidingEntity.type === "tribesman") {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
             const playerHealthComponent = collidingEntity.getComponent("health")!;
 

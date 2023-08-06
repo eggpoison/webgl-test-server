@@ -13,8 +13,9 @@ import Yeti from "./entities/mobs/Yeti";
 import IceSpikes from "./entities/resources/IceSpikes";
 import Slime from "./entities/mobs/Slime";
 import Slimewisp from "./entities/mobs/Slimewisp";
-import AITribesman from "./entities/tribes/AITribesman";
+import Tribesman from "./entities/tribes/Tribesman";
 import TribeTotem from "./entities/tribes/TribeTotem";
+import TribeHut from "./entities/tribes/TribeHut";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)> = {
    cow: () => Cow,
@@ -29,9 +30,10 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNat
    ice_spikes: () => IceSpikes,
    slime: () => Slime,
    slimewisp: () => Slimewisp,
-   ai_tribesman: () => AITribesman,
+   tribesman: () => Tribesman,
    player: () => Player,
-   tribe_totem: () => TribeTotem
+   tribe_totem: () => TribeTotem,
+   tribe_hut: () => TribeHut
 };
 
 export default ENTITY_CLASS_RECORD;

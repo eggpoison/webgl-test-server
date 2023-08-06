@@ -18,6 +18,10 @@ const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxIn
    tribe_totem: {
       width: 100,
       height: 100
+   },
+   tribe_hut: {
+      width: 80,
+      height: 80
    }
 };
 

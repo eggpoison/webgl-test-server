@@ -10,7 +10,7 @@ class ItemCreationComponent extends Component {
 
    public createItemOnDeath(itemType: ItemType, count: number, onlyCreatedOnPlayerKill: boolean): void {
       this.entity.createEvent("death", (attackingEntity: Entity | null) => {
-         if (onlyCreatedOnPlayerKill && (attackingEntity === null || (attackingEntity.type !== "player" && attackingEntity.type !== "ai_tribesman"))) {
+         if (onlyCreatedOnPlayerKill && (attackingEntity === null || (attackingEntity.type !== "player" && attackingEntity.type !== "tribesman"))) {
             return;
          }
          

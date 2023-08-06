@@ -5,12 +5,13 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import { SERVER } from "../../server";
 import TRIBE_INFO_RECORD from "webgl-test-shared/lib/tribes";
 import Tribe from "../../Tribe";
+import TribeHut from "./TribeHut";
 import TribeTotem from "./TribeTotem";
 
 abstract class TribeMember extends Entity {
    public readonly tribeType: TribeType;
 
-   private tribe: Tribe | null = null;
+   public tribe: Tribe | null = null;
 
    private numFootstepsTaken = 0;
 
@@ -36,10 +37,22 @@ abstract class TribeMember extends Entity {
 
       this.createEvent("on_item_place", (placedItem: Entity): void => {
          if (placedItem.type === "tribe_totem") {
-            this.updateTribeFromTribeTotem(placedItem as TribeTotem);
+            this.tribe = new Tribe(this.tribeType, placedItem as TribeTotem);
+            
+            if (typeof this.onJoinTribe !== "undefined") {
+               this.onJoinTribe();
+            }
+         } else if (placedItem.type === "tribe_hut") {
+            if (this.tribe === null) {
+               throw new Error("Tribe member didn't belong to a tribe when placing a hut");
+            }
+
+            this.tribe.registerNewHut(placedItem as TribeHut);
          }
       });
    }
+
+   protected onJoinTribe?(): void;
 
    public tick(): void {
       super.tick();
@@ -51,9 +64,9 @@ abstract class TribeMember extends Entity {
       }
    }
 
-   protected updateTribeFromTribeTotem(tribeTotem: TribeTotem): void {
-      this.tribe = tribeTotem.tribe;
-   }
+   // protected updateTribeFromTribeTotem(tribeTotem: TribeTotem): void {
+   //    this.tribe = tribeTotem.tribe;
+   // }
 }
 
 export default TribeMember;

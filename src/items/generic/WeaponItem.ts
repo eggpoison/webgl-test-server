@@ -13,7 +13,8 @@ class WeaponItem extends ToolItem implements WeaponItemInfo {
    }
 
    public getAttackDamage(entityToAttack: Entity): number {
-      if (entityToAttack instanceof Mob) {
+      // If the entity is a mob or a tribe member
+      if (entityToAttack instanceof Mob || entityToAttack.hasOwnProperty("tribe")) {
          return this.damage;
       }
       return 1;

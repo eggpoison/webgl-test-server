@@ -41,7 +41,7 @@ const getRunTarget = (droppedItem: DroppedItem, visibleEntities: ReadonlyArray<E
    let runTarget: Entity | null = null;
 
    for (const entity of visibleEntities) {
-      if (entity.type === "player" || entity.type === "ai_tribesman") {
+      if (entity.type === "player" || entity.type === "tribesman") {
          const distance = droppedItem.position.calculateDistanceBetween(entity.position);
          if (distance < closestRunTargetDistance) {
             closestRunTargetDistance = distance;
@@ -150,6 +150,7 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
                }
             }
    
+            // Otherwise just pick a random tile to go to
             if (typeof targetTile === "undefined") {
                targetTile = randItem(tileWanderTargets);
             }

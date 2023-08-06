@@ -1,4 +1,4 @@
-import _GameObject, { GameObject } from "./GameObject";
+import { GameObject } from "./GameObject";
 import Entity from "./entities/Entity";
 
 export interface GameObjectEvents {

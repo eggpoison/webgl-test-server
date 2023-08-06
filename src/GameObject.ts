@@ -1,4 +1,4 @@
-import { GameObjectDebugData, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector, curveWeight } from "webgl-test-shared";
+import { GameObjectDebugData, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
 import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";

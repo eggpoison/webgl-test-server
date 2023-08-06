@@ -44,7 +44,7 @@ class Cow extends Mob {
          weightBuildupTime: 10,
          interestDuration: 7,
          chanceToGainInterest: 0.2,
-         followableEntityTypes: new Set(["player", "ai_tribesman", "zombie"])
+         followableEntityTypes: new Set(["player", "tribesman", "zombie"])
       }));
 
       this.addAI(new HerdAI(this, {

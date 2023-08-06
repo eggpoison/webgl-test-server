@@ -1,7 +1,6 @@
-import { Point, TribeType } from "webgl-test-shared";
+import { Point } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
-import Tribe from "../../Tribe";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 class TribeTotem extends Entity {
@@ -9,9 +8,7 @@ class TribeTotem extends Entity {
 
    private static readonly RADIUS = 50;
 
-   public readonly tribe: Tribe;
-   
-   constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType) {
+   constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(TribeTotem.MAX_HEALTH, false)
       }, "tribe_totem", isNaturallySpawned);
@@ -22,8 +19,6 @@ class TribeTotem extends Entity {
             radius: TribeTotem.RADIUS
          })
       ]);
-
-      this.tribe = new Tribe(tribeType);
 
       this.isStatic = true;
    }
