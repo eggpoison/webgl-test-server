@@ -132,7 +132,7 @@ class Cactus extends Entity {
             this.createCactusSpineParticle(flyDirection);
          }
 
-         const numRandomDirectionSpines = randInt(2, 3);
+         const numRandomDirectionSpines = randInt(1, 3);
          for (let i = 0; i < numRandomDirectionSpines; i++) {
             this.createCactusSpineParticle(2 * Math.PI * Math.random());
          }

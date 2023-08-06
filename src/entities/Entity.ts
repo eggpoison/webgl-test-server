@@ -211,7 +211,7 @@ abstract class Entity extends _GameObject<"entity"> {
       const lifetime = randFloat(0.25, 0.4)
 
       new Particle({
-         type: ParticleType.blood,
+         type: Math.random() < 0.6 ? ParticleType.blood : ParticleType.bloodLarge,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
          initialAcceleration: null,
