@@ -37,11 +37,8 @@ abstract class TribeMember extends Entity {
 
       this.createEvent("on_item_place", (placedItem: Entity): void => {
          if (placedItem.type === "tribe_totem") {
-            this.tribe = new Tribe(this.tribeType, placedItem as TribeTotem);
-            
-            if (typeof this.onJoinTribe !== "undefined") {
-               this.onJoinTribe();
-            }
+            const tribe = new Tribe(this.tribeType, placedItem as TribeTotem);
+            this.setTribe(tribe);
          } else if (placedItem.type === "tribe_hut") {
             if (this.tribe === null) {
                throw new Error("Tribe member didn't belong to a tribe when placing a hut");
@@ -52,7 +49,12 @@ abstract class TribeMember extends Entity {
       });
    }
 
-   protected onJoinTribe?(): void;
+   public setTribe(tribe: Tribe | null): void {
+      if (tribe !== null) {
+         tribe.addTribeMember(this);
+      }
+      this.tribe = tribe;
+   }
 
    public tick(): void {
       super.tick();

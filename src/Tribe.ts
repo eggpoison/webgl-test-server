@@ -22,7 +22,7 @@ class Tribe {
       this.totem = totem;
 
       totem.createEvent("death", () => {
-         this.destroyBuildings();
+         this.destroy();
       });
    }
 
@@ -71,8 +71,13 @@ class Tribe {
       return this.huts.length;
    }
 
-   /** Destroys all the tribe's associated buildings */
-   private destroyBuildings(): void {
+   /** Destroys the tribe and all its associated buildings */
+   private destroy(): void {
+      for (const tribeMember of this.members) {
+         tribeMember.setTribe(null);
+      }
+
+      // Remove huts
       for (const hut of this.huts) {
          hut.remove();
       }

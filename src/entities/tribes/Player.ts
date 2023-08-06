@@ -9,6 +9,7 @@ import Entity from "../Entity";
 import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
+import Tribe from "../../Tribe";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -311,7 +312,9 @@ class Player extends TribeMember {
       return inventoryData;
    }
 
-   protected onJoinTribe(): void {
+   public setTribe(tribe: Tribe | null): void {
+      super.setTribe(tribe);
+      
       SERVER.updatePlayerTribe(this, this.tribe);
    }
 }
