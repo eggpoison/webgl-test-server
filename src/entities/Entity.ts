@@ -138,8 +138,8 @@ abstract class Entity extends _GameObject<"entity"> {
             new Particle({
                type: ParticleType.smoke,
                spawnPosition: spawnPosition,
-               initialVelocity: null,
-               initialAcceleration: new Vector(120, 0),
+               initialVelocity: new Vector(30, 0),
+               initialAcceleration: new Vector(80, 0),
                initialRotation: 2 * Math.PI * Math.random(),
                angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
                opacity: (age: number): number => {
@@ -255,7 +255,7 @@ abstract class Entity extends _GameObject<"entity"> {
       
       const footstepAngleOffset = numFootstepsTaken % 2 === 0 ? Math.PI : 0;
       const spawnPosition = this.position.copy();
-      const offset = new Vector(footstepSpacing / 2, this.velocity!.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
+      const offset = new Vector(footstepSpacing / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
       spawnPosition.add(offset);
 
       const lifetime = 4;
@@ -265,7 +265,7 @@ abstract class Entity extends _GameObject<"entity"> {
          spawnPosition: spawnPosition,
          initialVelocity: null,
          initialAcceleration: null,
-         initialRotation: 0,
+         initialRotation: this.velocity.direction,
          opacity: (age: number): number => {
             return lerp(0.75, 0, age / lifetime);
          },

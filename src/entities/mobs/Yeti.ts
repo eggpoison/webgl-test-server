@@ -139,9 +139,7 @@ class Yeti extends Mob {
       });
 
       this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
-         for (let i = 0; i < 3; i++) {
-            this.createBloodPoolParticle();
-         }
+         this.createBloodPoolParticle();
 
          if (hitDirection !== null) {
             for (let i = 0; i < 10; i++) {

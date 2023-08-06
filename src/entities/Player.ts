@@ -70,9 +70,7 @@ class Player extends Entity {
             hitDirection: hitDirection
          });
 
-         for (let i = 0; i < 3; i++) {
-            this.createBloodPoolParticle();
-         }
+         this.createBloodPoolParticle();
 
          if (hitDirection !== null) {
             for (let i = 0; i < 10; i++) {

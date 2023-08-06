@@ -101,9 +101,7 @@ class Zombie extends Mob {
       });
 
       this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
-         for (let i = 0; i < 3; i++) {
-            this.createBloodPoolParticle();
-         }
+         this.createBloodPoolParticle();
 
          if (hitDirection !== null) {
             for (let i = 0; i < 10; i++) {
@@ -112,7 +110,7 @@ class Zombie extends Mob {
          }
       });
 
-      if (Math.random() < 0.1 * 10) {
+      if (Math.random() < 0.1) {
          itemCreationComponent.createItemOnDeath("eyeball", 1);
       }
    }

@@ -3,7 +3,6 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Mob from "./Mob";
-import Entity from "../Entity";
 import EscapeAI from "../../mob-ai/EscapeAI";
 import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
@@ -11,12 +10,15 @@ import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import FollowAI from "../../mob-ai/FollowAI";
 import WanderAI from "../../mob-ai/WanderAI";
+import { SERVER } from "../../server";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
    public species: CowSpecies;
    public readonly herdMemberHash: number;
+
+   private numFootstepsTaken = 0;
 
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
@@ -112,9 +114,7 @@ class Cow extends Mob {
       this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2));
 
       this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
-         for (let i = 0; i < 3; i++) {
-            this.createBloodPoolParticle();
-         }
+         this.createBloodPoolParticle();
 
          if (hitDirection !== null) {
             for (let i = 0; i < 10; i++) {
@@ -122,6 +122,17 @@ class Cow extends Mob {
             }
          }
       });
+   }
+
+   public tick(): void {
+      super.tick();
+
+      // Create footsteps
+      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.3)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 20);
+
+         this.numFootstepsTaken++;
+      }
    }
 
    public getClientArgs(): [species: CowSpecies] {
