@@ -18,6 +18,8 @@ import CactusSpine from "./specific/CactusSpine";
 import YetiHide from "./specific/YetiHide";
 import Frostcicle from "./specific/Frostcicle";
 import Slimeball from "./specific/Slimeball";
+import Eyeball from "./specific/Eyeball";
+import FleshSword from "./specific/FleshSword";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
@@ -37,7 +39,9 @@ const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: numbe
    cactus_spine: () => CactusSpine,
    yeti_hide: () => YetiHide,
    frostcicle: () => Frostcicle,
-   slimeball: () => Slimeball
+   slimeball: () => Slimeball,
+   eyeball: () => Eyeball,
+   flesh_sword: () => FleshSword
 };
 
 export function createItem(itemType: ItemType, count: number): Item {

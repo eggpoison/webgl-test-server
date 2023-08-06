@@ -113,7 +113,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            tileType: "rock",
+            // tileType: "rock",
+            tileType: "darkRock",
             isWall: true,
             noiseRequirements: {
                scale: 7,

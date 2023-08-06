@@ -9,6 +9,7 @@ import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
 import Particle from "./Particle";
+import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -28,6 +29,7 @@ abstract class Board {
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
    public static readonly projectiles = new Set<Projectile>();
 
+   /** Stores all particles currently in the game */
    public static readonly particles = new Set<Particle>();
    
    private static tiles: Array<Array<Tile>>;
@@ -102,10 +104,6 @@ abstract class Board {
       this.particles.add(particle);
    }
 
-   public static removeParticle(particle: Particle): void {
-      this.particles.delete(particle);
-   }
-
    public static updateParticles(): void {
       const removedParticles = new Array<Particle>();
       
@@ -117,9 +115,9 @@ abstract class Board {
          }
       }
 
-      for (const particle of removedParticles) {
-         this.particles.delete(particle);
-         particle.getChunk().removeParticle(particle);
+      for (const removedParticle of removedParticles) {
+         this.particles.delete(removedParticle);
+         removedParticle.getChunk().removeParticle(removedParticle);
       }
    }
    
@@ -145,6 +143,9 @@ abstract class Board {
          }
          case "droppedItem": {
             delete this.droppedItems[gameObject.id];
+            if (gameObject.item.type === "flesh_sword") {
+               removeFleshSword(gameObject);
+            }
             break;
          }
          case "projectile": {
@@ -184,13 +185,17 @@ abstract class Board {
          gameObject.tick();
 
          gameObject.calculateBoundingVolume();
-
          for (const chunk of gameObject.boundingChunks) {
             const n = chunk.y * SETTINGS.BOARD_SIZE + chunk.x;
             if (!this.a.hasOwnProperty(n)) {
                this.a[n] = new Array<GameObject>();
             }
             this.a[n].push(gameObject);
+         }
+
+         // Flesh sword AI
+         if (gameObject.i === "droppedItem" && gameObject.item.type === "flesh_sword") {
+            runFleshSwordAI(gameObject);
          }
       }
    }
@@ -294,6 +299,9 @@ abstract class Board {
          }
          case "droppedItem": {
             this.droppedItems[gameObject.id] = gameObject;
+            if (gameObject.item.type === "flesh_sword") {
+               addFleshSword(gameObject);
+            }
             break;
          }
          case "projectile": {

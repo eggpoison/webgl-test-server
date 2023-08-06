@@ -13,15 +13,16 @@ import SnowTile from "./SnowTile";
 import WaterTile from "./WaterTile";
 import Tile from "./Tile";
 import PermafrostTile from "./PermafrostTile";
+import DarkRockTile from "./DarkRockTile";
 
 const TILE_CLASS_RECORD: Record<TileType, new(x: number, y: number, info: TileInfo) => BaseTile> = {
    grass: GrassTile,
    dirt: DirtTile,
    water: WaterTile,
    sludge: SludgeTile,
-   // TODO: make actual slime tile
    slime: RockTile,
    rock: RockTile,
+   darkRock: DarkRockTile,
    sand: SandTile,
    sandstone: SandstoneTile,
    snow: SnowTile,

@@ -153,6 +153,33 @@ abstract class Entity extends _GameObject<"entity"> {
             });
          }
       }
+
+      if (this.hasStatusEffect("poisoned")) {
+         if (this.statusEffects.poisoned!.ticksElapsed % 10 === 0) {
+            this.getComponent("health")!.damage(1, 0, null, null);
+         }
+
+         // Poisoned particle effects
+         if (this.statusEffects.poisoned!.ticksElapsed % 2 === 0) {
+            const spawnPosition = this.position.copy();
+            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+            spawnPosition.add(offset);
+
+            const lifetime = 1.5;
+            
+            new Particle({
+               type: ParticleType.poisonDroplet,
+               spawnPosition: spawnPosition,
+               initialVelocity: null,
+               initialAcceleration: null,
+               initialRotation: 2 * Math.PI * Math.random(),
+               opacity: (age: number): number => {
+                  return lerp(0.75, 0, age / lifetime);
+               },
+               lifetime: lifetime
+            });
+         }
+      }
    }
 
    public applyStatusEffect(type: StatusEffectType, durationSeconds: number): void {

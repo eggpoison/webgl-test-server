@@ -273,6 +273,10 @@ class Player extends Entity {
       const healthComponent = attackTarget.getComponent("health")!; // Attack targets always have a health component
       healthComponent.damage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
       attackTarget.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+
+      if (selectedItem !== null && typeof selectedItem.damageEntity !== "undefined") {
+         selectedItem.damageEntity(attackTarget);
+      }
    }
 
    public processItemUsePacket(itemSlot: number): void {

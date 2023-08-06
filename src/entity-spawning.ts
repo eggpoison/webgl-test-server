@@ -94,8 +94,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "zombie",
       spawnableTiles: ["grass"],
-      spawnRate: 0.03 / 1,
-      maxDensity: 0.06 / 1
+      spawnRate: 0.03 / 2,
+      maxDensity: 0.06 / 2
    }
 ];
 

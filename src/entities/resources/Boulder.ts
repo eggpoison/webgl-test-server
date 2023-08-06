@@ -37,12 +37,14 @@ class Boulder extends Entity {
       this.rotation = 2 * Math.PI * Math.random();
 
       this.createEvent("hurt", (): void => {
-         this.createRockParticle("outer");
+         for (let i = 0; i < 2; i++) {
+            this.createRockParticle("outer");
+         }
       });
    
       this.createEvent("death", (): void => {
-         const numLeaves = randInt(4, 5);
-         for (let i = 0; i < numLeaves; i++) {
+         const numRocks = randInt(4, 5);
+         for (let i = 0; i < numRocks; i++) {
             this.createRockParticle("inner");
          }
       });
@@ -58,18 +60,21 @@ private createRockParticle(type: "outer" | "inner"): void {
       const offset = new Vector(Boulder.RADIUS * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
       spawnPosition.add(offset);
    }
+
+   const lifetime = randFloat(0.3, 0.6);
    
    new Particle({
-      type: ParticleType.rock,
+      type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
       spawnPosition: spawnPosition,
-      initialVelocity: new Vector(randFloat(30, 50), 2 * Math.PI * Math.random()),
+      initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),
       initialAcceleration: null,
-      drag: 75,
       initialRotation: 2 * Math.PI * Math.random(),
-      angularVelocity: Math.PI * randFloat(-1, 1),
-      angularAcceleration: -1.5 * Math.PI,
-      opacity: 1,
-      lifetime: randFloat(2, 2.5)
+      angularVelocity: 2 * Math.PI * randFloat(-1, 1),
+      angularDrag: 1 * Math.PI,
+      opacity: (age: number): number => {
+         return 1 - age/lifetime;
+      },
+      lifetime: lifetime
    });
 }
 

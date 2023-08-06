@@ -219,6 +219,10 @@ class GameServer {
       spawnInitialEntities();
    }
 
+   public getTicks(): number {
+      return this.ticks;
+   }
+
    public setTrackedGameObject(id: number | null): void {
       this.trackedGameObjectID = id;
    }

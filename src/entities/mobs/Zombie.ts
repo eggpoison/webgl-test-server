@@ -8,6 +8,7 @@ import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import { SERVER } from "../../server";
+import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -25,8 +26,11 @@ class Zombie extends Mob {
    private numFootstepsTaken = 0;
 
    constructor(position: Point, isNaturallySpawned: boolean, isGolden: boolean = false) {
+      const itemCreationComponent = new ItemCreationComponent();
+      
       super(position, {
-         health: new HealthComponent(Zombie.MAX_HEALTH, false)
+         health: new HealthComponent(Zombie.MAX_HEALTH, false),
+         item_creation: itemCreationComponent
       }, "zombie", SETTINGS.TILE_SIZE * 5, isNaturallySpawned);
 
       const speedMultiplier = randFloat(0.9, 1.1);
@@ -107,6 +111,10 @@ class Zombie extends Mob {
             }
          }
       });
+
+      if (Math.random() < 0.1 * 10) {
+         itemCreationComponent.createItemOnDeath("eyeball", 1);
+      }
    }
 
    public tick(): void {

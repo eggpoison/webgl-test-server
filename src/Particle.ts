@@ -16,6 +16,7 @@ export interface ParticleInfo {
    readonly initialRotation: number;
    readonly angularVelocity?: number;
    readonly angularAcceleration?: number;
+   readonly angularDrag?: number;
    readonly opacity: number | ((age: number) => number);
    readonly scale?: number | ((age: number) => number);
    /** Amount the particle's velocity gets decreased each second */
@@ -35,6 +36,7 @@ class Particle {
    public rotation: number;
    public angularVelocity: number;
    public readonly angularAcceleration: number;
+   public readonly angularDrag: number;
    public readonly opacity: number | ((age: number) => number);
    public readonly scale: number | ((age: number) => number);
    public readonly drag: number;
@@ -55,6 +57,7 @@ class Particle {
       this.rotation = info.initialRotation;
       this.angularVelocity = typeof info.angularVelocity !== "undefined" ? info.angularVelocity : 0;
       this.angularAcceleration = typeof info.angularAcceleration !== "undefined" ? info.angularAcceleration : 0;
+      this.angularDrag = typeof info.angularDrag !== "undefined" ? info.angularDrag : 0;
       this.opacity = info.opacity;
       this.scale = typeof info.scale !== "undefined" ? info.scale : 1;
       this.drag = typeof info.drag !== "undefined" ? info.drag : 0;
@@ -66,19 +69,24 @@ class Particle {
       Board.addParticle(this);
    }
 
-   public tick(): void {
-      this.applyPhysics();
-
+   private a(): void {
       this.rotation += this.angularVelocity / SETTINGS.TPS;
 
       // Angular acceleration
-      const a = this.angularVelocity;
-      const signBefore = Math.sign(this.angularVelocity);
       this.angularVelocity += this.angularAcceleration / SETTINGS.TPS;
-      if (Math.sign(this.angularVelocity) !== signBefore && signBefore !== 0) {
-         this.angularVelocity = 0;
+      
+      // Angular drag
+      // Move the angular velocity to zero
+      if (this.angularVelocity !== 0) {
+         const signBefore = Math.sign(this.angularVelocity);
+         this.angularVelocity -= this.angularDrag * signBefore / SETTINGS.TPS;
+         if (Math.sign(this.angularVelocity) !== signBefore) {
+            this.angularVelocity = 0;
+         }
       }
+   }
 
+   private b(): void {
       // TODO: Find better way than this shittiness
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) return;
       
@@ -90,6 +98,39 @@ class Particle {
          newChunk.addParticle(this);
          this.chunk = newChunk;
       }
+   }
+
+   public tick(): void {
+      this.applyPhysics();
+      this.a();
+      this.b();
+
+      // this.rotation += this.angularVelocity / SETTINGS.TPS;
+
+      // // Angular acceleration
+      // this.angularVelocity += this.angularAcceleration / SETTINGS.TPS;
+      
+      // // Angular drag
+      // // Move the angular velocity to zero
+      // if (this.angularVelocity !== 0) {
+      //    const signBefore = Math.sign(this.angularVelocity);
+      //    this.angularVelocity -= this.angularDrag * signBefore / SETTINGS.TPS;
+      //    if (Math.sign(this.angularVelocity) !== signBefore) {
+      //       this.angularVelocity = 0;
+      //    }
+      // }
+
+      // // TODO: Find better way than this shittiness
+      // if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) return;
+      
+      // const newChunk = this.calculateContainingChunk();
+
+      // // If the particle has changed chunks, add it to the new one and remove it from the old one
+      // if (newChunk !== this.chunk) {
+      //    this.chunk.removeParticle(this);
+      //    newChunk.addParticle(this);
+      //    this.chunk = newChunk;
+      // }
    }
 
    private applyPhysics(): void {

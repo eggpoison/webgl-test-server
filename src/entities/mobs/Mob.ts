@@ -29,11 +29,6 @@ abstract class Mob extends Entity {
       this.visionRange = visionRange;
    }
 
-   // protected addAI<T extends keyof typeof MobAIs>(aiType: T, aiParams: ConstructorParameters<typeof MobAIs[T]>[1]): void {
-   //    const constructor = MobAIs[aiType];
-   //    const ai = new constructor(this, aiParams as any);
-   //    this.ais.push(ai);
-   // }
    /**
     * Adds a new AI component to the mob.
     * @param aiData AI information to use.

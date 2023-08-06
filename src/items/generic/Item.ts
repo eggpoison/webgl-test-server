@@ -35,6 +35,8 @@ abstract class Item implements BaseItemInfo {
          }
       }
    }
+
+   public damageEntity?(entity: Entity): void;
 }
 
 export default Item;
