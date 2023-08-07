@@ -22,6 +22,10 @@ const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxIn
    tribe_hut: {
       width: 80,
       height: 80
+   },
+   barrel: {
+      width: 80,
+      height: 80
    }
 };
 

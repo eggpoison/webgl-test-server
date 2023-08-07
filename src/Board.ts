@@ -447,6 +447,12 @@ abstract class Board {
    public static tileIsInBoard(tileX: number, tileY: number): boolean {
       return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
    }
+
+   public static getTileAtPosition(position: Point): Tile {
+      const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
+      const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
+      return this.getTile(tileX, tileY);
+   }
 }
 
 export default Board;

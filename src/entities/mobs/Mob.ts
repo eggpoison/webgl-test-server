@@ -3,6 +3,7 @@ import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
 import { AIType } from "../../mob-ai/ai-types";
+import DroppedItem from "../../items/DroppedItem";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
@@ -22,6 +23,7 @@ abstract class Mob extends Entity {
    private aiParams: Record<string, number> = {};
 
    protected entitiesInVisionRange = new Set<Entity>();
+   public droppedItemsInVisionRange = new Set<DroppedItem>();
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean) {
       super(position, components, entityType, isNaturallySpawned);
@@ -70,6 +72,7 @@ abstract class Mob extends Entity {
       }
       
       this.entitiesInVisionRange = this.calculateEntitiesInVisionRange();
+      this.droppedItemsInVisionRange = this.calculateDroppedItemsInVisionRange();
 
       // Update the values of all AI's
       for (const ai of this.ais) {
@@ -134,6 +137,31 @@ abstract class Mob extends Entity {
       entitiesInVisionRange.delete(this);
 
       return entitiesInVisionRange;
+   }
+
+   /** Finds all entities within the range of the mob's vision */
+   private calculateDroppedItemsInVisionRange(): Set<DroppedItem> {
+      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+      const droppedItemsInVisionRange = new Set<DroppedItem>();
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = Board.getChunk(chunkX, chunkY);
+            for (const droppedItem of chunk.getDroppedItems()) {
+               // Don't add existing entities
+               if (droppedItemsInVisionRange.has(droppedItem)) continue;
+
+               if (Math.pow(this.position.x - droppedItem.position.x, 2) + Math.pow(this.position.y - droppedItem.position.y, 2) <= Math.pow(this.visionRange, 2)) {
+                  droppedItemsInVisionRange.add(droppedItem);
+               }
+            }
+         }  
+      }
+
+      return droppedItemsInVisionRange;
    }
 
    public getCurrentAIType(): AIType | null {

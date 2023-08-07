@@ -2,6 +2,7 @@ import { GameObjectDebugData, Point, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import { AIType } from "./ai-types";
+import DroppedItem from "../items/DroppedItem";
 
 export interface AICallbackFunctions {
    wander: () => void,
@@ -12,7 +13,8 @@ export interface AICallbackFunctions {
    escape: () => void,
    chase: (targetEntity: Entity | null) => void,
    berryBushShake: () => void,
-   move: () => void
+   move: () => void;
+   item_chase: (target: DroppedItem | null) => void;
 }
 
 export interface BaseAIParams<T extends AIType> {

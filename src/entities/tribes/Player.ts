@@ -40,8 +40,8 @@ class Player extends TribeMember {
 
    private hitsTaken = new Array<HitData>();
 
-   constructor(position: Point, isNaturallySpawned: boolean, name: string) {
-      super(position, "player", isNaturallySpawned, TribeType.plainspeople);
+   constructor(position: Point, isNaturallySpawned: boolean, username: string) {
+      super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
 
       this.addHitboxes([
          new CircularHitbox({
@@ -54,7 +54,7 @@ class Player extends TribeMember {
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE);
       inventoryComponent.createNewInventory("backpack", 0);
 
-      this.username = name;
+      this.username = username;
 
       this.createEvent("hurt", (_1, _2, knockback: number, hitDirection: number | null): void => {
          this.hitsTaken.push({

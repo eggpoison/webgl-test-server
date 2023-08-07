@@ -16,6 +16,7 @@ import Slimewisp from "./entities/mobs/Slimewisp";
 import Tribesman from "./entities/tribes/Tribesman";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
+import Barrel from "./entities/tribes/Barrel";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)> = {
    cow: () => Cow,
@@ -33,7 +34,8 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNat
    tribesman: () => Tribesman,
    player: () => Player,
    tribe_totem: () => TribeTotem,
-   tribe_hut: () => TribeHut
+   tribe_hut: () => TribeHut,
+   barrel: () => Barrel
 };
 
 export default ENTITY_CLASS_RECORD;
