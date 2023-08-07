@@ -254,6 +254,12 @@ class InventoryComponent extends Component {
          delete inventory.itemSlots[itemSlot];
       }
    }
+
+   public removeItemFromInventory(inventoryName: string, itemSlot: number): void {
+      const inventory = this.getInventory(inventoryName);
+
+      delete inventory.itemSlots[itemSlot];
+   }
 }
 
 export default InventoryComponent;

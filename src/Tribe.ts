@@ -1,7 +1,12 @@
+// console.log("Starting loading tribe");
 import { EntityType, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
+// console.log("a");
 import TribeMember from "./entities/tribes/TribeMember";
+// console.log("b");
 import TribeHut from "./entities/tribes/TribeHut";
+// console.log("c");
 import Tribesman from "./entities/tribes/Tribesman";
+// console.log("b");
 import TribeTotem from "./entities/tribes/TribeTotem";
 import Board from "./Board";
 import Tile from "./tiles/Tile";
@@ -24,7 +29,7 @@ class Tribe {
    
    private readonly members = new Array<TribeMember>();
 
-   /** Stores all tribe huts belonging to the tribe */
+   // /** Stores all tribe huts belonging to the tribe */
    private readonly huts = new Array<TribeHut>();
 
    /** Stores all tiles in the tribe's zone of influence */

@@ -1,7 +1,7 @@
 import { EntityType, Point, TribeType } from "webgl-test-shared";
+import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import Tribe from "../../Tribe";
 import WanderAI from "../../mob-ai/WanderAI";
 import Board from "../../Board";
 import ChaseAI from "../../mob-ai/ChaseAI";

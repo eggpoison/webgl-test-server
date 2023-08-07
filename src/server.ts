@@ -1,16 +1,18 @@
+// console.log("first!");
 import { Server, Socket } from "socket.io";
 import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
-import Player from "./entities/tribes/Player";
+import Board from "./Board";
 import { registerCommand } from "./commands";
 import _GameObject, { GameObjectSubclasses } from "./GameObject";
+import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
 import DroppedItem from "./items/DroppedItem";
-import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Tribe from "./Tribe";
+import TribeBuffer from "./TribeBuffer";
 
 /*
 
@@ -282,6 +284,13 @@ class GameServer {
 
       // Send game data packets to all players
       this.sendGameDataPackets();
+
+      // Push tribes from buffer
+      while (TribeBuffer.hasTribes()) {
+         const tribeJoinInfo = TribeBuffer.popTribe();
+         const tribe = new Tribe(tribeJoinInfo.tribeType, tribeJoinInfo.totem);
+         tribeJoinInfo.startingTribeMember.setTribe(tribe);
+      }
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -368,9 +377,9 @@ class GameServer {
                inventory: {
                   hotbar: {},
                   backpackInventory: {},
-                  backpackSlot: null,
-                  heldItemSlot: null,
-                  craftingOutputItemSlot: null
+                  backpackSlot: {},
+                  heldItemSlot: {},
+                  craftingOutputItemSlot: {}
                },
                tileUpdates: [],
                serverTicks: this.ticks,

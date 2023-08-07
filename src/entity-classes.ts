@@ -18,6 +18,7 @@ import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
 import Barrel from "./entities/tribes/Barrel";
 
+// const ENTITY_CLASS_RECORD = {
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)> = {
    cow: () => Cow,
    zombie: () => Zombie,
@@ -36,6 +37,7 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNat
    tribe_totem: () => TribeTotem,
    tribe_hut: () => TribeHut,
    barrel: () => Barrel
+// } satisfies Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)>;
 };
 
 export default ENTITY_CLASS_RECORD;

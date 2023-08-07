@@ -1,16 +1,14 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotsData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item from "../../items/generic/Item";
 import StackableItem from "../../items/generic/StackableItem";
 import ToolItem from "../../items/generic/ToolItem";
-import { createItem } from "../../items/item-creation";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
-import InventoryComponent, { Inventory } from "../../entity-components/InventoryComponent";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -20,22 +18,12 @@ const bundleItemData = (item: Item): ItemData => {
    };
 }
 
-const bundleItemSlotData = (itemSlot: Item | null): ItemSlotData => {
-   if (itemSlot === null) return null;
-   
-   return bundleItemData(itemSlot);
-}
-
 class Player extends TribeMember {
    private static readonly DEFAULT_KNOCKBACK = 100;
 
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
    private static readonly ITEM_THROW_FORCE = 100;
    private static readonly ITEM_THROW_OFFSET = 32;
-
-   public backpackItemSlot: Item | null = null;
-   public heldItem: Item | null = null;
-   public craftingOutputItem: Item | null = null;
 
    public readonly username: string;
 
@@ -55,8 +43,8 @@ class Player extends TribeMember {
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1);
       inventoryComponent.createNewInventory("backpack", 0, 0);
       inventoryComponent.createNewInventory("backpackItemSlot", 1, 1);
-      inventoryComponent.createNewInventory("craftingOutput", 1, 1);
-      inventoryComponent.createNewInventory("heldItem", 1, 1);
+      inventoryComponent.createNewInventory("craftingOutputSlot", 1, 1);
+      inventoryComponent.createNewInventory("heldItemSlot", 1, 1);
 
       this.username = username;
 
@@ -107,11 +95,14 @@ class Player extends TribeMember {
    }
 
    public processCraftingPacket(craftingRecipe: CraftingRecipe): void {
-      if (this.craftingOutputItem !== null && (this.craftingOutputItem.type !== craftingRecipe.product || !this.craftingOutputItem.hasOwnProperty("stackSize") || this.craftingOutputItem.count + craftingRecipe.yield > (this.craftingOutputItem as StackableItem).stackSize)) {
+      const inventoryComponent = this.getComponent("inventory")!;
+      
+      // Don't craft past items' stack size
+      const craftingOutputInventory = inventoryComponent.getInventory("craftingOutputSlot");
+      const craftingOutputItem = craftingOutputInventory.itemSlots.hasOwnProperty(1) ? craftingOutputInventory.itemSlots[1] : null;
+      if (craftingOutputItem !== null && (craftingOutputItem.type !== craftingRecipe.product || !craftingOutputItem.hasOwnProperty("stackSize") || craftingOutputItem.count + craftingRecipe.yield > (craftingOutputItem as StackableItem).stackSize)) {
          return;
       }
-      
-      const inventoryComponent = this.getComponent("inventory")!;
       
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const backpackInventory = inventoryComponent.getInventory("backpack");
@@ -128,34 +119,15 @@ class Player extends TribeMember {
          }
 
          // Add product to held item
-         if (this.craftingOutputItem === null) {
-            const item = createItem(craftingRecipe.product, craftingRecipe.yield);
-            this.craftingOutputItem = item;
-         } else {
-            this.craftingOutputItem.count += craftingRecipe.yield;
-         }
+         inventoryComponent.addItemToSlot("craftingOutputSlot", 1, craftingRecipe.product, craftingRecipe.yield);
       }
-   }
-
-   private getEntityInventory(entityID: number, inventoryName: string): Inventory | null {
-      if (!Board.entities.hasOwnProperty(entityID)) {
-         return null;
-      }
-      
-      const entity = Board.entities[entityID];
-      
-      const inventoryComponent = entity.getComponent("inventory");
-      if (inventoryComponent === null) {
-         return null;
-      }
-
-      const inventory = inventoryComponent.getInventory(inventoryName);
-      return inventory;
    }
 
    public processItemPickupPacket(entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
+      const playerInventoryComponent = this.getComponent("inventory")!;
+      
       // Don't pick up the item if there is already a held item
-      if (this.heldItem !== null) return;
+      if (!playerInventoryComponent.getInventory("heldItemSlot").itemSlots.hasOwnProperty(1)) return;
 
       if (!Board.entities.hasOwnProperty(entityID)) {
          return;
@@ -170,15 +142,17 @@ class Player extends TribeMember {
       if (pickedUpItem === null) return;
 
       // Hold the item
-      this.heldItem = createItem(pickedUpItem.type, amount);
+      playerInventoryComponent.addItemToSlot("heldItemSlot", itemSlot, pickedUpItem.type, amount);
 
       // Remove the item from its previous inventory
       inventoryComponent.consumeItem(inventoryName, itemSlot, amount);
    }
 
    public processItemReleasePacket(entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
+      const playerInventoryComponent = this.getComponent("inventory")!;
+      const heldItemInventory = playerInventoryComponent.getInventory("heldItemSlot");
       // Don't release an item if there is no held item
-      if (this.heldItem === null) return;
+      if (!heldItemInventory.hasOwnProperty(1)) return;
 
       if (!Board.entities.hasOwnProperty(entityID)) {
          return;
@@ -189,16 +163,13 @@ class Player extends TribeMember {
          throw new Error(`Entity with id '${entityID}' didn't have an inventory component.`);
       }
 
+      const heldItem = heldItemInventory.itemSlots[1];
+
       // Add the item to the inventory
-      const amountAdded = inventoryComponent.addItemToSlot(inventoryName, itemSlot, this.heldItem.type, amount);
+      const amountAdded = inventoryComponent.addItemToSlot(inventoryName, itemSlot, heldItem.type, amount);
 
       // If all of the item was added, clear the held item
-      if (amountAdded === this.heldItem.count) {
-         this.heldItem = null;
-      } else {
-         // Otherwise remove the amount from the held item
-         this.heldItem.count -= amountAdded;
-      }
+      playerInventoryComponent.consumeItemTypeFromInventory("heldItemSlot", heldItem.type, amountAdded);
    }
 
    public processAttackPacket(attackPacket: AttackPacket): void {
@@ -247,12 +218,15 @@ class Player extends TribeMember {
    }
 
    public throwHeldItem(throwDirection: number): void {
-      if (this.heldItem !== null) {
+      const inventoryComponent = this.getComponent("inventory")!;
+      const heldItemInventory = inventoryComponent.getInventory("heldItemSlot");
+      if (heldItemInventory.itemSlots.hasOwnProperty(1)) {
          const dropPosition = this.position.copy();
          dropPosition.add(new Vector(Player.ITEM_THROW_OFFSET, throwDirection).convertToPoint());
 
          // Create the dropped item
-         const droppedItem = new DroppedItem(dropPosition, this.heldItem);
+         const heldItem = heldItemInventory.itemSlots[1];
+         const droppedItem = new DroppedItem(dropPosition, heldItem);
 
          // Add a pickup cooldown so the item isn't picked up immediately
          droppedItem.addPlayerPickupCooldown(this.id, Player.THROWN_ITEM_PICKUP_COOLDOWN);
@@ -260,7 +234,7 @@ class Player extends TribeMember {
          const throwVector = new Vector(Player.ITEM_THROW_FORCE, throwDirection);
          droppedItem.addVelocity(throwVector);
          
-         this.heldItem = null;
+         inventoryComponent.removeItemFromInventory("heldItemSlot", 1);
       }
    }
 
@@ -269,25 +243,22 @@ class Player extends TribeMember {
     */
    public bundleInventoryData(): PlayerInventoryData {
       const inventoryData: PlayerInventoryData = {
-         hotbar: {},
-         backpackInventory: {},
-         backpackSlot: bundleItemSlotData(this.backpackItemSlot),
-         heldItemSlot: bundleItemSlotData(this.heldItem),
-         craftingOutputItemSlot: bundleItemSlotData(this.craftingOutputItem)
+         hotbar: this.bundleInventory("hotbar"),
+         backpackInventory: this.bundleInventory("backpack"),
+         backpackSlot: this.bundleInventory("backpackItemSlot"),
+         heldItemSlot: this.bundleInventory("heldItemSlot"),
+         craftingOutputItemSlot: this.bundleInventory("craftingOutputSlot")
       };
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      return inventoryData;
+   }
 
-      const hotbarInventory = inventoryComponent.getInventory("hotbar");
+   private bundleInventory(inventoryName: string): ItemSlotsData {
+      const inventoryData: ItemSlotsData = {};
+      const hotbarInventory = this.getComponent("inventory")!.getInventory(inventoryName);
       for (const [itemSlot, item] of Object.entries(hotbarInventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
-         inventoryData.hotbar[itemSlot] = bundleItemData(item);
+         inventoryData[itemSlot] = bundleItemData(item);
       }
-
-      const backpackInventory = inventoryComponent.getInventory("backpack");
-      for (const [itemSlot, item] of Object.entries(backpackInventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
-         inventoryData.backpackInventory[itemSlot] = bundleItemData(item);
-      }
-
       return inventoryData;
    }
 

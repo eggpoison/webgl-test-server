@@ -142,14 +142,15 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       return;
    }
 
-   const cowSpecies = randInt(0, 1);
+   // const cowSpecies = randInt(0, 1);
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
    const baseEntity = new entityClass(spawnOrigin, true);
-   if (spawnInfo.entityType === "cow") {
-      (baseEntity as Cow).species = cowSpecies;
-   }
+   // const baseEntity = 
+   // if (spawnInfo.entityType === "cow") {
+   //    (baseEntity as Cow).species = cowSpecies;
+   // }
 
    if (typeof spawnInfo.packSpawningInfo === "undefined") {
       return;
@@ -171,9 +172,9 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
 
       if (spawnPositionIsValid(spawnPosition)) {
          const entity = new entityClass(spawnPosition, true);
-         if (spawnInfo.entityType === "cow") {
-            (entity as Cow).species = cowSpecies;
-         }
+         // if (spawnInfo.entityType === "cow") {
+         //    (entity as Cow).species = cowSpecies;
+         // }
 
          i++;
       }

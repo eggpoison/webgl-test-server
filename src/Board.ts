@@ -39,6 +39,8 @@ abstract class Board {
 
    private static gameObjectsToRemove = new Array<GameObject>();
 
+   // public static readonly entityBuffer = new EntityBuffer
+
    private static joinBuffer = new Array<GameObject>();
 
    public static setup(): void {

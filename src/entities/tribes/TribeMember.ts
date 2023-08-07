@@ -9,6 +9,7 @@ import TribeHut from "./TribeHut";
 import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
 import Board from "../../Board";
+import TribeBuffer from "../../TribeBuffer";
 
 abstract class TribeMember extends Mob {
    public readonly tribeType: TribeType;
@@ -39,8 +40,7 @@ abstract class TribeMember extends Mob {
 
       this.createEvent("on_item_place", (placedItem: Entity): void => {
          if (placedItem.type === "tribe_totem") {
-            const tribe = new Tribe(this.tribeType, placedItem as TribeTotem);
-            this.setTribe(tribe);
+            TribeBuffer.addTribe(this.tribeType, placedItem as TribeTotem, this);
          } else if (placedItem.type === "tribe_hut") {
             if (this.tribe === null) {
                throw new Error("Tribe member didn't belong to a tribe when placing a hut");
@@ -78,12 +78,12 @@ abstract class TribeMember extends Mob {
          if (entity.getComponent("health") === null) continue;
 
          // Don't attack tribe buildings of the same tribe
-         if (this.tribe !== null && entity instanceof TribeHut && this.tribe.hasHut(entity)) {
-            continue;
-         }
-         if (this.tribe !== null && entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
-            continue;
-         }
+         // if (this.tribe !== null && entity instanceof TribeHut && this.tribe.hasHut(entity)) {
+         //    continue;
+         // }
+         // if (this.tribe !== null && entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
+         //    continue;
+         // }
 
          // Don't attack fellow tribe members
          if (this.tribe !== null && entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
