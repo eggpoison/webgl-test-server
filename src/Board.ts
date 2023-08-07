@@ -10,6 +10,7 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
 import Particle from "./Particle";
 import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
+import Tribe from "./Tribe";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -39,9 +40,9 @@ abstract class Board {
 
    private static gameObjectsToRemove = new Array<GameObject>();
 
-   // public static readonly entityBuffer = new EntityBuffer
-
    private static joinBuffer = new Array<GameObject>();
+
+   private static tribes = new Array<Tribe>();
 
    public static setup(): void {
       this.tiles = generateTerrain();
@@ -100,6 +101,16 @@ abstract class Board {
    /** Returns a reference to the tiles array */
    public static getTiles(): Array<Array<Tile>> {
       return this.tiles;
+   }
+
+   public static addTribe(tribe: Tribe): void {
+      this.tribes.push(tribe);
+   }
+
+   public static updateTribes(): void {
+      for (const tribe of this.tribes) {
+         tribe.tick();
+      }
    }
 
    public static addParticle(particle: Particle): void {

@@ -8,6 +8,9 @@ import ChaseAI from "../../mob-ai/ChaseAI";
 import Entity from "../Entity";
 import ItemChaseAI from "../../mob-ai/ItemChaseAI";
 import DroppedItem from "../../items/DroppedItem";
+import MoveAI from "../../mob-ai/MoveAI";
+import Barrel from "./Barrel";
+import TribeHut from "./TribeHut";
 
 /*
 Priorities while in a tribe:
@@ -22,7 +25,7 @@ Priorities while in a tribe:
 */
 
 class Tribesman extends TribeMember {
-   private static readonly INVENTORY_SIZE = 5;
+   private static readonly INVENTORY_SIZE = 3;
    
    private static readonly VISION_RANGE = 320;
 
@@ -43,9 +46,13 @@ class Tribesman extends TribeMember {
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_ATTACK_DISTANCE = 120;
+
+   private static readonly BARREL_DEPOSIT_DISTANCE = 80;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribe: Tribe, tribeType: TribeType) {
-      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
+   private readonly hut: TribeHut;
+   
+   constructor(position: Point, isNaturallySpawned: boolean, tribe: Tribe, hut: TribeHut) {
+      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribe.tribeType);
 
       this.addHitboxes([
          new CircularHitbox({
@@ -58,6 +65,7 @@ class Tribesman extends TribeMember {
       inventoryComponent.createNewInventory("inventory", Tribesman.INVENTORY_SIZE, 1);
 
       this.tribe = tribe;
+      this.hut = hut;
 
       // AI for attacking enemies
       this.addAI(new ChaseAI(this, {
@@ -72,6 +80,32 @@ class Tribesman extends TribeMember {
             if (targetEntity === null) return;
             
             this.attack();
+         }
+      }));
+
+      // AI for returning resources to tribe
+      this.addAI(new MoveAI(this, {
+         aiWeightMultiplier: 0.9,
+         terminalVelocity: Tribesman.WALK_SPEED,
+         acceleration: Tribesman.WALK_ACCELERATION,
+         getMoveTargetPosition: (): Point | null => {
+            if (!this.inventoryIsFull()) return null;
+
+            // Attempt to move to a barrel
+            const nearestBarrel = this.findNearestBarrel();
+            if (nearestBarrel !== null) {
+               return nearestBarrel.position.copy();
+            }
+            return null;
+         },
+         callback: () => {
+            const nearestBarrel = this.findNearestBarrel();
+            if (nearestBarrel !== null) {
+               const distance = this.position.calculateDistanceBetween(nearestBarrel.position);
+               if (distance <= Tribesman.BARREL_DEPOSIT_DISTANCE) {
+                  this.depositResources(nearestBarrel);
+               }
+            }
          }
       }));
 
@@ -114,6 +148,42 @@ class Tribesman extends TribeMember {
             return this.tribe.tileIsInArea(tile.x, tile.y);
          }
       }));
+   }
+
+   private inventoryIsFull(): boolean {
+      return this.getComponent("inventory")!.inventoryIsFull("inventory");
+   }
+
+   private findNearestBarrel(): Barrel | null {
+      if (this.tribe === null) return null;
+      
+      let minDistance = Number.MAX_SAFE_INTEGER;
+      let closestBarrel: Barrel | null = null;
+      for (const barrel of this.tribe.getBarrels()) {
+         const distance = this.position.calculateDistanceBetween(barrel.position);
+         if (distance < minDistance) {
+            minDistance = distance;
+            closestBarrel = barrel;
+         }
+      }
+      
+      return closestBarrel;
+   }
+
+   /** Deposit all resources from the tribesman's inventory into a barrel */
+   private depositResources(barrel: Barrel): void {
+      const tribesmanInventoryComponent = this.getComponent("inventory")!;
+      const barrelInventoryComponent = barrel.getComponent("inventory")!;
+      
+      const tribesmanInventory = tribesmanInventoryComponent.getInventory("inventory");
+      for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
+         // Add the item to the barrel inventory
+         const amountAdded = barrelInventoryComponent.addItemToInventory("inventory", item);
+
+         // Remove from the tribesman inventory
+         const itemSlot = Number(_itemSlot);
+         tribesmanInventoryComponent.consumeItem("inventory", itemSlot, amountAdded);
+      }
    }
 
    private attack(): void {

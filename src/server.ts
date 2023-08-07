@@ -270,6 +270,8 @@ class GameServer {
 
       Board.updateParticles();
 
+      Board.updateTribes();
+
       Board.updateGameObjects();
       Board.resolveCollisions();
 
@@ -289,6 +291,7 @@ class GameServer {
       while (TribeBuffer.hasTribes()) {
          const tribeJoinInfo = TribeBuffer.popTribe();
          const tribe = new Tribe(tribeJoinInfo.tribeType, tribeJoinInfo.totem);
+         Board.addTribe(tribe);
          tribeJoinInfo.startingTribeMember.setTribe(tribe);
       }
    }
@@ -375,11 +378,41 @@ class GameServer {
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
                particles: packagePlayerParticles(playerData.visibleChunkBounds),
                inventory: {
-                  hotbar: {},
-                  backpackInventory: {},
-                  backpackSlot: {},
-                  heldItemSlot: {},
-                  craftingOutputItemSlot: {}
+                  hotbar: {
+                     itemSlots: {},
+                     width: SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "hotbar"
+                  },
+                  backpackInventory: {
+                     itemSlots: {},
+                     width: -1,
+                     height: -1,
+                     entityID: player.id,
+                     inventoryName: "backpack"
+                  },
+                  backpackSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "backpackItemSlot"
+                  },
+                  heldItemSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "heldItemSlot"
+                  },
+                  craftingOutputItemSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "craftingOutputSlot"
+                  }
                },
                tileUpdates: [],
                serverTicks: this.ticks,

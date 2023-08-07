@@ -3,6 +3,7 @@ import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import InventoryComponent from "../../entity-components/InventoryComponent";
+import Tribe from "../../Tribe";
 
 class Barrel extends Entity {
    private static readonly INVENTORY_WIDTH = 3;
@@ -11,6 +12,8 @@ class Barrel extends Entity {
    private static readonly MAX_HEALTH = 20;
    
    private static readonly RADIUS = 40;
+
+   public tribe: Tribe | null = null;
    
    constructor(position: Point, isNaturallySpawned: boolean) {
       const inventoryComponent = new InventoryComponent();
@@ -28,6 +31,10 @@ class Barrel extends Entity {
       ]);
 
       inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT);
+   }
+
+   public setTribe(tribe: Tribe | null): void {
+      this.tribe = tribe;
    }
    
    public getClientArgs(): [inventoryData: InventoryData] {

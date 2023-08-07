@@ -10,6 +10,8 @@ import Tribesman from "./entities/tribes/Tribesman";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import Board from "./Board";
 import Tile from "./tiles/Tile";
+import Barrel from "./entities/tribes/Barrel";
+import Chunk from "./Chunk";
 
 const TRIBE_BUILDING_AREA_INFLUENCES = {
    tribe_totem: 200,
@@ -19,6 +21,11 @@ const TRIBE_BUILDING_AREA_INFLUENCES = {
 interface TileInfluence {
    readonly tile: Tile;
    /** The number of buildings contributing to the tile */
+   numInfluences: number;
+}
+
+interface ChunkInfluence {
+   readonly chunk: Chunk;
    numInfluences: number;
 }
 
@@ -32,8 +39,11 @@ class Tribe {
    // /** Stores all tribe huts belonging to the tribe */
    private readonly huts = new Array<TribeHut>();
 
+   private barrels = new Set<Barrel>();
+
    /** Stores all tiles in the tribe's zone of influence */
    private area: Record<number, TileInfluence> = {};
+   private chunkArea: Record<number, ChunkInfluence> = {};
 
    public tribesmanCap = 0;
    
@@ -44,6 +54,10 @@ class Tribe {
       totem.createEvent("death", () => {
          this.destroy();
       });
+   }
+
+   public tick(): void {
+      this.updateBarrels();
    }
 
    public addTribeMember(member: TribeMember): void {
@@ -81,7 +95,7 @@ class Tribe {
    private createNewTribesman(hut: TribeHut): void {
       const position = hut.position.copy();
       
-      const tribesman = new Tribesman(position, false, this, this.tribeType);
+      const tribesman = new Tribesman(position, false, this, hut);
       this.members.push(tribesman);
 
       // Attempt to respawn the tribesman when it is killed
@@ -127,17 +141,30 @@ class Tribe {
    }
 
    private addTileToArea(tileX: number, tileY: number): void {
-      const tile = Board.getTile(tileX, tileY);
       const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
-
+      
       if (!this.area.hasOwnProperty(tileIndex)) {
          // If the tile isn't in the area, create a new record
+         const tile = Board.getTile(tileX, tileY);
          this.area[tileIndex] = {
             tile: tile,
             numInfluences: 1
-         }
+         };
       } else {
          this.area[tileIndex].numInfluences++;
+      }
+
+      const chunkX = Math.floor(tileX / SETTINGS.CHUNK_SIZE);
+      const chunkY = Math.floor(tileY / SETTINGS.CHUNK_SIZE);
+      const chunkIndex = chunkY * SETTINGS.BOARD_SIZE + chunkX;
+      if (!this.chunkArea.hasOwnProperty(chunkIndex)) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+         this.chunkArea[chunkIndex] = {
+            chunk: chunk,
+            numInfluences: 1
+         };
+      } else {
+         this.chunkArea[chunkIndex].numInfluences++;
       }
    }
 
@@ -145,6 +172,28 @@ class Tribe {
       const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
       
       return this.area.hasOwnProperty(tileIndex);
+   }
+
+   /** Updates which barrels belong to the tribe */
+   private updateBarrels(): void {
+      const barrels = new Set<Barrel>();
+      for (const chunkInfluence of Object.values(this.chunkArea)) {
+         const chunk = chunkInfluence.chunk;
+         for (const entity of chunk.getEntities()) {
+            if (entity.type === "barrel") {
+               barrels.add(entity as Barrel);
+            }
+         }
+      }
+      this.barrels = barrels;
+   }
+
+   public hasBarrel(barrel: Barrel): boolean {
+      return this.barrels.has(barrel);
+   }
+
+   public getBarrels(): ReadonlySet<Barrel> {
+      return this.barrels;
    }
 }
 

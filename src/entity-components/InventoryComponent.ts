@@ -260,6 +260,21 @@ class InventoryComponent extends Component {
 
       delete inventory.itemSlots[itemSlot];
    }
+
+   /**
+    * @returns True if the inventory has no item slots available, false if there is at least one
+    */
+   public inventoryIsFull(inventoryName: string): boolean {
+      const inventory = this.getInventory(inventoryName);
+
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            return false;
+         }
+      }
+
+      return true;
+   }
 }
 
 export default InventoryComponent;

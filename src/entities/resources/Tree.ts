@@ -49,7 +49,12 @@ class Tree extends Entity {
       });
 
       this.createEvent("death", (): void => {
-         const numLeaves = randInt(4, 5);
+         let numLeaves: number;
+         if (this.size === TreeSize.small) {
+            numLeaves = randInt(2, 3);
+         } else {
+            numLeaves = randInt(4, 5);
+         }
          for (let i = 0; i < numLeaves; i++) {
             this.createLeafParticle("innerLeaf");
          }

@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotsData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemSlotsData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item from "../../items/generic/Item";
 import StackableItem from "../../items/generic/StackableItem";
@@ -127,7 +127,9 @@ class Player extends TribeMember {
       const playerInventoryComponent = this.getComponent("inventory")!;
       
       // Don't pick up the item if there is already a held item
-      if (!playerInventoryComponent.getInventory("heldItemSlot").itemSlots.hasOwnProperty(1)) return;
+      if (playerInventoryComponent.getInventory("heldItemSlot").itemSlots.hasOwnProperty(1)) {
+         return;
+      }
 
       if (!Board.entities.hasOwnProperty(entityID)) {
          return;
@@ -142,7 +144,7 @@ class Player extends TribeMember {
       if (pickedUpItem === null) return;
 
       // Hold the item
-      playerInventoryComponent.addItemToSlot("heldItemSlot", itemSlot, pickedUpItem.type, amount);
+      playerInventoryComponent.addItemToSlot("heldItemSlot", 1, pickedUpItem.type, amount);
 
       // Remove the item from its previous inventory
       inventoryComponent.consumeItem(inventoryName, itemSlot, amount);
@@ -152,7 +154,8 @@ class Player extends TribeMember {
       const playerInventoryComponent = this.getComponent("inventory")!;
       const heldItemInventory = playerInventoryComponent.getInventory("heldItemSlot");
       // Don't release an item if there is no held item
-      if (!heldItemInventory.hasOwnProperty(1)) return;
+      // console.log("a")
+      if (!heldItemInventory.itemSlots.hasOwnProperty(1)) return;
 
       if (!Board.entities.hasOwnProperty(entityID)) {
          return;
@@ -253,11 +256,18 @@ class Player extends TribeMember {
       return inventoryData;
    }
 
-   private bundleInventory(inventoryName: string): ItemSlotsData {
-      const inventoryData: ItemSlotsData = {};
-      const hotbarInventory = this.getComponent("inventory")!.getInventory(inventoryName);
-      for (const [itemSlot, item] of Object.entries(hotbarInventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
-         inventoryData[itemSlot] = bundleItemData(item);
+   private bundleInventory(inventoryName: string): InventoryData {
+      const inventory = this.getComponent("inventory")!.getInventory(inventoryName);
+
+      const inventoryData: InventoryData = {
+         itemSlots: {},
+         width: inventory.width,
+         height: inventory.height,
+         entityID: this.id,
+         inventoryName: inventoryName
+      };
+      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
+         inventoryData.itemSlots[itemSlot] = bundleItemData(item);
       }
       return inventoryData;
    }
