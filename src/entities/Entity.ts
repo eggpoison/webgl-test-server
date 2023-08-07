@@ -240,7 +240,9 @@ abstract class Entity extends _GameObject<"entity"> {
          initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
          initialAcceleration: null,
          initialRotation: 2 * Math.PI * Math.random(),
-         opacity: 1,
+         opacity: (age: number): number => {
+            return 1 - age / lifetime;
+         },
          lifetime: lifetime
       });
    }

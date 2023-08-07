@@ -35,7 +35,7 @@ class Zombie extends Mob {
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "zombie", SETTINGS.TILE_SIZE * 5, isNaturallySpawned);
+      }, "zombie", 270, isNaturallySpawned);
 
       const speedMultiplier = randFloat(0.9, 1.1);
 

@@ -1,5 +1,4 @@
 import { GameObjectDebugData, Vector } from "webgl-test-shared";
-import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import DroppedItem from "../items/DroppedItem";
@@ -30,7 +29,7 @@ class ItemChaseAI extends AI<"item_chase"> implements ItemChaseAIParams {
    public tick(): void {
       if (this.mob.droppedItemsInVisionRange.size === 0) return;
 
-      const droppedItemsInVisionRangeIterator = this.entitiesInVisionRange.values();
+      const droppedItemsInVisionRangeIterator = this.mob.droppedItemsInVisionRange.values();
 
       // Find closest target
       let closestEntity = droppedItemsInVisionRangeIterator.next().value as DroppedItem;
@@ -54,21 +53,9 @@ class ItemChaseAI extends AI<"item_chase"> implements ItemChaseAIParams {
    public onDeactivation(): void {
       this.target = null;
    }
-
-   // protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
-   //    const filteredEntities = new Set<Entity>();
-
-   //    for (const entity of visibleEntities) {
-   //       if (this.itemIsChased(entity)) {
-   //          filteredEntities.add(entity);
-   //       }
-   //    }
-
-   //    return filteredEntities;
-   // }
    
    protected _getWeight(): number {
-      if (this.entitiesInVisionRange.size > 0) {
+      if (this.mob.droppedItemsInVisionRange.size > 0) {
          return 1;
       }
       return 0;

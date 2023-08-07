@@ -94,7 +94,8 @@ class Cow extends Mob {
          aiWeightMultiplier: 1.5,
          acceleration: 200,
          terminalVelocity: 200,
-         attackSubsideTime: 5
+         attackSubsideTime: 5,
+         escapeHealthThreshold: Cow.MAX_HEALTH
       }));
 
       this.addHitboxes([

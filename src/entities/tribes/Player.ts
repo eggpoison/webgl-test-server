@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlaceablePlayerInventoryType, PlayerInventoryData, PlayerInventoryType, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, ItemData, ItemSlotData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item from "../../items/generic/Item";
 import StackableItem from "../../items/generic/StackableItem";
@@ -10,6 +10,7 @@ import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
+import InventoryComponent, { Inventory } from "../../entity-components/InventoryComponent";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -51,8 +52,11 @@ class Player extends TribeMember {
       ]);
 
       const inventoryComponent = this.getComponent("inventory")!;
-      inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE);
-      inventoryComponent.createNewInventory("backpack", 0);
+      inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1);
+      inventoryComponent.createNewInventory("backpack", 0, 0);
+      inventoryComponent.createNewInventory("backpackItemSlot", 1, 1);
+      inventoryComponent.createNewInventory("craftingOutput", 1, 1);
+      inventoryComponent.createNewInventory("heldItem", 1, 1);
 
       this.username = username;
 
@@ -133,85 +137,60 @@ class Player extends TribeMember {
       }
    }
 
-   public processItemPickupPacket(inventoryType: PlayerInventoryType, itemSlot: number, amount: number): void {
+   private getEntityInventory(entityID: number, inventoryName: string): Inventory | null {
+      if (!Board.entities.hasOwnProperty(entityID)) {
+         return null;
+      }
+      
+      const entity = Board.entities[entityID];
+      
+      const inventoryComponent = entity.getComponent("inventory");
+      if (inventoryComponent === null) {
+         return null;
+      }
+
+      const inventory = inventoryComponent.getInventory(inventoryName);
+      return inventory;
+   }
+
+   public processItemPickupPacket(entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
       // Don't pick up the item if there is already a held item
       if (this.heldItem !== null) return;
 
-      const inventoryComponent = this.getComponent("inventory")!;
-      
-      // Find which item is being picked up
-      let pickedUpItem: Item | null;
-      switch (inventoryType) {
-         case "hotbar": {
-            pickedUpItem = inventoryComponent.getItem("hotbar", itemSlot);
-            break;
-         }
-         case "backpackInventory": {
-            pickedUpItem = inventoryComponent.getItem("backpack", itemSlot);
-            break;
-         }
-         case "craftingOutput": {
-            pickedUpItem = this.craftingOutputItem;
-            break;
-         }
-         case "backpackItemSlot": {
-            pickedUpItem = this.backpackItemSlot;
-            break;
-         }
+      if (!Board.entities.hasOwnProperty(entityID)) {
+         return;
       }
 
+      const inventoryComponent = Board.entities[entityID].getComponent("inventory");
+      if (inventoryComponent === null) {
+         throw new Error(`Entity with id '${entityID}' didn't have an inventory component.`);
+      }
+
+      const pickedUpItem = inventoryComponent.getItem(inventoryName, itemSlot);
       if (pickedUpItem === null) return;
 
       // Hold the item
       this.heldItem = createItem(pickedUpItem.type, amount);
 
       // Remove the item from its previous inventory
-      switch (inventoryType) {
-         case "hotbar": {
-            inventoryComponent.consumeItem("hotbar", itemSlot, amount);
-            break;
-         }
-         case "backpackInventory": {
-            inventoryComponent.consumeItem("backpack", itemSlot, amount);
-            break;
-         }
-         case "craftingOutput": {
-            this.craftingOutputItem = null;
-            break;
-         }
-         case "backpackItemSlot": {
-            this.backpackItemSlot = null;
-            break;
-         }
-      }
+      inventoryComponent.consumeItem(inventoryName, itemSlot, amount);
    }
 
-   public processItemReleasePacket(inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number): void {
+   public processItemReleasePacket(entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
       // Don't release an item if there is no held item
       if (this.heldItem === null) return;
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      if (!Board.entities.hasOwnProperty(entityID)) {
+         return;
+      }
+
+      const inventoryComponent = Board.entities[entityID].getComponent("inventory");
+      if (inventoryComponent === null) {
+         throw new Error(`Entity with id '${entityID}' didn't have an inventory component.`);
+      }
 
       // Add the item to the inventory
-      let amountAdded: number;
-      switch (inventoryType) {
-         case "hotbar": {
-            amountAdded = inventoryComponent.addItemToSlot("hotbar", itemSlot, this.heldItem.type, amount)
-            break;
-         }
-         case "backpackInventory": {
-            amountAdded = inventoryComponent.addItemToSlot("backpack", itemSlot, this.heldItem.type, amount)
-            break;
-         }
-         case "backpackItemSlot": {
-            if (this.backpackItemSlot === null) {
-               this.backpackItemSlot = this.heldItem;
-               amountAdded = 1;
-            } else {
-               amountAdded = 0;
-            }
-         }
-      }
+      const amountAdded = inventoryComponent.addItemToSlot(inventoryName, itemSlot, this.heldItem.type, amount);
 
       // If all of the item was added, clear the held item
       if (amountAdded === this.heldItem.count) {

@@ -7,6 +7,8 @@ interface EscapeAIParams extends BaseAIParams<"escape"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly attackSubsideTime: number;
+   /** Maximum health at which the escape AI will attempt to activate */
+   readonly escapeHealthThreshold: number
 }
 
 class EscapeAI extends AI<"escape"> implements EscapeAIParams {
@@ -15,6 +17,7 @@ class EscapeAI extends AI<"escape"> implements EscapeAIParams {
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
    public readonly attackSubsideTime: number;
+   public readonly escapeHealthThreshold: number;
 
    private attacker: Entity | null = null;
    /** Counts down the time it takes for the mob to forget about the attacker */
@@ -26,11 +29,15 @@ class EscapeAI extends AI<"escape"> implements EscapeAIParams {
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
       this.attackSubsideTime = aiParams.attackSubsideTime;
+      this.escapeHealthThreshold = aiParams.escapeHealthThreshold;
 
       this.attackSubsideTimer = aiParams.attackSubsideTime;
 
       this.mob.createEvent("hurt", (_: unknown, attackingEntity: Entity | null): void => {
-         if (attackingEntity !== null) {
+         if (attackingEntity === null) return;
+
+         const healthComponent = this.mob.getComponent("health")!;
+         if (healthComponent.getHealth() <= this.escapeHealthThreshold) {
             this.attacker = attackingEntity;
             this.attackSubsideTimer = this.attackSubsideTime;
          }

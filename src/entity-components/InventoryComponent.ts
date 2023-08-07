@@ -9,8 +9,10 @@ import { GameObject } from "../GameObject";
 export type ItemSlots = { [itemSlot: number]: Item };
 
 export interface Inventory {
-   /** Number of item slots the inventory contains. */
-   size: number;
+   /** Width of the inventory in item slots */
+   width: number;
+   /** Height of the inventory in item slots */
+   height: number;
    /** The items contained by the inventory. */
    readonly itemSlots: ItemSlots;
 }
@@ -36,11 +38,12 @@ class InventoryComponent extends Component {
    }
 
    /** Creates and stores a new inventory in the component. */
-   public createNewInventory(name: string, inventorySize: number): void {
+   public createNewInventory(name: string, width: number, height: number): void {
       if (this.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
       
       const inventory: Inventory = {
-         size: inventorySize,
+         width: width,
+         height: height,
          itemSlots: {}
       };
 
@@ -48,10 +51,11 @@ class InventoryComponent extends Component {
       this.inventoryArray.push([name, inventory]);
    }
 
-   public resizeInventory(name: string, newSize: number): void {
+   public resizeInventory(name: string, width: number, height: number): void {
       if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
 
-      this.inventories[name].size = newSize;
+      this.inventories[name].width = width;
+      this.inventories[name].height = height;
    }
 
    public getInventory(name: string): Inventory {
@@ -151,7 +155,7 @@ class InventoryComponent extends Component {
          }
       }
       
-      for (let i = 1; i <= inventory.size; i++) {
+      for (let i = 1; i <= inventory.width * inventory.height; i++) {
          // If the slot is empty then add the rest of the item
          if (!inventory.itemSlots.hasOwnProperty(i)) {
             let addAmount: number;

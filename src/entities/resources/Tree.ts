@@ -10,8 +10,8 @@ class Tree extends Entity {
 
    /** Amount of wood created by the tree when it is killed */
    private static readonly WOOD_DROP_AMOUNT_RECORD: { [T in TreeSize]: [number, number]} = {
-      [TreeSize.small]: [1, 2],
-      [TreeSize.large]: [3, 5]
+      [TreeSize.small]: [2, 3],
+      [TreeSize.large]: [4, 5]
    };
 
    private static readonly TREE_RADIUSES: Record<TreeSize, number> = {

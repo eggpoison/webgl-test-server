@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize, ParticleData, TribeData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
 import { registerCommand } from "./commands";
@@ -417,12 +417,12 @@ class GameServer {
             this.processCraftingPacket(socket, craftingRecipe);
          });
 
-         socket.on("item_pickup_packet", (inventoryType: PlayerInventoryType, itemSlot: number, amount: number) => {
-            this.processItemPickupPacket(socket, inventoryType, itemSlot, amount);
+         socket.on("item_pickup_packet", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
+            this.processItemPickupPacket(socket, entityID, inventoryName, itemSlot, amount);
          });
 
-         socket.on("item_release_packet", (inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number) => {
-            this.processItemReleasePacket(socket, inventoryType, itemSlot, amount);
+         socket.on("item_release_packet", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
+            this.processItemReleasePacket(socket, entityID, inventoryName, itemSlot, amount);
          });
 
          socket.on("item_use_packet", (itemSlot: number) => {
@@ -551,17 +551,17 @@ class GameServer {
       }
    }
 
-   private processItemPickupPacket(socket: ISocket, inventoryType: PlayerInventoryType, itemSlot: number, amount: number): void {
+   private processItemPickupPacket(socket: ISocket, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
       if (this.playerDataRecord.hasOwnProperty(socket.id)) {
          const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processItemPickupPacket(inventoryType, itemSlot, amount);
+         playerData.instance.processItemPickupPacket(entityID, inventoryName, itemSlot, amount);
       }
    }
 
-   private processItemReleasePacket(socket: ISocket, inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number): void {
+   private processItemReleasePacket(socket: ISocket, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
       if (this.playerDataRecord.hasOwnProperty(socket.id)) {
          const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processItemReleasePacket(inventoryType, itemSlot, amount);
+         playerData.instance.processItemReleasePacket(entityID, inventoryName, itemSlot, amount);
       }
    }
 

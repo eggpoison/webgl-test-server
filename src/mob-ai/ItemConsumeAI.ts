@@ -1,10 +1,9 @@
-import { GameObjectDebugData, ItemType, SETTINGS } from "webgl-test-shared";
+import { GameObjectDebugData, ItemType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
 import FoodItem from "../items/generic/FoodItem";
 import { GameObject } from "../GameObject";
-import Board from "../Board";
 
 interface ItemConsumeAIParams extends BaseAIParams<"itemConsume"> {
    readonly acceleration: number;
@@ -21,8 +20,6 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
    public readonly terminalVelocity: number;
    public readonly metabolism: number;
    public readonly itemTargets: ReadonlySet<ItemType>;
-
-   private readonly droppedItemsInRange = new Set<DroppedItem>();
 
    /** The food source to move towards */
    private target: DroppedItem | null = null;
@@ -49,7 +46,7 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       // Move to the closest food sourcee
       let target: DroppedItem | undefined;
       let minDistance: number = Number.MAX_SAFE_INTEGER;
-      for (const droppedItem of this.droppedItemsInRange) {
+      for (const droppedItem of this.mob.droppedItemsInVisionRange) {
          const distance = this.mob.position.calculateDistanceBetween(droppedItem.position);
          if (distance < minDistance) {
             minDistance = distance;
@@ -103,33 +100,8 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
          return 0;
       }
       
-      // Calculate dropped items in range
-      this.droppedItemsInRange.clear();
-      const minX = Math.max(Math.min(Math.floor((this.mob.position.x - this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxX = Math.max(Math.min(Math.floor((this.mob.position.x + this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minY = Math.max(Math.min(Math.floor((this.mob.position.y - this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxY = Math.max(Math.min(Math.floor((this.mob.position.y + this.mob.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      for (let chunkX = minX; chunkX <= maxX; chunkX++) {
-         for (let chunkY = minY; chunkY <= maxY; chunkY++) {
-            for (const droppedItem of Board.getChunk(chunkX, chunkY).getDroppedItems()) {
-               if (!this.itemTargets.has(droppedItem.item.type)) {
-                  continue;
-               }
-
-               const distance = this.mob.position.calculateDistanceBetween(droppedItem.position);
-               if (distance > this.mob.visionRange) {
-                  continue;
-               }
-               
-               if (!this.droppedItemsInRange.has(droppedItem)) {
-                  this.droppedItemsInRange.add(droppedItem);
-               }
-            }
-         }
-      }
-
       // Try to activate the AI if the entity can see something to eat
-      if (this.droppedItemsInRange.size > 0) {
+      if (this.mob.droppedItemsInVisionRange.size > 0) {
          return 1;
       }
 
