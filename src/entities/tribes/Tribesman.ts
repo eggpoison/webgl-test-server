@@ -10,7 +10,7 @@ import ItemChaseAI from "../../mob-ai/ItemChaseAI";
 import DroppedItem from "../../items/DroppedItem";
 import MoveAI from "../../mob-ai/MoveAI";
 import Barrel from "./Barrel";
-import TribeHut from "./TribeHut";
+import StackableItem from "../../items/generic/StackableItem";
 
 /*
 Priorities while in a tribe:
@@ -24,32 +24,6 @@ Priorities while in a tribe:
    8. (DONE) Patrol tribe area
 */
 
-const chooseTribeType = (spawnPosition: Point): TribeType => {
-   const isGoblin = Math.random() < 0.25;
-   if (isGoblin) {
-      return TribeType.goblins;
-   }
-
-   const tile = Board.getTileAtPosition(spawnPosition);
-   switch (tile.biomeName) {
-      case "grasslands": {
-         return TribeType.plainspeople;
-      }
-      case "desert": {
-         return TribeType.barbarians;
-      }
-      case "tundra": {
-         return TribeType.frostlings;
-      }
-      case "mountains": {
-         return TribeType.goblins;
-      }
-      default: {
-         throw new Error(`Can't spawn tribesman in biome '${tile.biomeName}'.`);
-      }
-   }
-}
-
 class Tribesman extends TribeMember {
    private static readonly INVENTORY_SIZE = 3;
    
@@ -61,7 +35,7 @@ class Tribesman extends TribeMember {
    private static readonly RUN_SPEED = 150;
    private static readonly RUN_ACCELERATION = 300;
 
-   private static readonly ENEMY_TARGETS: ReadonlyArray<EntityType> = ["slime", "yeti", "zombie"];
+   private static readonly ENEMY_TARGETS: ReadonlyArray<EntityType> = ["slime", "yeti", "zombie", "tombstone"];
    private static readonly RESOURCE_TARGETS: ReadonlyArray<EntityType> = ["cow", "cactus", "tree", "berry_bush", "boulder", "ice_spikes"];
 
    /** How far away from the entity the attack is done */
@@ -77,8 +51,8 @@ class Tribesman extends TribeMember {
    
    protected readonly footstepInterval = 0.35;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe | null) {
-      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, typeof tribeType !== "undefined" ? tribeType : chooseTribeType(position));
+   constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
+      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
 
       this.addHitboxes([
          new CircularHitbox({
@@ -90,11 +64,7 @@ class Tribesman extends TribeMember {
       const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("inventory", Tribesman.INVENTORY_SIZE, 1);
 
-      if (typeof tribe !== "undefined") {
-         this.tribe = tribe;
-      } else {
-         this.tribe = null;
-      }
+      this.tribe = tribe;
 
       // AI for attacking enemies
       this.addAI(new ChaseAI(this, {
@@ -103,12 +73,27 @@ class Tribesman extends TribeMember {
          acceleration: Tribesman.RUN_ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
+            // Chase enemy tribe members
+            if (entity.type === "player" || entity.type === "tribesman") {
+               return (entity as TribeMember).tribe !== this.tribe;
+            }
+
             return Tribesman.ENEMY_TARGETS.includes(entity.type);
          },
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
             
             this.attack();
+         }
+      }));
+
+      // AI for picking up items
+      this.addAI(new ItemChaseAI(this, {
+         aiWeightMultiplier: 0.8,
+         acceleration: Tribesman.WALK_ACCELERATION,
+         terminalVelocity: Tribesman.WALK_SPEED,
+         itemIsChased: (item: DroppedItem): boolean => {
+            return this.canPickupItem(item);
          }
       }));
 
@@ -138,16 +123,6 @@ class Tribesman extends TribeMember {
          }
       }));
 
-      // AI for picking up items
-      this.addAI(new ItemChaseAI(this, {
-         aiWeightMultiplier: 0.8,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
-         itemIsChased: (_item: DroppedItem): boolean => {
-            return true;
-         }
-      }));
-
       // AI for gathering resources
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 0.6,
@@ -155,6 +130,8 @@ class Tribesman extends TribeMember {
          acceleration: Tribesman.RUN_ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
+            if (this.inventoryIsFull()) return false;
+            
             return Tribesman.RESOURCE_TARGETS.includes(entity.type);
          },
          callback: (targetEntity: Entity | null) => {
@@ -181,6 +158,24 @@ class Tribesman extends TribeMember {
 
    private inventoryIsFull(): boolean {
       return this.getComponent("inventory")!.inventoryIsFull("inventory");
+   }
+
+   private canPickupItem(droppedItem: DroppedItem): boolean {
+      const inventoryComponent = this.getComponent("inventory")!;
+      const inventory = inventoryComponent.getInventory("inventory");
+      
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            return true;
+         }
+
+         const item = inventory.itemSlots[itemSlot];
+         if (item.type === droppedItem.item.type && item.hasOwnProperty("stackSize") && (item as StackableItem).stackSize - item.count > 0) {
+            return true;
+         }
+      }
+
+      return false;
    }
 
    private findNearestBarrel(): Barrel | null {
@@ -231,7 +226,7 @@ class Tribesman extends TribeMember {
       }
    }
 
-   public getClientArgs(): [tribeType: TribeType, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, inventory: InventoryData] {
       const inventory = this.getComponent("inventory")!.getInventory("inventory");
       
       const itemSlots: ItemSlotsData = {};
@@ -251,7 +246,7 @@ class Tribesman extends TribeMember {
          inventoryName: "inventory"
       };
       
-      return [this.tribeType, inventoryData];
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, inventoryData];
    }
 }
 

@@ -89,12 +89,6 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["slime"],
       spawnRate: 0.2,
       maxDensity: 0.3
-   },
-   {
-      entityType: "tribesman",
-      spawnableTiles: ["grass", "sand", "snow", "ice", "permafrost", "rock"],
-      spawnRate: 0.001 * 5,
-      maxDensity: 0.002 * 5
    }
 ];
 

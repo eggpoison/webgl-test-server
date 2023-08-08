@@ -120,6 +120,10 @@ abstract class Board {
       }
    }
 
+   public static getTribes(): ReadonlyArray<Tribe> {
+      return this.tribes;
+   }
+
    public static addParticle(particle: Particle): void {
       this.particles.add(particle);
    }
@@ -472,6 +476,34 @@ abstract class Board {
       const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
       return this.getTile(tileX, tileY);
+   }
+
+   public static getEntitiesInRange(position: Point, range: number): Array<Entity> {
+      const minChunkX = Math.max(Math.min(Math.floor((position.x - range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((position.x + range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((position.y - range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((position.y + range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+      const checkedEntities = new Set<Entity>();
+      const entities = new Array<Entity>();
+      
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = Board.getChunk(chunkX, chunkY);
+            for (const entity of chunk.getEntities()) {
+               if (checkedEntities.has(entity)) continue;
+               
+               const distance = position.calculateDistanceBetween(entity.position);
+               if (distance <= range) {
+                  entities.push(entity);
+               }
+
+               checkedEntities.add(entity);
+            }
+         }
+      }
+
+      return entities;
    }
 }
 

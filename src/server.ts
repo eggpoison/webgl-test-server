@@ -1,6 +1,5 @@
-// console.log("first!");
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, ParticleType, TribeType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -13,6 +12,9 @@ import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
+import { runTribeSpawnAttempt } from "./tribe-spawning";
+import TribeTotem from "./entities/tribes/TribeTotem";
+import TribeHut from "./entities/tribes/TribeHut";
 
 /*
 
@@ -294,6 +296,8 @@ class GameServer {
          Board.addTribe(tribe);
          tribeJoinInfo.startingTribeMember.setTribe(tribe);
       }
+
+      runTribeSpawnAttempt();
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -335,6 +339,13 @@ class GameServer {
 
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
+
+         const s = new Point(spawnPosition.x + 500, spawnPosition.y);
+         const totem = new TribeTotem(s, false);
+         const tribe = new Tribe(TribeType.goblins, totem)
+         const s2 = new Point(spawnPosition.x + 500, spawnPosition.y + 250);
+         const hut = new TribeHut(s2, false);
+         tribe.registerNewHut(hut);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
@@ -531,9 +542,11 @@ class GameServer {
          ];
 
          const tribeData: TribeData | null = player.tribe !== null ? {
+            id: player.tribe.id,
             tribeType: player.tribe.tribeType,
             numHuts: player.tribe.getNumHuts(),
-            tribesmanCap: player.tribe.tribesmanCap
+            tribesmanCap: player.tribe.tribesmanCap,
+            area: player.tribe.getArea().map(tile => [tile.x, tile.y])
          } : null;
 
          // Initialise the game data packet

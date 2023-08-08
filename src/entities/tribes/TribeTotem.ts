@@ -7,7 +7,7 @@ import Tribe from "../../Tribe";
 class TribeTotem extends Entity {
    private static readonly MAX_HEALTH = 50;
 
-   private static readonly RADIUS = 50;
+   private static readonly RADIUS = 60;
 
    public tribe: Tribe | null = null;
 

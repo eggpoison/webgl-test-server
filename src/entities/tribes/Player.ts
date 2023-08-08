@@ -58,8 +58,8 @@ class Player extends TribeMember {
       });
    }
 
-   public getClientArgs(): [tribeType: TribeType, displayName: string] {
-      return [this.tribeType, this.username];
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, displayName: string] {
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {

@@ -37,7 +37,7 @@ class Barrel extends Entity {
       this.tribe = tribe;
    }
    
-   public getClientArgs(): [inventoryData: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, inventoryData: InventoryData] {
       const inventory = this.getComponent("inventory")!.getInventory("inventory");
       
       const itemSlots: ItemSlotsData = {};
@@ -57,7 +57,7 @@ class Barrel extends Entity {
          inventoryName: "inventory"
       };
       
-      return [inventoryData];
+      return [this.tribe !== null ? this.tribe.id : null, inventoryData];
    }
 }
 

@@ -6,7 +6,7 @@ import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 class TribeHut extends Entity {
    private static readonly MAX_HEALTH = 25;
 
-   private static readonly SIZE = 80;
+   private static readonly SIZE = 88;
    
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {

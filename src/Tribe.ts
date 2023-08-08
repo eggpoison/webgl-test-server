@@ -1,4 +1,4 @@
-import { EntityType, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
+import { EntityType, Point, SETTINGS, TribeType, Vector, clampToBoardDimensions } from "webgl-test-shared";
 import TribeMember from "./entities/tribes/TribeMember";
 import TribeHut from "./entities/tribes/TribeHut";
 import Tribesman from "./entities/tribes/Tribesman";
@@ -7,6 +7,12 @@ import Board from "./Board";
 import Tile from "./tiles/Tile";
 import Barrel from "./entities/tribes/Barrel";
 import Chunk from "./Chunk";
+
+let idCounter = 0;
+
+const getAvailableID = (): number => {
+   return idCounter++;
+}
 
 const TRIBE_BUILDING_AREA_INFLUENCES = {
    tribe_totem: 200,
@@ -25,6 +31,8 @@ interface ChunkInfluence {
 }
 
 class Tribe {
+   public readonly id: number;
+   
    public readonly tribeType: TribeType;
 
    public readonly totem: TribeTotem;
@@ -43,6 +51,8 @@ class Tribe {
    public tribesmanCap = 0;
    
    constructor(tribeType: TribeType, totem: TribeTotem) {
+      this.id = getAvailableID();
+      
       this.tribeType = tribeType;
       this.totem = totem;
       totem.setTribe(this);
@@ -98,21 +108,23 @@ class Tribe {
 
    private createNewTribesman(hut: TribeHut): void {
       const position = hut.position.copy();
+
+      // Offset the spawn position so the tribesman comes out of the correct side of the hut
+      const offset = new Vector(10, hut.rotation).convertToPoint();
+      position.add(offset);
       
       const tribesman = new Tribesman(position, false, this.tribeType, this);
+      tribesman.rotation = hut.rotation;
+
       this.members.push(tribesman);
 
       // Attempt to respawn the tribesman when it  is killed
       tribesman.createEvent("death", () => {
          // Only respawn the tribesman if their hut is alive
          if (Board.gameObjectIsInBoard(hut)) {
-            this.respawnTribesman(hut);
+            this.createNewTribesman(hut);
          }
       });
-   }
-
-   private respawnTribesman(hut: TribeHut): void {
-      this.createNewTribesman(hut);
    }
 
    public getNumHuts(): number {
