@@ -16,7 +16,6 @@ class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
    public species: CowSpecies;
-   public readonly herdMemberHash: number;
 
    private numFootstepsTaken = 0;
 
@@ -25,6 +24,8 @@ class Cow extends Mob {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
       }, "cow", SETTINGS.TILE_SIZE * 4, isNaturallySpawned);
+
+      this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
       this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 2.5);
@@ -47,7 +48,7 @@ class Cow extends Mob {
          followableEntityTypes: new Set(["player", "tribesman", "zombie"])
       }));
 
-      this.addAI(new HerdAI(this, {
+      const herdAI = new HerdAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 100,
          terminalVelocity: 50,
@@ -62,7 +63,9 @@ class Cow extends Mob {
          seperationInfluence: 0.7,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.3
-      }));
+      });
+      herdAI.herdMemberHash = this.species;
+      this.addAI(herdAI);
 
       this.addAI(new TileConsumeAI(this, {
          aiWeightMultiplier: 1.25,
@@ -108,9 +111,6 @@ class Cow extends Mob {
 
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
-      this.herdMemberHash = this.species;
-
       this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2), true);
       this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2), true);
 
@@ -132,7 +132,7 @@ class Cow extends Mob {
 
       // Create footsteps
       if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20);
+         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 5);
 
          this.numFootstepsTaken++;
       }

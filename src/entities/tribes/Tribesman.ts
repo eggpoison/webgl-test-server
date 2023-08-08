@@ -1,4 +1,4 @@
-import { EntityType, Point, TribeType } from "webgl-test-shared";
+import { EntityType, InventoryData, ItemSlotsData, Point, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -23,6 +23,32 @@ Priorities while in a tribe:
    7. Gather nearby resources
    8. (DONE) Patrol tribe area
 */
+
+const chooseTribeType = (spawnPosition: Point): TribeType => {
+   const isGoblin = Math.random() < 0.25;
+   if (isGoblin) {
+      return TribeType.goblins;
+   }
+
+   const tile = Board.getTileAtPosition(spawnPosition);
+   switch (tile.biomeName) {
+      case "grasslands": {
+         return TribeType.plainspeople;
+      }
+      case "desert": {
+         return TribeType.barbarians;
+      }
+      case "tundra": {
+         return TribeType.frostlings;
+      }
+      case "mountains": {
+         return TribeType.goblins;
+      }
+      default: {
+         throw new Error(`Can't spawn tribesman in biome '${tile.biomeName}'.`);
+      }
+   }
+}
 
 class Tribesman extends TribeMember {
    private static readonly INVENTORY_SIZE = 3;
@@ -49,10 +75,10 @@ class Tribesman extends TribeMember {
 
    private static readonly BARREL_DEPOSIT_DISTANCE = 80;
    
-   private readonly hut: TribeHut;
+   protected readonly footstepInterval = 0.35;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribe: Tribe, hut: TribeHut) {
-      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribe.tribeType);
+   constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe | null) {
+      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, typeof tribeType !== "undefined" ? tribeType : chooseTribeType(position));
 
       this.addHitboxes([
          new CircularHitbox({
@@ -64,8 +90,11 @@ class Tribesman extends TribeMember {
       const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("inventory", Tribesman.INVENTORY_SIZE, 1);
 
-      this.tribe = tribe;
-      this.hut = hut;
+      if (typeof tribe !== "undefined") {
+         this.tribe = tribe;
+      } else {
+         this.tribe = null;
+      }
 
       // AI for attacking enemies
       this.addAI(new ChaseAI(this, {
@@ -202,8 +231,27 @@ class Tribesman extends TribeMember {
       }
    }
 
-   public getClientArgs(): [tribeType: TribeType] {
-      return [this.tribeType];
+   public getClientArgs(): [tribeType: TribeType, inventory: InventoryData] {
+      const inventory = this.getComponent("inventory")!.getInventory("inventory");
+      
+      const itemSlots: ItemSlotsData = {};
+      for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
+         itemSlots[Number(itemSlot)] = {
+            type: item.type,
+            count: item.count,
+            id: item.id
+         };
+      }
+      
+      const inventoryData: InventoryData = {
+         width: inventory.width,
+         height: inventory.height,
+         itemSlots: itemSlots,
+         entityID: this.id,
+         inventoryName: "inventory"
+      };
+      
+      return [this.tribeType, inventoryData];
    }
 }
 

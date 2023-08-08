@@ -15,9 +15,6 @@ abstract class Mob extends Entity {
    private readonly ais = new Array<AI<AIType>>();
    private currentAI: AI<AIType> | null = null;
 
-   /** Used to further distinguish between herd members in the HerdAI AI component */
-   public readonly herdMemberHash?: number;
-
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
 
    private aiParams: Record<string, number> = {};
@@ -201,6 +198,15 @@ abstract class Mob extends Entity {
       }
 
       return debugData;
+   }
+
+   public getAI<T extends AIType>(type: T): AI<T> | null {
+      for (const ai of this.ais) {
+         if (ai.type === type) {
+            return ai as AI<T>;
+         }
+      }
+      return null;
    }
 }
 

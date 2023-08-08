@@ -107,6 +107,13 @@ abstract class Board {
       this.tribes.push(tribe);
    }
 
+   public static removeTribe(tribe: Tribe): void {
+      const idx = this.tribes.indexOf(tribe);
+      if (idx !== -1) {
+         this.tribes.splice(idx, 1);
+      }
+   }
+
    public static updateTribes(): void {
       for (const tribe of this.tribes) {
          tribe.tick();

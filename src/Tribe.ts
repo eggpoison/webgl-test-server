@@ -1,12 +1,7 @@
-// console.log("Starting loading tribe");
 import { EntityType, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
-// console.log("a");
 import TribeMember from "./entities/tribes/TribeMember";
-// console.log("b");
 import TribeHut from "./entities/tribes/TribeHut";
-// console.log("c");
 import Tribesman from "./entities/tribes/Tribesman";
-// console.log("b");
 import TribeTotem from "./entities/tribes/TribeTotem";
 import Board from "./Board";
 import Tile from "./tiles/Tile";
@@ -50,10 +45,13 @@ class Tribe {
    constructor(tribeType: TribeType, totem: TribeTotem) {
       this.tribeType = tribeType;
       this.totem = totem;
+      totem.setTribe(this);
 
       totem.createEvent("death", () => {
          this.destroy();
       });
+
+      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_totem);
    }
 
    public tick(): void {
@@ -73,6 +71,10 @@ class Tribe {
       this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_hut);
       
       this.tribesmanCap++;
+
+      hut.createEvent("death", () => {
+         this.removeHut(hut);
+      });
    }
 
    public removeHut(hut: TribeHut): void {
@@ -80,6 +82,8 @@ class Tribe {
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
+
+      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_hut);
       
       this.tribesmanCap--;
    }
@@ -95,10 +99,10 @@ class Tribe {
    private createNewTribesman(hut: TribeHut): void {
       const position = hut.position.copy();
       
-      const tribesman = new Tribesman(position, false, this, hut);
+      const tribesman = new Tribesman(position, false, this.tribeType, this);
       this.members.push(tribesman);
 
-      // Attempt to respawn the tribesman when it is killed
+      // Attempt to respawn the tribesman when it  is killed
       tribesman.createEvent("death", () => {
          // Only respawn the tribesman if their hut is alive
          if (Board.gameObjectIsInBoard(hut)) {
@@ -125,6 +129,8 @@ class Tribe {
       for (const hut of this.huts) {
          hut.remove();
       }
+
+      Board.removeTribe(this);
    }
 
    private addBuildingToTiles(buildingPosition: Point, influence: number): void {
@@ -136,6 +142,44 @@ class Tribe {
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
             this.addTileToArea(tileX, tileY);
+         }
+      }
+   }
+
+   private removeBuildingFromTiles(buildingPosition: Point, influence: number): void {
+      const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SETTINGS.TILE_SIZE));
+      const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SETTINGS.TILE_SIZE));
+      const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SETTINGS.TILE_SIZE));
+      const maxTileY = clampToBoardDimensions(Math.floor((buildingPosition.y + influence) / SETTINGS.TILE_SIZE));
+
+      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+         for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+            this.removeTileFromArea(tileX, tileY);
+         }
+      }
+   }
+
+   private removeTileFromArea(tileX: number, tileY: number): void {
+      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      
+      if (!this.area.hasOwnProperty(tileIndex)) {
+         return;
+      } else {
+         this.area[tileIndex].numInfluences--;
+         if (this.area[tileIndex].numInfluences === 0) {
+            delete this.area[tileIndex];
+         }
+      }
+
+      const chunkX = Math.floor(tileX / SETTINGS.CHUNK_SIZE);
+      const chunkY = Math.floor(tileY / SETTINGS.CHUNK_SIZE);
+      const chunkIndex = chunkY * SETTINGS.BOARD_SIZE + chunkX;
+      if (!this.chunkArea.hasOwnProperty(chunkIndex)) {
+         return;
+      } else {
+         this.chunkArea[chunkIndex].numInfluences--;
+         if (this.chunkArea[chunkIndex].numInfluences === 0) {
+            delete this.chunkArea[chunkIndex];
          }
       }
    }
@@ -194,6 +238,14 @@ class Tribe {
 
    public getBarrels(): ReadonlySet<Barrel> {
       return this.barrels;
+   }
+
+   public getArea(): ReadonlyArray<Tile> {
+      const area = new Array<Tile>();
+      for (const tileInfluence of Object.values(this.area)) {
+         area.push(tileInfluence.tile);
+      }
+      return area;
    }
 }
 

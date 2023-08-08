@@ -130,7 +130,7 @@ class Zombie extends Mob {
 
       // Create footsteps
       if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20);
+         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
 
          this.numFootstepsTaken++;
       }

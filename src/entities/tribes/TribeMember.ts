@@ -10,6 +10,7 @@ import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
 import Board from "../../Board";
 import TribeBuffer from "../../TribeBuffer";
+import Barrel from "./Barrel";
 
 abstract class TribeMember extends Mob {
    public readonly tribeType: TribeType;
@@ -17,6 +18,8 @@ abstract class TribeMember extends Mob {
    public tribe: Tribe | null = null;
 
    private numFootstepsTaken = 0;
+
+   protected abstract readonly footstepInterval: number;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -61,8 +64,8 @@ abstract class TribeMember extends Mob {
    public tick(): void {
       super.tick();
 
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.15)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20);
+      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(this.footstepInterval)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
 
          this.numFootstepsTaken++;
       }
@@ -85,9 +88,19 @@ abstract class TribeMember extends Mob {
          //    continue;
          // }
 
-         // Don't attack fellow tribe members
-         if (this.tribe !== null && entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
-            continue;
+         if (this.tribe !== null) {
+            // Don't attack fellow tribe members
+            if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
+               continue;
+            }
+
+            // Don't attack tribe buildings
+            if (entity.type === "barrel" && (entity as Barrel).tribe === this.tribe) {
+               continue;
+            }
+            if (entity.type === "tribe_totem" && (entity as TribeTotem).tribe === this.tribe) {
+               continue;
+            }
          }
 
          const dist = this.position.calculateDistanceBetween(entity.position);

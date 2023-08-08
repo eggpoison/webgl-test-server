@@ -247,18 +247,16 @@ abstract class Entity extends _GameObject<"entity"> {
       });
    }
 
-   protected createFootprintParticle(numFootstepsTaken: number, footstepSpacing: number): void {
+   protected createFootprintParticle(numFootstepsTaken: number, footstepOffset: number, scale: number, lifetime: number): void {
       if (this.velocity === null) {
          return;
       }
-      
+
       const footstepAngleOffset = numFootstepsTaken % 2 === 0 ? Math.PI : 0;
       const spawnPosition = this.position.copy();
-      const offset = new Vector(footstepSpacing / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
+      const offset = new Vector(footstepOffset / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
       spawnPosition.add(offset);
 
-      const lifetime = 4;
-      
       new Particle({
          type: ParticleType.footprint,
          spawnPosition: spawnPosition,
@@ -268,7 +266,8 @@ abstract class Entity extends _GameObject<"entity"> {
          opacity: (age: number): number => {
             return lerp(0.75, 0, age / lifetime);
          },
-         lifetime: lifetime
+         lifetime: lifetime,
+         scale: scale
       });
    }
 

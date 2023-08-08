@@ -160,8 +160,8 @@ class Yeti extends Mob {
       }
 
       // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.25)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 40);
+      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.55)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 40, 1.5, 8);
 
          this.numFootstepsTaken++;
       }

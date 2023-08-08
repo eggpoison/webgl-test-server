@@ -29,6 +29,8 @@ class Player extends TribeMember {
 
    private hitsTaken = new Array<HitData>();
 
+   protected footstepInterval = 0.15;
+
    constructor(position: Point, isNaturallySpawned: boolean, username: string) {
       super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
 

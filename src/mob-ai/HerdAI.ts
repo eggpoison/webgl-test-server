@@ -47,6 +47,9 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
    public readonly alignmentInfluence: number;
    public readonly cohesionInfluence: number;
    private readonly wallAvoidanceInfluence: number;
+
+   /** Used to further distinguish between herd members */
+   public herdMemberHash?: number;
  
    /** Amount of radians to add to the mob's rotation each tick */
    private angularVelocity = 0;
@@ -255,8 +258,9 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
       const filteredEntities = new Set<Entity>();
       for (const entity of visibleEntities) {
          if (this.validHerdMembers.has(entity.type as any)) {
-            if (typeof this.mob.herdMemberHash !== "undefined" && entity.type === this.mob.type) {
-               if (this.mob.herdMemberHash !== (entity as Mob).herdMemberHash!) {
+            if (typeof this.herdMemberHash !== "undefined" && entity.type === this.mob.type) {
+               const herdAI = (entity as Mob).getAI("herd")! as HerdAI;
+               if (this.herdMemberHash !== herdAI.herdMemberHash) {
                   continue;
                }
             }

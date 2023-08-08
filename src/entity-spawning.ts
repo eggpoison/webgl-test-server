@@ -1,5 +1,4 @@
 import { EntityType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
-import Cow from "./entities/mobs/Cow";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
@@ -91,12 +90,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.2,
       maxDensity: 0.3
    },
-   // {
-   //    entityType: "zombie",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.03 / 2,
-   //    maxDensity: 0.06 / 2
-   // }
+   {
+      entityType: "tribesman",
+      spawnableTiles: ["grass", "sand", "snow", "ice", "permafrost", "rock"],
+      spawnRate: 0.001 * 5,
+      maxDensity: 0.002 * 5
+   }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */
@@ -146,11 +145,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
-   const baseEntity = new entityClass(spawnOrigin, true);
-   // const baseEntity = 
-   // if (spawnInfo.entityType === "cow") {
-   //    (baseEntity as Cow).species = cowSpecies;
-   // }
+   new entityClass(spawnOrigin, true);
 
    if (typeof spawnInfo.packSpawningInfo === "undefined") {
       return;
@@ -171,11 +166,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
       if (spawnPositionIsValid(spawnPosition)) {
-         const entity = new entityClass(spawnPosition, true);
-         // if (spawnInfo.entityType === "cow") {
-         //    (entity as Cow).species = cowSpecies;
-         // }
-
+         new entityClass(spawnPosition, true);
          i++;
       }
 
@@ -224,7 +215,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
       const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
       const spawnPosition = new Point(x, y);
-   
+
       spawnEntities(spawnInfo, spawnPosition);
    }
 }
