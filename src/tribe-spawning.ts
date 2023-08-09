@@ -18,7 +18,8 @@ const NUM_STARTING_HUTS: Record<TribeType, number> = {
    [TribeType.plainspeople]: 1,
    [TribeType.frostlings]: 1,
    [TribeType.barbarians]: 1,
-   [TribeType.goblins]: 2
+   // [TribeType.goblins]: 2
+   [TribeType.goblins]: 100
 };
 
 const getTribeTypeForTile = (position: Point): TribeType | null => {

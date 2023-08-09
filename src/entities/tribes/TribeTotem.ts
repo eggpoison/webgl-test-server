@@ -31,7 +31,7 @@ class TribeTotem extends Entity {
 
    public tribe: Tribe | null = null;
 
-   private readonly banners = new Array<TribeTotemBanner>();
+   private readonly banners: Record<number, TribeTotemBanner> = {};
 
    private readonly availableBannerPositions = Array.from(new Set(TRIBE_TOTEM_POSITIONS));
    
@@ -54,7 +54,11 @@ class TribeTotem extends Entity {
       this.tribe = tribe;
    }
 
-   public createNewBanner(): void {
+   public createNewBanner(hutNum: number): void {
+      if (this.availableBannerPositions.length === 0) {
+         return;
+      }
+      
       const positionIdx = randInt(0, this.availableBannerPositions.length - 1);
       const position = this.availableBannerPositions[positionIdx];
       this.availableBannerPositions.splice(positionIdx, 1);
@@ -63,11 +67,15 @@ class TribeTotem extends Entity {
          layer: position.layer,
          direction: position.direction
       };
-      this.banners.push(banner);
+      this.banners[hutNum] = banner;
+   }
+
+   public removeBanner(hutNum: number): void {
+      delete this.banners[hutNum];
    }
 
    public getClientArgs(): [tribeID: number, tribeType: TribeType, banners: Array<TribeTotemBanner>] {
-      return [this.tribe !== null ? this.tribe.id : -1, this.tribe?.tribeType || 0, this.banners];
+      return [this.tribe !== null ? this.tribe.id : -1, this.tribe?.tribeType || 0, Object.values(this.banners)];
    }
 
    public getDebugData(): GameObjectDebugData {

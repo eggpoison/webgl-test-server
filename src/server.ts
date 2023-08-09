@@ -16,6 +16,7 @@ import { runTribeSpawnAttempt } from "./tribe-spawning";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
 import Tree from "./entities/resources/Tree";
+import { createItem } from "./items/item-creation";
 
 /*
 
@@ -346,10 +347,19 @@ class GameServer {
          const tribe = new Tribe(TribeType.goblins, totem)
          const s2 = new Point(spawnPosition.x + 500, spawnPosition.y + 250);
          const hut = new TribeHut(s2, false);
-         const s3 = new Point(spawnPosition.x + 500, spawnPosition.y - 250);
-         const hut2 = new TribeHut(s3, false);
+         // const s3 = new Point(spawnPosition.x + 500, spawnPosition.y - 250);
+         // const hut2 = new TribeHut(s3, false);
          tribe.registerNewHut(hut);
-         tribe.registerNewHut(hut2);
+         // tribe.registerNewHut(hut2);
+
+         const a = createItem("wood", 1);
+         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 250), a);
+         const b = createItem("eyeball", 1);
+         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 225), b);
+         const c = createItem("rock", 1);
+         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 275), c);
+         const d = createItem("berry", 1);
+         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 300), d);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());

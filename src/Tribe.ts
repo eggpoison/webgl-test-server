@@ -86,7 +86,7 @@ class Tribe {
          this.removeHut(hut);
       });
 
-      this.totem.createNewBanner();
+      this.totem.createNewBanner(this.huts.length - 1);
    }
 
    public removeHut(hut: TribeHut): void {
@@ -94,6 +94,8 @@ class Tribe {
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
+      
+      this.totem.removeBanner(idx);
 
       this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_hut);
       

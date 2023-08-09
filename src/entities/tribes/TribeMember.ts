@@ -15,7 +15,7 @@ import ArmourItem from "../../items/generic/ArmourItem";
 import DroppedItem from "../../items/DroppedItem";
 
 abstract class TribeMember extends Mob {
-   private static readonly DEATH_ITEM_DROP_RANGE = 26;
+   private static readonly DEATH_ITEM_DROP_RANGE = 38;
    
    public readonly tribeType: TribeType;
 
@@ -128,6 +128,9 @@ abstract class TribeMember extends Mob {
             continue;
          }
          if (this.tribe !== null && entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
+            continue;
+         }
+         if (this.tribe !== null && entity instanceof Barrel && entity.tribe === this.tribe) {
             continue;
          }
 

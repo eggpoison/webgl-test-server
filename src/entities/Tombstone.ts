@@ -9,6 +9,9 @@ import Particle from "../Particle";
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
 
+   private static readonly WIDTH = 48;
+   private static readonly HEIGHT = 88;
+   
    /** Average number of zombies that are created by the tombstone in a second */
    private static readonly ZOMBIE_SPAWN_RATE = 0.05;
    // private static readonly ZOMBIE_SPAWN_RATE = 0.75;
@@ -39,8 +42,8 @@ class Tombstone extends Entity {
       this.addHitboxes([
          new RectangularHitbox({
             type: "rectangular",
-            width: 48,
-            height: 88
+            width: Tombstone.WIDTH,
+            height: Tombstone.HEIGHT
          })
       ]);
 
@@ -65,6 +68,39 @@ class Tombstone extends Entity {
          zombieSpawnPositions.push(spawnPosition);
       }
       this.zombieSpawnPositions = zombieSpawnPositions;
+
+      this.createEvent("hurt", (): void => {
+         for (let i = 0; i < 4; i++) {
+            this.createRockParticle();
+         }
+      });
+   
+      this.createEvent("death", (): void => {
+         for (let i = 0; i < 8; i++) {
+            this.createRockParticle();
+         }
+      });
+   }
+   private createRockParticle(): void {
+      const spawnPosition = this.position.copy();
+      const offset = new Point(randFloat(-Tombstone.WIDTH/2, Tombstone.WIDTH/2), randFloat(-Tombstone.HEIGHT/2, Tombstone.HEIGHT/2));
+      spawnPosition.add(offset);
+   
+      const lifetime = randFloat(0.3, 0.6);
+      
+      new Particle({
+         type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
+         spawnPosition: spawnPosition,
+         initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),
+         initialAcceleration: null,
+         initialRotation: 2 * Math.PI * Math.random(),
+         angularVelocity: 2 * Math.PI * randFloat(-1, 1),
+         angularDrag: 1 * Math.PI,
+         opacity: (age: number): number => {
+            return 1 - age/lifetime;
+         },
+         lifetime: lifetime
+      });
    }
 
    public tick(): void {

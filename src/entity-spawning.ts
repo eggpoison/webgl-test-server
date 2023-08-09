@@ -215,6 +215,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
 }
 
 export function runSpawnAttempt(): void {
+   if (1+1==2)return;
    for (const spawnInfo of SPAWN_INFO_RECORD) {
       if (spawnConditionsAreMet(spawnInfo)) {
          for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
@@ -229,6 +230,7 @@ export function runSpawnAttempt(): void {
 }
 
 export function spawnInitialEntities(): void {
+   if(1+1==2)return;
    let numSpawnAttempts: number;
 
    // For each spawn info object, spawn entities until no more can be spawned
