@@ -133,7 +133,7 @@ abstract class Entity extends _GameObject<"entity"> {
             const lifetime = 1.5;
             
             new Particle({
-               type: ParticleType.smoke,
+               type: ParticleType.smokeBlack,
                spawnPosition: spawnPosition,
                initialVelocity: new Vector(30, 0),
                initialAcceleration: new Vector(80, 0),
@@ -162,11 +162,12 @@ abstract class Entity extends _GameObject<"entity"> {
             const velocityOffset = new Vector(30, Math.PI);
             velocity.add(velocityOffset);
             
+            const scale = randFloat(1, 1.2);
             new Particle({
-               type: ParticleType.ember,
+               type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
                spawnPosition: spawnPosition,
                initialVelocity: velocity,
-               initialAcceleration: null,
+               initialAcceleration: new Vector(randFloat(0, 80), 2 * Math.PI * Math.random()),
                drag: 60,
                initialRotation: 2 * Math.PI * Math.random(),
                angularVelocity: randFloat(-60, 60),
@@ -174,7 +175,8 @@ abstract class Entity extends _GameObject<"entity"> {
                opacity: (age: number): number => {
                   return lerp(0.75, 0, age / lifetime);
                },
-               lifetime: lifetime
+               lifetime: lifetime,
+               scale: scale
             });
          }
       }

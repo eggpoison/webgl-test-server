@@ -67,10 +67,10 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
    return true;
 }
 
-const findValidHutPosition = (tribe: Tribe): Point | null => {
+const findValidHutPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArray<Point>): Point | null => {
    let numAttempts = 0;
    
-   while (++numAttempts <= MAX_HUT_SPAWN_ATTEMPTS) {
+   mainLoop: while (++numAttempts <= MAX_HUT_SPAWN_ATTEMPTS) {
       // Pick a random position within the tribe's area to spawn at
       const areaTiles = tribe.getArea();
 
@@ -84,6 +84,14 @@ const findValidHutPosition = (tribe: Tribe): Point | null => {
       const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
       const position = new Point(x, y);
+
+      // Make sure it isn't too close to any other buildings
+      for (const buildingPosition of otherBuildingPositions) {
+         const distance = position.calculateDistanceBetween(buildingPosition);
+         if (distance < HUT_MIN_DISTANCE) {
+            continue mainLoop;
+         }
+      }
 
       const entities = Board.getEntitiesInRange(position, HUT_MIN_DISTANCE);
       if (entities.length === 0) {
@@ -101,15 +109,18 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 
    totem.rotation = 2 * Math.PI * Math.random();
 
+   const buildingPositions: Array<Point> = [position];
+
    // Starting huts
    for (let i = 0; i < NUM_STARTING_HUTS[tribeType]; i++) {
       // Find a valid spawn position
-      const hutPosition = findValidHutPosition(tribe);
+      const hutPosition = findValidHutPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
          const hut = new TribeHut(hutPosition, false);
          tribe.registerNewHut(hut);
          hut.rotation = 2 * Math.PI * Math.random();
+         buildingPositions.push(hutPosition);
       }
    }
 }

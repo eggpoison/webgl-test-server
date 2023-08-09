@@ -85,6 +85,8 @@ class Tribe {
       hut.createEvent("death", () => {
          this.removeHut(hut);
       });
+
+      this.totem.createNewBanner();
    }
 
    public removeHut(hut: TribeHut): void {

@@ -134,6 +134,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       this.tile = Board.getTile(tileX, tileY);
    }
 
+   protected overrideTileMoveSpeedMultiplier?(): number | null;
+
    /** Function optionally implemented by game object subclasses */
    public getMoveSpeedMultiplier?(): number;
 
@@ -141,6 +143,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.tile.type];
 
       let moveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
+      if (typeof this.overrideTileMoveSpeedMultiplier !== "undefined") {
+         const speed = this.overrideTileMoveSpeedMultiplier();
+         if (speed !== null) {
+            moveSpeedMultiplier = speed;
+         }
+      }
       if (typeof this.getMoveSpeedMultiplier !== "undefined") {
          moveSpeedMultiplier *= this.getMoveSpeedMultiplier();
       }

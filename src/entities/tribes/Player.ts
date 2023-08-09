@@ -156,7 +156,6 @@ class Player extends TribeMember {
       const playerInventoryComponent = this.getComponent("inventory")!;
       const heldItemInventory = playerInventoryComponent.getInventory("heldItemSlot");
       // Don't release an item if there is no held item
-      // console.log("a")
       if (!heldItemInventory.itemSlots.hasOwnProperty(1)) return;
 
       if (!Board.entities.hasOwnProperty(entityID)) {

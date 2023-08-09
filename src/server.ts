@@ -15,6 +15,7 @@ import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
+import Tree from "./entities/resources/Tree";
 
 /*
 
@@ -345,7 +346,10 @@ class GameServer {
          const tribe = new Tribe(TribeType.goblins, totem)
          const s2 = new Point(spawnPosition.x + 500, spawnPosition.y + 250);
          const hut = new TribeHut(s2, false);
+         const s3 = new Point(spawnPosition.x + 500, spawnPosition.y - 250);
+         const hut2 = new TribeHut(s3, false);
          tribe.registerNewHut(hut);
+         tribe.registerNewHut(hut2);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());

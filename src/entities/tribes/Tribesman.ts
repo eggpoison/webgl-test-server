@@ -62,7 +62,7 @@ class Tribesman extends TribeMember {
       ]);
 
       const inventoryComponent = this.getComponent("inventory")!;
-      inventoryComponent.createNewInventory("inventory", Tribesman.INVENTORY_SIZE, 1, true);
+      inventoryComponent.createNewInventory("hotbar", Tribesman.INVENTORY_SIZE, 1, true);
 
       this.tribe = tribe;
 
@@ -161,12 +161,12 @@ class Tribesman extends TribeMember {
    }
 
    private inventoryIsFull(): boolean {
-      return this.getComponent("inventory")!.inventoryIsFull("inventory");
+      return this.getComponent("inventory")!.inventoryIsFull("hotbar");
    }
 
    private canPickupItem(droppedItem: DroppedItem): boolean {
       const inventoryComponent = this.getComponent("inventory")!;
-      const inventory = inventoryComponent.getInventory("inventory");
+      const inventory = inventoryComponent.getInventory("hotbar");
       
       for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
          if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
@@ -203,14 +203,14 @@ class Tribesman extends TribeMember {
       const tribesmanInventoryComponent = this.getComponent("inventory")!;
       const barrelInventoryComponent = barrel.getComponent("inventory")!;
       
-      const tribesmanInventory = tribesmanInventoryComponent.getInventory("inventory");
+      const tribesmanInventory = tribesmanInventoryComponent.getInventory("hotbar");
       for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
          // Add the item to the barrel inventory
          const amountAdded = barrelInventoryComponent.addItemToInventory("inventory", item);
 
          // Remove from the tribesman inventory
          const itemSlot = Number(_itemSlot);
-         tribesmanInventoryComponent.consumeItem("inventory", itemSlot, amountAdded);
+         tribesmanInventoryComponent.consumeItem("hotbar", itemSlot, amountAdded);
       }
    }
 
@@ -231,7 +231,7 @@ class Tribesman extends TribeMember {
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, inventory: InventoryData] {
-      const inventory = this.getComponent("inventory")!.getInventory("inventory");
+      const inventory = this.getComponent("inventory")!.getInventory("hotbar");
       
       const itemSlots: ItemSlotsData = {};
       for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
@@ -247,7 +247,7 @@ class Tribesman extends TribeMember {
          height: inventory.height,
          itemSlots: itemSlots,
          entityID: this.id,
-         inventoryName: "inventory"
+         inventoryName: "hotbar"
       };
       
       return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), inventoryData];

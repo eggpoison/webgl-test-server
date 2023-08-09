@@ -1,8 +1,28 @@
-import { GameObjectDebugData, Point } from "webgl-test-shared";
+import { GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Tribe from "../../Tribe";
+
+interface TotemPosition {
+   readonly layer: number;
+   readonly direction: number;   
+}
+
+const TRIBE_TOTEM_POSITIONS = new Array<TotemPosition>();
+
+const NUM_TOTEM_POSITIONS = [4, 6, 8];
+
+for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
+   const numPositions = NUM_TOTEM_POSITIONS[layerIdx];
+   for (let j = 0; j < numPositions; j++) {
+      const angle = j / numPositions * 2 * Math.PI;
+      TRIBE_TOTEM_POSITIONS.push({
+         layer: layerIdx,
+         direction: angle
+      });
+   }
+}
 
 class TribeTotem extends Entity {
    private static readonly MAX_HEALTH = 50;
@@ -11,6 +31,10 @@ class TribeTotem extends Entity {
 
    public tribe: Tribe | null = null;
 
+   private readonly banners = new Array<TribeTotemBanner>();
+
+   private readonly availableBannerPositions = Array.from(new Set(TRIBE_TOTEM_POSITIONS));
+   
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(TribeTotem.MAX_HEALTH, false)
@@ -30,8 +54,20 @@ class TribeTotem extends Entity {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [] {
-      return [];
+   public createNewBanner(): void {
+      const positionIdx = randInt(0, this.availableBannerPositions.length - 1);
+      const position = this.availableBannerPositions[positionIdx];
+      this.availableBannerPositions.splice(positionIdx, 1);
+      
+      const banner: TribeTotemBanner = {
+         layer: position.layer,
+         direction: position.direction
+      };
+      this.banners.push(banner);
+   }
+
+   public getClientArgs(): [tribeID: number, tribeType: TribeType, banners: Array<TribeTotemBanner>] {
+      return [this.tribe !== null ? this.tribe.id : -1, this.tribe?.tribeType || 0, this.banners];
    }
 
    public getDebugData(): GameObjectDebugData {

@@ -125,6 +125,10 @@ class InventoryComponent extends Component {
       let amountAdded = 0;
 
       for (const [inventoryName, _inventory] of this.inventoryArray) {
+         if (!_inventory.acceptsPickedUpItems) {
+            continue;
+         }
+         
          amountAdded += this.addItemToInventory(inventoryName, item);
 
          if (amountAdded === item.count) {
