@@ -30,7 +30,7 @@ class Barrel extends Entity {
          })
       ]);
 
-      inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT);
+      inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT, false);
    }
 
    public setTribe(tribe: Tribe | null): void {

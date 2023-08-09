@@ -15,6 +15,8 @@ export interface Inventory {
    height: number;
    /** The items contained by the inventory. */
    readonly itemSlots: ItemSlots;
+   /** Whether the inventory allows dropped items to be put into it */
+   readonly acceptsPickedUpItems: boolean;
 }
 
 class InventoryComponent extends Component {
@@ -38,13 +40,14 @@ class InventoryComponent extends Component {
    }
 
    /** Creates and stores a new inventory in the component. */
-   public createNewInventory(name: string, width: number, height: number): void {
+   public createNewInventory(name: string, width: number, height: number, acceptsPickedUpItems: boolean): void {
       if (this.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
       
       const inventory: Inventory = {
          width: width,
          height: height,
-         itemSlots: {}
+         itemSlots: {},
+         acceptsPickedUpItems: acceptsPickedUpItems
       };
 
       this.inventories[name] = inventory;
@@ -94,6 +97,10 @@ class InventoryComponent extends Component {
       if (!droppedItem.canBePickedUp(this.entity.id)) return;
 
       for (const [inventoryName, _inventory] of this.inventoryArray) {
+         if (!_inventory.acceptsPickedUpItems) {
+            continue;
+         }
+         
          const amountPickedUp = this.addItemToInventory(inventoryName, droppedItem.item);
 
          droppedItem.item.count -= amountPickedUp;

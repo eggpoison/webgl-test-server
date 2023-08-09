@@ -423,6 +423,13 @@ class GameServer {
                      height: 1,
                      entityID: player.id,
                      inventoryName: "craftingOutputSlot"
+                  },
+                  armourSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "armourSlot"
                   }
                },
                tileUpdates: [],

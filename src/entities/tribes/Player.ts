@@ -42,11 +42,11 @@ class Player extends TribeMember {
       ]);
 
       const inventoryComponent = this.getComponent("inventory")!;
-      inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1);
-      inventoryComponent.createNewInventory("backpack", 0, 0);
-      inventoryComponent.createNewInventory("backpackItemSlot", 1, 1);
-      inventoryComponent.createNewInventory("craftingOutputSlot", 1, 1);
-      inventoryComponent.createNewInventory("heldItemSlot", 1, 1);
+      inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
+      inventoryComponent.createNewInventory("backpack", 0, 0, true);
+      inventoryComponent.createNewInventory("backpackItemSlot", 1, 1, false);
+      inventoryComponent.createNewInventory("craftingOutputSlot", 1, 1, false);
+      inventoryComponent.createNewInventory("heldItemSlot", 1, 1, false);
 
       this.username = username;
 
@@ -58,8 +58,8 @@ class Player extends TribeMember {
       });
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, displayName: string] {
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.username];
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, displayName: string] {
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -252,7 +252,8 @@ class Player extends TribeMember {
          backpackInventory: this.bundleInventory("backpack"),
          backpackSlot: this.bundleInventory("backpackItemSlot"),
          heldItemSlot: this.bundleInventory("heldItemSlot"),
-         craftingOutputItemSlot: this.bundleInventory("craftingOutputSlot")
+         craftingOutputItemSlot: this.bundleInventory("craftingOutputSlot"),
+         armourSlot: this.bundleInventory("armourSlot")
       };
 
       return inventoryData;

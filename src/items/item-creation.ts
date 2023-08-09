@@ -23,6 +23,7 @@ import FleshSword from "./specific/FleshSword";
 import TribeTotemItem from "./specific/TribeTotemItem";
 import TribeHutItem from "./specific/TribeHutItem";
 import BarrelItem from "./specific/BarrelItem";
+import FrostArmour from "./specific/FrostArmour";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
@@ -47,7 +48,8 @@ const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: numbe
    flesh_sword: () => FleshSword,
    tribe_totem: () => TribeTotemItem,
    tribe_hut: () => TribeHutItem,
-   barrel: () => BarrelItem
+   barrel: () => BarrelItem,
+   frost_armour: () => FrostArmour
 };
 
 export function createItem(itemType: ItemType, count: number): Item {

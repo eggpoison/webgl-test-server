@@ -1,4 +1,4 @@
-import { EntityType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { EntityType, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -24,12 +24,16 @@ abstract class TribeMember extends Mob {
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
 
+      const inventoryComponent = new InventoryComponent();
+      
       super(position, {
          health: new HealthComponent(tribeInfo.maxHealth, true),
-         inventory: new InventoryComponent()
+         inventory: inventoryComponent
       }, entityType, visionRange, isNaturallySpawned);
 
       this.tribeType = tribeType;
+
+      inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
 
       this.createEvent("hurt", (_1, _2, _3, hitDirection: number | null): void => {
          this.createBloodPoolParticle();
@@ -152,6 +156,17 @@ abstract class TribeMember extends Mob {
       }
 
       return attackedEntities;
+   }
+
+   protected getArmourItemType(): ItemType | null {
+      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
+
+      if (armourInventory.itemSlots.hasOwnProperty(1)) {
+         const armourItem = armourInventory.itemSlots[1];
+         return armourItem.type;
+      } else {
+         return null;
+      }
    }
 }
 

@@ -1,4 +1,4 @@
-import { EntityType, InventoryData, ItemSlotsData, Point, TribeType } from "webgl-test-shared";
+import { EntityType, InventoryData, ItemSlotsData, ItemType, Point, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -62,7 +62,7 @@ class Tribesman extends TribeMember {
       ]);
 
       const inventoryComponent = this.getComponent("inventory")!;
-      inventoryComponent.createNewInventory("inventory", Tribesman.INVENTORY_SIZE, 1);
+      inventoryComponent.createNewInventory("inventory", Tribesman.INVENTORY_SIZE, 1, true);
 
       this.tribe = tribe;
 
@@ -230,7 +230,7 @@ class Tribesman extends TribeMember {
       }
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, inventory: InventoryData] {
       const inventory = this.getComponent("inventory")!.getInventory("inventory");
       
       const itemSlots: ItemSlotsData = {};
@@ -250,7 +250,7 @@ class Tribesman extends TribeMember {
          inventoryName: "inventory"
       };
       
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, inventoryData];
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), inventoryData];
    }
 }
 
