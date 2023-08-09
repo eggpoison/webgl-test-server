@@ -99,12 +99,14 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       if (hunger < 50) {
          return 0;
       }
-      
-      // Try to activate the AI if the entity can see something to eat
-      if (this.mob.droppedItemsInVisionRange.size > 0) {
-         return 1;
-      }
 
+      // Try to activate the AI if the entity can see something to eat
+      for (const droppedItem of this.mob.droppedItemsInVisionRange) {
+         if (this.itemTargets.has(droppedItem.item.type)) {
+            return 1;
+         }
+      }
+      
       return 0;
    }
 

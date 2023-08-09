@@ -149,6 +149,34 @@ abstract class Entity extends _GameObject<"entity"> {
                lifetime: lifetime
             });
          }
+         
+         // Embers
+         if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
+            const spawnPosition = this.position.copy();
+            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+            spawnPosition.add(offset);
+
+            const lifetime = randFloat(0.75, 1.5);
+
+            const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
+            const velocityOffset = new Vector(30, Math.PI);
+            velocity.add(velocityOffset);
+            
+            new Particle({
+               type: ParticleType.ember,
+               spawnPosition: spawnPosition,
+               initialVelocity: velocity,
+               initialAcceleration: null,
+               drag: 60,
+               initialRotation: 2 * Math.PI * Math.random(),
+               angularVelocity: randFloat(-60, 60),
+               angularDrag: 60,
+               opacity: (age: number): number => {
+                  return lerp(0.75, 0, age / lifetime);
+               },
+               lifetime: lifetime
+            });
+         }
       }
 
       if (this.hasStatusEffect("poisoned")) {

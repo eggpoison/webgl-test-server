@@ -75,6 +75,10 @@ class Tribesman extends TribeMember {
          entityIsChased: (entity: Entity): boolean => {
             // Chase enemy tribe members
             if (entity.type === "player" || entity.type === "tribesman") {
+               if (this.tribe === null) {
+                  return true;
+               }
+               
                return (entity as TribeMember).tribe !== this.tribe;
             }
 
