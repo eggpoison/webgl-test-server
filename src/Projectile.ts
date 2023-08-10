@@ -1,7 +1,9 @@
 import { Point, ProjectileType, SETTINGS } from "webgl-test-shared";
-import _GameObject from "./GameObject";
+import _GameObject, { GameObjectEvents } from "./GameObject";
 
-class Projectile extends _GameObject<"projectile"> {
+interface ProjectileEvents extends GameObjectEvents {}
+
+class Projectile extends _GameObject<"projectile", ProjectileEvents> {
    public readonly i = "projectile" as const;
    
    protected readonly events = {

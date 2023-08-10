@@ -94,7 +94,7 @@ class Tribe {
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
-      
+
       this.totem.removeBanner(idx);
 
       this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_hut);
@@ -236,11 +236,16 @@ class Tribe {
 
    /** Updates which barrels belong to the tribe */
    private updateBarrels(): void {
+      for (const barrel of this.barrels) {
+         barrel.setTribe(null);
+      }
+      
       const barrels = new Set<Barrel>();
       for (const chunkInfluence of Object.values(this.chunkArea)) {
          const chunk = chunkInfluence.chunk;
          for (const entity of chunk.getEntities()) {
             if (entity.type === "barrel") {
+               (entity as Barrel).setTribe(this);
                barrels.add(entity as Barrel);
             }
          }

@@ -2,7 +2,6 @@ import { GameObjectDebugData, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD
 import Tile from "./tiles/Tile";
 import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
-import { EntityEvents, GameEvent, GameObjectEvents } from "./events";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -24,17 +23,19 @@ export interface GameObjectSubclasses {
    projectile: Projectile;
 }
 
-interface GameObjectSubclassEvents {
-   entity: EntityEvents;
-   droppedItem: GameObjectEvents;
-   projectile: GameObjectEvents;
+export interface GameObjectEvents {
+   on_destroy: () => void;
+   enter_collision: (collidingGameObject: GameObject) => void;
+   during_collision: (collidingGameObject: GameObject) => void;
+   enter_entity_collision: (collidingEntity: Entity) => void;
+   during_entity_collision: (collidingEntity: Entity) => void;
 }
 
-type IEvents<I extends keyof GameObjectSubclasses> = GameObjectSubclassEvents[I] extends GameObjectEvents ? GameObjectSubclassEvents[I] : never;
+
+export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
 /** A generic class for any object in the world which has hitbox(es) */
-// abstract class _GameObject<I extends keyof a, T extends GameObjectEvents> {
-abstract class _GameObject<I extends keyof GameObjectSubclasses> {
+abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType extends GameObjectEvents> {
    public abstract readonly i: I;
    
    /** Unique identifier for each game object */
@@ -64,7 +65,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    public previousCollidingObjects = new Set<GameObject>();
    public collidingObjects = new Set<GameObject>();
    
-   protected abstract readonly events: { [E in keyof IEvents<I>]: Array<GameEvent<IEvents<I>, E>> };
+   // protected abstract readonly events: { [E in keyof IEvents<I>]: Array<GameEvent<IEvents<I>, E>> };
+   protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
 
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
@@ -405,14 +407,15 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses> {
    }
 
    // Type parameters confuse me ;-;... This works somehow
-   public callEvents<E extends keyof IEvents<I>>(type: E, ...params: IEvents<I>[E] extends (...args: any) => void ? Parameters<IEvents<I>[E]> : never): void {
+   // public callEvents<E extends keyof IEvents<I>>(type: E, ...params: IEvents<I>[E] extends (...args: any) => void ? Parameters<IEvents<I>[E]> : never): void {
+   public callEvents<T extends keyof EventsType>(type: T, ...params: EventsType[T] extends (...args: any) => void ? Parameters<EventsType[T]> : never): void {
       for (const event of this.events[type]) {
          // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
          (event as any)(...params as any[]);
       }
    }
 
-   public createEvent<E extends keyof IEvents<I>>(type: E, event: IEvents<I>[E]): void {
+   public createEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
       this.events[type].push(event);
    }
 

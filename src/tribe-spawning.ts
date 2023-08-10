@@ -8,8 +8,6 @@ import TribeHut from "./entities/tribes/TribeHut";
 // const TRIBE_SPAWN_RATE = 0.5;
 const TRIBE_SPAWN_RATE = 4;
 
-/** Minimum distance huts will spawn from other entities when they spawn */
-const HUT_MIN_DISTANCE = 200;
 const MAX_HUT_SPAWN_ATTEMPTS = 100;
 
 const MIN_DISTANCE_FROM_OTHER_TRIBE = 4000;
@@ -21,6 +19,14 @@ const NUM_STARTING_HUTS: Record<TribeType, number> = {
    // [TribeType.goblins]: 2
    [TribeType.goblins]: 100
 };
+
+/** Minimum distance huts will spawn from other entities when they spawn */
+const HUT_MIN_DISTANCES: Record<TribeType, number> = {
+   [TribeType.plainspeople]: 200,
+   [TribeType.frostlings]: 200,
+   [TribeType.barbarians]: 200,
+   [TribeType.goblins]: 100
+}
 
 const getTribeTypeForTile = (position: Point): TribeType | null => {
    const tile = Board.getTileAtPosition(position);
@@ -86,15 +92,17 @@ const findValidHutPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArra
       const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
       const position = new Point(x, y);
 
+      const minHutDistance = HUT_MIN_DISTANCES[tribe.tribeType];
+
       // Make sure it isn't too close to any other buildings
       for (const buildingPosition of otherBuildingPositions) {
          const distance = position.calculateDistanceBetween(buildingPosition);
-         if (distance < HUT_MIN_DISTANCE) {
+         if (distance < minHutDistance) {
             continue mainLoop;
          }
       }
 
-      const entities = Board.getEntitiesInRange(position, HUT_MIN_DISTANCE);
+      const entities = Board.getEntitiesInRange(position, minHutDistance);
       if (entities.length === 0) {
          return position;
       }
@@ -118,7 +126,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
       const hutPosition = findValidHutPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
-         const hut = new TribeHut(hutPosition, false);
+         const hut = new TribeHut(hutPosition, false, tribe);
          tribe.registerNewHut(hut);
          hut.rotation = 2 * Math.PI * Math.random();
          buildingPositions.push(hutPosition);
@@ -140,6 +148,7 @@ const runSpawnAttempt = (): void => {
 }
 
 export function runTribeSpawnAttempt(): void {
+   // if(1+1==2)return;
    if (Math.random() < TRIBE_SPAWN_RATE) {
       runSpawnAttempt();
    }

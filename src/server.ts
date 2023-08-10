@@ -3,7 +3,7 @@ import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
-import _GameObject, { GameObjectSubclasses } from "./GameObject";
+import _GameObject, { GameObjectEvents, GameObjectSubclasses } from "./GameObject";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
@@ -15,8 +15,6 @@ import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
-import Tree from "./entities/resources/Tree";
-import { createItem } from "./items/item-creation";
 
 /*
 
@@ -53,7 +51,7 @@ const _GameObjectSubclassData = {
 
 type GameObjectSubclassData<T extends keyof GameObjectSubclasses> = Parameters<(typeof _GameObjectSubclassData)[T]>[0];
 
-const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameObject: _GameObject<T>): GameObjectSubclassData<T> => {
+const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameObject: _GameObject<T, GameObjectEvents>): GameObjectSubclassData<T> => {
    const baseGameObjectData: GameObjectData = {
       id: gameObject.id,
       position: gameObject.position.package(),
@@ -209,8 +207,6 @@ interface PlayerData {
 
 /** Communicates between the server and players */
 class GameServer {
-   private ticks: number = 0;
-
    /** Minimum number of units away from the border that the player will spawn at */
    private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
 
@@ -227,20 +223,12 @@ class GameServer {
       spawnInitialEntities();
    }
 
-   public getTicks(): number {
-      return this.ticks;
-   }
+   // public getTicks(): number {
+   //    return this.ticks;
+   // }
 
    public setTrackedGameObject(id: number | null): void {
       this.trackedGameObjectID = id;
-   }
-
-   public tickIntervalHasPassed(intervalSeconds: number): boolean {
-      const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
-      
-      const previousCheck = (this.ticks - 1) / ticksPerInterval;
-      const check = this.ticks / ticksPerInterval;
-      return Math.floor(previousCheck) !== Math.floor(check);
    }
 
    public start(): void {
@@ -264,7 +252,8 @@ class GameServer {
 
    private async tick(): Promise<void> {
       // Update server ticks and time
-      this.ticks++;
+      // this.ticks++;
+      Board.ticks++;
       Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
@@ -280,7 +269,7 @@ class GameServer {
       Board.resolveCollisions();
 
       // Age items
-      if (this.ticks % SETTINGS.TPS === 0) {
+      if (Board.ticks % SETTINGS.TPS === 0) {
          Board.ageItems();
       }
 
@@ -342,25 +331,6 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
-         const s = new Point(spawnPosition.x + 500, spawnPosition.y);
-         const totem = new TribeTotem(s, false);
-         const tribe = new Tribe(TribeType.goblins, totem)
-         const s2 = new Point(spawnPosition.x + 500, spawnPosition.y + 250);
-         const hut = new TribeHut(s2, false);
-         // const s3 = new Point(spawnPosition.x + 500, spawnPosition.y - 250);
-         // const hut2 = new TribeHut(s3, false);
-         tribe.registerNewHut(hut);
-         // tribe.registerNewHut(hut2);
-
-         const a = createItem("wood", 1);
-         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 250), a);
-         const b = createItem("eyeball", 1);
-         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 225), b);
-         const c = createItem("rock", 1);
-         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 275), c);
-         const d = createItem("berry", 1);
-         new DroppedItem(new Point(spawnPosition.x + 300, spawnPosition.y + 300), d);
-
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
          });
@@ -375,7 +345,7 @@ class GameServer {
             }
             
             // Spawn the player entity
-            const player = new Player(spawnPosition, false, playerData.username);
+            const player = new Player(spawnPosition, false, playerData.username, null);
             playerData.instance = player;
 
             const tiles = Board.getTiles();
@@ -447,7 +417,7 @@ class GameServer {
                   }
                },
                tileUpdates: [],
-               serverTicks: this.ticks,
+               serverTicks: Board.ticks,
                serverTime: Board.time,
                hitsTaken: [],
                playerHealth: 20,
@@ -578,7 +548,7 @@ class GameServer {
             particles: packagePlayerParticles(extendedVisibleChunkBounds),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
-            serverTicks: this.ticks,
+            serverTicks: Board.ticks,
             serverTime: Board.time,
             hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth(),
@@ -689,7 +659,7 @@ class GameServer {
          spawnPosition = this.generatePlayerSpawnPosition();
       }
 
-      const playerEntity = new Player(spawnPosition, false, username);
+      const playerEntity = new Player(spawnPosition, false, username, tribe);
 
       // Update the player data's instance
       this.playerDataRecord[socket.id].instance = playerEntity;
@@ -723,10 +693,9 @@ class GameServer {
 
 export const SERVER = new GameServer();
 
-Board.setup();
-SERVER.setup();
-
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
+   Board.setup();
+   SERVER.setup();
    SERVER.start();
 }

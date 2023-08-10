@@ -1,4 +1,5 @@
 import { CowSpecies, Point, randInt, SETTINGS } from "webgl-test-shared";
+import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -10,7 +11,6 @@ import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import FollowAI from "../../mob-ai/FollowAI";
 import WanderAI from "../../mob-ai/WanderAI";
-import { SERVER } from "../../server";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
@@ -131,7 +131,7 @@ class Cow extends Mob {
       super.tick();
 
       // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.3)) {
+      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.3)) {
          this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 5);
 
          this.numFootstepsTaken++;

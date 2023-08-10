@@ -64,6 +64,7 @@ class TribeTotem extends Entity {
       this.availableBannerPositions.splice(positionIdx, 1);
       
       const banner: TribeTotemBanner = {
+         hutNum: hutNum,
          layer: position.layer,
          direction: position.direction
       };

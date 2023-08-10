@@ -8,7 +8,6 @@ import Board from "../../Board";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import WanderAI from "../../mob-ai/WanderAI";
 import MoveAI from "../../mob-ai/MoveAI";
-import { errorMonitor } from "ws";
 
 interface MovingOrbData extends Mutable<SlimeOrbData> {
    angularVelocity: number;
@@ -21,6 +20,7 @@ interface EntityAnger {
 
 interface AngerPropagationInfo {
    chainLength: number;
+   readonly propagatedEntityIDs: Set<number>;
 }
 
 class Slime extends Mob {
@@ -191,7 +191,7 @@ class Slime extends Mob {
       this.createEvent("hurt", (_damage: number, attackingEntity: Entity | null): void => {
          if (attackingEntity === null) return;
 
-         this.addEntityAnger(attackingEntity, 1, { chainLength: 0 });
+         this.addEntityAnger(attackingEntity, 1, { chainLength: 0, propagatedEntityIDs: new Set() });
          this.propagateAnger(attackingEntity, 1);
       });
    }
@@ -350,13 +350,15 @@ class Slime extends Mob {
       }
    }
 
-   private propagateAnger(angeredEntity: Entity, amount: number, propagationInfo: AngerPropagationInfo = { chainLength: 0 }): void {
+   private propagateAnger(angeredEntity: Entity, amount: number, propagationInfo: AngerPropagationInfo = { chainLength: 0, propagatedEntityIDs: new Set() }): void {
       // Propagate the anger
       for (const entity of this.entitiesInVisionRange) {
-         if (entity.type === "slime") {
+         if (entity.type === "slime" && !propagationInfo.propagatedEntityIDs.has(entity.id)) {
             const distance = this.position.calculateDistanceBetween(entity.position);
             const distanceFactor = distance / this.visionRange;
 
+            propagationInfo.propagatedEntityIDs.add(this.id);
+            
             propagationInfo.chainLength++;
 
             if (propagationInfo.chainLength <= Slime.MAX_ANGER_PROPAGATION_CHAIN_LENGTH) {

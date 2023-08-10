@@ -13,7 +13,7 @@ import Wood from "./specific/Wood";
 import WoodenAxe from "./specific/WoodenAxe";
 import WoodenPickaxe from "./specific/WoodenPickaxe";
 import WoodenSword from "./specific/WoodenSword";
-import Workbench from "./specific/Workbench";
+import WorkbenchItem from "./specific/WorkbenchItem";
 import CactusSpine from "./specific/CactusSpine";
 import YetiHide from "./specific/YetiHide";
 import Frostcicle from "./specific/Frostcicle";
@@ -27,7 +27,7 @@ import FrostArmour from "./specific/FrostArmour";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
-   workbench: () => Workbench,
+   workbench: () => WorkbenchItem,
    wooden_sword: () => WoodenSword,
    wooden_axe: () => WoodenAxe,
    wooden_pickaxe: () => WoodenPickaxe,

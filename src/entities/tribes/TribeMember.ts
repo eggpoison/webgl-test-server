@@ -1,14 +1,13 @@
 import { EntityType, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
-import { SERVER } from "../../server";
 import TRIBE_INFO_RECORD from "webgl-test-shared/lib/tribes";
 import Tribe from "../../Tribe";
 import TribeHut from "./TribeHut";
 import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
-import Board from "../../Board";
 import TribeBuffer from "../../TribeBuffer";
 import Barrel from "./Barrel";
 import ArmourItem from "../../items/generic/ArmourItem";
@@ -88,7 +87,7 @@ abstract class TribeMember extends Mob {
       super.tick();
 
       // Footsteps
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(this.footstepInterval)) {
+      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(this.footstepInterval)) {
          this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
 
          this.numFootstepsTaken++;

@@ -21,6 +21,8 @@ abstract class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
 
+   public static ticks: number = 0;
+
    /** The time of day the server is currently in (from 0 to 23) */
    public static time: number = 6;
 
@@ -67,6 +69,14 @@ abstract class Board {
       }
 
       return chunks;
+   }
+
+   public static tickIntervalHasPassed(intervalSeconds: number): boolean {
+      const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
+      
+      const previousCheck = (this.ticks - 1) / ticksPerInterval;
+      const check = this.ticks / ticksPerInterval;
+      return Math.floor(previousCheck) !== Math.floor(check);
    }
 
    public static getEntityByID(id: number): Entity {

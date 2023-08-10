@@ -11,6 +11,8 @@ import DroppedItem from "../../items/DroppedItem";
 import MoveAI from "../../mob-ai/MoveAI";
 import Barrel from "./Barrel";
 import StackableItem from "../../items/generic/StackableItem";
+import TribeTotem from "./TribeTotem";
+import TribeHut from "./TribeHut";
 
 /*
 Priorities while in a tribe:
@@ -73,6 +75,20 @@ class Tribesman extends TribeMember {
          acceleration: Tribesman.RUN_ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
+            if (this.tribe !== null) {
+
+               // Attack enemy tribe buildings
+               if (entity.type === "barrel" && (entity as Barrel).tribe !== this.tribe) {
+                  return true;
+               }
+               if (entity.type === "tribe_totem" && (entity as TribeTotem).tribe !== this.tribe) {
+                  return true;
+               }
+               if (entity.type === "tribe_hut" && (entity as TribeHut).tribe !== this.tribe) {
+                  return true;
+               }
+            }
+            
             // Chase enemy tribe members
             if (entity.type === "player" || entity.type === "tribesman") {
                if (this.tribe === null) {

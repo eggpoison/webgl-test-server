@@ -1,16 +1,15 @@
 import { GameObjectDebugData, Point, randInt, randItem, SETTINGS, TileType, veryBadHash } from "webgl-test-shared";
+import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
 import Entity from "../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import _GameObject from "../../GameObject";
-import Board from "../../Board";
 import Tile from "../../tiles/Tile";
 import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
-import { SERVER } from "../../server";
 
 /** Stores which tiles belong to which yetis' territories */
 const yetiTerritoryTiles: Record<number, Yeti> = {};
@@ -160,7 +159,7 @@ class Yeti extends Mob {
       }
 
       // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.55)) {
+      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.55)) {
          this.createFootprintParticle(this.numFootstepsTaken, 40, 1.5, 8);
 
          this.numFootstepsTaken++;

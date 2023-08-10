@@ -31,7 +31,7 @@ class Player extends TribeMember {
 
    protected footstepInterval = 0.15;
 
-   constructor(position: Point, isNaturallySpawned: boolean, username: string) {
+   constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
       super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
 
       this.addHitboxes([
@@ -49,6 +49,8 @@ class Player extends TribeMember {
       inventoryComponent.createNewInventory("heldItemSlot", 1, 1, false);
 
       this.username = username;
+
+      this.tribe = tribe;
 
       this.createEvent("hurt", (_1, _2, knockback: number, hitDirection: number | null): void => {
          this.hitsTaken.push({

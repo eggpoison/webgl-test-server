@@ -3,7 +3,7 @@ import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import _GameObject from "../GameObject";
+import _GameObject, { GameObjectEvents } from "../GameObject";
 import { addEntityToCensus } from "../census";
 import Particle from "../Particle";
 
@@ -29,7 +29,13 @@ interface StatusEffect {
    ticksElapsed: number;
 }
 
-abstract class Entity extends _GameObject<"entity"> {
+interface EntityEvents extends GameObjectEvents {
+   hurt: (damage: number, attackingEntity: Entity | null, knockback: number, hitDirection: number | null) => void;
+   death: (attackingEntity: Entity | null) => void;
+   on_item_place: (placedEntity: Entity) => void;
+}
+
+abstract class Entity extends _GameObject<"entity", EntityEvents> {
    public readonly i = "entity" as const;
    
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
@@ -151,18 +157,17 @@ abstract class Entity extends _GameObject<"entity"> {
          }
          
          // Embers
-         if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
+         if (this.statusEffects.fire!.ticksElapsed % 3 === 0) {
             const spawnPosition = this.position.copy();
             const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
             spawnPosition.add(offset);
 
-            const lifetime = randFloat(0.75, 1.5);
+            const lifetime = randFloat(0.6, 1.2);
 
             const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
             const velocityOffset = new Vector(30, Math.PI);
             velocity.add(velocityOffset);
             
-            const scale = randFloat(1, 1.2);
             new Particle({
                type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
                spawnPosition: spawnPosition,
@@ -173,10 +178,10 @@ abstract class Entity extends _GameObject<"entity"> {
                angularVelocity: randFloat(-60, 60),
                angularDrag: 60,
                opacity: (age: number): number => {
-                  return lerp(0.75, 0, age / lifetime);
+                  let opacity = 1 - age / lifetime;
+                  return Math.pow(opacity, 0.3);
                },
-               lifetime: lifetime,
-               scale: scale
+               lifetime: lifetime
             });
          }
       }

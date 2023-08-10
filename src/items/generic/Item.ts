@@ -1,6 +1,7 @@
 import { ItemType, BaseItemInfo, ITEM_INFO_RECORD } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
+import TribeMember from "../../entities/tribes/TribeMember";
 
 let nextAvailableID = 0;
 const getUniqueID = (): number => {
@@ -23,7 +24,7 @@ abstract class Item implements BaseItemInfo {
 
    public tick?(): void;
 
-   public use?(entity: Entity, inventoryName: string): void;
+   public use?(entity: TribeMember, inventoryName: string): void;
 
    public consumeItem(inventoryComponent: InventoryComponent, inventoryName: string, amount: number): void {
       const itemSlots = inventoryComponent.getInventory(inventoryName).itemSlots;
