@@ -1,10 +1,11 @@
-import { ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
+import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType } from "webgl-test-shared";
 import Item, { itemIsStackable } from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import { GameObject } from "../GameObject";
+import Entity from "../entities/Entity";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 
@@ -17,6 +18,27 @@ export interface Inventory {
    readonly itemSlots: ItemSlots;
    /** Whether the inventory allows dropped items to be put into it */
    readonly acceptsPickedUpItems: boolean;
+}
+
+export function serializeInventoryData(entity: Entity, inventory: Inventory, inventoryName: string): InventoryData {
+   const itemSlots: ItemSlotsData = {};
+   for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
+      itemSlots[Number(itemSlot)] = {
+         type: item.type,
+         count: item.count,
+         id: item.id
+      };
+   }
+   
+   const inventoryData: InventoryData = {
+      width: inventory.width,
+      height: inventory.height,
+      itemSlots: itemSlots,
+      entityID: entity.id,
+      inventoryName: inventoryName
+   };
+   
+   return inventoryData;
 }
 
 class InventoryComponent extends Component {

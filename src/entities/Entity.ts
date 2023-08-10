@@ -62,7 +62,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
       this.type = entityType;
       
-      // this.position = position;
       this.components = components;
       this.tickableComponents = filterTickableComponents(components);
 
