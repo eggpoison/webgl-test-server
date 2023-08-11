@@ -5,6 +5,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import DroppedItem from "../../items/DroppedItem";
 import { createItem } from "../../items/item-creation";
 import Board from "../../Board";
+import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 
 class BerryBush extends Entity {
    private static readonly HEALTH = 10;

@@ -22,6 +22,7 @@ abstract class Board {
 
    /** The time of day the server is currently in (from 0 to 23) */
    public static time: number = 6;
+   // public static time: number = 0;
 
    private static readonly gameObjects = new Set<GameObject>();
 
@@ -268,6 +269,11 @@ abstract class Board {
    }
 
    public static addGameObjectToJoinBuffer(gameObject: GameObject): void {
+      if (Object.keys(this.droppedItems).length > 100 && gameObject.i === "droppedItem") {
+         return;
+      }
+      // console.log(Object.keys(this.droppedItems).length);
+      
       this.joinBuffer.push(gameObject);
    }
 

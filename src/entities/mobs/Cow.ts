@@ -82,7 +82,7 @@ class Cow extends Mob {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 1,
+         metabolism: 20,
          itemTargets: new Set(["berry"])
       }));
 
@@ -92,8 +92,10 @@ class Cow extends Mob {
 
       this.addAI(new EscapeAI(this, {
          aiWeightMultiplier: 1.5,
-         acceleration: 200,
-         terminalVelocity: 200,
+         // acceleration: 200,
+         // terminalVelocity: 200,,
+         acceleration: 100,
+         terminalVelocity: 50,
          attackSubsideTime: 5
       }));
 
@@ -110,7 +112,7 @@ class Cow extends Mob {
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
 
-      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2), true);
+      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2), false);
       this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2), true);
 
       this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {

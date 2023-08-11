@@ -9,6 +9,9 @@ import { createGenericTile } from "./tiles/tile-class-record";
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
 const HUMIDITY_NOISE_SCALE = 30;
+// const HEIGHT_NOISE_SCALE = 25;
+// const TEMPERATURE_NOISE_SCALE = 30;
+// const HUMIDITY_NOISE_SCALE = 15;
 
 const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height: number, temperature: number, humidity: number): boolean => {
    // Height
@@ -72,7 +75,8 @@ const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): 
    for (const tileGenerationInfo of biomeGenerationInfo.tiles) {
       let weight = 0;
       if (typeof tileGenerationInfo.noiseRequirements !== "undefined") {
-         weight = generatePointPerlinNoise(x, y, tileGenerationInfo.noiseRequirements.scale, tileGenerationInfo.tileType + "-" + tileGenerationInfo.noiseRequirements.scale);
+         // weight = generatePointPerlinNoise(x, y, tileGenerationInfo.noiseRequirements.scale, tileGenerationInfo.tileType + "-" + tileGenerationInfo.noiseRequirements.scale);
+         weight = generatePointPerlinNoise(x, y, 5, tileGenerationInfo.tileType + "-" + 5);
       }
       
       if (matchesTileRequirements(tileGenerationInfo, weight, dist)) {

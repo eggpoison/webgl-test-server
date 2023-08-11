@@ -10,8 +10,8 @@ class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
 
    /** Average number of zombies that are created by the tombstone in a second */
-   // private static readonly ZOMBIE_SPAWN_RATE = 0.05;
-   private static readonly ZOMBIE_SPAWN_RATE = 0.75;
+   private static readonly ZOMBIE_SPAWN_RATE = 0.05;
+   // private static readonly ZOMBIE_SPAWN_RATE = 0.75;
    /** Distance the zombies spawn from the tombstone */
    private static readonly ZOMBIE_SPAWN_DISTANCE = 48;
    /** Maximum amount of zombies that can be spawned by one tombstone */

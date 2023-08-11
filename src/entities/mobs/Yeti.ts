@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, randInt, randItem, SETTINGS, TileType, veryBadHash } from "webgl-test-shared";
+import { GameObjectDebugData, Point, ProjectileType, randFloat, randInt, randItem, SETTINGS, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -11,6 +11,18 @@ import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import { SERVER } from "../../server";
+import Projectile from "../../Projectile";
+
+enum SnowProjectileSize {
+   small,
+   large
+}
+
+enum SnowThrowStage {
+   windup,
+   hold,
+   return
+}
 
 /** Stores which tiles belong to which yetis' territories */
 const yetiTerritoryTiles: Record<number, Yeti> = {};
@@ -48,12 +60,29 @@ class Yeti extends Mob {
 
    private static readonly ATTACK_PURSUE_TIME = 5;
 
+   private static readonly SNOW_THROW_COOLDOWN = 7;
+   private static readonly SMALL_SNOWBALL_THROW_SPEED = [550, 650] as const;
+   private static readonly LARGE_SNOWBALL_THROW_SPEED = [350, 450] as const;
+   private static readonly SNOW_THROW_ARC = Math.PI/5;
+   private static readonly SNOWBALL_LIFETIME = [12, 16] as const;
+   private static readonly SNOW_THROW_OFFSET = 64;
+   private static readonly SNOW_THROW_WINDUP_TIME = 2.5;
+   private static readonly SNOW_THROW_HOLD_TIME = 0.2;
+   private static readonly SNOW_THROW_RETURN_TIME = 0.6;
+   
    private readonly territory: ReadonlyArray<Tile>;
 
    // Stores the ids of all entities which have recently attacked the yeti
    private readonly attackingEntities: Record<number, number> = {};
 
    private numFootstepsTaken = 0;
+
+   private attackTarget: Entity | null = null;
+   private isThrowingSnow = false;
+   private snowThrowStage: SnowThrowStage = SnowThrowStage.windup;
+   private snowThrowAttackProgress = 0;
+   private snowThrowCooldown = Yeti.SNOW_THROW_COOLDOWN;
+   private snowThrowHoldTimer = 0;
 
    constructor(position: Point) {
       super(position, {
@@ -71,17 +100,12 @@ class Yeti extends Mob {
          })
       ]);
 
-      this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
-         wanderRate: 0.6,
-         acceleration: 100,
-         terminalVelocity: 50,
-         validTileTargets: Yeti.YETI_TILES,
-         shouldWander: (position: Point): boolean => {
-            const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
-            const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
-            const tile = Board.getTile(tileX, tileY);
-            return this.territory.includes(tile);
+      this.addAI(new ChaseAI(this, {
+         aiWeightMultiplier: 1.5,
+         acceleration: 0,
+         terminalVelocity: 0,
+         entityIsChased: (entity: Entity) => {
+            return entity === this.attackTarget;
          }
       }));
 
@@ -95,6 +119,18 @@ class Yeti extends Mob {
             
             // Chase the entity if they are in the yeti's territory or have recently attacked the yeti
             return this.territory.includes(entity.tile) || this.attackingEntities.hasOwnProperty(entity.id);
+         },
+         callback: (targetEntity: Entity | null) => {
+            if (targetEntity === null) {
+               return;
+            }
+
+            if (this.shouldThrowSnow()) {
+               this.isThrowingSnow = true;
+               this.attackTarget = targetEntity;
+               this.snowThrowAttackProgress = 1;
+               this.snowThrowStage = SnowThrowStage.windup;
+            }
          }
       }));
 
@@ -104,6 +140,20 @@ class Yeti extends Mob {
          terminalVelocity: 50,
          metabolism: 1,
          itemTargets: new Set(["raw_beef", "leather"])
+      }));
+
+      this.addAI(new WanderAI(this, {
+         aiWeightMultiplier: 0.5,
+         wanderRate: 0.6,
+         acceleration: 100,
+         terminalVelocity: 50,
+         validTileTargets: Yeti.YETI_TILES,
+         shouldWander: (position: Point): boolean => {
+            const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
+            const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
+            const tile = Board.getTile(tileX, tileY);
+            return this.territory.includes(tile);
+         }
       }));
 
       this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
@@ -165,10 +215,110 @@ class Yeti extends Mob {
 
          this.numFootstepsTaken++;
       }
+
+      if (this.isThrowingSnow) {
+         switch (this.snowThrowStage) {
+            case SnowThrowStage.windup: {
+               this.snowThrowAttackProgress -= 1 / SETTINGS.TPS / Yeti.SNOW_THROW_WINDUP_TIME;
+               if (this.snowThrowAttackProgress <= 0) {
+                  this.throwSnow(this.attackTarget!);
+                  this.snowThrowAttackProgress = 0;
+                  this.snowThrowCooldown = Yeti.SNOW_THROW_COOLDOWN;
+                  this.snowThrowStage = SnowThrowStage.hold;
+                  this.snowThrowHoldTimer = 0;
+               }
+               break;
+            }
+            case SnowThrowStage.hold: {
+               this.snowThrowHoldTimer += 1 / SETTINGS.TPS;
+               if (this.snowThrowHoldTimer >= Yeti.SNOW_THROW_HOLD_TIME) {
+                  this.snowThrowStage = SnowThrowStage.return;
+               }
+               break;
+            }
+            case SnowThrowStage.return: {
+               this.snowThrowAttackProgress += 1 / SETTINGS.TPS / Yeti.SNOW_THROW_RETURN_TIME;
+               if (this.snowThrowAttackProgress >= 1) {
+                  this.snowThrowAttackProgress = 1;
+                  this.attackTarget = null;
+                  this.isThrowingSnow = false;
+               }
+            }
+         }
+      }
+
+      this.snowThrowCooldown -= 1 / SETTINGS.TPS;
+      if (this.snowThrowCooldown < 0) {
+         this.snowThrowCooldown = 0;
+      }
    }
 
-   public getClientArgs(): [] {
-      return [];
+   private shouldThrowSnow(): boolean {
+      return this.snowThrowCooldown === 0 && !this.isThrowingSnow;
+   }
+
+   private throwSnow(target: Entity): void {
+      const angle = this.position.calculateAngleBetween(target.position);
+
+      const numLargeProjectiles = randInt(1, 2);
+      for (let i = 0; i < numLargeProjectiles; i++) {
+         this.createSnowProjectile(SnowProjectileSize.large, angle);
+      }
+
+      const numSmallProjectiles = randInt(2, 3);
+      for (let i = 0; i < numSmallProjectiles; i++) {
+         this.createSnowProjectile(SnowProjectileSize.small, angle);
+      }
+   }
+
+   private createSnowProjectile(size: SnowProjectileSize, throwAngle: number): void {
+      const angle = throwAngle + randFloat(-Yeti.SNOW_THROW_ARC, Yeti.SNOW_THROW_ARC);
+      
+      const position = this.position.copy();
+      const offset = new Vector(Yeti.SNOW_THROW_OFFSET, angle).convertToPoint();
+      position.add(offset);
+
+      let velocityMagnitude: number;
+      if (size === SnowProjectileSize.small) {
+         velocityMagnitude = randFloat(...Yeti.SMALL_SNOWBALL_THROW_SPEED);
+      } else {
+         velocityMagnitude = randFloat(...Yeti.LARGE_SNOWBALL_THROW_SPEED);
+      }
+      const velocity = new Vector(velocityMagnitude, angle);
+
+      const projectileType = size === SnowProjectileSize.large ? ProjectileType.snowballLarge : ProjectileType.snowballSmall;
+      const projectile = new Projectile(position, projectileType, randFloat(...Yeti.SNOWBALL_LIFETIME));
+      projectile.velocity = velocity;
+
+      projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
+         // Don't let the yeti damage itself
+         if (collidingEntity === this) {
+            return;
+         }
+         
+         if (projectile.velocity === null || projectile.velocity.magnitude < 100) {
+            return;
+         }
+
+         const healthComponent = collidingEntity.getComponent("health");
+         if (healthComponent !== null) {
+            const hitDirection = projectile.position.calculateAngleBetween(collidingEntity.position);
+            healthComponent.damage(4, 100, hitDirection, null);
+         }
+      });
+      projectile.isAffectedByFriction = true;
+
+      const hitboxSize = size === SnowProjectileSize.large ? 60 : 44;
+      projectile.addHitboxes([
+         new CircularHitbox({
+            type: "circular",
+            radius: hitboxSize / 2
+         })
+      ]);
+   }
+
+   public getClientArgs(): [attackProgress: number] {
+      return [this.snowThrowAttackProgress];
    }
 
    public getDebugData(): GameObjectDebugData {

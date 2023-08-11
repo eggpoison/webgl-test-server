@@ -11,6 +11,8 @@ import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Tribe from "./Tribe";
+import Cow from "./entities/mobs/Cow";
+import IceSpikes from "./entities/resources/IceSpikes";
 
 /*
 
@@ -322,7 +324,12 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         const spawnPosition = this.generatePlayerSpawnPosition();
+         // const spawnPosition = this.generatePlayerSpawnPosition();
+
+         const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE / 2;
+         const spawnPosition = new Point(x, x);
+
+         // new Cow(new Point(spawnPosition.x + 300, spawnPosition.y), false);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());

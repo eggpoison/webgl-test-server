@@ -1,4 +1,4 @@
-import { Point, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
+import { Point, ProjectileType, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -16,13 +16,16 @@ class IceSpikes extends Entity {
    private static readonly CONTACT_KNOCKBACK = 180;
 
    private static readonly TICKS_TO_GROW = 1/5 * SETTINGS.TPS;
+   // private static readonly TICKS_TO_GROW = 1;
+   // private static readonly GROWTH_TICK_CHANCE = 1;
    private static readonly GROWTH_TICK_CHANCE = 0.5;
    private static readonly GROWTH_OFFSET = 60;
 
    private static readonly ICE_SHARD_DAMAGE = 2;
    private static readonly ICE_SHARD_EXPLODE_SPEED = 700;
 
-   private readonly maxChildren = randInt(0, 3);
+   // private readonly maxChildren = randInt(0, 3);
+   private readonly maxChildren = 100;
 
    public numChildrenIceSpikes = 0;
    private iceSpikeGrowProgress = 0;
@@ -50,7 +53,9 @@ class IceSpikes extends Entity {
          })
       ]);
 
-      itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1), false);
+      if (Object.keys(Board.droppedItems).length < 50) {
+         itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1), false);
+      }
 
       this.isStatic = true;
       
@@ -78,12 +83,12 @@ class IceSpikes extends Entity {
    public tick(): void {
       super.tick();
 
-      if (this.canGrow() && Math.random() < IceSpikes.GROWTH_TICK_CHANCE / SETTINGS.TPS) {
-         this.iceSpikeGrowProgress++;
-         if (this.iceSpikeGrowProgress >= IceSpikes.TICKS_TO_GROW) {
-            this.grow();
-         }
-      }
+      // if (this.canGrow() && Math.random() < IceSpikes.GROWTH_TICK_CHANCE / SETTINGS.TPS) {
+      //    this.iceSpikeGrowProgress++;
+      //    if (this.iceSpikeGrowProgress >= IceSpikes.TICKS_TO_GROW) {
+      //       this.grow();
+      //    }
+      // }
    }
 
    private canGrow(): boolean {
@@ -113,7 +118,7 @@ class IceSpikes extends Entity {
          position.add(new Vector(10, moveDirection).convertToPoint());
 
          const lifetime = randFloat(0.1, 0.2);
-         const projectile = new Projectile(position, "ice_shards", lifetime);
+         const projectile = new Projectile(position, ProjectileType.iceShards, lifetime);
 
          projectile.rotation = moveDirection;
 
@@ -138,7 +143,7 @@ class IceSpikes extends Entity {
                } else {
                   const hitDirection = projectile.position.calculateAngleBetween(collidingEntity.position);
    
-                  healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, "ice_shards");
+                  // healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, "ice_shards");
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
                   if (collidingEntity.type !== "yeti") {

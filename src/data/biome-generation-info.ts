@@ -113,8 +113,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            // tileType: "rock",
-            tileType: "darkRock",
+            tileType: "rock",
+            // tileType: "darkRock",
             isWall: true,
             noiseRequirements: {
                scale: 7,
@@ -136,58 +136,59 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          minHumidity: 0.8
       },
       tiles: [
+         // {
+         //    tileType: "slime",
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 2.5,
+         //       minWeight: 0.2
+         //    },
+         //    minDist: 4
+         // },
+         // {
+         //    tileType: "slime",
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 2.5,
+         //       minWeight: 0.6
+         //    },
+         //    minDist: 2
+         // },
+         // {
+         //    tileType: "sludge",
+         //    isWall: false
+         // }
          {
-            tileType: "slime",
+            tileType: "sludge",
             isWall: false,
             noiseRequirements: {
-               scale: 2.5,
-               minWeight: 0.2
+               scale: 5,
+               minWeight: 0.25
             },
-            minDist: 4
+            minDist: 3
          },
          {
-            tileType: "slime",
+            tileType: "sludge",
             isWall: false,
             noiseRequirements: {
-               scale: 2.5,
-               minWeight: 0.6
+               scale: 5,
+               minWeight: 0.4
             },
             minDist: 2
          },
          {
             tileType: "sludge",
+            isWall: false,
+            noiseRequirements: {
+               scale: 5,
+               minWeight: 0.6
+            },
+            minDist: 1
+         },
+         {
+            tileType: "dirt",
             isWall: false
          }
-         // {
-         //    info: {
-         //       type: "sludge",
-         //       isWall: false
-         //    },
-         //    minWeight: 0.25,
-         //    minDist: 3
-         // },
-         // {
-         //    info: {
-         //       type: "sludge",
-         //       isWall: false
-         //    },
-         //    minWeight: 0.4,
-         //    minDist: 2
-         // },
-         // {
-         //    info: {
-         //       type: "sludge",
-         //       isWall: false
-         //    },
-         //    minWeight: 0.6,
-         //    minDist: 1
-         // },
-         // {
-         //    info: {
-         //       type: "dirt",
-         //       isWall: false
-         //    }
-         // }
       ]
    },
    grasslands: {
