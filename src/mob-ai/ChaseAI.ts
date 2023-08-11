@@ -76,7 +76,7 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       // Estimate time it will take for the entity to stop
       const stopTime = Math.pow(this.mob.velocity.magnitude, 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
       const stopDistance = (Math.pow(stopTime, 2) + stopTime) * this.mob.velocity.magnitude;
-      return stopDistance
+      return stopDistance;
    }
 
    public onDeactivation(): void {

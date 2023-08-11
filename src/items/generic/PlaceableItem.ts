@@ -28,8 +28,8 @@ const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxIn
       height: 80
    },
    campfire: {
-      width: 80,
-      height: 80
+      width: 104,
+      height: 104
    },
    furnace: {
       width: 80,

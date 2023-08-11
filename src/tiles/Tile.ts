@@ -2,6 +2,11 @@ import { TileType, BiomeName, TileInfo } from "webgl-test-shared";
 import Board from "../Board";
 import { addTileToCensus, removeTileFromCensus } from "../census";
 
+export interface TileCoordinates {
+   readonly x: number;
+   readonly y: number;
+}
+
 abstract class Tile implements TileInfo {
    public readonly x: number;
    public readonly y: number;

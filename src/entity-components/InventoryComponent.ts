@@ -84,7 +84,9 @@ class InventoryComponent extends Component {
    }
 
    public getInventory(name: string): Inventory {
-      if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
+      if (!this.inventories.hasOwnProperty(name)) {
+         throw new Error(`Could not find an inventory by the name of '${name}' on entity type '${this.entity.type}'.`);
+      }
       
       return this.inventories[name];
    }

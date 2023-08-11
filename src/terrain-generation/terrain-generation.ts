@@ -1,10 +1,10 @@
 import { SETTINGS } from "webgl-test-shared/lib/settings";
-import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "./perlin-noise";
-import { BiomeName } from "webgl-test-shared/lib/biomes";
-import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./data/biome-generation-info";
-import Tile from "./tiles/Tile";
-import { TileInfo } from "webgl-test-shared";
-import { createGenericTile } from "./tiles/tile-class-record";
+import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
+import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/biome-generation-info";
+import Tile from "../tiles/Tile";
+import { BiomeName, TileInfo } from "webgl-test-shared";
+import { createGenericTile } from "../tiles/tile-class-record";
+import { generateRiverTiles } from "./river-generation";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
@@ -116,7 +116,6 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 
 /** Generate the tile array's tile types based on their biomes */
 const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void => {
-
    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const tileInfo = tileInfoArray[x][y];
@@ -129,9 +128,9 @@ const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void 
 
 function generateTerrain(): Array<Array<Tile>> {
    // Initialise the tile info array
-   const tileInfoArray = new Array<Array<Partial<TileInfo>>>(SETTINGS.BOARD_DIMENSIONS);
+   const tileInfoArray = new Array<Array<Partial<TileInfo>>>();
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-      tileInfoArray[x] = new Array<TileInfo>(SETTINGS.BOARD_DIMENSIONS);
+      tileInfoArray.push(new Array<TileInfo>(SETTINGS.BOARD_DIMENSIONS));
 
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          tileInfoArray[x][y] = {};
@@ -139,6 +138,13 @@ function generateTerrain(): Array<Array<Tile>> {
    }
 
    generateBiomeInfo(tileInfoArray);
+
+   // Generate rivers
+   const riverTiles = generateRiverTiles();
+   for (const tile of riverTiles) {
+      tileInfoArray[tile.x][tile.y].biomeName = "river"
+   }
+
    generateTileInfo(tileInfoArray);
 
    // Make an array of tiles from the tile info array

@@ -5,8 +5,7 @@ import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
 
 /** Average number of spawn attempts that are done each second */
-// const TRIBE_SPAWN_RATE = 0.5;
-const TRIBE_SPAWN_RATE = 4;
+const TRIBE_SPAWN_RATE = 0.5;
 
 const MAX_HUT_SPAWN_ATTEMPTS = 100;
 
@@ -16,8 +15,7 @@ const NUM_STARTING_HUTS: Record<TribeType, number> = {
    [TribeType.plainspeople]: 1,
    [TribeType.frostlings]: 1,
    [TribeType.barbarians]: 1,
-   // [TribeType.goblins]: 2
-   [TribeType.goblins]: 100
+   [TribeType.goblins]: 2
 };
 
 /** Minimum distance huts will spawn from other entities when they spawn */

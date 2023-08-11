@@ -2,7 +2,7 @@ import { Point, SETTINGS, ServerTileUpdateData, Vector, randInt } from "webgl-te
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import generateTerrain from "./terrain-generation";
+import generateTerrain from "./terrain-generation/terrain-generation";
 import Tile from "./tiles/Tile";
 import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
