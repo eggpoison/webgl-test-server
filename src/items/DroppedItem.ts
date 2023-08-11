@@ -1,14 +1,16 @@
 import { Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./generic/Item";
-import _GameObject from "../GameObject";
+import _GameObject, { GameObjectEvents } from "../GameObject";
 
 interface EntityPickupCooldown {
    readonly entityID: number;
    secondsRemaining: number;
 }
 
-class DroppedItem extends _GameObject<"droppedItem"> {
+interface DroppedItemEvents extends GameObjectEvents {}
+
+class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
    public i = "droppedItem" as const;
 
    protected events = {

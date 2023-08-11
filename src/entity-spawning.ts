@@ -1,5 +1,4 @@
 import { EntityType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
-import Cow from "./entities/mobs/Cow";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
@@ -144,14 +143,11 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       return;
    }
 
-   const cowSpecies = randInt(0, 1);
+   // const cowSpecies = randInt(0, 1);
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
-   const baseEntity = new entityClass(spawnOrigin, true);
-   if (spawnInfo.entityType === "cow") {
-      (baseEntity as Cow).species = cowSpecies;
-   }
+   new entityClass(spawnOrigin, true);
 
    if (typeof spawnInfo.packSpawningInfo === "undefined") {
       return;
@@ -172,11 +168,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
       if (spawnPositionIsValid(spawnPosition)) {
-         const entity = new entityClass(spawnPosition, true);
-         if (spawnInfo.entityType === "cow") {
-            (entity as Cow).species = cowSpecies;
-         }
-
+         new entityClass(spawnPosition, true);
          i++;
       }
 
@@ -225,20 +217,21 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
       const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
       const spawnPosition = new Point(x, y);
-   
+
       spawnEntities(spawnInfo, spawnPosition);
    }
 }
 
 export function runSpawnAttempt(): void {
-   // if (1+1==2)return;
-   for (const spawnInfo of SPAWN_INFO_RECORD) {
-      if (spawnConditionsAreMet(spawnInfo)) {
-         for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-            for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+   mainLoop: for (const spawnInfo of SPAWN_INFO_RECORD) {
+      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
+         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
+            if (spawnConditionsAreMet(spawnInfo)) {
                if (Math.random() < spawnInfo.spawnRate / SETTINGS.TPS) {
                   runSpawnEvent(spawnInfo);
                }
+            } else {
+               continue mainLoop;
             }
          }
       }

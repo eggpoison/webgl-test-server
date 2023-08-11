@@ -50,33 +50,33 @@ class Boulder extends Entity {
       });
    }
 
-private createRockParticle(type: "outer" | "inner"): void {
-   const spawnPosition = this.position.copy();
+   private createRockParticle(type: "outer" | "inner"): void {
+      const spawnPosition = this.position.copy();
 
-   if (type === "outer") {
-      const offset = new Vector(Boulder.RADIUS, 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
-   } else {
-      const offset = new Vector(Boulder.RADIUS * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
+      if (type === "outer") {
+         const offset = new Vector(Boulder.RADIUS, 2 * Math.PI * Math.random()).convertToPoint();
+         spawnPosition.add(offset);
+      } else {
+         const offset = new Vector(Boulder.RADIUS * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+         spawnPosition.add(offset);
+      }
+
+      const lifetime = randFloat(0.3, 0.6);
+      
+      new Particle({
+         type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
+         spawnPosition: spawnPosition,
+         initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),
+         initialAcceleration: null,
+         initialRotation: 2 * Math.PI * Math.random(),
+         angularVelocity: 2 * Math.PI * randFloat(-1, 1),
+         angularDrag: 1 * Math.PI,
+         opacity: (age: number): number => {
+            return 1 - age/lifetime;
+         },
+         lifetime: lifetime
+      });
    }
-
-   const lifetime = randFloat(0.3, 0.6);
-   
-   new Particle({
-      type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
-      spawnPosition: spawnPosition,
-      initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),
-      initialAcceleration: null,
-      initialRotation: 2 * Math.PI * Math.random(),
-      angularVelocity: 2 * Math.PI * randFloat(-1, 1),
-      angularDrag: 1 * Math.PI,
-      opacity: (age: number): number => {
-         return 1 - age/lifetime;
-      },
-      lifetime: lifetime
-   });
-}
 
    public getClientArgs(): [boulderType: number] {
       return [this.boulderType];

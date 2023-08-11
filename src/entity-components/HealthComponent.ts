@@ -10,6 +10,10 @@ class HealthComponent extends Component {
    public readonly maxHealth: number;
    private health: number;
 
+   /** How much that incoming damage gets reduced. 0 = none, 1 = all */
+   private defence = 0;
+   private readonly defenceFactors: Record<string, number> = {};
+
    private readonly localInvulnerabilityHashes: { [immunityHash: string]: number } = {};
 
    private readonly hasGlobalInvulnerability: boolean;
@@ -27,6 +31,32 @@ class HealthComponent extends Component {
       this.health = maxHealth;
 
       this.hasGlobalInvulnerability = hasGlobalInvulnerability;
+   }
+
+   public addDefence(defence: number, name: string): void {
+      if (this.defenceFactors.hasOwnProperty(name)) {
+         return;
+      }
+      
+      this.defence += defence;
+      if (this.defence > 1) {
+         this.defence = 1;
+      }
+
+      this.defenceFactors[name] = defence;
+   }
+
+   public removeDefence(name: string): void {
+      if (!this.defenceFactors.hasOwnProperty(name)) {
+         return;
+      }
+      
+      this.defence -= this.defenceFactors[name];
+      if (this.defence < 0) {
+         this.defence = 0;
+      }
+
+      delete this.defenceFactors[name];
    }
 
    public tick(): void {
@@ -76,7 +106,10 @@ class HealthComponent extends Component {
 
       this.secondsSinceLastHit = 0;
 
-      this.health -= damage;
+      const absorbedDamage = damage * this.defence;
+      const actualDamage = damage - absorbedDamage;
+      
+      this.health -= actualDamage;
       
       // If the entity was killed by the attack, destroy the entity
       if (this.isDead()) {

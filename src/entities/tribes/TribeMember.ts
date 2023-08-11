@@ -1,31 +1,42 @@
-import { EntityType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { EntityType, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
-import { SERVER } from "../../server";
 import TRIBE_INFO_RECORD from "webgl-test-shared/lib/tribes";
 import Tribe from "../../Tribe";
 import TribeHut from "./TribeHut";
 import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
-import Board from "../../Board";
+import TribeBuffer from "../../TribeBuffer";
+import Barrel from "./Barrel";
+import ArmourItem from "../../items/generic/ArmourItem";
+import DroppedItem from "../../items/DroppedItem";
 
 abstract class TribeMember extends Mob {
+   private static readonly DEATH_ITEM_DROP_RANGE = 38;
+   
    public readonly tribeType: TribeType;
 
    public tribe: Tribe | null = null;
 
    private numFootstepsTaken = 0;
 
+   protected abstract readonly footstepInterval: number;
+
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
 
+      const inventoryComponent = new InventoryComponent();
+      
       super(position, {
          health: new HealthComponent(tribeInfo.maxHealth, true),
-         inventory: new InventoryComponent()
+         inventory: inventoryComponent
       }, entityType, visionRange, isNaturallySpawned);
 
       this.tribeType = tribeType;
+
+      inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
 
       this.createEvent("hurt", (_1, _2, _3, hitDirection: number | null): void => {
          this.createBloodPoolParticle();
@@ -39,14 +50,28 @@ abstract class TribeMember extends Mob {
 
       this.createEvent("on_item_place", (placedItem: Entity): void => {
          if (placedItem.type === "tribe_totem") {
-            const tribe = new Tribe(this.tribeType, placedItem as TribeTotem);
-            this.setTribe(tribe);
+            TribeBuffer.addTribe(this.tribeType, placedItem as TribeTotem, this);
          } else if (placedItem.type === "tribe_hut") {
             if (this.tribe === null) {
                throw new Error("Tribe member didn't belong to a tribe when placing a hut");
             }
 
             this.tribe.registerNewHut(placedItem as TribeHut);
+         }
+      });
+
+      // Drop inventory on death
+      this.createEvent("death", () => {
+         const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+         for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
+            if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
+               const position = this.position.copy();
+               const offset = new Vector(TribeMember.DEATH_ITEM_DROP_RANGE * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+               position.add(offset);
+               
+               const item = hotbarInventory.itemSlots[itemSlot];
+               new DroppedItem(position, item);
+            }
          }
       });
    }
@@ -61,11 +86,31 @@ abstract class TribeMember extends Mob {
    public tick(): void {
       super.tick();
 
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.15)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20);
+      // Footsteps
+      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(this.footstepInterval)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
 
          this.numFootstepsTaken++;
       }
+      
+      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
+      if (armourInventory.itemSlots.hasOwnProperty(1)) {
+         const armourItem = armourInventory.itemSlots[1] as ArmourItem;
+         this.getComponent("health")!.addDefence(armourItem.defence, "armour");
+      } else {
+         this.getComponent("health")!.removeDefence("armour");
+      }
+   }
+
+   protected overrideTileMoveSpeedMultiplier(): number | null {
+      // If snow armour is equipped, move at normal speed on snow tiles
+      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
+      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === "frost_armour") {
+         if (this.tile.type === "snow") {
+            return 1;
+         }
+      }
+      return null;
    }
 
    protected calculateAttackTarget(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -84,10 +129,23 @@ abstract class TribeMember extends Mob {
          if (this.tribe !== null && entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
             continue;
          }
-
-         // Don't attack fellow tribe members
-         if (this.tribe !== null && entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
+         if (this.tribe !== null && entity instanceof Barrel && entity.tribe === this.tribe) {
             continue;
+         }
+
+         if (this.tribe !== null) {
+            // Don't attack fellow tribe members
+            if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
+               continue;
+            }
+
+            // Don't attack tribe buildings
+            if (entity.type === "barrel" && (entity as Barrel).tribe === this.tribe) {
+               continue;
+            }
+            if (entity.type === "tribe_totem" && (entity as TribeTotem).tribe === this.tribe) {
+               continue;
+            }
          }
 
          const dist = this.position.calculateDistanceBetween(entity.position);
@@ -139,6 +197,17 @@ abstract class TribeMember extends Mob {
       }
 
       return attackedEntities;
+   }
+
+   public getArmourItemType(): ItemType | null {
+      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
+
+      if (armourInventory.itemSlots.hasOwnProperty(1)) {
+         const armourItem = armourInventory.itemSlots[1];
+         return armourItem.type;
+      } else {
+         return null;
+      }
    }
 }
 

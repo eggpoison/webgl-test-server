@@ -1,5 +1,4 @@
 import { GameObjectDebugData, Vector } from "webgl-test-shared";
-import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import DroppedItem from "../items/DroppedItem";
@@ -28,20 +27,27 @@ class ItemChaseAI extends AI<"item_chase"> implements ItemChaseAIParams {
    }
 
    public tick(): void {
-      if (this.mob.droppedItemsInVisionRange.size === 0) return;
-
-      const droppedItemsInVisionRangeIterator = this.entitiesInVisionRange.values();
+      const droppedItemsInVisionRangeIterator = this.mob.droppedItemsInVisionRange.values();
 
       // Find closest target
       let closestEntity = droppedItemsInVisionRangeIterator.next().value as DroppedItem;
       let minDistance = this.mob.position.calculateDistanceBetween(closestEntity.position);
-      for (var currentEntity: DroppedItem; currentEntity = droppedItemsInVisionRangeIterator.next().value;) {
-         const distance = this.mob.position.calculateDistanceBetween(currentEntity.position);
+      for (let currentDroppedItem: DroppedItem; currentDroppedItem = droppedItemsInVisionRangeIterator.next().value;) {
+         if (typeof this.itemIsChased !== "undefined" && !this.itemIsChased(currentDroppedItem)) {
+            continue;
+         }
+
+         const distance = this.mob.position.calculateDistanceBetween(currentDroppedItem.position);
          if (distance < minDistance) {
-            closestEntity = currentEntity;
+            closestEntity = currentDroppedItem;
             minDistance = distance;
          }
       }
+
+      if (typeof closestEntity === "undefined") {
+         return;
+      }
+      
       this.target = closestEntity;
 
       // Move to target
@@ -54,22 +60,18 @@ class ItemChaseAI extends AI<"item_chase"> implements ItemChaseAIParams {
    public onDeactivation(): void {
       this.target = null;
    }
-
-   // protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
-   //    const filteredEntities = new Set<Entity>();
-
-   //    for (const entity of visibleEntities) {
-   //       if (this.itemIsChased(entity)) {
-   //          filteredEntities.add(entity);
-   //       }
-   //    }
-
-   //    return filteredEntities;
-   // }
    
    protected _getWeight(): number {
-      if (this.entitiesInVisionRange.size > 0) {
-         return 1;
+      if (typeof this.itemIsChased !== "undefined") {
+         for (const droppedItem of this.mob.droppedItemsInVisionRange) {
+            if (this.itemIsChased(droppedItem)) {
+               return 1;
+            }
+         }
+      } else {
+         if (this.mob.droppedItemsInVisionRange.size > 0) {
+            return 1;
+         }
       }
       return 0;
    }

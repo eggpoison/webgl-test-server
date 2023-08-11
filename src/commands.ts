@@ -1,10 +1,12 @@
-import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
 import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
 import ENTITY_CLASS_RECORD from "./entity-classes";
+
+const ENTITY_SPAWN_RANGE = 200;
 
 const killPlayer = (username: string): void => {
    const player = SERVER.getPlayerFromUsername(username);
@@ -81,6 +83,9 @@ const summonEntities = (username: string, unguardedEntityType: string, amount: n
    
    for (let i = 0; i < amount; i++) {
       const spawnPosition = player.position.copy();
+      const offset = new Vector(ENTITY_SPAWN_RANGE * (Math.random() + 1) / 2, 2 * Math.PI * Math.random()).convertToPoint();
+      spawnPosition.add(offset);
+
       new entityClass(spawnPosition, false);
    }
 }
@@ -115,7 +120,9 @@ export function registerCommand(command: string, player: Player): void {
       }
 
       case "heal": {
-         if (numParameters === 1) {
+         if (numParameters === 0) {
+            healPlayer(player.username, 99999);
+         } else if (numParameters === 1) {
             const healing = commandComponents[1] as number;
             healPlayer(player.username, healing);
          } else if (numParameters === 2) {

@@ -13,7 +13,7 @@ import Wood from "./specific/Wood";
 import WoodenAxe from "./specific/WoodenAxe";
 import WoodenPickaxe from "./specific/WoodenPickaxe";
 import WoodenSword from "./specific/WoodenSword";
-import Workbench from "./specific/Workbench";
+import WorkbenchItem from "./specific/WorkbenchItem";
 import CactusSpine from "./specific/CactusSpine";
 import YetiHide from "./specific/YetiHide";
 import Frostcicle from "./specific/Frostcicle";
@@ -22,11 +22,14 @@ import Eyeball from "./specific/Eyeball";
 import FleshSword from "./specific/FleshSword";
 import TribeTotemItem from "./specific/TribeTotemItem";
 import TribeHutItem from "./specific/TribeHutItem";
-import Barrel from "./specific/Barrel";
+import BarrelItem from "./specific/BarrelItem";
+import FrostArmour from "./specific/FrostArmour";
+import FurnaceItem from "./specific/FurnaceItem";
+import CampfireItem from "./specific/CampfireItem";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
-   workbench: () => Workbench,
+   workbench: () => WorkbenchItem,
    wooden_sword: () => WoodenSword,
    wooden_axe: () => WoodenAxe,
    wooden_pickaxe: () => WoodenPickaxe,
@@ -47,7 +50,10 @@ const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: numbe
    flesh_sword: () => FleshSword,
    tribe_totem: () => TribeTotemItem,
    tribe_hut: () => TribeHutItem,
-   barrel: () => Barrel
+   barrel: () => BarrelItem,
+   frost_armour: () => FrostArmour,
+   campfire: () => CampfireItem,
+   furnace: () => FurnaceItem
 };
 
 export function createItem(itemType: ItemType, count: number): Item {

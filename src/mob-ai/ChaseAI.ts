@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -7,6 +7,8 @@ interface ChaseAIParams extends BaseAIParams<"chase"> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly entityIsChased: (entity: Entity) => boolean;
+   /** Distance the entity will try to maintain while chasing */
+   readonly desiredDistance?: number;
 }
 
 class ChaseAI extends AI<"chase"> implements ChaseAIParams {
@@ -14,6 +16,7 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
+   public readonly desiredDistance?: number;
    public entityIsChased: (entity: Entity) => boolean;
 
    private target: Entity | null = null;
@@ -23,6 +26,7 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
+      this.desiredDistance = aiParams.desiredDistance;
       this.entityIsChased = aiParams.entityIsChased;
    }
 
@@ -43,11 +47,36 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       }
       this.target = closestEntity;
 
-      // Move to target
+      // Rotate towards target
       const angle = this.mob.position.calculateAngleBetween(closestEntity.position);
       this.mob.rotation = angle;
+
+      // If the entity has a desired distance from its target, try to stop at that desired distance
+      if (typeof this.desiredDistance !== "undefined") {
+         const stopDistance = this.estimateStopDistance();
+         const distance = this.mob.position.calculateDistanceBetween(this.target.position);
+         if (distance - stopDistance <= this.desiredDistance) {
+            this.mob.acceleration = null;
+            this.mob.terminalVelocity = 0;
+            return;
+         }
+      }
+
+      // Move to target
       this.mob.acceleration = new Vector(this.acceleration, this.mob.rotation);
       this.mob.terminalVelocity = this.terminalVelocity;
+   }
+
+   /** Estimates the distance it will take for the entity to stop */
+   private estimateStopDistance(): number {
+      if (this.mob.velocity === null) {
+         return 0;
+      }
+
+      // Estimate time it will take for the entity to stop
+      const stopTime = Math.pow(this.mob.velocity.magnitude, 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
+      const stopDistance = (Math.pow(stopTime, 2) + stopTime) * this.mob.velocity.magnitude;
+      return stopDistance;
    }
 
    public onDeactivation(): void {
@@ -87,6 +116,20 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
             thickness: 2
          }
       );
+
+      if (typeof this.desiredDistance !== "undefined" && this.mob.velocity !== null) {
+         const stopDistance = this.estimateStopDistance();
+
+         const stopPosition = this.mob.position.copy();
+         const offset = new Vector(stopDistance, this.mob.velocity.direction).convertToPoint();
+         stopPosition.add(offset);
+
+         debugData.lines.push({
+            targetPosition: stopPosition.package(),
+            colour: [0, 1, 0.5],
+            thickness: 4
+         });
+      }
    }
 
    protected _callCallback(callback: (targetEntity: Entity | null) => void): void {

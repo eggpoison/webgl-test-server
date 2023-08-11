@@ -1,18 +1,18 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, PlayerInventoryType, PlaceablePlayerInventoryType, GameDataSyncPacket, RespawnDataPacket, ITEM_INFO_RECORD, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, SlimeSize, ParticleData, TribeData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, ParticleType, TribeType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
-import Player from "./entities/tribes/Player";
+import Board from "./Board";
 import { registerCommand } from "./commands";
-import _GameObject, { GameObjectSubclasses } from "./GameObject";
+import _GameObject, { GameObjectEvents, GameObjectSubclasses } from "./GameObject";
+import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
 import DroppedItem from "./items/DroppedItem";
-import Board from "./Board";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Tribe from "./Tribe";
-import Cow from "./entities/mobs/Cow";
-import IceSpikes from "./entities/resources/IceSpikes";
+import TribeBuffer from "./TribeBuffer";
+import { runTribeSpawnAttempt } from "./tribe-spawning";
 
 /*
 
@@ -49,7 +49,7 @@ const _GameObjectSubclassData = {
 
 type GameObjectSubclassData<T extends keyof GameObjectSubclasses> = Parameters<(typeof _GameObjectSubclassData)[T]>[0];
 
-const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameObject: _GameObject<T>): GameObjectSubclassData<T> => {
+const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameObject: _GameObject<T, GameObjectEvents>): GameObjectSubclassData<T> => {
    const baseGameObjectData: GameObjectData = {
       id: gameObject.id,
       position: gameObject.position.package(),
@@ -205,8 +205,6 @@ interface PlayerData {
 
 /** Communicates between the server and players */
 class GameServer {
-   private ticks: number = 0;
-
    /** Minimum number of units away from the border that the player will spawn at */
    private static readonly PLAYER_SPAWN_POSITION_PADDING = 100;
 
@@ -223,20 +221,12 @@ class GameServer {
       spawnInitialEntities();
    }
 
-   public getTicks(): number {
-      return this.ticks;
-   }
+   // public getTicks(): number {
+   //    return this.ticks;
+   // }
 
    public setTrackedGameObject(id: number | null): void {
       this.trackedGameObjectID = id;
-   }
-
-   public tickIntervalHasPassed(intervalSeconds: number): boolean {
-      const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
-      
-      const previousCheck = (this.ticks - 1) / ticksPerInterval;
-      const check = this.ticks / ticksPerInterval;
-      return Math.floor(previousCheck) !== Math.floor(check);
    }
 
    public start(): void {
@@ -260,7 +250,8 @@ class GameServer {
 
    private async tick(): Promise<void> {
       // Update server ticks and time
-      this.ticks++;
+      // this.ticks++;
+      Board.ticks++;
       Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
       // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
@@ -270,11 +261,13 @@ class GameServer {
 
       Board.updateParticles();
 
+      Board.updateTribes();
+
       Board.updateGameObjects();
       Board.resolveCollisions();
 
       // Age items
-      if (this.ticks % SETTINGS.TPS === 0) {
+      if (Board.ticks % SETTINGS.TPS === 0) {
          Board.ageItems();
       }
 
@@ -284,6 +277,16 @@ class GameServer {
 
       // Send game data packets to all players
       this.sendGameDataPackets();
+
+      // Push tribes from buffer
+      while (TribeBuffer.hasTribes()) {
+         const tribeJoinInfo = TribeBuffer.popTribe();
+         const tribe = new Tribe(tribeJoinInfo.tribeType, tribeJoinInfo.totem);
+         Board.addTribe(tribe);
+         tribeJoinInfo.startingTribeMember.setTribe(tribe);
+      }
+
+      runTribeSpawnAttempt();
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -345,7 +348,7 @@ class GameServer {
             }
             
             // Spawn the player entity
-            const player = new Player(spawnPosition, false, playerData.username);
+            const player = new Player(spawnPosition, false, playerData.username, null);
             playerData.instance = player;
 
             const tiles = Board.getTiles();
@@ -373,14 +376,51 @@ class GameServer {
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
                particles: packagePlayerParticles(playerData.visibleChunkBounds),
                inventory: {
-                  hotbar: {},
-                  backpackInventory: {},
-                  backpackSlot: null,
-                  heldItemSlot: null,
-                  craftingOutputItemSlot: null
+                  hotbar: {
+                     itemSlots: {},
+                     width: SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "hotbar"
+                  },
+                  backpackInventory: {
+                     itemSlots: {},
+                     width: -1,
+                     height: -1,
+                     entityID: player.id,
+                     inventoryName: "backpack"
+                  },
+                  backpackSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "backpackItemSlot"
+                  },
+                  heldItemSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "heldItemSlot"
+                  },
+                  craftingOutputItemSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "craftingOutputSlot"
+                  },
+                  armourSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     entityID: player.id,
+                     inventoryName: "armourSlot"
+                  }
                },
                tileUpdates: [],
-               serverTicks: this.ticks,
+               serverTicks: Board.ticks,
                serverTime: Board.time,
                hitsTaken: [],
                playerHealth: 20,
@@ -424,12 +464,12 @@ class GameServer {
             this.processCraftingPacket(socket, craftingRecipe);
          });
 
-         socket.on("item_pickup_packet", (inventoryType: PlayerInventoryType, itemSlot: number, amount: number) => {
-            this.processItemPickupPacket(socket, inventoryType, itemSlot, amount);
+         socket.on("item_pickup_packet", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
+            this.processItemPickupPacket(socket, entityID, inventoryName, itemSlot, amount);
          });
 
-         socket.on("item_release_packet", (inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number) => {
-            this.processItemReleasePacket(socket, inventoryType, itemSlot, amount);
+         socket.on("item_release_packet", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
+            this.processItemReleasePacket(socket, entityID, inventoryName, itemSlot, amount);
          });
 
          socket.on("item_use_packet", (itemSlot: number) => {
@@ -496,9 +536,11 @@ class GameServer {
          ];
 
          const tribeData: TribeData | null = player.tribe !== null ? {
+            id: player.tribe.id,
             tribeType: player.tribe.tribeType,
             numHuts: player.tribe.getNumHuts(),
-            tribesmanCap: player.tribe.tribesmanCap
+            tribesmanCap: player.tribe.tribesmanCap,
+            area: player.tribe.getArea().map(tile => [tile.x, tile.y])
          } : null;
 
          // Initialise the game data packet
@@ -509,7 +551,7 @@ class GameServer {
             particles: packagePlayerParticles(extendedVisibleChunkBounds),
             inventory: player.bundleInventoryData(),
             tileUpdates: tileUpdates,
-            serverTicks: this.ticks,
+            serverTicks: Board.ticks,
             serverTime: Board.time,
             hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth(),
@@ -558,17 +600,17 @@ class GameServer {
       }
    }
 
-   private processItemPickupPacket(socket: ISocket, inventoryType: PlayerInventoryType, itemSlot: number, amount: number): void {
+   private processItemPickupPacket(socket: ISocket, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
       if (this.playerDataRecord.hasOwnProperty(socket.id)) {
          const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processItemPickupPacket(inventoryType, itemSlot, amount);
+         playerData.instance.processItemPickupPacket(entityID, inventoryName, itemSlot, amount);
       }
    }
 
-   private processItemReleasePacket(socket: ISocket, inventoryType: PlaceablePlayerInventoryType, itemSlot: number, amount: number): void {
+   private processItemReleasePacket(socket: ISocket, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
       if (this.playerDataRecord.hasOwnProperty(socket.id)) {
          const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processItemReleasePacket(inventoryType, itemSlot, amount);
+         playerData.instance.processItemReleasePacket(entityID, inventoryName, itemSlot, amount);
       }
    }
 
@@ -620,7 +662,7 @@ class GameServer {
          spawnPosition = this.generatePlayerSpawnPosition();
       }
 
-      const playerEntity = new Player(spawnPosition, false, username);
+      const playerEntity = new Player(spawnPosition, false, username, tribe);
 
       // Update the player data's instance
       this.playerDataRecord[socket.id].instance = playerEntity;
@@ -654,10 +696,9 @@ class GameServer {
 
 export const SERVER = new GameServer();
 
-Board.setup();
-SERVER.setup();
-
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
+   Board.setup();
+   SERVER.setup();
    SERVER.start();
 }

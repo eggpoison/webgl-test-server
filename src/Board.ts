@@ -2,7 +2,7 @@ import { Point, SETTINGS, ServerTileUpdateData, Vector, randInt } from "webgl-te
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import generateTerrain from "./terrain-generation";
+import generateTerrain from "./terrain-generation/terrain-generation";
 import Tile from "./tiles/Tile";
 import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
@@ -10,6 +10,7 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
 import Particle from "./Particle";
 import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
+import Tribe from "./Tribe";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -19,6 +20,8 @@ export type EntityHitboxInfo = {
 abstract class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
+
+   public static ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
    public static time: number = 6;
@@ -41,6 +44,8 @@ abstract class Board {
    private static gameObjectsToRemove = new Array<GameObject>();
 
    private static joinBuffer = new Array<GameObject>();
+
+   private static tribes = new Array<Tribe>();
 
    public static setup(): void {
       this.tiles = generateTerrain();
@@ -65,6 +70,14 @@ abstract class Board {
       }
 
       return chunks;
+   }
+
+   public static tickIntervalHasPassed(intervalSeconds: number): boolean {
+      const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
+      
+      const previousCheck = (this.ticks - 1) / ticksPerInterval;
+      const check = this.ticks / ticksPerInterval;
+      return Math.floor(previousCheck) !== Math.floor(check);
    }
 
    public static getEntityByID(id: number): Entity {
@@ -99,6 +112,27 @@ abstract class Board {
    /** Returns a reference to the tiles array */
    public static getTiles(): Array<Array<Tile>> {
       return this.tiles;
+   }
+
+   public static addTribe(tribe: Tribe): void {
+      this.tribes.push(tribe);
+   }
+
+   public static removeTribe(tribe: Tribe): void {
+      const idx = this.tribes.indexOf(tribe);
+      if (idx !== -1) {
+         this.tribes.splice(idx, 1);
+      }
+   }
+
+   public static updateTribes(): void {
+      for (const tribe of this.tribes) {
+         tribe.tick();
+      }
+   }
+
+   public static getTribes(): ReadonlyArray<Tribe> {
+      return this.tribes;
    }
 
    public static addParticle(particle: Particle): void {
@@ -458,6 +492,34 @@ abstract class Board {
       const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
       return this.getTile(tileX, tileY);
+   }
+
+   public static getEntitiesInRange(position: Point, range: number): Array<Entity> {
+      const minChunkX = Math.max(Math.min(Math.floor((position.x - range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((position.x + range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((position.y - range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((position.y + range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+
+      const checkedEntities = new Set<Entity>();
+      const entities = new Array<Entity>();
+      
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = Board.getChunk(chunkX, chunkY);
+            for (const entity of chunk.getEntities()) {
+               if (checkedEntities.has(entity)) continue;
+               
+               const distance = position.calculateDistanceBetween(entity.position);
+               if (distance <= range) {
+                  entities.push(entity);
+               }
+
+               checkedEntities.add(entity);
+            }
+         }
+      }
+
+      return entities;
    }
 }
 

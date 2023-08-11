@@ -1,12 +1,9 @@
 import { Point } from "webgl-test-shared";
-import { SERVER } from "./server"
 import Cow from "./entities/mobs/Cow";
 import { MIN_SPAWN_DISTANCE, spawnPositionIsValid } from "./entity-spawning";
 import Board from "./Board";
 
 test("Entities can't be spawned too close to each other", () => {
-   SERVER;
-
    const position = new Point(200, 200);
    const cow = new Cow(position, false);
 
@@ -20,8 +17,6 @@ test("Entities can't be spawned too close to each other", () => {
 });
 
 test("Entities can be spawned far away from each other", () => {
-   SERVER;
-
    const position1 = new Point(200, 200);
    const cow = new Cow(position1, false);
 

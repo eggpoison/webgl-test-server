@@ -1,13 +1,12 @@
 import { Point, SETTINGS, randFloat } from "webgl-test-shared";
+import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Mob from "./Mob";
-import Board from "../../Board";
 import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
-import { SERVER } from "../../server";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 
 const zombieShouldTargetEntity = (entity: Entity): boolean => {
@@ -35,7 +34,7 @@ class Zombie extends Mob {
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "zombie", SETTINGS.TILE_SIZE * 5, isNaturallySpawned);
+      }, "zombie", 270, isNaturallySpawned);
 
       const speedMultiplier = randFloat(0.9, 1.1);
 
@@ -129,8 +128,8 @@ class Zombie extends Mob {
       }
 
       // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20);
+      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.3)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
 
          this.numFootstepsTaken++;
       }

@@ -1,18 +1,44 @@
-import { ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
+import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType } from "webgl-test-shared";
 import Item, { itemIsStackable } from "../items/generic/Item";
 import StackableItem from "../items/generic/StackableItem";
 import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import { GameObject } from "../GameObject";
+import Entity from "../entities/Entity";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 
 export interface Inventory {
-   /** Number of item slots the inventory contains. */
-   size: number;
+   /** Width of the inventory in item slots */
+   width: number;
+   /** Height of the inventory in item slots */
+   height: number;
    /** The items contained by the inventory. */
    readonly itemSlots: ItemSlots;
+   /** Whether the inventory allows dropped items to be put into it */
+   readonly acceptsPickedUpItems: boolean;
+}
+
+export function serializeInventoryData(entity: Entity, inventory: Inventory, inventoryName: string): InventoryData {
+   const itemSlots: ItemSlotsData = {};
+   for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
+      itemSlots[Number(itemSlot)] = {
+         type: item.type,
+         count: item.count,
+         id: item.id
+      };
+   }
+   
+   const inventoryData: InventoryData = {
+      width: inventory.width,
+      height: inventory.height,
+      itemSlots: itemSlots,
+      entityID: entity.id,
+      inventoryName: inventoryName
+   };
+   
+   return inventoryData;
 }
 
 class InventoryComponent extends Component {
@@ -36,26 +62,31 @@ class InventoryComponent extends Component {
    }
 
    /** Creates and stores a new inventory in the component. */
-   public createNewInventory(name: string, inventorySize: number): void {
+   public createNewInventory(name: string, width: number, height: number, acceptsPickedUpItems: boolean): void {
       if (this.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
       
       const inventory: Inventory = {
-         size: inventorySize,
-         itemSlots: {}
+         width: width,
+         height: height,
+         itemSlots: {},
+         acceptsPickedUpItems: acceptsPickedUpItems
       };
 
       this.inventories[name] = inventory;
       this.inventoryArray.push([name, inventory]);
    }
 
-   public resizeInventory(name: string, newSize: number): void {
+   public resizeInventory(name: string, width: number, height: number): void {
       if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
 
-      this.inventories[name].size = newSize;
+      this.inventories[name].width = width;
+      this.inventories[name].height = height;
    }
 
    public getInventory(name: string): Inventory {
-      if (!this.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
+      if (!this.inventories.hasOwnProperty(name)) {
+         throw new Error(`Could not find an inventory by the name of '${name}' on entity type '${this.entity.type}'.`);
+      }
       
       return this.inventories[name];
    }
@@ -90,6 +121,10 @@ class InventoryComponent extends Component {
       if (!droppedItem.canBePickedUp(this.entity.id)) return;
 
       for (const [inventoryName, _inventory] of this.inventoryArray) {
+         if (!_inventory.acceptsPickedUpItems) {
+            continue;
+         }
+         
          const amountPickedUp = this.addItemToInventory(inventoryName, droppedItem.item);
 
          droppedItem.item.count -= amountPickedUp;
@@ -114,6 +149,10 @@ class InventoryComponent extends Component {
       let amountAdded = 0;
 
       for (const [inventoryName, _inventory] of this.inventoryArray) {
+         if (!_inventory.acceptsPickedUpItems) {
+            continue;
+         }
+         
          amountAdded += this.addItemToInventory(inventoryName, item);
 
          if (amountAdded === item.count) {
@@ -151,7 +190,7 @@ class InventoryComponent extends Component {
          }
       }
       
-      for (let i = 1; i <= inventory.size; i++) {
+      for (let i = 1; i <= inventory.width * inventory.height; i++) {
          // If the slot is empty then add the rest of the item
          if (!inventory.itemSlots.hasOwnProperty(i)) {
             let addAmount: number;
@@ -249,6 +288,27 @@ class InventoryComponent extends Component {
       if (item.count <= 0) {
          delete inventory.itemSlots[itemSlot];
       }
+   }
+
+   public removeItemFromInventory(inventoryName: string, itemSlot: number): void {
+      const inventory = this.getInventory(inventoryName);
+
+      delete inventory.itemSlots[itemSlot];
+   }
+
+   /**
+    * @returns True if the inventory has no item slots available, false if there is at least one
+    */
+   public inventoryIsFull(inventoryName: string): boolean {
+      const inventory = this.getInventory(inventoryName);
+
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            return false;
+         }
+      }
+
+      return true;
    }
 }
 

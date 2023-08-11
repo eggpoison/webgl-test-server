@@ -10,8 +10,8 @@ class Tree extends Entity {
 
    /** Amount of wood created by the tree when it is killed */
    private static readonly WOOD_DROP_AMOUNT_RECORD: { [T in TreeSize]: [number, number]} = {
-      [TreeSize.small]: [1, 2],
-      [TreeSize.large]: [3, 5]
+      [TreeSize.small]: [2, 3],
+      [TreeSize.large]: [4, 5]
    };
 
    private static readonly TREE_RADIUSES: Record<TreeSize, number> = {
@@ -49,7 +49,12 @@ class Tree extends Entity {
       });
 
       this.createEvent("death", (): void => {
-         const numLeaves = randInt(4, 5);
+         let numLeaves: number;
+         if (this.size === TreeSize.small) {
+            numLeaves = randInt(2, 3);
+         } else {
+            numLeaves = randInt(4, 5);
+         }
          for (let i = 0; i < numLeaves; i++) {
             this.createLeafParticle("innerLeaf");
          }

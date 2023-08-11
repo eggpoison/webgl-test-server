@@ -1,9 +1,9 @@
 import Board from "../../Board";
 import { EntityType, ItemType, PlaceableItemInfo, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
-import ENTITY_CLASS_RECORD from "../../entity-classes";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import StackableItem from "./StackableItem";
+import TribeMember from "../../entities/tribes/TribeMember";
 
 type PlaceableItemHitboxInfo = {
    readonly width: number;
@@ -26,42 +26,48 @@ const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxIn
    barrel: {
       width: 80,
       height: 80
+   },
+   campfire: {
+      width: 104,
+      height: 104
+   },
+   furnace: {
+      width: 80,
+      height: 80
    }
 };
 
-class PlaceableItem extends StackableItem implements PlaceableItemInfo {
+abstract class PlaceableItem extends StackableItem implements PlaceableItemInfo {
    private static readonly placeTestHitbox: RectangularHitbox = new RectangularHitbox();
    
    public readonly entityType: EntityType;
-
-   private readonly entityClass: new (position: Point, ...args: any[]) => Entity;
 
    constructor(itemType: ItemType, count: number, itemInfo: PlaceableItemInfo) {
       super(itemType, count, itemInfo);
 
       this.entityType = itemInfo.entityType;
-
-      this.entityClass = ENTITY_CLASS_RECORD[this.entityType]();
    }
 
-   public use(entity: Entity, inventoryName: string): void {
+   protected abstract spawnEntity(tribeMember: TribeMember, position: Point): Entity;
+
+   public use(tribeMember: TribeMember, inventoryName: string): void {
       // Calculate the position to spawn the placeable entity at
-      const spawnPosition = entity.position.copy();
-      const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, entity.rotation);
+      const spawnPosition = tribeMember.position.copy();
+      const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, tribeMember.rotation);
       spawnPosition.add(offsetVector.convertToPoint());
 
       // Make sure the placeable item can be placed
-      if (!this.canBePlaced(spawnPosition, entity.rotation)) return;
+      if (!this.canBePlaced(spawnPosition, tribeMember.rotation)) return;
       
       // Spawn the placeable entity
-      const placedEntity = new this.entityClass(spawnPosition, false);
+      const placedEntity = this.spawnEntity(tribeMember, spawnPosition);
 
       // Rotate it to match the entity's rotation
-      placedEntity.rotation = entity.rotation;
+      placedEntity.rotation = tribeMember.rotation;
 
-      super.consumeItem(entity.getComponent("inventory")!, inventoryName, 1);
+      super.consumeItem(tribeMember.getComponent("inventory")!, inventoryName, 1);
 
-      entity.callEvents("on_item_place", placedEntity);
+      tribeMember.callEvents("on_item_place", placedEntity);
    }
 
    private canBePlaced(spawnPosition: Point, rotation: number): boolean {

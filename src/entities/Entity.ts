@@ -3,7 +3,7 @@ import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import _GameObject from "../GameObject";
+import _GameObject, { GameObjectEvents } from "../GameObject";
 import { addEntityToCensus } from "../census";
 import Particle from "../Particle";
 
@@ -29,7 +29,13 @@ interface StatusEffect {
    ticksElapsed: number;
 }
 
-abstract class Entity extends _GameObject<"entity"> {
+interface EntityEvents extends GameObjectEvents {
+   hurt: (damage: number, attackingEntity: Entity | null, knockback: number, hitDirection: number | null) => void;
+   death: (attackingEntity: Entity | null) => void;
+   on_item_place: (placedEntity: Entity) => void;
+}
+
+abstract class Entity extends _GameObject<"entity", EntityEvents> {
    public readonly i = "entity" as const;
    
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
@@ -56,7 +62,6 @@ abstract class Entity extends _GameObject<"entity"> {
 
       this.type = entityType;
       
-      // this.position = position;
       this.components = components;
       this.tickableComponents = filterTickableComponents(components);
 
@@ -133,7 +138,7 @@ abstract class Entity extends _GameObject<"entity"> {
             const lifetime = 1.5;
             
             new Particle({
-               type: ParticleType.smoke,
+               type: ParticleType.smokeBlack,
                spawnPosition: spawnPosition,
                initialVelocity: new Vector(30, 0),
                initialAcceleration: new Vector(80, 0),
@@ -145,6 +150,35 @@ abstract class Entity extends _GameObject<"entity"> {
                scale: (age: number): number => {
                   const deathProgress = age / lifetime
                   return 1 + deathProgress * 2;
+               },
+               lifetime: lifetime
+            });
+         }
+         
+         // Embers
+         if (this.statusEffects.fire!.ticksElapsed % 3 === 0) {
+            const spawnPosition = this.position.copy();
+            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+            spawnPosition.add(offset);
+
+            const lifetime = randFloat(0.6, 1.2);
+
+            const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
+            const velocityOffset = new Vector(30, Math.PI);
+            velocity.add(velocityOffset);
+            
+            new Particle({
+               type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
+               spawnPosition: spawnPosition,
+               initialVelocity: velocity,
+               initialAcceleration: new Vector(randFloat(0, 80), 2 * Math.PI * Math.random()),
+               drag: 60,
+               initialRotation: 2 * Math.PI * Math.random(),
+               angularVelocity: randFloat(-60, 60),
+               angularDrag: 60,
+               opacity: (age: number): number => {
+                  let opacity = 1 - age / lifetime;
+                  return Math.pow(opacity, 0.3);
                },
                lifetime: lifetime
             });
@@ -240,23 +274,23 @@ abstract class Entity extends _GameObject<"entity"> {
          initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
          initialAcceleration: null,
          initialRotation: 2 * Math.PI * Math.random(),
-         opacity: 1,
+         opacity: (age: number): number => {
+            return 1 - age / lifetime;
+         },
          lifetime: lifetime
       });
    }
 
-   protected createFootprintParticle(numFootstepsTaken: number, footstepSpacing: number): void {
+   protected createFootprintParticle(numFootstepsTaken: number, footstepOffset: number, scale: number, lifetime: number): void {
       if (this.velocity === null) {
          return;
       }
-      
+
       const footstepAngleOffset = numFootstepsTaken % 2 === 0 ? Math.PI : 0;
       const spawnPosition = this.position.copy();
-      const offset = new Vector(footstepSpacing / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
+      const offset = new Vector(footstepOffset / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
       spawnPosition.add(offset);
 
-      const lifetime = 4;
-      
       new Particle({
          type: ParticleType.footprint,
          spawnPosition: spawnPosition,
@@ -266,7 +300,8 @@ abstract class Entity extends _GameObject<"entity"> {
          opacity: (age: number): number => {
             return lerp(0.75, 0, age / lifetime);
          },
-         lifetime: lifetime
+         lifetime: lifetime,
+         scale: scale
       });
    }
 

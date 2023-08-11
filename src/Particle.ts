@@ -172,8 +172,8 @@ class Particle {
    }
 
    private calculateContainingChunk(): Chunk {
-      const chunkX = Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-      const chunkY = Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkX = Math.min(Math.max(Math.floor(this.position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), 0), SETTINGS.BOARD_SIZE - 1);
+      const chunkY = Math.min(Math.max(Math.floor(this.position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), 0), SETTINGS.BOARD_SIZE - 1);
       return Board.getChunk(chunkX, chunkY);
    }
 

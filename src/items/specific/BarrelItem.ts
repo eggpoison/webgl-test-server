@@ -1,13 +1,14 @@
 import { Point } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
-import PlaceableItem from "../generic/PlaceableItem";
-import TribeTotem from "../../entities/tribes/TribeTotem";
 import TribeMember from "../../entities/tribes/TribeMember";
+import PlaceableItem from "../generic/PlaceableItem";
+import Barrel from "../../entities/tribes/Barrel";
 
-class TribeTotemItem extends PlaceableItem {
+class BarrelItem extends PlaceableItem {
    protected spawnEntity(_tribeMember: TribeMember, position: Point): Entity {
-      return new TribeTotem(position, false);
+      return new Barrel(position, false);
    }
+
 }
 
-export default TribeTotemItem;
+export default BarrelItem;

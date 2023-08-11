@@ -1,13 +1,13 @@
 import { Point } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import PlaceableItem from "../generic/PlaceableItem";
-import TribeTotem from "../../entities/tribes/TribeTotem";
+import Workbench from "../../entities/Workbench";
 import TribeMember from "../../entities/tribes/TribeMember";
 
-class TribeTotemItem extends PlaceableItem {
+class WorkbenchItem extends PlaceableItem {
    protected spawnEntity(_tribeMember: TribeMember, position: Point): Entity {
-      return new TribeTotem(position, false);
+      return new Workbench(position);
    }
 }
 
-export default TribeTotemItem;
+export default WorkbenchItem;

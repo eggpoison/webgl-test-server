@@ -5,13 +5,12 @@ import Mob from "./Mob";
 import Entity from "../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import _GameObject from "../../GameObject";
-import Board from "../../Board";
 import Tile from "../../tiles/Tile";
 import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
-import { SERVER } from "../../server";
 import Projectile from "../../Projectile";
+import Board from "../../Board";
 
 enum SnowProjectileSize {
    small,
@@ -210,8 +209,8 @@ class Yeti extends Mob {
       }
 
       // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && SERVER.tickIntervalHasPassed(0.25)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 40);
+      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.55)) {
+         this.createFootprintParticle(this.numFootstepsTaken, 40, 1.5, 8);
 
          this.numFootstepsTaken++;
       }

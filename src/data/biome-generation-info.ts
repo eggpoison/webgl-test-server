@@ -47,6 +47,15 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          }
       ]
    },
+   river: {
+      spawnRequirements: null,
+      tiles: [
+         {
+            tileType: "water",
+            isWall: false
+         }
+      ]
+   },
    tundra: {
       spawnRequirements: {
          maxTemperature: 0.3,
