@@ -79,7 +79,7 @@ class Yeti extends Mob {
    private attackTarget: Entity | null = null;
    private isThrowingSnow = false;
    private snowThrowStage: SnowThrowStage = SnowThrowStage.windup;
-   private snowThrowAttackProgress = 0;
+   private snowThrowAttackProgress = 1;
    private snowThrowCooldown = Yeti.SNOW_THROW_COOLDOWN;
    private snowThrowHoldTimer = 0;
 

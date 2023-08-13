@@ -1,4 +1,4 @@
-import { Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randItem } from "webgl-test-shared";
+import { Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -14,7 +14,7 @@ class Snowball extends Entity {
    private readonly size: SnowballSize;
 
    private age = 0;
-   private readonly lifetime = randItem(Snowball.LIFETIME);
+   private readonly lifetime = randFloat(...Snowball.LIFETIME);
 
    constructor(position: Point, isNaturallySpawned: boolean, size: SnowballSize = SnowballSize.small) {
       super(position, {

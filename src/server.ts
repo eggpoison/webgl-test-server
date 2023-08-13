@@ -13,6 +13,7 @@ import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
+import Yeti from "./entities/mobs/Yeti";
 
 /*
 
@@ -324,6 +325,8 @@ class GameServer {
 
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
+
+         new Yeti(new Point(spawnPosition.x + 300, spawnPosition.y));
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
