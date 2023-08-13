@@ -2,9 +2,11 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/biome-generation-info";
 import Tile from "../tiles/Tile";
-import { BiomeName, TileInfo } from "webgl-test-shared";
+import { BiomeName, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfo, Vector, WaterRockData, lerp, randFloat, randInt, randSign } from "webgl-test-shared";
 import { createGenericTile } from "../tiles/tile-class-record";
-import { generateRiverTiles } from "./river-generation";
+import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
+import WaterTile from "../tiles/WaterTile";
+import Board from "../Board";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
@@ -12,6 +14,19 @@ const HUMIDITY_NOISE_SCALE = 30;
 // const HEIGHT_NOISE_SCALE = 25;
 // const TEMPERATURE_NOISE_SCALE = 30;
 // const HUMIDITY_NOISE_SCALE = 15;
+
+const ADJACENT_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
+   [1, 0],
+   [0, -1],
+   [0, 1],
+   [-1, 0]
+];
+
+/** Minimum distance between crossings */
+const MIN_CROSSING_DISTANCE = 325;
+const RIVER_CROSSING_WIDTH = 100;
+const NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER = 25;
+const RIVER_STEPPING_STONE_SPACING = -5;
 
 const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height: number, temperature: number, humidity: number): boolean => {
    // Height
@@ -130,7 +145,137 @@ const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void 
    }
 }
 
-function generateTerrain(): Array<Array<Tile>> {
+const tileIsWater = (tileX: number, tileY: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
+   for (const tile of riverTiles) {
+      if (tile.tileX === tileX && tile.tileY === tileY) {
+         return true;
+      }
+   }
+   return false;
+}
+
+const tileIsAdjacentToLand = (tileX: number, tileY: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
+   for (const offset of ADJACENT_TILE_OFFSETS) {
+      const currentTileX = tileX + offset[0];
+      const currentTileY = tileY + offset[1];
+      if (Board.tileIsInBoard(currentTileX, currentTileY)) {
+         if (!tileIsWater(currentTileX, currentTileY, riverTiles)) {
+            return true;
+         }
+      }
+   }
+
+   return false;
+}
+
+const tileAtOffsetIsWater = (startTileX: number, startTileY: number, direction: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
+   const position = new Point(startTileX + 0.5, startTileY + 0.5);
+   const offset = new Vector(1, direction).convertToPoint();
+   position.add(offset);
+
+   const tileX = Math.floor(position.x);
+   const tileY = Math.floor(position.y);
+   return tileIsWater(tileX, tileY, riverTiles);
+}
+
+interface RiverCrossingInfo {
+   readonly startTileX: number;
+   readonly startTileY: number;
+   readonly endTileX: number;
+   readonly endTileY: number;
+   readonly direction: number;
+}
+
+const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGenerationInfo>): ReadonlyArray<RiverCrossingInfo> => {
+   const riverCrossings = new Array<RiverCrossingInfo>();
+   
+   for (const startTile of riverTiles) {
+      if (!tileIsAdjacentToLand(startTile.tileX, startTile.tileY, riverTiles)) {
+         continue;
+      }
+
+      const directionOffset = randFloat(0, Math.PI/10) * randSign();
+
+      let crossingDirection: number | undefined;
+      const clockwiseIsWater = tileAtOffsetIsWater(startTile.tileX, startTile.tileY, startTile.flowDirection + directionOffset + Math.PI/2, riverTiles);
+      const anticlockwiseIsWater = tileAtOffsetIsWater(startTile.tileX, startTile.tileY, startTile.flowDirection + directionOffset - Math.PI/2, riverTiles);
+
+      // Only generate a river if only one side of the river is water
+      if ((!clockwiseIsWater && !anticlockwiseIsWater) || (clockwiseIsWater && anticlockwiseIsWater)) {
+         continue;
+      }
+      if (clockwiseIsWater) {
+         crossingDirection = startTile.flowDirection + directionOffset + Math.PI/2;
+      } else {
+         crossingDirection = startTile.flowDirection + directionOffset - Math.PI/2;
+      }
+
+      // console.log(startTile.tileX, startTile.tileY);
+      // validStartTiles.push({
+      //    x: startTile.tileX,
+      //    y: startTile.tileY
+      // });
+
+      let a1!: number;
+      let b1!: number;
+
+      // Calculate distance of crossing
+      let currentTileX = startTile.tileX + 0.5;
+      let currentTileY = startTile.tileY + 0.5;
+      let endTileIsValid = true;
+      while (true) {
+         const offset = new Vector(1, crossingDirection).convertToPoint();
+         const newTileX = currentTileX + offset.x;
+         const newTileY = currentTileY + offset.y;
+         a1 = newTileX;
+         b1 = newTileY;
+
+         if (!Board.tileIsInBoard(newTileX - 0.5, newTileY - 0.5)) {
+            endTileIsValid = false;
+            break;
+         }
+
+         if (!tileIsWater(Math.floor(newTileX - 0.5), Math.floor(newTileY - 0.5), riverTiles)) {
+            break;
+         }
+
+         currentTileX = newTileX;
+         currentTileY = newTileY;
+      }
+      if (!endTileIsValid) {
+         continue;
+      }
+
+      const crossingDistance = Math.sqrt(Math.pow(startTile.tileX + 0.5 - currentTileX, 2) + Math.pow(startTile.tileY + 0.5 - currentTileY, 2));
+      
+      // Don't try to make a crossing if the crossing would be too short or too long
+      if (crossingDistance < 2.5 || crossingDistance > 5) {
+         continue;
+      }
+
+      if (!tileIsWater(Math.floor(currentTileX - 0.5), Math.floor(currentTileY - 0.5), riverTiles)) {
+         console.log("bad");
+      }
+
+      riverCrossings.push({
+         startTileX: startTile.tileX,
+         startTileY: startTile.tileY,
+         endTileX: Math.floor(currentTileX - 0.5),
+         endTileY: Math.floor(currentTileY - 0.5),
+         direction: crossingDirection
+      });
+   }
+
+   return riverCrossings;
+}
+
+export interface TerrainGenerationInfo {
+   readonly tiles: Array<Array<Tile>>;
+   readonly waterRocks: ReadonlyArray<WaterRockData>;
+   readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
+}
+
+function generateTerrain(): TerrainGenerationInfo {
    // Initialise the tile info array
    const tileInfoArray = new Array<Array<Partial<TileInfo>>>();
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
@@ -145,8 +290,131 @@ function generateTerrain(): Array<Array<Tile>> {
 
    // Generate rivers
    const riverTiles = generateRiverTiles();
+   for (const waterTileGenerationInfo of riverTiles) {
+      tileInfoArray[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY].biomeName = "river"
+   }
+
+   const waterRocks = new Array<WaterRockData>();
+
    for (const tile of riverTiles) {
-      tileInfoArray[tile.x][tile.y].biomeName = "river"
+      if (Math.random() < 0.075) {
+         const x = (tile.tileX + Math.random()) * SETTINGS.TILE_SIZE;
+         const y = (tile.tileY + Math.random()) * SETTINGS.TILE_SIZE;
+         waterRocks.push({
+            position: [x, y],
+            rotation: 2 * Math.PI * Math.random(),
+            size: randInt(0, 1),
+            opacity: Math.random()
+         });
+      }
+   }
+
+   // Calculate potential river crossing positions
+   const potentialRiverCrossings = calculateRiverCrossingPositions(riverTiles);
+
+   const riverCrossings = new Array<RiverCrossingInfo>();
+   mainLoop:
+   for (const crossingInfo of potentialRiverCrossings) {
+      if (Math.random() >= 0.15) {
+         continue;
+      }
+      
+      // Make sure the crossing isn't too close to another crossing
+      for (const otherCrossing of riverCrossings) {
+         const dist = Math.sqrt(Math.pow(crossingInfo.startTileX - otherCrossing.startTileX, 2) + Math.pow(crossingInfo.startTileY - otherCrossing.startTileY, 2));
+         if (dist < MIN_CROSSING_DISTANCE / SETTINGS.TILE_SIZE) {
+            continue mainLoop;
+         }
+      }
+
+      riverCrossings.push(crossingInfo);
+   }
+
+   const riverSteppingStones = new Array<RiverSteppingStoneData>();
+
+   // Generate features for the crossings
+   for (const crossing of riverCrossings) {
+      const minX = (crossing.startTileX + 0.5) * SETTINGS.TILE_SIZE;
+      const maxX = (crossing.endTileX + 0.5) * SETTINGS.TILE_SIZE;
+      const minY = (crossing.startTileY + 0.5) * SETTINGS.TILE_SIZE;
+      const maxY = (crossing.endTileY + 0.5) * SETTINGS.TILE_SIZE;
+
+      const localCrossingStones = new Array<RiverSteppingStoneData>();
+
+      // riverSteppingStones.push({
+      //    position: [minX, minY],
+      //    size: 2,
+      //    rotation: 0
+      // });
+      // riverSteppingStones.push({
+      //    position: [maxX, maxY],
+      //    size: 2,
+      //    rotation: 0
+      // });
+
+      stoneCreationLoop:
+      for (let i = 0; i < NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER; i++) {
+         const dist = i / (NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER - 1);
+         
+         // Start the stone between the start and end of the crossing
+         let x = lerp(minX, maxX, dist);
+         let y = lerp(minY, maxY, dist);
+
+         const offset = new Vector(RIVER_CROSSING_WIDTH/2, crossing.direction + Math.PI/2).convertToPoint();
+         const offsetMultiplier = randFloat(-1, 1);
+         x += offset.x * offsetMultiplier;
+         y += offset.y * offsetMultiplier;
+
+         if (!Board.positionIsInBoard(x, y)) {
+            continue;
+         }
+
+         const stoneSize: RiverSteppingStoneSize = randInt(0, 2);
+         // const stoneSize: RiverSteppingStoneSize = 0;
+         const radius = RIVER_STEPPING_STONE_SIZES[stoneSize]/2;
+
+         // Don't overlap with existing stones in the crossing
+         for (const stone of localCrossingStones) {
+            const dist = Math.sqrt(Math.pow(x - stone.position[0], 2) + Math.pow(y - stone.position[1], 2));
+            if (dist - RIVER_STEPPING_STONE_SIZES[stone.size]/2 - radius < RIVER_STEPPING_STONE_SPACING) {
+               continue stoneCreationLoop;
+            }
+         }
+
+         const data: RiverSteppingStoneData = {
+            position: [x, y],
+            size: stoneSize,
+            rotation: 2 * Math.PI * Math.random()
+         };
+         localCrossingStones.push(data);
+         riverSteppingStones.push(data);
+      }
+
+      // Create water rocks
+      const crossingDist = Math.sqrt(Math.pow(minX - maxX, 2) + Math.pow(minY - maxY, 2));
+      const numWaterRocks = Math.floor(crossingDist / 10);
+      for (let i = 0; i < numWaterRocks; i++) {
+         const dist = Math.random();
+         
+         let x = lerp(minX, maxX, dist);
+         let y = lerp(minY, maxY, dist);
+
+         const offset = new Vector(RIVER_CROSSING_WIDTH/2, crossing.direction + Math.PI/2).convertToPoint();
+         const offsetMultiplier = randFloat(-1, 1);
+         x += offset.x * offsetMultiplier;
+         y += offset.y * offsetMultiplier;
+
+         if (!Board.positionIsInBoard(x, y)) {
+            continue;
+         }
+
+         waterRocks.push({
+            position: [x, y],
+            size: randInt(0, 1),
+            rotation: 2 * Math.PI * Math.random(),
+            opacity: Math.random()
+         });
+      }
    }
 
    generateTileInfo(tileInfoArray);
@@ -163,7 +431,15 @@ function generateTerrain(): Array<Array<Tile>> {
       }
    }
 
-   return tiles;
+   for (const waterTileGenerationInfo of riverTiles) {
+      (tiles[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY] as WaterTile).flowDirection = waterTileGenerationInfo.flowDirection;
+   }
+
+   return {
+      tiles: tiles,
+      waterRocks: waterRocks,
+      riverSteppingStones: riverSteppingStones
+   };
 }
 
 export default generateTerrain;

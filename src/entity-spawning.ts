@@ -30,74 +30,68 @@ export type EntitySpawnInfo = {
 }
 
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
-   // {
-   //    entityType: "cow",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.01,
-   //    maxDensity: 0.01,
-   //    packSpawningInfo: {
-   //       size: [2, 5],
-   //       spawnRange: 200
-   //    }
-   // },
-   // {
-   //    entityType: "berry_bush",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.001,
-   //    maxDensity: 0.0025
-   // },
-   // {
-   //    entityType: "tree",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.01,
-   //    maxDensity: 0.015
-   // },
-   // {
-   //    entityType: "tombstone",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.01,
-   //    maxDensity: 0.003,
-   //    spawnTimeRanges: [[0, 3], [19, 24]] // 7pm to 3am
-   // },
-   // {
-   //    entityType: "boulder",
-   //    spawnableTiles: ["rock"],
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.025
-   // },
-   // {
-   //    entityType: "cactus",
-   //    spawnableTiles: ["sand"],
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.03
-   // },
-   // {
-   //    entityType: "yeti",
-   //    spawnableTiles: ["snow"],
-   //    spawnRate: 0.004,
-   //    maxDensity: 0.008,
-   //    spawnValidationFunction: Yeti.spawnValidationFunction
-   // },
-   // {
-   //    entityType: "ice_spikes",
-   //    spawnableTiles: ["ice", "permafrost"],
-   //    // spawnRate: 0.015,
-   //    // maxDensity: 0.06,
-   //    spawnRate: 0.015 * 50,
-   //    maxDensity: 0.06 * 50
-   // },
-   // {
-   //    entityType: "slimewisp",
-   //    spawnableTiles: ["slime"],
-   //    spawnRate: 0.2,
-   //    maxDensity: 0.3
-   // },
-   // {
-   //    entityType: "zombie",
-   //    spawnableTiles: ["grass"],
-   //    spawnRate: 0.03 / 2,
-   //    maxDensity: 0.06 / 2
-   // }
+   {
+      entityType: "cow",
+      spawnableTiles: ["grass"],
+      spawnRate: 0.01,
+      maxDensity: 0.01,
+      packSpawningInfo: {
+         size: [2, 5],
+         spawnRange: 200
+      }
+   },
+   {
+      entityType: "berry_bush",
+      spawnableTiles: ["grass"],
+      spawnRate: 0.001,
+      maxDensity: 0.0025
+   },
+   {
+      entityType: "tree",
+      spawnableTiles: ["grass"],
+      spawnRate: 0.01,
+      maxDensity: 0.015
+   },
+   {
+      entityType: "tombstone",
+      spawnableTiles: ["grass"],
+      spawnRate: 0.01,
+      maxDensity: 0.003,
+      spawnTimeRanges: [[0, 3], [19, 24]] // 7pm to 3am
+   },
+   {
+      entityType: "boulder",
+      spawnableTiles: ["rock"],
+      spawnRate: 0.005,
+      maxDensity: 0.025
+   },
+   {
+      entityType: "cactus",
+      spawnableTiles: ["sand"],
+      spawnRate: 0.005,
+      maxDensity: 0.03
+   },
+   {
+      entityType: "yeti",
+      spawnableTiles: ["snow"],
+      spawnRate: 0.004,
+      maxDensity: 0.008,
+      spawnValidationFunction: Yeti.spawnValidationFunction
+   },
+   {
+      entityType: "ice_spikes",
+      spawnableTiles: ["ice", "permafrost"],
+      // spawnRate: 0.015,
+      // maxDensity: 0.06,
+      spawnRate: 0.015 * 50,
+      maxDensity: 0.06 * 50
+   },
+   {
+      entityType: "slimewisp",
+      spawnableTiles: ["slime"],
+      spawnRate: 0.2,
+      maxDensity: 0.3
+   }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */

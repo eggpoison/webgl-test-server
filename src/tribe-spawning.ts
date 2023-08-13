@@ -56,8 +56,8 @@ const getTribeTypeForTile = (position: Point): TribeType | null => {
 const isValidTribeSpawnPosition = (position: Point): boolean => {
    const tile = Board.getTileAtPosition(position);
 
-   // Don't spawn in wall tiles
-   if (tile.isWall) {
+   // Don't spawn in wall tiles or water
+   if (tile.isWall || tile.type === "water") {
       return false;
    }
 
@@ -81,8 +81,8 @@ const findValidHutPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArra
 
       const tile = randItem(areaTiles);
 
-      // Don't spawn huts in walls
-      if (tile.isWall) {
+      // Don't spawn huts in walls or water
+      if (tile.isWall || tile.type === "water") {
          continue;
       }
 
@@ -146,7 +146,7 @@ const runSpawnAttempt = (): void => {
 }
 
 export function runTribeSpawnAttempt(): void {
-   // if(1+1==2)return;
+   if(1+1==2)return;
    if (Math.random() < TRIBE_SPAWN_RATE) {
       runSpawnAttempt();
    }

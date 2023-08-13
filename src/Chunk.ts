@@ -1,3 +1,4 @@
+import { RiverSteppingStoneData } from "webgl-test-shared";
 import { GameObject } from "./GameObject";
 import Particle from "./Particle";
 import Projectile from "./Projectile";
@@ -13,6 +14,8 @@ class Chunk {
    private readonly projectiles = new Set<Projectile>();
 
    private readonly particles = new Set<Particle>();
+
+   private readonly riverSteppingStones = new Array<RiverSteppingStoneData>();
 
    public readonly x: number;
    public readonly y: number;

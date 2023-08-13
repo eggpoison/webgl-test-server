@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, ParticleType, TribeType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, ParticleType, TribeType, WaterTileData, WaterRockData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -13,6 +13,7 @@ import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
+import WaterTile from "./tiles/WaterTile";
 
 /*
 
@@ -221,10 +222,6 @@ class GameServer {
       spawnInitialEntities();
    }
 
-   // public getTicks(): number {
-   //    return this.ticks;
-   // }
-
    public setTrackedGameObject(id: number | null): void {
       this.trackedGameObjectID = id;
    }
@@ -327,12 +324,7 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         // const spawnPosition = this.generatePlayerSpawnPosition();
-
-         const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE / 2;
-         const spawnPosition = new Point(x, x);
-
-         // new Cow(new Point(spawnPosition.x + 300, spawnPosition.y), false);
+         const spawnPosition = this.generatePlayerSpawnPosition();
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
@@ -352,25 +344,39 @@ class GameServer {
             playerData.instance = player;
 
             const tiles = Board.getTiles();
-            const serverTileData = new Array<Array<ServerTileData>>();
+            const serverTileData = new Array<Array<ServerTileData | WaterTileData>>();
             for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
                serverTileData[y] = new Array<ServerTileData>();
                const row = tiles[y];
                for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
                   const tile = row[x];
-                  serverTileData[y][x] = {
-                     x: tile.x,
-                     y: tile.y,
-                     type: tile.type,
-                     biomeName: tile.biomeName,
-                     isWall: tile.isWall
-                  };
+                  if (tile.type === "water") {
+                     serverTileData[y][x] = {
+                        x: tile.x,
+                        y: tile.y,
+                        type: tile.type,
+                        biomeName: tile.biomeName,
+                        isWall: tile.isWall,
+                        flowDirection: (tile as WaterTile).flowDirection,
+                        flowForce: (tile as WaterTile).flowForce
+                     };
+                  } else {
+                     serverTileData[y][x] = {
+                        x: tile.x,
+                        y: tile.y,
+                        type: tile.type,
+                        biomeName: tile.biomeName,
+                        isWall: tile.isWall
+                     };
+                  }
                }
             }
 
             const initialGameDataPacket: InitialGameDataPacket = {
                playerID: player.id,
                tiles: serverTileData,
+               waterRocks: Board.waterRocks,
+               riverSteppingStones: Board.riverSteppingStones,
                entityDataArray: bundleEntityDataArray(player, playerData.visibleChunkBounds),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),

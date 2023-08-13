@@ -1,4 +1,4 @@
-import { Point, SETTINGS, ServerTileUpdateData, Vector, randInt } from "webgl-test-shared";
+import { Point, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -39,6 +39,10 @@ abstract class Board {
    private static tiles: Array<Array<Tile>>;
    private static chunks: Array<Array<Chunk>>;
 
+   public static waterRocks: ReadonlyArray<WaterRockData>;
+
+   public static riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
+
    private static tileUpdateCoordinates: Set<[x: number, y: number]>;
 
    private static gameObjectsToRemove = new Array<GameObject>();
@@ -48,7 +52,10 @@ abstract class Board {
    private static tribes = new Array<Tribe>();
 
    public static setup(): void {
-      this.tiles = generateTerrain();
+      const generationInfo = generateTerrain();
+      this.tiles = generationInfo.tiles;
+      this.waterRocks = generationInfo.waterRocks;
+      this.riverSteppingStones = generationInfo.riverSteppingStones;
 
       this.tileUpdateCoordinates = new Set<[number, number]>();
 
@@ -486,6 +493,10 @@ abstract class Board {
 
    public static tileIsInBoard(tileX: number, tileY: number): boolean {
       return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
+   }
+
+   public static positionIsInBoard(x: number, y: number): boolean {
+      return x >= 0 && x < SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE && y >= 0 && y < SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
    }
 
    public static getTileAtPosition(position: Point): Tile {

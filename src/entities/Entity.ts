@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType, Vector, lerp, randFloat, randItem } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -6,6 +6,7 @@ import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { addEntityToCensus } from "../census";
 import Particle from "../Particle";
+import Board from "../Board";
 
 export interface EntityComponents {
    readonly health: HealthComponent;
@@ -91,6 +92,42 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       }
       
       this.tickStatusEffects();
+
+      if (this.tile.type === "water" && Board.tickIntervalHasPassed(0.15) && this.acceleration !== null) {
+         const lifetime = 1.5;
+            
+         new Particle({
+            type: ParticleType.waterSplash,
+            spawnPosition: this.position.copy(),
+            initialVelocity: null,
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            opacity: (age: number): number => {
+               return lerp(0.75, 0, age / lifetime);
+            },
+            scale: (age: number): number => {
+               return lerp(1, 2, age / lifetime);
+            },
+            lifetime: lifetime
+         });
+      }
+
+      if (this.tile.type === "water" && Board.tickIntervalHasPassed(0.05)) {
+         const lifetime = 1;
+            
+         new Particle({
+            type: ParticleType.waterDroplet,
+            spawnPosition: this.position.copy(),
+            initialVelocity: new Vector(randFloat(40, 60), 2 * Math.PI * Math.random()),
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            angularVelocity: randFloat(2, 3) * randSign(),
+            opacity: (age: number): number => {
+               return lerp(0.75, 0, age / lifetime);
+            },
+            lifetime: lifetime
+         });
+      }
    }
 
    public getMoveSpeedMultiplier(): number {
@@ -283,6 +320,10 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    protected createFootprintParticle(numFootstepsTaken: number, footstepOffset: number, scale: number, lifetime: number): void {
       if (this.velocity === null) {
+         return;
+      }
+
+      if (this.tile.type === "water") {
          return;
       }
 
