@@ -3,9 +3,7 @@ import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNois
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/biome-generation-info";
 import Tile from "../tiles/Tile";
 import { BiomeName, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfo, Vector, WaterRockData, lerp, randFloat, randInt, randSign } from "webgl-test-shared";
-import { createGenericTile } from "../tiles/tile-class-record";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
-import WaterTile from "../tiles/WaterTile";
 import Board from "../Board";
 
 const HEIGHT_NOISE_SCALE = 50;
@@ -268,6 +266,7 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
 
 export interface TerrainGenerationInfo {
    readonly tiles: Array<Array<Tile>>;
+   readonly riverFlowDirections: Record<number, Record<number, number>>;
    readonly waterRocks: ReadonlyArray<WaterRockData>;
    readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
 }
@@ -287,9 +286,18 @@ function generateTerrain(): TerrainGenerationInfo {
 
    // Generate rivers
    const riverTiles = generateRiverTiles();
+
+   const riverFlowDirections: Record<number, Record<number, number>> = {};
+
    for (const waterTileGenerationInfo of riverTiles) {
-      tileInfoArray[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY].biomeName = "river"
+      tileInfoArray[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY].biomeName = "river";
+
+      if (!riverFlowDirections.hasOwnProperty(waterTileGenerationInfo.tileX)) {
+         riverFlowDirections[waterTileGenerationInfo.tileX] = {};
+      }
+      riverFlowDirections[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY] = waterTileGenerationInfo.flowDirection;
    }
+
 
    const waterRocks = new Array<WaterRockData>();
 
@@ -419,19 +427,15 @@ function generateTerrain(): TerrainGenerationInfo {
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          // Create the tile
          const tileInfo = tileInfoArray[x][y] as TileInfo;
-         const tile = createGenericTile(x, y, tileInfo);
-         tiles[x][y] = tile;
+         tiles[x][y] = new Tile(x, y, tileInfo.type, tileInfo.biomeName, tileInfo.isWall);
       }
-   }
-
-   for (const waterTileGenerationInfo of riverTiles) {
-      (tiles[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY] as WaterTile).flowDirection = waterTileGenerationInfo.flowDirection;
    }
 
    return {
       tiles: tiles,
       waterRocks: waterRocks,
-      riverSteppingStones: riverSteppingStones
+      riverSteppingStones: riverSteppingStones,
+      riverFlowDirections: riverFlowDirections
    };
 }
 

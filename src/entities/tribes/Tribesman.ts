@@ -13,6 +13,7 @@ import Barrel from "./Barrel";
 import StackableItem from "../../items/generic/StackableItem";
 import TribeTotem from "./TribeTotem";
 import TribeHut from "./TribeHut";
+import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 
 /*
 Priorities while in a tribe:
@@ -247,26 +248,13 @@ class Tribesman extends TribeMember {
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, inventory: InventoryData] {
-      const inventory = this.getComponent("inventory")!.getInventory("hotbar");
-      
-      const itemSlots: ItemSlotsData = {};
-      for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
-         itemSlots[Number(itemSlot)] = {
-            type: item.type,
-            count: item.count,
-            id: item.id
-         };
-      }
-      
-      const inventoryData: InventoryData = {
-         width: inventory.width,
-         height: inventory.height,
-         itemSlots: itemSlots,
-         entityID: this.id,
-         inventoryName: "hotbar"
-      };
-      
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), inventoryData];
+      const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+      return [
+         this.tribe !== null ? this.tribe.id : null,
+         this.tribeType,
+         this.getArmourItemType(),
+         serializeInventoryData(hotbarInventory, "hotbar")
+      ];
    }
 }
 

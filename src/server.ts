@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, ParticleType, TribeType, WaterTileData, WaterRockData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -13,7 +13,6 @@ import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
-import WaterTile from "./tiles/WaterTile";
 
 /*
 
@@ -270,7 +269,7 @@ class GameServer {
 
       runSpawnAttempt();
 
-      Board.runRandomTickAttempt();
+      Board.updateTiles();
 
       // Send game data packets to all players
       this.sendGameDataPackets();
@@ -344,31 +343,19 @@ class GameServer {
             playerData.instance = player;
 
             const tiles = Board.getTiles();
-            const serverTileData = new Array<Array<ServerTileData | WaterTileData>>();
+            const serverTileData = new Array<Array<ServerTileData>>();
             for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
                serverTileData[y] = new Array<ServerTileData>();
                const row = tiles[y];
                for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
                   const tile = row[x];
-                  if (tile.type === "water") {
-                     serverTileData[y][x] = {
-                        x: tile.x,
-                        y: tile.y,
-                        type: tile.type,
-                        biomeName: tile.biomeName,
-                        isWall: tile.isWall,
-                        flowDirection: (tile as WaterTile).flowDirection,
-                        flowForce: (tile as WaterTile).flowForce
-                     };
-                  } else {
-                     serverTileData[y][x] = {
-                        x: tile.x,
-                        y: tile.y,
-                        type: tile.type,
-                        biomeName: tile.biomeName,
-                        isWall: tile.isWall
-                     };
-                  }
+                  serverTileData[y][x] = {
+                     x: tile.x,
+                     y: tile.y,
+                     type: tile.type,
+                     biomeName: tile.biomeName,
+                     isWall: tile.isWall
+                  };
                }
             }
 
@@ -377,6 +364,7 @@ class GameServer {
                tiles: serverTileData,
                waterRocks: Board.waterRocks,
                riverSteppingStones: Board.riverSteppingStones,
+               riverFlowDirections: Board.getRiverFlowDirections(),
                entityDataArray: bundleEntityDataArray(player, playerData.visibleChunkBounds),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
@@ -386,42 +374,36 @@ class GameServer {
                      itemSlots: {},
                      width: SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE,
                      height: 1,
-                     entityID: player.id,
                      inventoryName: "hotbar"
                   },
                   backpackInventory: {
                      itemSlots: {},
                      width: -1,
                      height: -1,
-                     entityID: player.id,
                      inventoryName: "backpack"
                   },
                   backpackSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     entityID: player.id,
                      inventoryName: "backpackItemSlot"
                   },
                   heldItemSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     entityID: player.id,
                      inventoryName: "heldItemSlot"
                   },
                   craftingOutputItemSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     entityID: player.id,
                      inventoryName: "craftingOutputSlot"
                   },
                   armourSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     entityID: player.id,
                      inventoryName: "armourSlot"
                   }
                },

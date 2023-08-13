@@ -7,7 +7,6 @@ import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Projectile from "./Projectile";
 import Board from "./Board";
-import WaterTile from "./tiles/WaterTile";
 
 let idCounter = 0;
 
@@ -234,7 +233,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
       // If the game object is in a river, push them in the flow direction of the river
       if (this.isInRiver()) {
-         const pushVector = new Vector(240 / SETTINGS.TPS, (this.tile as WaterTile).flowDirection);
+         const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
+         const pushVector = new Vector(240 / SETTINGS.TPS, flowDirection);
          if (this.velocity === null) {
             this.velocity = pushVector;
          } else {
@@ -441,7 +441,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    // Type parameters confuse me ;-;... This works somehow
-   // public callEvents<E extends keyof IEvents<I>>(type: E, ...params: IEvents<I>[E] extends (...args: any) => void ? Parameters<IEvents<I>[E]> : never): void {
    public callEvents<T extends keyof EventsType>(type: T, ...params: EventsType[T] extends (...args: any) => void ? Parameters<EventsType[T]> : never): void {
       for (const event of this.events[type]) {
          // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative

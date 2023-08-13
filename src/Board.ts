@@ -11,6 +11,7 @@ import { removeEntityFromCensus } from "./census";
 import Particle from "./Particle";
 import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
+import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
 
 export type EntityHitboxInfo = {
    readonly vertexPositions: readonly [Point, Point, Point, Point];
@@ -39,8 +40,8 @@ abstract class Board {
    private static tiles: Array<Array<Tile>>;
    private static chunks: Array<Array<Chunk>>;
 
+   private static riverFlowDirections: Record<number, Record<number, number>>;
    public static waterRocks: ReadonlyArray<WaterRockData>;
-
    public static riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
 
    private static tileUpdateCoordinates: Set<[x: number, y: number]>;
@@ -54,6 +55,7 @@ abstract class Board {
    public static setup(): void {
       const generationInfo = generateTerrain();
       this.tiles = generationInfo.tiles;
+      this.riverFlowDirections = generationInfo.riverFlowDirections;
       this.waterRocks = generationInfo.waterRocks;
       this.riverSteppingStones = generationInfo.riverSteppingStones;
 
@@ -101,6 +103,18 @@ abstract class Board {
       const previousCheck = (this.ticks - 1) / ticksPerInterval;
       const check = this.ticks / ticksPerInterval;
       return Math.floor(previousCheck) !== Math.floor(check);
+   }
+
+   public static getRiverFlowDirection(tileX: number, tileY: number): number {
+      if (!this.riverFlowDirections.hasOwnProperty(tileX) || !this.riverFlowDirections[tileX].hasOwnProperty(tileY)) {
+         throw new Error("Tried to get the river flow direction of a non-water tile.");
+      }
+      
+      return this.riverFlowDirections[tileX][tileY];
+   }
+
+   public static getRiverFlowDirections(): Record<number, Record<number, number>> {
+      return this.riverFlowDirections;
    }
 
    public static getEntityByID(id: number): Entity {
@@ -311,15 +325,15 @@ abstract class Board {
       return tileUpdates;
    }
 
-   public static runRandomTickAttempt(): void {
+   public static updateTiles(): void {
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
          for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            if (Math.random() * SETTINGS.TPS < Board.RANDOM_TICK_RATE) {
-               const tileX = chunkX * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
-               const tileY = chunkY * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
+            const tileX = chunkX * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
+            const tileY = chunkY * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
 
-               const tile = this.getTile(tileX, tileY);
-               if (typeof tile.onRandomTick !== "undefined") tile.onRandomTick();
+            const tile = this.getTile(tileX, tileY);
+            if (tile.type === "grass") {
+               attemptToSpreadGrassTile(tile);
             }
          }
       }
@@ -329,7 +343,6 @@ abstract class Board {
       if (Object.keys(this.droppedItems).length > 100 && gameObject.i === "droppedItem") {
          return;
       }
-      // console.log(Object.keys(this.droppedItems).length);
       
       this.joinBuffer.push(gameObject);
    }

@@ -1,7 +1,6 @@
 import { SETTINGS, TileInfo, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import Tile from "../tiles/Tile";
-import { createGenericTile } from "../tiles/tile-class-record";
 import AI, { BaseAIParams } from "./AI";
 
 type FoodSource = {
@@ -75,7 +74,7 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
          biomeName: previousTile.biomeName,
          isWall: previousTile.isWall
       };
-      createGenericTile(previousTile.x, previousTile.y, newTileInfo);
+      new Tile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall);
 
       this.mob.setAIParam("hunger", 0);
    }

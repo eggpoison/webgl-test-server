@@ -20,7 +20,7 @@ export interface Inventory {
    readonly acceptsPickedUpItems: boolean;
 }
 
-export function serializeInventoryData(entity: Entity, inventory: Inventory, inventoryName: string): InventoryData {
+export function serializeInventoryData(inventory: Inventory, inventoryName: string): InventoryData {
    const itemSlots: ItemSlotsData = {};
    for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
       itemSlots[Number(itemSlot)] = {
@@ -34,7 +34,6 @@ export function serializeInventoryData(entity: Entity, inventory: Inventory, inv
       width: inventory.width,
       height: inventory.height,
       itemSlots: itemSlots,
-      entityID: entity.id,
       inventoryName: inventoryName
    };
    

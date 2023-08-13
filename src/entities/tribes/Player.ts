@@ -267,7 +267,6 @@ class Player extends TribeMember {
          itemSlots: {},
          width: inventory.width,
          height: inventory.height,
-         entityID: this.id,
          inventoryName: inventoryName
       };
       for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {

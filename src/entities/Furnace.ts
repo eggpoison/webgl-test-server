@@ -190,9 +190,9 @@ class Furnace extends Entity {
    public getClientArgs(): [fuelInventory: InventoryData, ingredientInveotry: InventoryData, outputInventory: InventoryData] {
       const inventoryComponent = this.getComponent("inventory")!;
       return [
-         serializeInventoryData(this, inventoryComponent.getInventory("fuelInventory"), "fuelInventory"),
-         serializeInventoryData(this, inventoryComponent.getInventory("ingredientInventory"), "ingredientInventory"),
-         serializeInventoryData(this, inventoryComponent.getInventory("outputInventory"), "outputInventory")
+         serializeInventoryData(inventoryComponent.getInventory("fuelInventory"), "fuelInventory"),
+         serializeInventoryData(inventoryComponent.getInventory("ingredientInventory"), "ingredientInventory"),
+         serializeInventoryData(inventoryComponent.getInventory("outputInventory"), "outputInventory")
       ];
    }
 }
