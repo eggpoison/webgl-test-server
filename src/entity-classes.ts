@@ -19,6 +19,7 @@ import TribeHut from "./entities/tribes/TribeHut";
 import Barrel from "./entities/tribes/Barrel";
 import Campfire from "./entities/Campfire";
 import Furnace from "./entities/Furnace";
+import Snowball from "./entities/Snowball";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNaturallySpawned: boolean, ...args: any[]) => Entity)> = {
    cow: () => Cow,
@@ -39,7 +40,8 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, isNat
    tribe_hut: () => TribeHut,
    barrel: () => Barrel,
    campfire: () => Campfire,
-   furnace: () => Furnace
+   furnace: () => Furnace,
+   snowball: () => Snowball
 };
 
 export default ENTITY_CLASS_RECORD;

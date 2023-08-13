@@ -24,8 +24,8 @@ class IceSpikes extends Entity {
    private static readonly ICE_SHARD_DAMAGE = 2;
    private static readonly ICE_SHARD_EXPLODE_SPEED = 700;
 
-   // private readonly maxChildren = randInt(0, 3);
-   private readonly maxChildren = 100;
+   private readonly maxChildren = randInt(0, 3);
+   // private readonly maxChildren = 100;
 
    public numChildrenIceSpikes = 0;
    private iceSpikeGrowProgress = 0;
@@ -66,29 +66,31 @@ class IceSpikes extends Entity {
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type !== "yeti" && collidingEntity.type !== "ice_spikes") {
-            const healthComponent = collidingEntity.getComponent("health");
-            if (healthComponent !== null) {
-               const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-               
-               healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, "ice_spikes");
-               healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
-
-               collidingEntity.applyStatusEffect("freezing", 5);
-            }
+         if (collidingEntity.type === "yeti" || collidingEntity.type === "ice_spikes" || collidingEntity.type === "snowball") {
+            return;
          }
-      })
+         
+         const healthComponent = collidingEntity.getComponent("health");
+         if (healthComponent !== null) {
+            const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
+            
+            healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, "ice_spikes");
+            healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
+
+            collidingEntity.applyStatusEffect("freezing", 5);
+         }
+      });
    }
 
    public tick(): void {
       super.tick();
 
-      // if (this.canGrow() && Math.random() < IceSpikes.GROWTH_TICK_CHANCE / SETTINGS.TPS) {
-      //    this.iceSpikeGrowProgress++;
-      //    if (this.iceSpikeGrowProgress >= IceSpikes.TICKS_TO_GROW) {
-      //       this.grow();
-      //    }
-      // }
+      if (this.canGrow() && Math.random() < IceSpikes.GROWTH_TICK_CHANCE / SETTINGS.TPS) {
+         this.iceSpikeGrowProgress++;
+         if (this.iceSpikeGrowProgress >= IceSpikes.TICKS_TO_GROW) {
+            this.grow();
+         }
+      }
    }
 
    private canGrow(): boolean {

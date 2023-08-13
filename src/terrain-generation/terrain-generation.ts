@@ -409,6 +409,13 @@ function generateTerrain(): TerrainGenerationInfo {
             continue;
          }
 
+         // Only generate water rocks in water
+         const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
+         const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
+         if (!tileIsWater(tileX, tileY, riverTiles)) {
+            continue;
+         }
+
          waterRocks.push({
             position: [x, y],
             size: randInt(0, 1),

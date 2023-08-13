@@ -71,6 +71,8 @@ class Tree extends Entity {
          const offset = new Vector(Tree.TREE_RADIUSES[this.size] * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
          spawnPosition.add(offset);
       }
+
+      const lifetime = randFloat(2, 2.5);
       
       new Particle({
          type: ParticleType.leaf,
@@ -81,8 +83,10 @@ class Tree extends Entity {
          initialRotation: 2 * Math.PI * Math.random(),
          angularVelocity: Math.PI * randFloat(-1, 1),
          angularDrag: 1.5 * Math.PI,
-         opacity: 1,
-         lifetime: randFloat(2, 2.5)
+         opacity: (age: number): number => {
+            return Math.pow(1 - age / lifetime, 0.5);
+         },
+         lifetime: lifetime
       });
    }
 

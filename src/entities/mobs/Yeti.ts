@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, ProjectileType, randFloat, randInt, randItem, SETTINGS, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { GameObjectDebugData, Point, ProjectileType, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -11,6 +11,7 @@ import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Projectile from "../../Projectile";
 import Board from "../../Board";
+import Snowball from "../Snowball";
 
 enum SnowProjectileSize {
    small,
@@ -63,7 +64,6 @@ class Yeti extends Mob {
    private static readonly SMALL_SNOWBALL_THROW_SPEED = [550, 650] as const;
    private static readonly LARGE_SNOWBALL_THROW_SPEED = [350, 450] as const;
    private static readonly SNOW_THROW_ARC = Math.PI/5;
-   private static readonly SNOWBALL_LIFETIME = [12, 16] as const;
    private static readonly SNOW_THROW_OFFSET = 64;
    private static readonly SNOW_THROW_WINDUP_TIME = 2.5;
    private static readonly SNOW_THROW_HOLD_TIME = 0.2;
@@ -82,6 +82,9 @@ class Yeti extends Mob {
    private snowThrowAttackProgress = 0;
    private snowThrowCooldown = Yeti.SNOW_THROW_COOLDOWN;
    private snowThrowHoldTimer = 0;
+
+   /** Stores the ID's of all snowballs thrown by the yeti */
+   private readonly snowballIDs = new Set<number>();
 
    constructor(position: Point) {
       super(position, {
@@ -114,7 +117,14 @@ class Yeti extends Mob {
          terminalVelocity: 100,
          entityIsChased: (entity: Entity) => {
             // Don't chase ice spikes
-            if (entity.type === "ice_spikes") return false;
+            if (entity.type === "ice_spikes") {
+               return false;
+            }
+
+            // Don't chase snowballs thrown by the yeti
+            if (entity.type === "snowball" && this.snowballIDs.has(entity.id)) {
+               return false;
+            }
             
             // Chase the entity if they are in the yeti's territory or have recently attacked the yeti
             return this.territory.includes(entity.tile) || this.attackingEntities.hasOwnProperty(entity.id);
@@ -164,6 +174,11 @@ class Yeti extends Mob {
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
          // Don't damage ice spikes
          if (collidingEntity.type === "ice_spikes") return;
+
+         // Don't damage snowballs thrown by the yeti
+         if (collidingEntity.type === "snowball" && this.snowballIDs.has(collidingEntity.id)) {
+            return;
+         }
          
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
@@ -261,16 +276,16 @@ class Yeti extends Mob {
 
       const numLargeProjectiles = randInt(1, 2);
       for (let i = 0; i < numLargeProjectiles; i++) {
-         this.createSnowProjectile(SnowProjectileSize.large, angle);
+         this.createSnowball(SnowballSize.large, angle);
       }
 
       const numSmallProjectiles = randInt(2, 3);
       for (let i = 0; i < numSmallProjectiles; i++) {
-         this.createSnowProjectile(SnowProjectileSize.small, angle);
+         this.createSnowball(SnowballSize.small, angle);
       }
    }
 
-   private createSnowProjectile(size: SnowProjectileSize, throwAngle: number): void {
+   private createSnowball(size: SnowballSize, throwAngle: number): void {
       const angle = throwAngle + randFloat(-Yeti.SNOW_THROW_ARC, Yeti.SNOW_THROW_ARC);
       
       const position = this.position.copy();
@@ -278,42 +293,38 @@ class Yeti extends Mob {
       position.add(offset);
 
       let velocityMagnitude: number;
-      if (size === SnowProjectileSize.small) {
+      if (size === SnowballSize.small) {
          velocityMagnitude = randFloat(...Yeti.SMALL_SNOWBALL_THROW_SPEED);
       } else {
          velocityMagnitude = randFloat(...Yeti.LARGE_SNOWBALL_THROW_SPEED);
       }
       const velocity = new Vector(velocityMagnitude, angle);
 
-      const projectileType = size === SnowProjectileSize.large ? ProjectileType.snowballLarge : ProjectileType.snowballSmall;
-      const projectile = new Projectile(position, projectileType, randFloat(...Yeti.SNOWBALL_LIFETIME));
-      projectile.velocity = velocity;
+      const snowball = new Snowball(position, false, size);
+      snowball.velocity = velocity;
 
-      projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
-         // Don't let the yeti damage itself
-         if (collidingEntity === this) {
+      // Keep track of the snowball
+      this.snowballIDs.add(snowball.id);
+      snowball.createEvent("death", () => {
+         this.snowballIDs.delete(snowball.id);
+      });
+
+      snowball.createEvent("during_entity_collision", (collidingEntity: Entity) => {
+         // Don't let the yeti damage itself or other snowballs
+         if (collidingEntity === this || collidingEntity.type === "snowball") {
             return;
          }
          
-         if (projectile.velocity === null || projectile.velocity.magnitude < 100) {
+         if (snowball.velocity === null || snowball.velocity.magnitude < 100) {
             return;
          }
 
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
-            const hitDirection = projectile.position.calculateAngleBetween(collidingEntity.position);
+            const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
             healthComponent.damage(4, 100, hitDirection, null);
          }
       });
-      projectile.isAffectedByFriction = true;
-
-      const hitboxSize = size === SnowProjectileSize.large ? 60 : 44;
-      projectile.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: hitboxSize / 2
-         })
-      ]);
    }
 
    public getClientArgs(): [attackProgress: number] {
