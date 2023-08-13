@@ -93,7 +93,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       
       this.tickStatusEffects();
 
-      if (this.tile.type === "water" && Board.tickIntervalHasPassed(0.15) && this.acceleration !== null) {
+      if (this.isInRiver() && Board.tickIntervalHasPassed(0.15) && this.acceleration !== null) {
          const lifetime = 1.5;
             
          new Particle({
@@ -112,7 +112,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          });
       }
 
-      if (this.tile.type === "water" && Board.tickIntervalHasPassed(0.05)) {
+      if (this.isInRiver() && Board.tickIntervalHasPassed(0.05)) {
          const lifetime = 1;
             
          new Particle({
@@ -156,69 +156,74 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          statusEffect.ticksElapsed++;
          if (statusEffect.secondsRemaining <= 0) {
             // Remove the status effect
-            this.removeStatusEffect(statusEffectType);
+            this.clearStatusEffect(statusEffectType);
          }    
       }
 
       if (this.statusEffects.hasOwnProperty("fire")) {
-         if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
+         // If the entity is in a river, clear the fire effect
+         if (this.isInRiver()) {
+            this.clearStatusEffect("fire");
+         } else {
             // Fire tick
-            this.getComponent("health")!.damage(1, 0, null, null);
-         }
+            if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
+               this.getComponent("health")!.damage(1, 0, null, null);
+            }
 
-         // Fire particle effects
-         if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
-            const spawnPosition = this.position.copy();
-            const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-            spawnPosition.add(offset);
+            // Fire particle effects
+            if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
+               const spawnPosition = this.position.copy();
+               const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+               spawnPosition.add(offset);
 
-            const lifetime = 1.5;
+               const lifetime = 1.5;
+               
+               new Particle({
+                  type: ParticleType.smokeBlack,
+                  spawnPosition: spawnPosition,
+                  initialVelocity: new Vector(30, 0),
+                  initialAcceleration: new Vector(80, 0),
+                  initialRotation: 2 * Math.PI * Math.random(),
+                  angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
+                  opacity: (age: number): number => {
+                     return lerp(0.75, 0, age / lifetime);
+                  },
+                  scale: (age: number): number => {
+                     const deathProgress = age / lifetime
+                     return 1 + deathProgress * 2;
+                  },
+                  lifetime: lifetime
+               });
+            }
             
-            new Particle({
-               type: ParticleType.smokeBlack,
-               spawnPosition: spawnPosition,
-               initialVelocity: new Vector(30, 0),
-               initialAcceleration: new Vector(80, 0),
-               initialRotation: 2 * Math.PI * Math.random(),
-               angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
-               opacity: (age: number): number => {
-                  return lerp(0.75, 0, age / lifetime);
-               },
-               scale: (age: number): number => {
-                  const deathProgress = age / lifetime
-                  return 1 + deathProgress * 2;
-               },
-               lifetime: lifetime
-            });
-         }
-         
-         // Embers
-         if (this.statusEffects.fire!.ticksElapsed % 3 === 0) {
-            const spawnPosition = this.position.copy();
-            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-            spawnPosition.add(offset);
+            // Embers
+            if (this.statusEffects.fire!.ticksElapsed % 3 === 0) {
+               const spawnPosition = this.position.copy();
+               const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+               spawnPosition.add(offset);
 
-            const lifetime = randFloat(0.6, 1.2);
+               const lifetime = randFloat(0.6, 1.2);
 
-            const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
-            const velocityOffset = new Vector(30, Math.PI);
-            velocity.add(velocityOffset);
-            
-            new Particle({
-               type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
-               spawnPosition: spawnPosition,
-               initialVelocity: velocity,
-               initialAcceleration: new Vector(randFloat(0, 80), 2 * Math.PI * Math.random()),
-               drag: 60,
-               initialRotation: 2 * Math.PI * Math.random(),
-               angularVelocity: randFloat(-60, 60),
-               angularDrag: 60,
-               opacity: (age: number): number => {
-                  let opacity = 1 - age / lifetime;
-                  return Math.pow(opacity, 0.3);
-               },
-               lifetime: lifetime
-            });
+               const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
+               const velocityOffset = new Vector(30, Math.PI);
+               velocity.add(velocityOffset);
+               
+               new Particle({
+                  type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
+                  spawnPosition: spawnPosition,
+                  initialVelocity: velocity,
+                  initialAcceleration: new Vector(randFloat(0, 80), 2 * Math.PI * Math.random()),
+                  drag: 60,
+                  initialRotation: 2 * Math.PI * Math.random(),
+                  angularVelocity: randFloat(-60, 60),
+                  angularDrag: 60,
+                  opacity: (age: number): number => {
+                     let opacity = 1 - age / lifetime;
+                     return Math.pow(opacity, 0.3);
+                  },
+                  lifetime: lifetime
+               });
+            }
          }
       }
 
@@ -269,7 +274,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       return this.statusEffects.hasOwnProperty(type);
    }
 
-   public removeStatusEffect(type: StatusEffectType): void {
+   public clearStatusEffect(type: StatusEffectType): void {
       delete this.statusEffects[type];
    }
 

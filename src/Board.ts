@@ -1,4 +1,4 @@
-import { Point, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
+import { Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -60,6 +60,22 @@ abstract class Board {
       this.tileUpdateCoordinates = new Set<[number, number]>();
 
       this.chunks = this.initialiseChunks();
+
+      // Add river stepping stones to chunks
+      for (const steppingStoneData of generationInfo.riverSteppingStones) {
+         const size = RIVER_STEPPING_STONE_SIZES[steppingStoneData.size];
+         const minChunkX = Math.max(Math.min(Math.floor((steppingStoneData.position[0] - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor((steppingStoneData.position[0] + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor((steppingStoneData.position[1] - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor((steppingStoneData.position[1] + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         
+         for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+               const chunk = this.getChunk(chunkX, chunkY);
+               chunk.addRiverSteppingStone(steppingStoneData);
+            }
+         }
+      }
    }
 
    public static terrainHasBeenGenerated(): boolean {

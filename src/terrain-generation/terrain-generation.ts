@@ -25,6 +25,7 @@ const ADJACENT_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> =
 /** Minimum distance between crossings */
 const MIN_CROSSING_DISTANCE = 325;
 const RIVER_CROSSING_WIDTH = 100;
+const RIVER_CROSSING_WATER_ROCK_WIDTH = 150;
 const NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER = 25;
 const RIVER_STEPPING_STONE_SPACING = -5;
 
@@ -253,10 +254,6 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
          continue;
       }
 
-      if (!tileIsWater(Math.floor(currentTileX - 0.5), Math.floor(currentTileY - 0.5), riverTiles)) {
-         console.log("bad");
-      }
-
       riverCrossings.push({
          startTileX: startTile.tileX,
          startTileY: startTile.tileY,
@@ -341,17 +338,6 @@ function generateTerrain(): TerrainGenerationInfo {
 
       const localCrossingStones = new Array<RiverSteppingStoneData>();
 
-      // riverSteppingStones.push({
-      //    position: [minX, minY],
-      //    size: 2,
-      //    rotation: 0
-      // });
-      // riverSteppingStones.push({
-      //    position: [maxX, maxY],
-      //    size: 2,
-      //    rotation: 0
-      // });
-
       stoneCreationLoop:
       for (let i = 0; i < NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER; i++) {
          const dist = i / (NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER - 1);
@@ -365,12 +351,19 @@ function generateTerrain(): TerrainGenerationInfo {
          x += offset.x * offsetMultiplier;
          y += offset.y * offsetMultiplier;
 
+         // Make sure the stepping stone would be in the board
          if (!Board.positionIsInBoard(x, y)) {
             continue;
          }
 
+         // Only spawn stepping stones on water
+         const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
+         const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
+         if (!tileIsWater(tileX, tileY, riverTiles)) {
+            continue;
+         }
+
          const stoneSize: RiverSteppingStoneSize = randInt(0, 2);
-         // const stoneSize: RiverSteppingStoneSize = 0;
          const radius = RIVER_STEPPING_STONE_SIZES[stoneSize]/2;
 
          // Don't overlap with existing stones in the crossing
@@ -392,14 +385,14 @@ function generateTerrain(): TerrainGenerationInfo {
 
       // Create water rocks
       const crossingDist = Math.sqrt(Math.pow(minX - maxX, 2) + Math.pow(minY - maxY, 2));
-      const numWaterRocks = Math.floor(crossingDist / 10);
+      const numWaterRocks = Math.floor(crossingDist / 6);
       for (let i = 0; i < numWaterRocks; i++) {
          const dist = Math.random();
          
          let x = lerp(minX, maxX, dist);
          let y = lerp(minY, maxY, dist);
 
-         const offset = new Vector(RIVER_CROSSING_WIDTH/2, crossing.direction + Math.PI/2).convertToPoint();
+         const offset = new Vector(RIVER_CROSSING_WATER_ROCK_WIDTH/2, crossing.direction + Math.PI/2).convertToPoint();
          const offsetMultiplier = randFloat(-1, 1);
          x += offset.x * offsetMultiplier;
          y += offset.y * offsetMultiplier;

@@ -1,9 +1,15 @@
-import { RiverSteppingStoneData } from "webgl-test-shared";
+import { Point, RiverSteppingStoneData, RiverSteppingStoneSize } from "webgl-test-shared";
 import { GameObject } from "./GameObject";
 import Particle from "./Particle";
 import Projectile from "./Projectile";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
+
+export interface RiverSteppingStone {
+   readonly position: Point;
+   readonly rotation: number;
+   readonly size: RiverSteppingStoneSize;
+}
 
 class Chunk {
    /** Stores all game objects inside the chunk */
@@ -15,7 +21,7 @@ class Chunk {
 
    private readonly particles = new Set<Particle>();
 
-   private readonly riverSteppingStones = new Array<RiverSteppingStoneData>();
+   public readonly riverSteppingStones = new Array<RiverSteppingStone>();
 
    public readonly x: number;
    public readonly y: number;
@@ -87,6 +93,15 @@ class Chunk {
 
    public getParticles(): ReadonlySet<Particle> {
       return this.particles;
+   }
+
+   public addRiverSteppingStone(steppingStoneData: RiverSteppingStoneData): void {
+      const steppingStone: RiverSteppingStone = {
+         position: Point.unpackage(steppingStoneData.position),
+         rotation: steppingStoneData.rotation,
+         size: steppingStoneData.size
+      };
+      this.riverSteppingStones.push(steppingStone);
    }
 }
 

@@ -1,4 +1,4 @@
-import { GameObjectDebugData, HitboxType, Point, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, HitboxType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
 import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
@@ -7,6 +7,7 @@ import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Projectile from "./Projectile";
 import Board from "./Board";
+import WaterTile from "./tiles/WaterTile";
 
 let idCounter = 0;
 
@@ -141,10 +142,33 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Function optionally implemented by game object subclasses */
    public getMoveSpeedMultiplier?(): number;
 
+   protected isInRiver(): boolean {
+      if (this.tile.type !== "water") {
+         return false;
+      }
+
+      // If the game object is standing on a stepping stone they aren't in a river
+      for (const chunk of this.chunks) {
+         for (const steppingStone of chunk.riverSteppingStones) {
+            const size = RIVER_STEPPING_STONE_SIZES[steppingStone.size];
+            
+            const dist = this.position.calculateDistanceBetween(steppingStone.position);
+            if (dist <= size/2) {
+               return false;
+            }
+         }
+      }
+
+      return true;
+   }
+
    public applyPhysics(): void {
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.tile.type];
 
       let moveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
+      if (this.tile.type === "water" && !this.isInRiver()) {
+         moveSpeedMultiplier = 1;
+      }
       if (typeof this.overrideTileMoveSpeedMultiplier !== "undefined") {
          const speed = this.overrideTileMoveSpeedMultiplier();
          if (speed !== null) {
@@ -205,6 +229,16 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          this.velocity.magnitude -= 3 * SETTINGS.FRICTION_CONSTANT * tileTypeInfo.friction / SETTINGS.TPS;
          if (this.velocity.magnitude <= 0) {
             this.velocity = null;
+         }
+      }
+
+      // If the game object is in a river, push them in the flow direction of the river
+      if (this.isInRiver()) {
+         const pushVector = new Vector(240 / SETTINGS.TPS, (this.tile as WaterTile).flowDirection);
+         if (this.velocity === null) {
+            this.velocity = pushVector;
+         } else {
+            this.velocity.add(pushVector);
          }
       }
 
