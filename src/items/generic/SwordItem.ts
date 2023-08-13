@@ -1,12 +1,12 @@
-import { ItemType, WeaponItemInfo } from "webgl-test-shared";
+import { ItemType, SwordItemInfo } from "webgl-test-shared";
 import Entity from "../../entities/Entity";
 import ToolItem from "./ToolItem";
 import Mob from "../../entities/mobs/Mob";
 
-class WeaponItem extends ToolItem implements WeaponItemInfo {
-   public readonly toolType: "weapon";
+class SwordItem extends ToolItem implements SwordItemInfo {
+   public readonly toolType: "sword";
 
-   constructor(itemType: ItemType, count: number, itemInfo: WeaponItemInfo) {
+   constructor(itemType: ItemType, count: number, itemInfo: SwordItemInfo) {
       super(itemType, count, itemInfo);
 
       this.toolType = itemInfo.toolType;
@@ -21,4 +21,4 @@ class WeaponItem extends ToolItem implements WeaponItemInfo {
    }
 }
 
-export default WeaponItem;
+export default SwordItem;

@@ -26,6 +26,7 @@ import BarrelItem from "./specific/BarrelItem";
 import FrostArmour from "./specific/FrostArmour";
 import FurnaceItem from "./specific/FurnaceItem";
 import CampfireItem from "./specific/CampfireItem";
+import WoodenBow from "./specific/WoodenBow";
 
 const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: number, itemInfo: ItemInfo<T>) => Item } = {
    wood: () => Wood,
@@ -53,7 +54,8 @@ const ITEM_CLASS_RECORD: { [T in ItemType]: () => new (itemType: T, count: numbe
    barrel: () => BarrelItem,
    frost_armour: () => FrostArmour,
    campfire: () => CampfireItem,
-   furnace: () => FurnaceItem
+   furnace: () => FurnaceItem,
+   wooden_bow: () => WoodenBow
 };
 
 export function createItem(itemType: ItemType, count: number): Item {

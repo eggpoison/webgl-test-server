@@ -1,9 +1,9 @@
 import { Vector, ParticleType, lerp } from "webgl-test-shared";
 import Particle from "../../Particle";
 import Entity from "../../entities/Entity";
-import WeaponItem from "../generic/WeaponItem";
+import SwordItem from "../generic/SwordItem";
 
-class FleshSword extends WeaponItem {
+class FleshSword extends SwordItem {
    public damageEntity(entity: Entity): void {
       entity.applyStatusEffect("poisoned", 3);
 

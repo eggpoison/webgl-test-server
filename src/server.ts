@@ -184,7 +184,8 @@ const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): Readonl
                acceleration: particle.acceleration?.package() || null,
                rotation: particle.rotation,
                opacity: opacity,
-               scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale
+               scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
+               tint: particle.tint
             });
          }
       }
@@ -247,7 +248,6 @@ class GameServer {
 
    private async tick(): Promise<void> {
       // Update server ticks and time
-      // this.ticks++;
       Board.ticks++;
       Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 

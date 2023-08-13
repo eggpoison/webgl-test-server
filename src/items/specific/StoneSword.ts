@@ -1,5 +1,5 @@
-import WeaponItem from "../generic/WeaponItem";
+import SwordItem from "../generic/SwordItem";
 
-class StoneSword extends WeaponItem {}
+class StoneSword extends SwordItem {}
 
 export default StoneSword;

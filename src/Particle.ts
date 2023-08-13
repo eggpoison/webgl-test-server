@@ -1,4 +1,4 @@
-import { ParticleType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { ParticleTint, ParticleType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Board from "./Board";
 
@@ -23,6 +23,7 @@ export interface ParticleInfo {
    readonly drag?: number;
    /** Number of seconds the particle lasts before being destroyed */
    readonly lifetime: number;
+   readonly tint?: ParticleTint;
 }
 
 class Particle {
@@ -41,6 +42,7 @@ class Particle {
    public readonly scale: number | ((age: number) => number);
    public readonly drag: number;
    public readonly lifetime: number;
+   public readonly tint: ParticleTint;
 
    private chunk: Chunk;
 
@@ -61,6 +63,7 @@ class Particle {
       this.opacity = info.opacity;
       this.scale = typeof info.scale !== "undefined" ? info.scale : 1;
       this.drag = typeof info.drag !== "undefined" ? info.drag : 0;
+      this.tint = info.tint || [0, 0, 0];
       this.lifetime = info.lifetime;
 
       this.chunk = this.calculateContainingChunk();

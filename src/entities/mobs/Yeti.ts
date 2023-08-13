@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, ProjectileType, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { GameObjectDebugData, ParticleType, Point, ProjectileType, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -12,6 +12,7 @@ import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Projectile from "../../Projectile";
 import Board from "../../Board";
 import Snowball from "../Snowball";
+import Particle from "../../Particle";
 
 enum SnowProjectileSize {
    small,
@@ -272,17 +273,19 @@ class Yeti extends Mob {
    }
 
    private throwSnow(target: Entity): void {
-      const angle = this.position.calculateAngleBetween(target.position);
+      const throwAngle = this.position.calculateAngleBetween(target.position);
 
       const numLargeProjectiles = randInt(1, 2);
       for (let i = 0; i < numLargeProjectiles; i++) {
-         this.createSnowball(SnowballSize.large, angle);
+         this.createSnowball(SnowballSize.large, throwAngle);
       }
 
       const numSmallProjectiles = randInt(2, 3);
       for (let i = 0; i < numSmallProjectiles; i++) {
-         this.createSnowball(SnowballSize.small, angle);
+         this.createSnowball(SnowballSize.small, throwAngle);
       }
+
+      this.createSnowImpactParticles(throwAngle);
    }
 
    private createSnowball(size: SnowballSize, throwAngle: number): void {
@@ -325,6 +328,37 @@ class Yeti extends Mob {
             healthComponent.damage(4, 100, hitDirection, null);
          }
       });
+   }
+
+   private createSnowImpactParticles(throwAngle: number): void {
+      const impactPosition = this.position.copy();
+      const offset = new Vector(Yeti.SNOW_THROW_OFFSET + 20, throwAngle).convertToPoint();
+      impactPosition.add(offset);
+      
+      for (let i = 0; i < 30; i++) {
+         const position = impactPosition.copy();
+         const offset = new Vector(randFloat(0, 20), 2 * Math.PI * Math.random()).convertToPoint();
+         position.add(offset);
+         
+         const lifetime = randFloat(0.8, 0.12);
+
+         const brightnessMultiplier = randFloat(-0.25, 0.1);
+      
+         new Particle({
+            type: ParticleType.snow,
+            spawnPosition: position,
+            initialVelocity: new Vector(randFloat(40, 100), 2 * Math.PI * Math.random()),
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            angularVelocity: randFloat(-30, 30),
+            opacity: (age: number): number => {
+               return 1 - Math.pow(age / lifetime, 0.4);
+            },
+            lifetime: lifetime,
+            scale: 2,
+            tint: [brightnessMultiplier, brightnessMultiplier, brightnessMultiplier]
+         });
+      }  
    }
 
    public getClientArgs(): [attackProgress: number] {
