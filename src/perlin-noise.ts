@@ -1,4 +1,4 @@
-import { Point, Vector, veryBadHash } from "webgl-test-shared";
+import { Point, Vector } from "webgl-test-shared";
 
 const lerp = (start: number, end: number, amount: number): number => {
    return start * (1 - amount) + end * amount;
@@ -16,14 +16,41 @@ const fade = (t: number): number => {
    return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
+const calculateCornerDotProduct = (gridXCoordinates: number[][], gridYCoordinates: number[][], cornerX: number, cornerY: number, sampleX: number, sampleY: number): number => {
+   const gradientX = gridXCoordinates[cornerY][cornerX];
+   const gradientY = gridYCoordinates[cornerY][cornerX];
+
+   const offsetX = sampleX - cornerX;
+   const offsetY = sampleY - cornerY;
+
+   // Calculate the dot product
+   const dotProduct = gradientX * offsetX + gradientY * offsetY;
+   return dotProduct;
+}
+
+const cosAngles = new Array<number>();
+const sinAngles = new Array<number>();
+
+for (let i = 0; i < 360; i++) {
+   cosAngles.push(Math.cos(i / 180 * Math.PI));
+   sinAngles.push(Math.sin(i / 180 * Math.PI));
+}
+
 export function generatePerlinNoise(width: number, height: number, scale: number): Array<Array<number>> {
-   const grid = new Array<Array<Vector>>();
+   const gridXCoordinates = new Array<Array<number>>();
+   const gridYCoordinates = new Array<Array<number>>();
    for (let i = 0; i <= height / scale + 1; i++) {
-      const row = new Array<Vector>();
+      const xCoordinates = new Array<number>();
+      const yCoordinates = new Array<number>();
       for (let j = 0; j <= width / scale + 1; j++) {
-         row.push(Vector.randomUnitVector());
+         const degrees = Math.floor(360 * Math.random());
+         const x = cosAngles[degrees];
+         const y = sinAngles[degrees];
+         xCoordinates.push(x);
+         yCoordinates.push(y);
       }
-      grid.push(row);
+      gridXCoordinates.push(xCoordinates);
+      gridYCoordinates.push(yCoordinates);
    }
 
    const noise = new Array<Array<number>>();
@@ -32,32 +59,20 @@ export function generatePerlinNoise(width: number, height: number, scale: number
       for (let x = 0; x < width; x++) {
          const sampleX = x / scale;
          const sampleY = y / scale;
-         const samplePoint = new Point(sampleX, sampleY);
 
          const x0 = Math.floor(sampleX);
          const x1 = x0 + 1;
          const y0 = Math.floor(sampleY);
          const y1 = y0 + 1;
 
-         const cornerCoords: ReadonlyArray<[number, number]> = [[y0, x0], [y0, x1], [y1, x0], [y1, x1]];
-
-         const dotProducts = new Array<number>();
-         for (let i = 0; i < 4; i++) {
-            const coords = cornerCoords[i];
-
-            const corner = grid[coords[0]][coords[1]];
-            const cornerPos = new Point(coords[1], coords[0]);
-            const offsetVector = samplePoint.convertToVector(cornerPos);
-
-            // Calculate the dot product
-            const cornerCartesian = corner.convertToPoint();
-            const dotProduct = cornerCartesian.calculateDotProduct(offsetVector.convertToPoint());
-            dotProducts.push(dotProduct);
-         }
+         const dotProduct1 = calculateCornerDotProduct(gridXCoordinates, gridYCoordinates, x0, y0, sampleX, sampleY);
+         const dotProduct2 = calculateCornerDotProduct(gridXCoordinates, gridYCoordinates, x1, y0, sampleX, sampleY);
+         const dotProduct3 = calculateCornerDotProduct(gridXCoordinates, gridYCoordinates, x0, y1, sampleX, sampleY);
+         const dotProduct4 = calculateCornerDotProduct(gridXCoordinates, gridYCoordinates, x1, y1, sampleX, sampleY);
 
          const u = fade(sampleX % 1);
          const v = fade(sampleY % 1);
-         let val = interpolate(dotProducts[0], dotProducts[1], dotProducts[2], dotProducts[3], u, v);
+         let val = interpolate(dotProduct1, dotProduct2, dotProduct3, dotProduct4, u, v);
          val = Math.min(Math.max(val, -0.5), 0.5);
          row.push(val + 0.5);
       }
@@ -140,9 +155,6 @@ export function generatePointPerlinNoise(x: number, y: number, scale: number, na
       } else {
          corner = a[name][key];
       }
-      // const hash = veryBadHash(coords[0] + "-" + coords[1]);
-      // const val = ((hash / 100000) % 1) * 2 * Math.PI;
-      // const corner = new Vector(val, 1);
 
       // const corner = grid[coords[0]][coords[1]];
       const cornerPos = new Point(coords[1], coords[0]);
