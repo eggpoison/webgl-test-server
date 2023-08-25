@@ -20,12 +20,9 @@ class Boulder extends Entity {
          item_creation: itemCreationComponent
       }, "boulder", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Boulder.RADIUS
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Boulder.RADIUS);
+      this.addHitbox(hitbox);
 
       this.boulderType = Math.floor(Math.random() * 2);
 

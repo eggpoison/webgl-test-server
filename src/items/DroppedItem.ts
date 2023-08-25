@@ -36,13 +36,9 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
       this.position = position;
       this.item = item;
 
-      this.addHitboxes([
-         new RectangularHitbox({
-            type: "rectangular",
-            width: SETTINGS.ITEM_SIZE,
-            height: SETTINGS.ITEM_SIZE
-         })
-      ]);
+      const hitbox = new RectangularHitbox();
+      hitbox.setHitboxInfo(SETTINGS.ITEM_SIZE, SETTINGS.ITEM_SIZE);
+      this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
    } 

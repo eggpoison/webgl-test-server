@@ -1,4 +1,4 @@
-import { EntityType, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { EntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -12,6 +12,8 @@ import TribeBuffer from "../../TribeBuffer";
 import Barrel from "./Barrel";
 import ArmourItem from "../../items/generic/ArmourItem";
 import DroppedItem from "../../items/DroppedItem";
+import ToolItem from "../../items/generic/ToolItem";
+import Item from "../../items/generic/Item";
 
 abstract class TribeMember extends Mob {
    private static readonly DEATH_ITEM_DROP_RANGE = 38;
@@ -23,6 +25,8 @@ abstract class TribeMember extends Mob {
    private numFootstepsTaken = 0;
 
    protected abstract readonly footstepInterval: number;
+
+   private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -92,13 +96,27 @@ abstract class TribeMember extends Mob {
 
          this.numFootstepsTaken++;
       }
+
+      const inventoryComponent = this.getComponent("inventory")!
       
-      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
+      // Armour defence
+      const armourInventory = inventoryComponent.getInventory("armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          const armourItem = armourInventory.itemSlots[1] as ArmourItem;
          this.getComponent("health")!.addDefence(armourItem.defence, "armour");
       } else {
          this.getComponent("health")!.removeDefence("armour");
+      }
+
+      // Tick items
+      const hotbarInventory = inventoryComponent.getInventory("hotbar");
+      for (let itemSlot = 1; itemSlot <= hotbarInventory.width; itemSlot++) {
+         if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
+            const item = hotbarInventory.itemSlots[itemSlot];
+            if (typeof item.tick !== "undefined") {
+               item.tick();
+            }
+         }
       }
    }
 
@@ -113,6 +131,42 @@ abstract class TribeMember extends Mob {
       return null;
    }
 
+   public entityIsFriendly(entity: Entity): boolean {
+      if (entity === this) {
+         return true;
+      }
+      
+      if (this.tribe === null) {
+         return false;
+      }
+      
+      // Buildings of the same tribe are friendly
+      if (entity instanceof TribeHut && this.tribe.hasHut(entity)) {
+         return true;
+      }
+      if (entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
+         return true;
+      }
+      if (entity instanceof Barrel && entity.tribe === this.tribe) {
+         return true;
+      }
+
+      // Don't attack fellow tribe members
+      if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
+         return true;
+      }
+
+      // Don't attack tribe buildings
+      // if (entity.type === "barrel" && (entity as Barrel).tribe === this.tribe) {
+      //    return true;
+      // }
+      // if (entity.type === "tribe_totem" && (entity as TribeTotem).tribe === this.tribe) {
+      //    return true;
+      // }
+
+      return false;
+   }
+
    protected calculateAttackTarget(targetEntities: ReadonlyArray<Entity>): Entity | null {
       let closestEntity: Entity | null = null;
       let minDistance = Number.MAX_SAFE_INTEGER;
@@ -122,36 +176,12 @@ abstract class TribeMember extends Mob {
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
 
-         // Don't attack tribe buildings of the same tribe
-         if (this.tribe !== null && entity instanceof TribeHut && this.tribe.hasHut(entity)) {
-            continue;
-         }
-         if (this.tribe !== null && entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
-            continue;
-         }
-         if (this.tribe !== null && entity instanceof Barrel && entity.tribe === this.tribe) {
-            continue;
-         }
-
-         if (this.tribe !== null) {
-            // Don't attack fellow tribe members
-            if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
-               continue;
+         if (!this.entityIsFriendly(entity)) {
+            const dist = this.position.calculateDistanceBetween(entity.position);
+            if (dist < minDistance) {
+               closestEntity = entity;
+               minDistance = dist;
             }
-
-            // Don't attack tribe buildings
-            if (entity.type === "barrel" && (entity as Barrel).tribe === this.tribe) {
-               continue;
-            }
-            if (entity.type === "tribe_totem" && (entity as TribeTotem).tribe === this.tribe) {
-               continue;
-            }
-         }
-
-         const dist = this.position.calculateDistanceBetween(entity.position);
-         if (dist < minDistance) {
-            closestEntity = entity;
-            minDistance = dist;
          }
       }
 
@@ -197,6 +227,55 @@ abstract class TribeMember extends Mob {
       }
 
       return attackedEntities;
+   }
+
+   /**
+    * @param target The entity to attack
+    * @param itemSlot The item slot being used to attack the entity
+    */
+   protected attackEntity(target: Entity, itemSlot: number): void {
+      // Find the selected item
+      const inventoryComponent = this.getComponent("inventory")!;
+      const item = inventoryComponent.getItem("hotbar", itemSlot);
+
+      const attackDamage = this.calculateItemDamage(target, item);
+      const attackKnockback = this.calculateItemKnockback(item);
+
+      const hitDirection = this.position.calculateAngleBetween(target.position);
+
+      // Register the hit
+      const attackHash = this.id.toString();
+      const healthComponent = target.getComponent("health")!; // Attack targets always have a health component
+      healthComponent.damage(attackDamage, attackKnockback, hitDirection, this, PlayerCauseOfDeath.tribe_member, attackHash);
+      target.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+
+      if (item !== null && typeof item.damageEntity !== "undefined") {
+         item.damageEntity(target);
+      }
+   }
+
+   private calculateItemDamage(entity: Entity, item: Item | null): number {
+      if (item === null) {
+         return 1;
+      }
+
+      if (item.hasOwnProperty("toolType")) {
+         return (item as ToolItem).getAttackDamage(entity);
+      }
+
+      return 1;
+   }
+
+   private calculateItemKnockback(item: Item | null): number {
+      if (item === null) {
+         return TribeMember.DEFAULT_ATTACK_KNOCKBACK;
+      }
+
+      if (item.hasOwnProperty("toolType")) {
+         return (item as ToolItem).knockback;
+      }
+
+      return TribeMember.DEFAULT_ATTACK_KNOCKBACK;
    }
 
    public getArmourItemType(): ItemType | null {

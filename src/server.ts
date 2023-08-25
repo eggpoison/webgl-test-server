@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, HitboxData, HitboxInfo, HitboxType, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, TribeType, RectangularHitboxData, CircularHitboxData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -13,7 +13,11 @@ import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
-import Yeti from "./entities/mobs/Yeti";
+import TribeTotem from "./entities/tribes/TribeTotem";
+import TribeHut from "./entities/tribes/TribeHut";
+import Barrel from "./entities/tribes/Barrel";
+import RectangularHitbox from "./hitboxes/RectangularHitbox";
+import CircularHitbox from "./hitboxes/CircularHitbox";
 
 /*
 
@@ -22,23 +26,19 @@ node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
 
 */
 
-const bundleHitboxData = (hitboxInfo: HitboxInfo<HitboxType>): HitboxData<HitboxType> => {
-   switch (hitboxInfo.type) {
-      case "circular": {
-         return {
-            type: "circular",
-            radius: hitboxInfo.radius,
-            offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
-         };
-      }
-      case "rectangular": {
-         return {
-            type: "rectangular",
-            width: hitboxInfo.width,
-            height: hitboxInfo.height,
-            offset: typeof hitboxInfo.offset !== "undefined" ? hitboxInfo.offset.package() : undefined
-         };
-      }
+const bundleHitboxData = (hitbox: RectangularHitbox | CircularHitbox): RectangularHitboxData | CircularHitboxData => {
+   if (hitbox.hasOwnProperty("radius")) {
+      // Circular hitbox
+      return {
+         radius: (hitbox as CircularHitbox).radius,
+         offset: typeof hitbox.offset !== "undefined" ? hitbox.offset.package() : undefined
+      };
+   } else {
+      return {
+         width: (hitbox as RectangularHitbox).width,
+         height: (hitbox as RectangularHitbox).height,
+         offset: typeof hitbox.offset !== "undefined" ? hitbox.offset.package() : undefined
+      };
    }
 }
 
@@ -58,9 +58,10 @@ const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameOb
       acceleration: gameObject.acceleration !== null ? gameObject.acceleration.package() : null,
       terminalVelocity: gameObject.terminalVelocity,
       rotation: gameObject.rotation,
+      mass: gameObject.mass,
       chunkCoordinates: Array.from(gameObject.chunks).map(chunk => [chunk.x, chunk.y]),
       hitboxes: Array.from(gameObject.hitboxes).map(hitbox => {
-         return bundleHitboxData(hitbox.info);
+         return bundleHitboxData(hitbox);
       })
    };
 
@@ -325,8 +326,15 @@ class GameServer {
 
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
+         // const spawnPosition = new Point(50, 50);
 
-         new Yeti(new Point(spawnPosition.x + 300, spawnPosition.y));
+         new Barrel(new Point(spawnPosition.x + 22, spawnPosition.y), false);
+
+         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y), false);
+         const tribe = new Tribe(TribeType.goblins, totem);
+
+         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), false, tribe);
+         tribe.registerNewHut(hut);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());

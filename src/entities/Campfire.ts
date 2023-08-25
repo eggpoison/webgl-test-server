@@ -67,8 +67,6 @@ class Campfire extends Entity {
    private currentRecipe: HeatingRecipe | null = null;
    private remainingHeat = 0;
 
-   private entityHealTimers: Record<number, number> = {};
-   
    constructor(position: Point, isNaturallySpawned: boolean) {
       const inventoryComponent = new InventoryComponent()
       
@@ -77,12 +75,9 @@ class Campfire extends Entity {
          inventory: inventoryComponent
       }, "campfire", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Campfire.RADIUS
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Campfire.RADIUS);
+      this.addHitbox(hitbox);
 
       inventoryComponent.createNewInventory("fuelInventory", 1, 1, false);
       inventoryComponent.createNewInventory("ingredientInventory", 1, 1, false);

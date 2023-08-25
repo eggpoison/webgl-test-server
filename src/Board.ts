@@ -13,11 +13,6 @@ import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-
 import Tribe from "./Tribe";
 import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
 
-export type EntityHitboxInfo = {
-   readonly vertexPositions: readonly [Point, Point, Point, Point];
-   readonly sideAxes: ReadonlyArray<Vector>;
-}
-
 abstract class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
@@ -474,11 +469,8 @@ abstract class Board {
          throw new Error("Position isn't in the board");
       }
       
-      const testHitbox = new CircularHitbox({
-         type: "circular",
-         radius: 1
-      });
-
+      const testHitbox = new CircularHitbox();
+      testHitbox.setHitboxInfo(1);
       testHitbox.setPosition(position);
       testHitbox.updateHitboxBounds();
 

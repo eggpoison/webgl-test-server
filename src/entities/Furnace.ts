@@ -75,13 +75,10 @@ class Furnace extends Entity {
          inventory: inventoryComponent
       }, "furnace", isNaturallySpawned);
 
-      this.addHitboxes([
-         new RectangularHitbox({
-            type: "rectangular",
-            width: Furnace.SIZE,
-            height: Furnace.SIZE
-         })
-      ]);
+
+      const hitbox = new RectangularHitbox();
+      hitbox.setHitboxInfo(Furnace.SIZE, Furnace.SIZE);
+      this.addHitbox(hitbox);
 
       inventoryComponent.createNewInventory("fuelInventory", 1, 1, false);
       inventoryComponent.createNewInventory("ingredientInventory", 1, 1, false);

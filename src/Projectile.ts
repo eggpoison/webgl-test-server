@@ -14,12 +14,15 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
       during_entity_collision: []
    };
 
+   public readonly mass = 1;
+
    public readonly type: ProjectileType;
 
    /** How many seconds the projectile can exist before automatically being removed */
    private lifetime: number;
-
    private age = 0;
+
+   public tickCallback?: () => void;
 
    constructor(position: Point, type: ProjectileType, lifetime: number) {
       super(position);
@@ -37,6 +40,10 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
       this.age += 1 / SETTINGS.TPS;
       if (this.age >= this.lifetime) {
          this.remove();
+      }
+
+      if (typeof this.tickCallback !== "undefined") {
+         this.tickCallback();
       }
    }
 }

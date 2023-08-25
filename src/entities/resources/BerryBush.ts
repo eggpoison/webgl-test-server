@@ -27,12 +27,9 @@ class BerryBush extends Entity {
          health: new HealthComponent(BerryBush.HEALTH, false)
       }, "berry_bush", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: BerryBush.RADIUS
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(BerryBush.RADIUS);
+      this.addHitbox(hitbox);
 
       this.createEvent("hurt", () => {
          // Reset berry growth

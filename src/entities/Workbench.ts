@@ -3,16 +3,15 @@ import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 
 class Workbench extends Entity {
+   public mass = 1.6;
+   
    constructor(position: Point) {
       super(position, {}, "workbench", false);
 
-      this.addHitboxes([
-         new RectangularHitbox({
-            type: "rectangular",
-            width: 80,
-            height: 80
-         })
-      ]);
+
+      const hitbox = new RectangularHitbox();
+      hitbox.setHitboxInfo(80, 80);
+      this.addHitbox(hitbox);
    }
 
    public getClientArgs(): [] {

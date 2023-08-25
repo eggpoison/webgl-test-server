@@ -44,12 +44,9 @@ class Slimewisp extends Mob {
          }
       }));
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Slimewisp.RADIUS
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Slimewisp.RADIUS);
+      this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (entity: Entity): void => {
          if (entity.type !== "slimewisp") return;

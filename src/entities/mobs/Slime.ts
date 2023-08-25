@@ -1,4 +1,4 @@
-import { Mutable, Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
+import { Mutable, PlayerCauseOfDeath, Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -169,13 +169,11 @@ class Slime extends Mob {
 
       this.size = size;
 
-      const radius = Slime.RADIUSES[this.size];
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: radius
-         })
-      ]);
+      const hitboxRadius = Slime.RADIUSES[this.size];
+
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(hitboxRadius);
+      this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
          if (collidingEntity.type === "slime" || collidingEntity.type === "slimewisp" || RESOURCE_TYPES.includes(collidingEntity.type)) return;
@@ -183,7 +181,7 @@ class Slime extends Mob {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const contactDamage = Slime.CONTACT_DAMAGE[this.size];
-            healthComponent.damage(contactDamage, 0, null, this, "slime");
+            healthComponent.damage(contactDamage, 0, null, this, PlayerCauseOfDeath.slime, "slime");
             healthComponent.addLocalInvulnerabilityHash("slime", 0.3);
          }
       });

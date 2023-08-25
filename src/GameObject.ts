@@ -1,4 +1,4 @@
-import { GameObjectDebugData, HitboxType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
 import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
@@ -7,6 +7,7 @@ import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Projectile from "./Projectile";
 import Board from "./Board";
+import CircularHitbox from "./hitboxes/CircularHitbox";
 
 let idCounter = 0;
 
@@ -31,7 +32,6 @@ export interface GameObjectEvents {
    during_entity_collision: (collidingEntity: Entity) => void;
 }
 
-
 export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
 /** A generic class for any object in the world which has hitbox(es) */
@@ -50,22 +50,24 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Limit to the object's velocity */
    public terminalVelocity = 0;
 
-   /** Set of all chunks the object is contained in */
-   public chunks = new Set<Chunk>();
-
    /** Direction the object is facing in radians */
    public rotation = 0;
+
+   /** Affects the force the game object experiences during collisions */
+   public mass = 1;
+
+   /** Set of all chunks the object is contained in */
+   public chunks = new Set<Chunk>();
 
    /** The tile the object is currently standing on. */
    public tile!: Tile;
 
    /** All hitboxes attached to the game object */
-   public hitboxes = new Set<Hitbox<HitboxType>>();
+   public hitboxes = new Set<RectangularHitbox | CircularHitbox>();
 
    public previousCollidingObjects = new Set<GameObject>();
    public collidingObjects = new Set<GameObject>();
    
-   // protected abstract readonly events: { [E in keyof IEvents<I>]: Array<GameEvent<IEvents<I>, E>> };
    protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
 
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
@@ -95,12 +97,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       Board.addGameObjectToJoinBuffer(this as unknown as GameObject);
    }
 
-   public addHitboxes(hitboxes: ReadonlyArray<Hitbox<HitboxType>>): void {
-      for (const hitbox of hitboxes) {
-         hitbox.setHitboxObject(this);
-
-         this.hitboxes.add(hitbox);
-      }
+   public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
+      hitbox.setHitboxObject(this);
+      this.hitboxes.add(hitbox);
    }
 
    public addVelocity(vector: Vector): void {
@@ -114,10 +113,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    public updateHitboxes(): void {
       for (const hitbox of this.hitboxes) {
          hitbox.updatePosition();
-         if (hitbox.info.type === "rectangular") {
-            (hitbox as RectangularHitbox).computeVertexPositions();
-            (hitbox as RectangularHitbox).calculateSideAxes();
-         }
          hitbox.updateHitboxBounds();
       }
    }
@@ -232,7 +227,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
 
       // If the game object is in a river, push them in the flow direction of the river
-      if (this.isInRiver()) {
+      if (this.isAffectedByFriction && this.isInRiver()) {
          const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
          const pushVector = new Vector(240 / SETTINGS.TPS, flowDirection);
          if (this.velocity === null) {
@@ -384,9 +379,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
          const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
-         const forceMultiplier = 1 / dist - 1;
+         const forceMultiplier = 1 / dist;
          
-         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier;
+         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * gameObject.mass / this.mass;
          const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
          // No need to apply force to other object as they will do it themselves
          const pushForce = new Vector(force, pushAngle);
@@ -411,29 +406,23 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
       // Account for this object's hitboxes
       for (const hitbox of this.hitboxes) {
-         switch (hitbox.info.type) {
-            case "circular": {
-               maxDist += hitbox.info.radius;
-               break;
-            }
-            case "rectangular": {
-               maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
-               break;
-            }
+         if (hitbox.hasOwnProperty("radius")) {
+            // Circular hitbox
+            maxDist += (hitbox as CircularHitbox).radius;
+         } else {
+            // Rectangular hitbox
+            maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
          }
       }
 
       // Account for the other object's hitboxes
       for (const hitbox of gameObject.hitboxes) {
-         switch (hitbox.info.type) {
-            case "circular": {
-               maxDist += hitbox.info.radius;
-               break;
-            }
-            case "rectangular": {
-               maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
-               break;
-            }
+         if (hitbox.hasOwnProperty("radius")) {
+            // Circular hitbox
+            maxDist += (hitbox as CircularHitbox).radius;
+         } else {
+            // Rectangular hitbox
+            maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
          }
       }
 

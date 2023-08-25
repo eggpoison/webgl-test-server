@@ -14,6 +14,8 @@ import StackableItem from "../../items/generic/StackableItem";
 import TribeTotem from "./TribeTotem";
 import TribeHut from "./TribeHut";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
+import ToolItem from "../../items/generic/ToolItem";
+import BowItem from "../../items/generic/BowItem";
 
 /*
 Priorities while in a tribe:
@@ -45,27 +47,34 @@ class Tribesman extends TribeMember {
    private static readonly ATTACK_OFFSET = 80;
    /** Max distance from the attack position that the attack will be registered from */
    private static readonly ATTACK_RADIUS = 60;
-   private static readonly ATTACK_KNOCKBACK = 150;
+   // private static readonly ATTACK_KNOCKBACK = 150;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_ATTACK_DISTANCE = 120;
 
    private static readonly BARREL_DEPOSIT_DISTANCE = 80;
+
+   public readonly mass = 1;
    
    protected readonly footstepInterval = 0.35;
+
+   private selectedItemSlot = 1;
    
    constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: 32
-         })
-      ]);
+
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(32);
+      this.addHitbox(hitbox);
 
       const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("hotbar", Tribesman.INVENTORY_SIZE, 1, true);
+
+      // If the tribesman is a frostling, spawn with a bow
+      if (tribeType === TribeType.frostlings) {
+         inventoryComponent.addItemToSlot("hotbar", 1, "wooden_bow", 1);
+      }
 
       this.tribe = tribe;
 
@@ -104,7 +113,7 @@ class Tribesman extends TribeMember {
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
             
-            this.attack();
+            this.doAttack();
          }
       }));
 
@@ -158,7 +167,7 @@ class Tribesman extends TribeMember {
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
             
-            this.attack();
+            this.doMeleeAttack();
          }
       }));
 
@@ -231,19 +240,38 @@ class Tribesman extends TribeMember {
       }
    }
 
-   private attack(): void {
-      // Attack the entity
+   private doAttack(): void {
+      // Find the selected item
+      const inventoryComponent = this.getComponent("inventory")!;
+      const item = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
+
+      if (item !== null && item.hasOwnProperty("toolType") && (item as ToolItem).toolType === "bow") {
+         this.doRangedAttack(item as BowItem);
+      } else {
+         this.doMeleeAttack();
+      }
+   }
+
+   private doMeleeAttack(): void {
+      // Find the attack target
       const attackTargets = this.calculateRadialAttackTargets(Tribesman.ATTACK_OFFSET, Tribesman.ATTACK_RADIUS);
       const target = this.calculateAttackTarget(attackTargets);
 
       // Register the hit
       if (target !== null) {
-         const attackHash = this.id.toString();
-         const attackDirection = this.position.calculateAngleBetween(target.position);
+         this.attackEntity(target, this.selectedItemSlot);
+         // const attackHash = this.id.toString();
+         // const attackDirection = this.position.calculateAngleBetween(target.position);
 
-         const healthComponent = target.getComponent("health")!; // Attack targets always have a health component
-         healthComponent.damage(1, Tribesman.ATTACK_KNOCKBACK, attackDirection, this, attackHash);
-         healthComponent.addLocalInvulnerabilityHash(attackHash, 0.3);
+         // const healthComponent = target.getComponent("health")!; // Attack targets always have a health component
+         // healthComponent.damage(1, Tribesman.ATTACK_KNOCKBACK, attackDirection, this, attackHash);
+         // healthComponent.addLocalInvulnerabilityHash(attackHash, 0.3);
+      }
+   }
+
+   private doRangedAttack(bow: BowItem): void {
+      if (typeof bow.use !== "undefined") {
+         bow.use(this, "hotbar");
       }
    }
 

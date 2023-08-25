@@ -1,4 +1,4 @@
-import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
 import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
@@ -13,7 +13,7 @@ const killPlayer = (username: string): void => {
    if (player === null) return;
 
    // Kill the player
-   player.getComponent("health")!.damage(999999, 0, null, null);
+   player.getComponent("health")!.damage(999999, 0, null, null, PlayerCauseOfDeath.god);
 }
 
 const damagePlayer = (username: string, damage: number): void => {
@@ -21,7 +21,7 @@ const damagePlayer = (username: string, damage: number): void => {
    if (player === null) return;
 
    // Damage the player
-   player.getComponent("health")!.damage(damage, 0, null, null);
+   player.getComponent("health")!.damage(damage, 0, null, null, PlayerCauseOfDeath.god);
 }
 
 const healPlayer = (username: string, healing: number): void => {
@@ -177,9 +177,12 @@ export function registerCommand(command: string, player: Player): void {
       
       case "summon": {
          const unguardedEntityType = commandComponents[1] as string;
-         const amount = commandComponents[2] as number;
-         
-         summonEntities(player.username, unguardedEntityType, amount);
+         if (numParameters === 1) {
+            summonEntities(player.username, unguardedEntityType, 1);
+         } else {
+            const amount = commandComponents[2] as number;
+            summonEntities(player.username, unguardedEntityType, amount);
+         }
          break;
       }
    }

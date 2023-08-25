@@ -1,4 +1,4 @@
-import { ParticleType, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, Vector, randFloat, randInt } from "webgl-test-shared";
+import { ParticleType, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, Vector, randFloat, randInt, randSign } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -6,7 +6,7 @@ import Board from "../Board";
 import Particle from "../Particle";
 
 class Snowball extends Entity {
-   public static readonly CASCADE_THRESHOLD = 100;
+   private static readonly CASCADE_THRESHOLD = 100;
    
    private static readonly LIFETIME = [10, 15] as const;
    
@@ -14,11 +14,15 @@ class Snowball extends Entity {
       [SnowballSize.small]: 5,
       [SnowballSize.large]: 10
    }
-   
+
    private readonly size: SnowballSize;
 
    private age = 0;
    private readonly lifetime = randFloat(...Snowball.LIFETIME);
+
+   private angularVelocity = randFloat(1, 2) * Math.PI * randSign();
+
+   public canDamage = true;
 
    constructor(position: Point, isNaturallySpawned: boolean, size: SnowballSize = SnowballSize.small) {
       super(position, {
@@ -27,14 +31,17 @@ class Snowball extends Entity {
 
       this.size = size;
 
+      if (this.size === SnowballSize.small) {
+         this.mass = 1;
+      } else {
+         this.mass = 1.5;
+      }
+
       const hitboxSize = SNOWBALL_SIZES[size];
       
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: hitboxSize / 2
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(hitboxSize / 2);
+      this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
    }
@@ -42,12 +49,26 @@ class Snowball extends Entity {
    public tick(): void {
       super.tick();
 
+      // Angular velocity
+      this.rotation += this.angularVelocity / SETTINGS.TPS;
+      if (this.angularVelocity !== 0) {
+         const beforeSign = Math.sign(this.angularVelocity);
+         this.angularVelocity -= Math.PI / SETTINGS.TPS * beforeSign;
+         if (beforeSign !== Math.sign(this.angularVelocity)) {
+            this.angularVelocity = 0;
+         }
+      }
+
       this.age += 1 / SETTINGS.TPS;
       if (this.age >= this.lifetime) {
          this.remove();
       }
 
-      if (this.velocity !== null && this.velocity.magnitude > Snowball.CASCADE_THRESHOLD) {
+      if (this.velocity !== null && this.canDamage && this.velocity.magnitude <= Snowball.CASCADE_THRESHOLD) {
+         this.canDamage = false;
+      }
+
+      if (this.canDamage) {
          if (Board.tickIntervalHasPassed(0.05)) {
             this.createSnowParticle();
          }

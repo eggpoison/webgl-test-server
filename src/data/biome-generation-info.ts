@@ -58,7 +58,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    },
    tundra: {
       spawnRequirements: {
-         maxTemperature: 0.3,
+         maxTemperature: 0.4,
          maxHumidity: 0.5
       },
       tiles: [
@@ -88,7 +88,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    },
    desert: {
       spawnRequirements: {
-         minTemperature: 0.7,
+         minTemperature: 0.6,
          maxHumidity: 0.5
       },
       tiles: [

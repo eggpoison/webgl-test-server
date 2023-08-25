@@ -1,4 +1,4 @@
-import { GameObjectDebugData, ParticleType, Point, ProjectileType, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { GameObjectDebugData, ParticleType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -9,15 +9,9 @@ import Tile from "../../tiles/Tile";
 import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
-import Projectile from "../../Projectile";
 import Board from "../../Board";
 import Snowball from "../Snowball";
 import Particle from "../../Particle";
-
-enum SnowProjectileSize {
-   small,
-   large
-}
 
 enum SnowThrowStage {
    windup,
@@ -66,9 +60,11 @@ class Yeti extends Mob {
    private static readonly LARGE_SNOWBALL_THROW_SPEED = [350, 450] as const;
    private static readonly SNOW_THROW_ARC = Math.PI/5;
    private static readonly SNOW_THROW_OFFSET = 64;
-   private static readonly SNOW_THROW_WINDUP_TIME = 2.5;
-   private static readonly SNOW_THROW_HOLD_TIME = 0.2;
+   private static readonly SNOW_THROW_WINDUP_TIME = 2;
+   private static readonly SNOW_THROW_HOLD_TIME = 0.1;
    private static readonly SNOW_THROW_RETURN_TIME = 0.6;
+
+   public readonly mass = 3;
    
    private readonly territory: ReadonlyArray<Tile>;
 
@@ -96,12 +92,9 @@ class Yeti extends Mob {
       this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 1);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Yeti.SIZE / 2
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Yeti.SIZE / 2);
+      this.addHitbox(hitbox);
 
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1.5,
@@ -184,7 +177,7 @@ class Yeti extends Mob {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(Yeti.CONTACT_DAMAGE, Yeti.CONTACT_KNOCKBACK, hitDirection, this, "yeti");
+            healthComponent.damage(Yeti.CONTACT_DAMAGE, Yeti.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.yeti, "yeti");
             healthComponent.addLocalInvulnerabilityHash("yeti", 0.3);
          }
       });
@@ -318,14 +311,14 @@ class Yeti extends Mob {
             return;
          }
          
-         if (snowball.velocity === null || snowball.velocity.magnitude < 100) {
+         if (!snowball.canDamage) {
             return;
          }
 
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(4, 100, hitDirection, null);
+            healthComponent.damage(4, 100, hitDirection, null, PlayerCauseOfDeath.snowball);
          }
       });
    }

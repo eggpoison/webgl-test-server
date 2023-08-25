@@ -1,11 +1,12 @@
-import { HitboxInfo, HitboxType, Point } from "webgl-test-shared";
+import { Point } from "webgl-test-shared";
+import RectangularHitbox from "./RectangularHitbox";
+import CircularHitbox from "./CircularHitbox";
 
 export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: number];
 
 export type HitboxObject = { position: Point, rotation: number };
 
-abstract class Hitbox<T extends HitboxType> {
-   public info!: HitboxInfo<T>;
+abstract class Hitbox {
    public hitboxObject!: HitboxObject;
 
    /** The bounds of the hitbox since the last physics update */
@@ -14,18 +15,10 @@ abstract class Hitbox<T extends HitboxType> {
    /** The position of the hitbox, accounting for offset from its entity */
    public position!: Point;
 
-   constructor(hitboxInfo?: HitboxInfo<T>) {
-      if (typeof hitboxInfo !== "undefined") {
-         this.setHitboxInfo(hitboxInfo);
-      }
-   }
+   public offset?: Point;
 
    public setHitboxObject(hitboxObject: HitboxObject): void {
       this.hitboxObject = hitboxObject;
-   }
-
-   public setHitboxInfo(hitboxInfo: HitboxInfo<T>) {
-      this.info = hitboxInfo;
    }
 
    protected abstract calculateHitboxBounds(): HitboxBounds;
@@ -37,8 +30,8 @@ abstract class Hitbox<T extends HitboxType> {
    /** Updates the hitboxes position to match the position of its hitbox object */
    public updatePosition(): void {
       this.position = this.hitboxObject.position.copy();
-      if (typeof this.info.offset !== "undefined") {
-         this.position.add(this.info.offset);
+      if (typeof this.offset !== "undefined") {
+         this.position.add(this.offset);
       }
    }
 
@@ -46,7 +39,7 @@ abstract class Hitbox<T extends HitboxType> {
       this.position = position;
    }
 
-   public abstract isColliding(otherHitbox: Hitbox<HitboxType>): boolean;
+   public abstract isColliding(otherHitbox: RectangularHitbox | CircularHitbox): boolean;
 
    public abstract resolveTileCollision(tileX: number, tileY: number): void;
 }

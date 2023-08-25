@@ -1,8 +1,7 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemSlotsData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item from "../../items/generic/Item";
 import StackableItem from "../../items/generic/StackableItem";
-import ToolItem from "../../items/generic/ToolItem";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
@@ -25,6 +24,8 @@ class Player extends TribeMember {
    private static readonly ITEM_THROW_FORCE = 100;
    private static readonly ITEM_THROW_OFFSET = 32;
 
+   public readonly mass = 1;
+
    public readonly username: string;
 
    private hitsTaken = new Array<HitData>();
@@ -34,12 +35,9 @@ class Player extends TribeMember {
    constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
       super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: 32
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(32);
+      this.addHitbox(hitbox);
 
       const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
@@ -185,31 +183,33 @@ class Player extends TribeMember {
       // Don't attack if the attack didn't hit anything
       if (attackTarget === null) return;
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      this.attackEntity(attackTarget, attackPacket.itemSlot);
 
-      // Find the selected item
-      const selectedItem = inventoryComponent.getItem("hotbar", attackPacket.itemSlot);
-      const selectedItemIsTool = selectedItem !== null && selectedItem.hasOwnProperty("toolType");
+      // const inventoryComponent = this.getComponent("inventory")!;
 
-      let attackDamage: number;
-      let attackKnockback: number;
-      if (selectedItemIsTool) {
-         attackDamage = (selectedItem as ToolItem).getAttackDamage(attackTarget);
-         attackKnockback = (selectedItem as ToolItem).knockback;
-      } else {
-         attackDamage = 1;
-         attackKnockback = Player.DEFAULT_KNOCKBACK;
-      }
+      // // Find the selected item
+      // const selectedItem = inventoryComponent.getItem("hotbar", attackPacket.itemSlot);
+      // const selectedItemIsTool = selectedItem !== null && selectedItem.hasOwnProperty("toolType");
 
-      // Register the hit
-      const attackHash = this.id.toString();
-      const healthComponent = attackTarget.getComponent("health")!; // Attack targets always have a health component
-      healthComponent.damage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
-      attackTarget.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+      // let attackDamage: number;
+      // let attackKnockback: number;
+      // if (selectedItemIsTool) {
+      //    attackDamage = (selectedItem as ToolItem).getAttackDamage(attackTarget);
+      //    attackKnockback = (selectedItem as ToolItem).knockback;
+      // } else {
+      //    attackDamage = 1;
+      //    attackKnockback = Player.DEFAULT_KNOCKBACK;
+      // }
 
-      if (selectedItem !== null && typeof selectedItem.damageEntity !== "undefined") {
-         selectedItem.damageEntity(attackTarget);
-      }
+      // // Register the hit
+      // const attackHash = this.id.toString();
+      // const healthComponent = attackTarget.getComponent("health")!; // Attack targets always have a health component
+      // healthComponent.damage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
+      // attackTarget.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+
+      // if (selectedItem !== null && typeof selectedItem.damageEntity !== "undefined") {
+      //    selectedItem.damageEntity(attackTarget);
+      // }
    }
 
    public processItemUsePacket(itemSlot: number): void {

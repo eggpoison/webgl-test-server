@@ -15,6 +15,8 @@ import WanderAI from "../../mob-ai/WanderAI";
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
+   public mass = 1.5;
+
    public species: CowSpecies;
 
    private numFootstepsTaken = 0;
@@ -101,13 +103,10 @@ class Cow extends Mob {
          escapeHealthThreshold: Cow.MAX_HEALTH
       }));
 
-      this.addHitboxes([
-         new RectangularHitbox({
-            type: "rectangular",
-            width: 50,
-            height: 100
-         })
-      ]);
+
+      const hitbox = new RectangularHitbox();
+      hitbox.setHitboxInfo(50, 100);
+      this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
 

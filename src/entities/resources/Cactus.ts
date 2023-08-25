@@ -1,4 +1,4 @@
-import { CactusBodyFlowerData, CactusFlowerSize, CactusLimbData, CactusLimbFlowerData, ParticleType, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
+import { CactusBodyFlowerData, CactusFlowerSize, CactusLimbData, CactusLimbFlowerData, ParticleType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -86,12 +86,10 @@ class Cactus extends Entity {
          item_creation: itemCreationComponent
       }, "cactus", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Cactus.RADIUS - Cactus.HITBOX_PADDING
-         })
-      ]);
+
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Cactus.RADIUS - Cactus.HITBOX_PADDING);
+      this.addHitbox(hitbox);
 
       this.flowers = generateRandomFlowers();
       this.limbs = generateRandomLimbs();
@@ -100,13 +98,9 @@ class Cactus extends Entity {
       for (const limb of this.limbs) {
          const offset = new Vector(37, limb.direction).convertToPoint();
          
-         this.addHitboxes([
-            new CircularHitbox({
-               type: "circular",
-               radius: 18,
-               offset: offset
-            })
-         ]);
+         const hitbox = new CircularHitbox();
+         hitbox.setHitboxInfo(18, offset);
+         this.addHitbox(hitbox);
       }
 
       const spineDropCount = randInt(2, 5);
@@ -118,7 +112,7 @@ class Cactus extends Entity {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, hitDirection, this, "cactus");
+            healthComponent.damage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.cactus, "cactus");
             healthComponent.addLocalInvulnerabilityHash("cactus", 0.3);
          }
       });

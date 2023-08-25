@@ -40,12 +40,10 @@ class TribeTotem extends Entity {
          health: new HealthComponent(TribeTotem.MAX_HEALTH, false)
       }, "tribe_totem", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: TribeTotem.RADIUS
-         })
-      ]);
+
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(TribeTotem.RADIUS);
+      this.addHitbox(hitbox);
 
       this.isStatic = true;
    }

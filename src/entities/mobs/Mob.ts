@@ -185,13 +185,15 @@ abstract class Mob extends Entity {
       const debugData = super.getDebugData();
 
       // Circle for vision range
+      if (this.visionRange > 0) {
       debugData.circles.push(
          {
             radius: this.visionRange,
             colour: [1, 0, 1],
             thickness: 2
          }
-      );
+         );
+      }
 
       if (typeof this.currentAI?.addDebugData !== "undefined") {
          this.currentAI.addDebugData(debugData);

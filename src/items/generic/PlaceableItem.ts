@@ -4,41 +4,63 @@ import Entity from "../../entities/Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import StackableItem from "./StackableItem";
 import TribeMember from "../../entities/tribes/TribeMember";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import Hitbox from "../../hitboxes/Hitbox";
 
-type PlaceableItemHitboxInfo = {
+enum PlaceableItemHitboxType {
+   circular = 0,
+   rectangular = 1
+}
+
+interface PlaceableItemHitboxInfo {
+   readonly type: PlaceableItemHitboxType;
+}
+
+interface PlaceableItemCircularHitboxInfo extends PlaceableItemHitboxInfo {
+   readonly type: PlaceableItemHitboxType.circular;
+   readonly radius: number;
+}
+
+interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
+   readonly type: PlaceableItemHitboxType.rectangular;
    readonly width: number;
    readonly height: number;
 }
 
-const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemHitboxInfo>> = {
+const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>> = {
    workbench: {
+      type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80
    },
    tribe_totem: {
-      width: 100,
-      height: 100
+      type: PlaceableItemHitboxType.circular,
+      radius: 50
    },
    tribe_hut: {
+      type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80
    },
    barrel: {
-      width: 80,
-      height: 80
+      type: PlaceableItemHitboxType.circular,
+      radius: 40
    },
    campfire: {
+      type: PlaceableItemHitboxType.rectangular,
       width: 104,
       height: 104
    },
    furnace: {
+      type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80
    }
 };
 
 abstract class PlaceableItem extends StackableItem implements PlaceableItemInfo {
-   private static readonly placeTestHitbox: RectangularHitbox = new RectangularHitbox();
+   private static readonly placeTestRectangularHitbox = new RectangularHitbox();
+   private static readonly placeTestCircularHitbox = new CircularHitbox();
    
    public readonly entityType: EntityType;
 
@@ -72,29 +94,32 @@ abstract class PlaceableItem extends StackableItem implements PlaceableItemInfo 
 
    private canBePlaced(spawnPosition: Point, rotation: number): boolean {
       // Update the place test hitbox to match the placeable item's info
-      const { width, height } = PLACEABLE_ITEM_HITBOX_INFO[this.type]!;
+      const testHitboxInfo = PLACEABLE_ITEM_HITBOX_INFO[this.type]!
 
       const tempHitboxObject = {
          position: spawnPosition,
          rotation: rotation
       };
 
-      PlaceableItem.placeTestHitbox.setHitboxObject(tempHitboxObject);
+      let placeTestHitbox!: Hitbox;
+      if (testHitboxInfo.type === PlaceableItemHitboxType.circular) {
+         // Circular
+         PlaceableItem.placeTestCircularHitbox.setHitboxInfo(testHitboxInfo.radius);
+         placeTestHitbox = PlaceableItem.placeTestCircularHitbox;
+      } else {
+         // Rectangular
+         PlaceableItem.placeTestRectangularHitbox.setHitboxInfo(testHitboxInfo.width, testHitboxInfo.height);
+         placeTestHitbox = PlaceableItem.placeTestRectangularHitbox;
+      }
 
-      PlaceableItem.placeTestHitbox.setHitboxInfo({
-         type: "rectangular",
-         width: width,
-         height: height
-      });
+      placeTestHitbox.setHitboxObject(tempHitboxObject);
+      placeTestHitbox.updatePosition();
+      placeTestHitbox.updateHitboxBounds();
 
-      PlaceableItem.placeTestHitbox.updatePosition();
-      PlaceableItem.placeTestHitbox.computeVertexPositions();
-      PlaceableItem.placeTestHitbox.calculateSideAxes();
-
-      const minChunkX = Math.max(Math.min(Math.floor((spawnPosition.x - width / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((spawnPosition.x + width / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((spawnPosition.y - height / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((spawnPosition.y + height / 2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       
       const previouslyCheckedEntityIDs = new Set<number>();
 
@@ -104,7 +129,7 @@ abstract class PlaceableItem extends StackableItem implements PlaceableItemInfo 
             for (const entity of chunk.getEntities()) {
                if (!previouslyCheckedEntityIDs.has(entity.id)) {
                   for (const hitbox of entity.hitboxes) {   
-                     if (PlaceableItem.placeTestHitbox.isColliding(hitbox)) {
+                     if (placeTestHitbox.isColliding(hitbox)) {
                         return false;
                      }
                   }

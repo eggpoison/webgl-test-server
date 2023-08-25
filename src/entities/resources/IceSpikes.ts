@@ -1,4 +1,4 @@
-import { Point, ProjectileType, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
+import { PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -16,13 +16,13 @@ class IceSpikes extends Entity {
    private static readonly CONTACT_KNOCKBACK = 180;
 
    private static readonly TICKS_TO_GROW = 1/5 * SETTINGS.TPS;
-   // private static readonly TICKS_TO_GROW = 1;
-   // private static readonly GROWTH_TICK_CHANCE = 1;
    private static readonly GROWTH_TICK_CHANCE = 0.5;
    private static readonly GROWTH_OFFSET = 60;
 
    private static readonly ICE_SHARD_DAMAGE = 2;
    private static readonly ICE_SHARD_EXPLODE_SPEED = 700;
+
+   public readonly mass = 1;
 
    private readonly maxChildren = randInt(0, 3);
    // private readonly maxChildren = 100;
@@ -46,12 +46,9 @@ class IceSpikes extends Entity {
          this.rootIceSpike = this;
       }
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: IceSpikes.RADIUS
-         })
-      ]);
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(IceSpikes.RADIUS);
+      this.addHitbox(hitbox);
 
       if (Object.keys(Board.droppedItems).length < 50) {
          itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1), false);
@@ -74,7 +71,7 @@ class IceSpikes extends Entity {
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
             
-            healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, "ice_spikes");
+            healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.ice_spikes, "ice_spikes");
             healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
 
             collidingEntity.applyStatusEffect("freezing", 5);
@@ -98,8 +95,20 @@ class IceSpikes extends Entity {
    }
 
    private grow(): void {
+      // Calculate the spawn position for the new ice spikes
       const position = this.position.copy();
       position.add(new Vector(IceSpikes.GROWTH_OFFSET, 2 * Math.PI * Math.random()).convertToPoint());
+
+      // Don't grow outside the board
+      if (!Board.positionIsInBoard(position.x, position.y)) {
+         return;
+      }
+
+      // Don't grow into rivers
+      const tile = Board.getTileAtPosition(position);
+      if (tile.type === "water") {
+         return;
+      }
 
       const minDistanceToEntity = Board.distanceToClosestEntity(position);
       if (minDistanceToEntity >= 40) {
@@ -128,24 +137,21 @@ class IceSpikes extends Entity {
          projectile.velocity = velocity;
          projectile.terminalVelocity = IceSpikes.ICE_SHARD_EXPLODE_SPEED;
 
-         projectile.addHitboxes([
-            new RectangularHitbox({
-               type: "rectangular",
-               width: 24,
-               height: 24
-            })
-         ]);
+
+         const hitbox = new RectangularHitbox();
+         hitbox.setHitboxInfo(24, 24);
+         projectile.addHitbox(hitbox);
 
          projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
             const healthComponent = collidingEntity.getComponent("health");
             if (healthComponent !== null) {
                if (collidingEntity.type === "ice_spikes") {
                   // Instantly destroy ice spikes
-                  healthComponent.damage(99999, 0, 0, null);
+                  healthComponent.damage(99999, 0, 0, null, PlayerCauseOfDeath.ice_spikes);
                } else {
                   const hitDirection = projectile.position.calculateAngleBetween(collidingEntity.position);
    
-                  // healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, "ice_shards");
+                  healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, PlayerCauseOfDeath.ice_shards, "ice_shards");
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
                   if (collidingEntity.type !== "yeti") {

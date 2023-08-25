@@ -29,12 +29,10 @@ class Tree extends Entity {
          item_creation: new ItemCreationComponent()
       }, "tree", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Tree.TREE_RADIUSES[size]
-         })
-      ]);
+
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Tree.TREE_RADIUSES[size]);
+      this.addHitbox(hitbox);
 
       this.isStatic = true;
 
@@ -43,6 +41,12 @@ class Tree extends Entity {
       this.rotation = Math.PI * 2 * Math.random();
 
       this.size = size;
+
+      if (size === TreeSize.small) {
+         this.mass = 1.25;
+      } else {
+         this.mass = 1.5;
+      }
 
       this.createEvent("hurt", (): void => {
          this.createLeafParticle("outerLeaf");

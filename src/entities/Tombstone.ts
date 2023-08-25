@@ -1,10 +1,11 @@
-import { ParticleType, Point, randFloat, randItem, randSign, SETTINGS, Vector } from "webgl-test-shared";
+import { DeathInfo, ParticleType, Point, randFloat, randItem, randSign, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
 import Board from "../Board";
 import Particle from "../Particle";
+import TombstoneDeathManager from "../tombstone-deaths";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
@@ -34,18 +35,18 @@ class Tombstone extends Entity {
    private zombieSpawnTimer = 0;
    private zombieSpawnPosition!: Point;
 
+   private readonly deathInfo: DeathInfo | null;
+
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(Tombstone.MAX_HEALTH, false)
       }, "tombstone", isNaturallySpawned);
 
-      this.addHitboxes([
-         new RectangularHitbox({
-            type: "rectangular",
-            width: Tombstone.WIDTH,
-            height: Tombstone.HEIGHT
-         })
-      ]);
+      this.deathInfo = TombstoneDeathManager.popDeath();
+
+      const hitbox = new RectangularHitbox();
+      hitbox.setHitboxInfo(Tombstone.WIDTH, Tombstone.HEIGHT);
+      this.addHitbox(hitbox);
 
       this.tombstoneType = Math.floor(Math.random() * 3);
 
@@ -184,8 +185,8 @@ class Tombstone extends Entity {
       this.isSpawningZombie = false;
    }
 
-   public getClientArgs(): [tombstoneType: number] {
-      return [this.tombstoneType];
+   public getClientArgs(): [tombstoneType: number, deathInfo: DeathInfo | null] {
+      return [this.tombstoneType, this.deathInfo];
    }
 }
 

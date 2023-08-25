@@ -13,6 +13,8 @@ class Barrel extends Entity {
    
    private static readonly RADIUS = 40;
 
+   public mass = 1.5;
+
    public tribe: Tribe | null = null;
    
    constructor(position: Point, isNaturallySpawned: boolean) {
@@ -23,12 +25,10 @@ class Barrel extends Entity {
          inventory: inventoryComponent
       }, "barrel", isNaturallySpawned);
 
-      this.addHitboxes([
-         new CircularHitbox({
-            type: "circular",
-            radius: Barrel.RADIUS
-         })
-      ]);
+
+      const hitbox = new CircularHitbox();
+      hitbox.setHitboxInfo(Barrel.RADIUS);
+      this.addHitbox(hitbox);
 
       inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT, false);
    }

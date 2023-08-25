@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -167,11 +167,11 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          } else {
             // Fire tick
             if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
-               this.getComponent("health")!.damage(1, 0, null, null);
+               this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire);
             }
 
             // Fire particle effects
-            if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
+         if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
                const spawnPosition = this.position.copy();
                const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
                spawnPosition.add(offset);
@@ -229,7 +229,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
       if (this.hasStatusEffect("poisoned")) {
          if (this.statusEffects.poisoned!.ticksElapsed % 10 === 0) {
-            this.getComponent("health")!.damage(1, 0, null, null);
+            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.poison);
          }
 
          // Poisoned particle effects
