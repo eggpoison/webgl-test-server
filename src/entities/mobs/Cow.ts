@@ -103,7 +103,6 @@ class Cow extends Mob {
          escapeHealthThreshold: Cow.MAX_HEALTH
       }));
 
-
       const hitbox = new RectangularHitbox();
       hitbox.setHitboxInfo(50, 100);
       this.addHitbox(hitbox);

@@ -13,11 +13,9 @@ import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import TribeHut from "./entities/tribes/TribeHut";
-import Barrel from "./entities/tribes/Barrel";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
+import Tombstone from "./entities/Tombstone";
 
 /*
 
@@ -252,7 +250,7 @@ class GameServer {
       Board.ticks++;
       Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
-      // Note: This has to be done at the beginning of the tick, as player input packets are received between ticks
+      // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
       
       Board.pushJoinBuffer();
@@ -285,6 +283,8 @@ class GameServer {
       }
 
       runTribeSpawnAttempt();
+
+      Board.removeFlaggedGameObjects();
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -328,13 +328,13 @@ class GameServer {
          const spawnPosition = this.generatePlayerSpawnPosition();
          // const spawnPosition = new Point(50, 50);
 
-         new Barrel(new Point(spawnPosition.x + 22, spawnPosition.y), false);
+         // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y), false);
-         const tribe = new Tribe(TribeType.goblins, totem);
+         // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y), false);
+         // const tribe = new Tribe(TribeType.goblins, totem);
 
-         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), false, tribe);
-         tribe.registerNewHut(hut);
+         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), false, tribe);
+         // tribe.registerNewHut(hut);
 
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());

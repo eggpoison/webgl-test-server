@@ -20,8 +20,8 @@ abstract class Board {
    public static ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time: number = 6;
-   // public static time: number = 0;
+   // public static time: number = 6;
+   public static time: number = 0;
 
    private static readonly gameObjects = new Set<GameObject>();
 
@@ -199,6 +199,10 @@ abstract class Board {
 
    private static removeGameObject(gameObject: GameObject): void {
       if (!this.gameObjects.has(gameObject)) {
+         console.log("Game object i: " + gameObject.i);
+         if (gameObject.i === "entity") {
+            console.log("Entity type: " + gameObject.type);
+         }
          throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
       

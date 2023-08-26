@@ -50,6 +50,9 @@ class Tree extends Entity {
 
       this.createEvent("hurt", (): void => {
          this.createLeafParticle("outerLeaf");
+         for (let i = 0; i < 3; i++) {
+            this.createLeafSpeckParticle("outerLeaf");
+         }
       });
 
       this.createEvent("death", (): void => {
@@ -61,6 +64,7 @@ class Tree extends Entity {
          }
          for (let i = 0; i < numLeaves; i++) {
             this.createLeafParticle("innerLeaf");
+            this.createLeafSpeckParticle("innerLeaf");
          }
       });
    }
@@ -91,6 +95,35 @@ class Tree extends Entity {
             return Math.pow(1 - age / lifetime, 0.5);
          },
          lifetime: lifetime
+      });
+   }
+
+   private createLeafSpeckParticle(type: "outerLeaf" | "innerLeaf"): void {
+      const spawnPosition = this.position.copy();
+
+      if (type === "outerLeaf") {
+         const offset = new Vector(Tree.TREE_RADIUSES[this.size], 2 * Math.PI * Math.random()).convertToPoint();
+         spawnPosition.add(offset);
+      } else {
+         const offset = new Vector(Tree.TREE_RADIUSES[this.size] * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+         spawnPosition.add(offset);
+      }
+
+      const lifetime = randFloat(0.3, 0.5);
+      
+      new Particle({
+         type: ParticleType.white1x1,
+         spawnPosition: spawnPosition,
+         initialVelocity: new Vector(randFloat(60, 80), 2 * Math.PI * Math.random()),
+         initialAcceleration: null,
+         drag: 30,
+         initialRotation: 2 * Math.PI * Math.random(),
+         opacity: (age: number): number => {
+            return Math.pow(1 - age / lifetime, 0.3);
+         },
+         lifetime: lifetime,
+         tint: [-1, randFloat(-0.3, -0.15), -1],
+         scale: 1.5
       });
    }
 

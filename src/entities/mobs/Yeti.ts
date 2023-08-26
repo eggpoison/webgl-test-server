@@ -319,6 +319,7 @@ class Yeti extends Mob {
          if (healthComponent !== null) {
             const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
             healthComponent.damage(4, 100, hitDirection, null, PlayerCauseOfDeath.snowball);
+            healthComponent.addLocalInvulnerabilityHash("snowball", 0.3);
          }
       });
    }
