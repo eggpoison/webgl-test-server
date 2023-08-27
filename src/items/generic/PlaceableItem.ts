@@ -28,30 +28,30 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
 }
 
 const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>> = {
-   workbench: {
+   [ItemType.workbench]: {
       type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80
    },
-   tribe_totem: {
+   [ItemType.tribe_totem]: {
       type: PlaceableItemHitboxType.circular,
       radius: 50
    },
-   tribe_hut: {
+   [ItemType.tribe_hut]: {
       type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80
    },
-   barrel: {
+   [ItemType.barrel]: {
       type: PlaceableItemHitboxType.circular,
       radius: 40
    },
-   campfire: {
+   [ItemType.campfire]: {
       type: PlaceableItemHitboxType.rectangular,
       width: 104,
       height: 104
    },
-   furnace: {
+   [ItemType.furnace]: {
       type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80

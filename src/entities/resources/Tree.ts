@@ -1,4 +1,4 @@
-import { ParticleType, Point, randFloat, randInt, TreeSize, Vector } from "webgl-test-shared";
+import { ItemType, ParticleType, Point, randFloat, randInt, TreeSize, Vector } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -36,7 +36,7 @@ class Tree extends Entity {
 
       this.isStatic = true;
 
-      this.getComponent("item_creation")!.createItemOnDeath("wood", randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]), true);
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.wood, randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]), true);
       
       this.rotation = Math.PI * 2 * Math.random();
 

@@ -1,4 +1,4 @@
-import { PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -116,7 +116,7 @@ class Zombie extends Mob {
       });
 
       if (Math.random() < 0.1) {
-         itemCreationComponent.createItemOnDeath("eyeball", 1, true);
+         itemCreationComponent.createItemOnDeath(ItemType.eyeball, 1, true);
       }
    }
 

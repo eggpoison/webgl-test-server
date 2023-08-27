@@ -17,9 +17,9 @@ interface HeatingRecipe {
 
 const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
    {
-      ingredientType: "raw_beef",
+      ingredientType: ItemType.raw_beef,
       ingredientAmount: 1,
-      productType: "cooked_beef",
+      productType: ItemType.cooked_beef,
       productAmount: 1,
       heatingTime: 5
    }
@@ -33,7 +33,7 @@ interface FuelInfo {
 
 const FUEL_INFO: ReadonlyArray<FuelInfo> = [
    {
-      itemType: "wood",
+      itemType: ItemType.wood,
       heatValue: 5
    }
 ];

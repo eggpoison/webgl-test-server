@@ -1,4 +1,4 @@
-import { Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -214,7 +214,7 @@ abstract class Board {
          }
          case "droppedItem": {
             delete this.droppedItems[gameObject.id];
-            if (gameObject.item.type === "flesh_sword") {
+            if (gameObject.item.type === ItemType.flesh_sword) {
                removeFleshSword(gameObject);
             }
             break;
@@ -265,7 +265,7 @@ abstract class Board {
          }
 
          // Flesh sword AI
-         if (gameObject.i === "droppedItem" && gameObject.item.type === "flesh_sword") {
+         if (gameObject.i === "droppedItem" && gameObject.item.type === ItemType.flesh_sword) {
             runFleshSwordAI(gameObject);
          }
       }
@@ -374,7 +374,7 @@ abstract class Board {
          }
          case "droppedItem": {
             this.droppedItems[gameObject.id] = gameObject;
-            if (gameObject.item.type === "flesh_sword") {
+            if (gameObject.item.type === ItemType.flesh_sword) {
                addFleshSword(gameObject);
             }
             break;

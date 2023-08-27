@@ -1,4 +1,4 @@
-import { GameObjectDebugData, ParticleType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { GameObjectDebugData, ItemType, ParticleType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -142,7 +142,7 @@ class Yeti extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          metabolism: 1,
-         itemTargets: new Set(["raw_beef", "leather"])
+         itemTargets: new Set([ItemType.raw_beef, ItemType.leather])
       }));
 
       this.addAI(new WanderAI(this, {
@@ -184,8 +184,8 @@ class Yeti extends Mob {
 
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(4, 7), false);
-      this.getComponent("item_creation")!.createItemOnDeath("yeti_hide", randInt(2, 3), true);
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(4, 7), false);
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.yeti_hide, randInt(2, 3), true);
 
       this.territory = Yeti.generateYetiTerritoryTiles(this.tile.x, this.tile.y);
       registerYetiTerritory(this.territory, this);

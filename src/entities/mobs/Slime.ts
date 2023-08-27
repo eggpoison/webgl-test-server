@@ -1,4 +1,4 @@
-import { Mutable, PlayerCauseOfDeath, Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -165,7 +165,7 @@ class Slime extends Mob {
       }));
 
       const dropAmount = randInt(...Slime.SLIME_DROP_AMOUNTS[size]);
-      itemCreationComponent.createItemOnDeath("slimeball", dropAmount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.slimeball, dropAmount, true);
 
       this.size = size;
 

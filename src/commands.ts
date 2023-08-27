@@ -1,4 +1,4 @@
-import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
 import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
@@ -142,15 +142,18 @@ export function registerCommand(command: string, player: Player): void {
 
       case "give": {
          if (numParameters === 1) {
-            const itemType = commandComponents[1] as ItemType;
-            if (!ITEM_TYPE_LITERALS.includes(itemType)) {
+            const itemType = commandComponents[1];
+            
+            if (!Object.keys(ItemType).includes(itemType.toString())) {
                return;
             }
+
+            const confirmedItemType = ItemType[itemType as keyof typeof ItemType];
             
-            giveItem(player.username, itemType, 1);
+            giveItem(player.username, confirmedItemType, 1);
          } else if (numParameters === 2) {
             const itemType = commandComponents[1] as ItemType;
-            if (!ITEM_TYPE_LITERALS.includes(itemType)) {
+            if (!Object.keys(ItemType).includes(itemType.toString())) {
                return;
             }
 

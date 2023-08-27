@@ -1,4 +1,4 @@
-import { CowSpecies, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { CowSpecies, ItemType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -88,7 +88,7 @@ class Cow extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          metabolism: 20,
-         itemTargets: new Set(["berry"])
+         itemTargets: new Set([ItemType.berry])
       }));
 
       this.addAI(new BerryBushShakeAI(this, {
@@ -111,8 +111,8 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
-      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2), false);
-      this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2), true);
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
 
       this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
          for (let i = 0; i < 2; i++) {

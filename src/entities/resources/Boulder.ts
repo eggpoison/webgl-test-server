@@ -1,4 +1,4 @@
-import { ParticleType, Point, Vector, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, ParticleType, Point, Vector, randFloat, randInt } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -27,7 +27,7 @@ class Boulder extends Entity {
       this.boulderType = Math.floor(Math.random() * 2);
 
       const rockDropCount = randInt(3, 7);
-      itemCreationComponent.createItemOnDeath("rock", rockDropCount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.rock, rockDropCount, true);
 
       this.isStatic = true;
       

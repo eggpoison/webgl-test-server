@@ -123,7 +123,7 @@ abstract class TribeMember extends Mob {
    protected overrideTileMoveSpeedMultiplier(): number | null {
       // If snow armour is equipped, move at normal speed on snow tiles
       const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
-      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === "frost_armour") {
+      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.frost_armour) {
          if (this.tile.type === "snow") {
             return 1;
          }

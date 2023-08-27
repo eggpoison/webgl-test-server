@@ -73,7 +73,7 @@ class Tribesman extends TribeMember {
 
       // If the tribesman is a frostling, spawn with a bow
       if (tribeType === TribeType.frostlings) {
-         inventoryComponent.addItemToSlot("hotbar", 1, "wooden_bow", 1);
+         inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
 
       this.tribe = tribe;

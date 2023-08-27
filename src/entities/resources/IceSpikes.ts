@@ -1,4 +1,4 @@
-import { PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -51,7 +51,7 @@ class IceSpikes extends Entity {
       this.addHitbox(hitbox);
 
       if (Object.keys(Board.droppedItems).length < 50) {
-         itemCreationComponent.createItemOnDeath("frostcicle", randInt(0, 1), false);
+         itemCreationComponent.createItemOnDeath(ItemType.frostcicle, randInt(0, 1), false);
       }
 
       this.isStatic = true;

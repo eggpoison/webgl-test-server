@@ -1,4 +1,4 @@
-import { CactusBodyFlowerData, CactusFlowerSize, CactusLimbData, CactusLimbFlowerData, ParticleType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
+import { CactusBodyFlowerData, CactusFlowerSize, CactusLimbData, CactusLimbFlowerData, ItemType, ParticleType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -104,7 +104,7 @@ class Cactus extends Entity {
       }
 
       const spineDropCount = randInt(2, 5);
-      itemCreationComponent.createItemOnDeath("cactus_spine", spineDropCount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.cactus_spine, spineDropCount, true);
 
       this.isStatic = true;
       
