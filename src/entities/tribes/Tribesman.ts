@@ -1,4 +1,4 @@
-import { EntityType, InventoryData, ItemSlotsData, ItemType, Point, TribeType } from "webgl-test-shared";
+import { EntityType, InventoryData, ItemType, Point, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -57,8 +57,6 @@ class Tribesman extends TribeMember {
    public readonly mass = 1;
    
    protected readonly footstepInterval = 0.35;
-
-   private selectedItemSlot = 1;
    
    constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
@@ -275,12 +273,14 @@ class Tribesman extends TribeMember {
       }
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, swingProgress: number, inventory: InventoryData] {
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
          this.getArmourItemType(),
+         this.getActiveItem(),
+         this.swingProgress,
          serializeInventoryData(hotbarInventory, "hotbar")
       ];
    }

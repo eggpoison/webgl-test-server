@@ -18,15 +18,18 @@ import Item from "../../items/generic/Item";
 abstract class TribeMember extends Mob {
    private static readonly DEATH_ITEM_DROP_RANGE = 38;
    
-   public readonly tribeType: TribeType;
+   private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
+   public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
 
    private numFootstepsTaken = 0;
 
    protected abstract readonly footstepInterval: number;
 
-   private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
+   protected selectedItemSlot = 1;
+   
+   protected swingProgress = 0;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -284,9 +287,18 @@ abstract class TribeMember extends Mob {
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          const armourItem = armourInventory.itemSlots[1];
          return armourItem.type;
-      } else {
-         return null;
       }
+      return null;
+   }
+
+   protected getActiveItem(): ItemType | null {
+      const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+
+      if (hotbarInventory.itemSlots.hasOwnProperty(this.selectedItemSlot)) {
+         const item = hotbarInventory.itemSlots[this.selectedItemSlot];
+         return item.type;
+      }
+      return null;
    }
 }
 
