@@ -44,6 +44,9 @@ class Particle {
    public readonly lifetime: number;
    public readonly tint: ParticleTint;
 
+   // TODO: This really sucks. Find better system
+   public foodItemType = -1;
+
    private chunk: Chunk;
 
    private _age = 0;

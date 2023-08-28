@@ -184,7 +184,8 @@ const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): Readonl
                rotation: particle.rotation,
                opacity: opacity,
                scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
-               tint: particle.tint
+               tint: particle.tint,
+               foodItemType: particle.foodItemType
             });
          }
       }
@@ -641,6 +642,7 @@ class GameServer {
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
+      playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
       playerData.instance.isEating = playerDataPacket.isEating;
    }
 

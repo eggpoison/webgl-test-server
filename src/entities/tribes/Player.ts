@@ -66,7 +66,7 @@ class Player extends TribeMember {
 
       if (this.isEating && Board.tickIntervalHasPassed(0.075)) {
          const spawnPosition = this.position.copy();
-         const offset = new Vector(40, this.rotation).convertToPoint();
+         const offset = new Vector(37, this.rotation).convertToPoint();
          spawnPosition.add(offset);
          const offset2 = new Vector(randFloat(0, 6), 2 * Math.PI * Math.random()).convertToPoint();
          spawnPosition.add(offset2);
@@ -78,7 +78,7 @@ class Player extends TribeMember {
          
          const lifetime = 0.5;
          
-         new Particle({
+         const particle = new Particle({
             type: ParticleType.white1x1,
             spawnPosition: spawnPosition,
             initialVelocity: velocity,
@@ -90,6 +90,9 @@ class Player extends TribeMember {
             lifetime: lifetime,
             scale: 1.5
          });
+
+         const itemType = this.getComponent("inventory")!.getInventory("hotbar").itemSlots[this.selectedItemSlot].type;
+         particle.foodItemType = itemType;
       }
    }
 
@@ -219,32 +222,6 @@ class Player extends TribeMember {
       if (attackTarget === null) return;
 
       this.attackEntity(attackTarget, attackPacket.itemSlot);
-
-      // const inventoryComponent = this.getComponent("inventory")!;
-
-      // // Find the selected item
-      // const selectedItem = inventoryComponent.getItem("hotbar", attackPacket.itemSlot);
-      // const selectedItemIsTool = selectedItem !== null && selectedItem.hasOwnProperty("toolType");
-
-      // let attackDamage: number;
-      // let attackKnockback: number;
-      // if (selectedItemIsTool) {
-      //    attackDamage = (selectedItem as ToolItem).getAttackDamage(attackTarget);
-      //    attackKnockback = (selectedItem as ToolItem).knockback;
-      // } else {
-      //    attackDamage = 1;
-      //    attackKnockback = Player.DEFAULT_KNOCKBACK;
-      // }
-
-      // // Register the hit
-      // const attackHash = this.id.toString();
-      // const healthComponent = attackTarget.getComponent("health")!; // Attack targets always have a health component
-      // healthComponent.damage(attackDamage, attackKnockback, attackPacket.attackDirection, this, attackHash);
-      // attackTarget.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
-
-      // if (selectedItem !== null && typeof selectedItem.damageEntity !== "undefined") {
-      //    selectedItem.damageEntity(attackTarget);
-      // }
    }
 
    public processItemUsePacket(itemSlot: number): void {
@@ -314,6 +291,10 @@ class Player extends TribeMember {
       super.setTribe(tribe);
       
       SERVER.updatePlayerTribe(this, this.tribe);
+   }
+
+   public setSelectedItemSlot(selectedItemSlot: number): void {
+      this.selectedItemSlot = selectedItemSlot;
    }
 }
 
