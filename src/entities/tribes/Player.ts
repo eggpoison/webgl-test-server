@@ -64,40 +64,46 @@ class Player extends TribeMember {
    public tick(): void {
       super.tick();
 
-      if (this.isEating && Board.tickIntervalHasPassed(0.075)) {
-         const spawnPosition = this.position.copy();
-         const offset = new Vector(37, this.rotation).convertToPoint();
-         spawnPosition.add(offset);
-         const offset2 = new Vector(randFloat(0, 6), 2 * Math.PI * Math.random()).convertToPoint();
-         spawnPosition.add(offset2);
-
-         const velocity = new Vector(randFloat(50, 65), 2 * Math.PI * Math.random());
-         if (this.velocity !== null) {
-            velocity.add(this.velocity);
+      if (this.isEating && Board.tickIntervalHasPassed(0.25)) {
+         const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+         if (hotbarInventory.itemSlots.hasOwnProperty(this.selectedItemSlot)) {
+            for (let i = 0; i < 3; i++) {
+               const spawnPosition = this.position.copy();
+               const offset = new Vector(37, this.rotation).convertToPoint();
+               spawnPosition.add(offset);
+               const offset2 = new Vector(randFloat(0, 6), 2 * Math.PI * Math.random()).convertToPoint();
+               spawnPosition.add(offset2);
+   
+               const velocity = new Vector(randFloat(90, 130), 2 * Math.PI * Math.random());
+               if (this.velocity !== null) {
+                  velocity.add(this.velocity);
+               }
+               
+               const lifetime = randFloat(0.3, 0.4);
+               
+               const particle = new Particle({
+                  type: ParticleType.white1x1,
+                  spawnPosition: spawnPosition,
+                  initialVelocity: velocity,
+                  initialAcceleration: null,
+                  initialRotation: 2 * Math.PI * Math.random(),
+                  drag: velocity.magnitude * 0.75,
+                  opacity: (age: number) => {
+                     return 1 - Math.pow(age / lifetime, 3);
+                  },
+                  lifetime: lifetime,
+                  scale: 1.5
+               });
+   
+               const itemType = hotbarInventory.itemSlots[this.selectedItemSlot].type;
+               particle.foodItemType = itemType;
+            }
          }
-         
-         const lifetime = 0.5;
-         
-         const particle = new Particle({
-            type: ParticleType.white1x1,
-            spawnPosition: spawnPosition,
-            initialVelocity: velocity,
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            opacity: (age: number) => {
-               return Math.pow(1 - age / lifetime, 0.3);
-            },
-            lifetime: lifetime,
-            scale: 1.5
-         });
-
-         const itemType = this.getComponent("inventory")!.getInventory("hotbar").itemSlots[this.selectedItemSlot].type;
-         particle.foodItemType = itemType;
       }
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number,  displayName: string] {
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.lastActionTicks, this.username];
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.lastAttackTicks, this.lastEatTicks, this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {

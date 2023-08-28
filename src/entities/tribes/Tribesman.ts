@@ -265,17 +265,18 @@ class Tribesman extends TribeMember {
       if (typeof bow.use !== "undefined") {
          bow.use(this, "hotbar");
       }
-      this.lastActionTicks = Board.ticks;
+      this.lastAttackTicks = Board.ticks;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
          this.getArmourItemType(),
          this.getActiveItem(),
-         this.lastActionTicks,
+         this.lastAttackTicks,
+         this.lastEatTicks,
          serializeInventoryData(hotbarInventory, "hotbar")
       ];
    }

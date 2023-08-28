@@ -40,6 +40,10 @@ const giveItem = (username: string, itemType: ItemType, amount: number): void =>
    const player = SERVER.getPlayerFromUsername(username);
    if (player === null) return;
 
+   if (amount === 0) {
+      return;
+   }
+
    const item = createItem(itemType, amount);
    player.getComponent("inventory")!.addItem(item);
 }

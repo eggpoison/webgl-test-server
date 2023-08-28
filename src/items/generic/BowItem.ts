@@ -102,27 +102,6 @@ class BowItem extends ToolItem implements BowItemInfo {
             arrowProjectile.remove();
             return;
          }
-
-         // Create wind projectiles
-         if (Board.tickIntervalHasPassed(0.05)) {
-            const spawnPosition = arrowProjectile.position.copy();
-            const offset = new Vector(randFloat(0, 10), 2 * Math.PI * Math.random()).convertToPoint();
-            spawnPosition.add(offset);
-            
-            const lifetime = randFloat(0.3, 0.5);
-            
-            new Particle({
-               type: ParticleType.wind,
-               spawnPosition: spawnPosition,
-               initialVelocity: new Vector(randFloat(20, 30), 2 * Math.PI * Math.random()),
-               initialAcceleration: null,
-               initialRotation: 2 * Math.PI * Math.random(),
-               opacity: (age: number): number => {
-                  return 1 - age / lifetime;
-               },
-               lifetime: lifetime
-            });
-         }
       }
    }
    

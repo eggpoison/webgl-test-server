@@ -15,26 +15,6 @@ class FoodItem extends StackableItem implements FoodItemInfo {
       this.eatTime = itemInfo.eatTime;
    }
 
-   public duringUse(entity: TribeMember): void {
-      if (Board.tickIntervalHasPassed(0.1)) {
-         const spawnPosition = entity.position.copy();
-         const offset = new Vector(16, entity.rotation).convertToPoint();
-         spawnPosition.add(offset);
-         
-         const lifetime = 2;
-         
-         new Particle({
-            type: ParticleType.white1x1,
-            spawnPosition: spawnPosition,
-            initialVelocity: new Vector(randFloat(20, 30), 2 * Math.PI * Math.random()),
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            opacity: 1,
-            lifetime: lifetime
-         });
-      }
-   }
-
    public use(entity: TribeMember, inventoryName: string): void {
       const healthComponent = entity.getComponent("health")!;
 
@@ -47,6 +27,8 @@ class FoodItem extends StackableItem implements FoodItemInfo {
       // Consume the item
       const inventoryComponent = entity.getComponent("inventory")!;
       this.consumeItem(inventoryComponent, inventoryName, 1);
+
+      entity.lastEatTicks = Board.ticks;
    }
 }
 
