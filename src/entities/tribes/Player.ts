@@ -58,8 +58,8 @@ class Player extends TribeMember {
       });
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, swingProgress: number,  displayName: string] {
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.swingProgress, this.username];
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number,  displayName: string] {
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.lastSwingTicks, this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {

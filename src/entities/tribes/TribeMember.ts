@@ -29,7 +29,7 @@ abstract class TribeMember extends Mob {
 
    protected selectedItemSlot = 1;
    
-   protected swingProgress = 0;
+   protected lastSwingTicks = 0;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];

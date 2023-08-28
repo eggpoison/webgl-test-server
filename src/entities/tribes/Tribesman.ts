@@ -115,16 +115,6 @@ class Tribesman extends TribeMember {
          }
       }));
 
-      // AI for picking up items
-      this.addAI(new ItemChaseAI(this, {
-         aiWeightMultiplier: 0.8,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
-         itemIsChased: (item: DroppedItem): boolean => {
-            return this.canPickupItem(item);
-         }
-      }));
-
       // AI for returning resources to tribe
       this.addAI(new MoveAI(this, {
          aiWeightMultiplier: 0.9,
@@ -148,6 +138,16 @@ class Tribesman extends TribeMember {
                   this.depositResources(nearestBarrel);
                }
             }
+         }
+      }));
+
+      // AI for picking up items
+      this.addAI(new ItemChaseAI(this, {
+         aiWeightMultiplier: 0.8,
+         acceleration: Tribesman.WALK_ACCELERATION,
+         terminalVelocity: Tribesman.WALK_SPEED,
+         itemIsChased: (item: DroppedItem): boolean => {
+            return this.canPickupItem(item);
          }
       }));
 
@@ -273,14 +273,14 @@ class Tribesman extends TribeMember {
       }
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, swingProgress: number, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number, inventory: InventoryData] {
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
          this.getArmourItemType(),
          this.getActiveItem(),
-         this.swingProgress,
+         this.lastSwingTicks,
          serializeInventoryData(hotbarInventory, "hotbar")
       ];
    }
