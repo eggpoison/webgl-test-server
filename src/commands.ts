@@ -141,25 +141,19 @@ export function registerCommand(command: string, player: Player): void {
       }
 
       case "give": {
-         if (numParameters === 1) {
-            const itemType = commandComponents[1];
-            
-            if (!Object.keys(ItemType).includes(itemType.toString())) {
-               return;
-            }
+         const itemType = commandComponents[1];
 
-            const confirmedItemType = ItemType[itemType as keyof typeof ItemType];
-            
+         if (!Object.keys(ItemType).includes(itemType.toString())) {
+            break;
+         }
+
+         const confirmedItemType = ItemType[itemType as keyof typeof ItemType];
+
+         if (numParameters === 1) {
             giveItem(player.username, confirmedItemType, 1);
          } else if (numParameters === 2) {
-            const itemType = commandComponents[1] as ItemType;
-            if (!Object.keys(ItemType).includes(itemType.toString())) {
-               return;
-            }
-
             const amount = commandComponents[2] as number;
-
-            giveItem(player.username, itemType, amount);
+            giveItem(player.username, confirmedItemType, amount);
          }
          
          break;

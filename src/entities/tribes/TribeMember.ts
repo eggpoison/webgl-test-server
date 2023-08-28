@@ -29,7 +29,7 @@ abstract class TribeMember extends Mob {
 
    protected selectedItemSlot = 1;
    
-   protected lastSwingTicks = 0;
+   protected lastActionTicks = 0;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -255,8 +255,8 @@ abstract class TribeMember extends Mob {
       if (item !== null && typeof item.damageEntity !== "undefined") {
          item.damageEntity(target);
       }
-      
-      this.lastSwingTicks = Board.ticks;
+
+      this.lastActionTicks = Board.ticks;
    }
 
    private calculateItemDamage(entity: Entity, item: Item | null): number {

@@ -60,7 +60,7 @@ class Yeti extends Mob {
    private static readonly LARGE_SNOWBALL_THROW_SPEED = [350, 450] as const;
    private static readonly SNOW_THROW_ARC = Math.PI/5;
    private static readonly SNOW_THROW_OFFSET = 64;
-   private static readonly SNOW_THROW_WINDUP_TIME = 2;
+   private static readonly SNOW_THROW_WINDUP_TIME = 1.75;
    private static readonly SNOW_THROW_HOLD_TIME = 0.1;
    private static readonly SNOW_THROW_RETURN_TIME = 0.6;
 
@@ -110,13 +110,8 @@ class Yeti extends Mob {
          acceleration: 200,
          terminalVelocity: 100,
          entityIsChased: (entity: Entity) => {
-            // Don't chase ice spikes
-            if (entity.type === "ice_spikes") {
-               return false;
-            }
-
-            // Don't chase snowballs thrown by the yeti
-            if (entity.type === "snowball" && this.snowballIDs.has(entity.id)) {
+            // Don't chase ice spikes or snowballs
+            if (entity.type === "ice_spikes" || entity.type === "snowball") {
                return false;
             }
             

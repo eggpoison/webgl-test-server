@@ -641,6 +641,7 @@ class GameServer {
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
+      playerData.instance.isEating = playerDataPacket.isEating;
    }
 
    private generatePlayerSpawnPosition(): Point {

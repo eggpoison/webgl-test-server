@@ -24,6 +24,8 @@ abstract class Item implements BaseItemInfo {
 
    public tick?(): void;
 
+   public duringUse?(entity: TribeMember): void;
+
    public use?(entity: TribeMember, inventoryName: string): void;
 
    public consumeItem(inventoryComponent: InventoryComponent, inventoryName: string, amount: number): void {

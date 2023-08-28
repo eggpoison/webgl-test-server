@@ -1,6 +1,8 @@
-import { FoodItemInfo, ItemType } from "webgl-test-shared";
-import Entity from "../../entities/Entity";
+import { FoodItemInfo, ItemType, ParticleType, Vector, randFloat } from "webgl-test-shared";
 import StackableItem from "./StackableItem";
+import Board from "../../Board";
+import Particle from "../../Particle";
+import TribeMember from "../../entities/tribes/TribeMember";
 
 class FoodItem extends StackableItem implements FoodItemInfo {
    public readonly healAmount: number;
@@ -13,7 +15,27 @@ class FoodItem extends StackableItem implements FoodItemInfo {
       this.eatTime = itemInfo.eatTime;
    }
 
-   public use(entity: Entity, inventoryName: string): void {
+   public duringUse(entity: TribeMember): void {
+      if (Board.tickIntervalHasPassed(0.1)) {
+         const spawnPosition = entity.position.copy();
+         const offset = new Vector(16, entity.rotation).convertToPoint();
+         spawnPosition.add(offset);
+         
+         const lifetime = 2;
+         
+         new Particle({
+            type: ParticleType.white1x1,
+            spawnPosition: spawnPosition,
+            initialVelocity: new Vector(randFloat(20, 30), 2 * Math.PI * Math.random()),
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            opacity: 1,
+            lifetime: lifetime
+         });
+      }
+   }
+
+   public use(entity: TribeMember, inventoryName: string): void {
       const healthComponent = entity.getComponent("health")!;
 
       // Don't use food if already at maximum health

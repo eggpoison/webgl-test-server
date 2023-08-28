@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemType, ParticleType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item from "../../items/generic/Item";
 import StackableItem from "../../items/generic/StackableItem";
@@ -8,6 +8,7 @@ import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
+import Particle from "../../Particle";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -31,6 +32,8 @@ class Player extends TribeMember {
    private hitsTaken = new Array<HitData>();
 
    protected footstepInterval = 0.15;
+
+   public isEating = false;
 
    constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
       super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
@@ -58,8 +61,40 @@ class Player extends TribeMember {
       });
    }
 
+   public tick(): void {
+      super.tick();
+
+      if (this.isEating && Board.tickIntervalHasPassed(0.075)) {
+         const spawnPosition = this.position.copy();
+         const offset = new Vector(40, this.rotation).convertToPoint();
+         spawnPosition.add(offset);
+         const offset2 = new Vector(randFloat(0, 6), 2 * Math.PI * Math.random()).convertToPoint();
+         spawnPosition.add(offset2);
+
+         const velocity = new Vector(randFloat(50, 65), 2 * Math.PI * Math.random());
+         if (this.velocity !== null) {
+            velocity.add(this.velocity);
+         }
+         
+         const lifetime = 0.5;
+         
+         new Particle({
+            type: ParticleType.white1x1,
+            spawnPosition: spawnPosition,
+            initialVelocity: velocity,
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            opacity: (age: number) => {
+               return Math.pow(1 - age / lifetime, 0.3);
+            },
+            lifetime: lifetime,
+            scale: 1.5
+         });
+      }
+   }
+
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number,  displayName: string] {
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.lastSwingTicks, this.username];
+      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.lastActionTicks, this.username];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {

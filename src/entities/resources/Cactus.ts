@@ -61,7 +61,7 @@ const generateRandomLimbs = (): ReadonlyArray<CactusLimbData> => {
 }
 
 class Cactus extends Entity {
-   private static readonly MAX_HEALTH = 25;
+   private static readonly MAX_HEALTH = 15;
 
    public static readonly RADIUS = 40;
 

@@ -265,7 +265,7 @@ class Tribesman extends TribeMember {
       if (typeof bow.use !== "undefined") {
          bow.use(this, "hotbar");
       }
-      this.lastSwingTicks = Board.ticks;
+      this.lastActionTicks = Board.ticks;
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number, inventory: InventoryData] {
@@ -275,7 +275,7 @@ class Tribesman extends TribeMember {
          this.tribeType,
          this.getArmourItemType(),
          this.getActiveItem(),
-         this.lastSwingTicks,
+         this.lastActionTicks,
          serializeInventoryData(hotbarInventory, "hotbar")
       ];
    }
