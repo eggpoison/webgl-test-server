@@ -258,12 +258,6 @@ class Tribesman extends TribeMember {
       // Register the hit
       if (target !== null) {
          this.attackEntity(target, this.selectedItemSlot);
-         // const attackHash = this.id.toString();
-         // const attackDirection = this.position.calculateAngleBetween(target.position);
-
-         // const healthComponent = target.getComponent("health")!; // Attack targets always have a health component
-         // healthComponent.damage(1, Tribesman.ATTACK_KNOCKBACK, attackDirection, this, attackHash);
-         // healthComponent.addLocalInvulnerabilityHash(attackHash, 0.3);
       }
    }
 
@@ -271,6 +265,7 @@ class Tribesman extends TribeMember {
       if (typeof bow.use !== "undefined") {
          bow.use(this, "hotbar");
       }
+      this.lastSwingTicks = Board.ticks;
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastSwingTicks: number, inventory: InventoryData] {

@@ -255,6 +255,8 @@ abstract class TribeMember extends Mob {
       if (item !== null && typeof item.damageEntity !== "undefined") {
          item.damageEntity(target);
       }
+      
+      this.lastSwingTicks = Board.ticks;
    }
 
    private calculateItemDamage(entity: Entity, item: Item | null): number {
