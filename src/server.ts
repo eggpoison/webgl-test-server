@@ -53,11 +53,8 @@ const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameOb
       id: gameObject.id,
       position: gameObject.position.package(),
       velocity: gameObject.velocity !== null ? gameObject.velocity.package() : null,
-      acceleration: gameObject.acceleration !== null ? gameObject.acceleration.package() : null,
-      terminalVelocity: gameObject.terminalVelocity,
       rotation: gameObject.rotation,
       mass: gameObject.mass,
-      chunkCoordinates: Array.from(gameObject.chunks).map(chunk => [chunk.x, chunk.y]),
       hitboxes: Array.from(gameObject.hitboxes).map(hitbox => {
          return bundleHitboxData(hitbox);
       })

@@ -25,6 +25,11 @@ class Player extends TribeMember {
    private static readonly ITEM_THROW_FORCE = 100;
    private static readonly ITEM_THROW_OFFSET = 32;
 
+   /** How far away from the entity the attack is done */
+   private static readonly ATTACK_OFFSET = 80;
+   /** Max distance from the attack position that the attack will be registered from */
+   private static readonly ATTACK_RADIUS = 60;
+
    public readonly mass = 1;
 
    public readonly username: string;
@@ -221,13 +226,14 @@ class Player extends TribeMember {
    }
 
    public processAttackPacket(attackPacket: AttackPacket): void {
-      // Calculate the attack's target entity
-      const targetEntities = attackPacket.targetEntities.map(id => Board.entities[id]);
-      const attackTarget = this.calculateAttackedEntity(targetEntities);
-      // Don't attack if the attack didn't hit anything
-      if (attackTarget === null) return;
+      // Find the attack target
+      const attackTargets = this.calculateRadialAttackTargets(Player.ATTACK_OFFSET, Player.ATTACK_RADIUS);
+      const target = this.calculateAttackTarget(attackTargets);
 
-      this.attackEntity(attackTarget, attackPacket.itemSlot);
+      // Register the hit
+      if (target !== null) {
+         this.attackEntity(target, attackPacket.itemSlot);
+      }
    }
 
    public processItemUsePacket(itemSlot: number): void {

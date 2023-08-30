@@ -1,6 +1,5 @@
 import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
-import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";

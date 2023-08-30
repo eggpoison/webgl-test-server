@@ -47,7 +47,6 @@ class Tribesman extends TribeMember {
    private static readonly ATTACK_OFFSET = 80;
    /** Max distance from the attack position that the attack will be registered from */
    private static readonly ATTACK_RADIUS = 60;
-   // private static readonly ATTACK_KNOCKBACK = 150;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_ATTACK_DISTANCE = 120;

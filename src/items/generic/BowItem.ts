@@ -96,6 +96,8 @@ class BowItem extends ToolItem implements BowItemInfo {
          }
       });
 
+      // TODO: This is a shitty way of doing this, and can destroy the arrow too early
+      // Also doesn't account for wall tiles
       arrowProjectile.tickCallback = (): void => {
          // Destroy the arrow if it reaches the border
          if (arrowProjectile.position.x <= BowItem.ARROW_DESTROY_DISTANCE || arrowProjectile.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - BowItem.ARROW_DESTROY_DISTANCE || arrowProjectile.position.y <= BowItem.ARROW_DESTROY_DISTANCE || arrowProjectile.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - BowItem.ARROW_DESTROY_DISTANCE) {
