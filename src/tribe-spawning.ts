@@ -146,7 +146,7 @@ const runSpawnAttempt = (): void => {
 }
 
 export function runTribeSpawnAttempt(): void {
-   // if(1+1==2)return;
+   if(1+1==2)return;
    if (Math.random() < TRIBE_SPAWN_RATE) {
       runSpawnAttempt();
    }

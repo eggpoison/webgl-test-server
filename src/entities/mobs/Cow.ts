@@ -114,15 +114,9 @@ class Cow extends Mob {
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
 
-      this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
+      this.createEvent("hurt", () => {
          for (let i = 0; i < 2; i++) {
             this.createBloodPoolParticle();
-         }
-
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
-            }
          }
       });
    }

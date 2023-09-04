@@ -1,12 +1,12 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectData, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { addEntityToCensus } from "../census";
-import Particle from "../Particle";
 import Board from "../Board";
+import TexturedParticle from "../TexturedParticle";
 
 export interface EntityComponents {
    readonly health: HealthComponent;
@@ -58,6 +58,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
+   // TODO: Remove the "isNaturallySpawned" flag. Perhaps instead make a function which adds the entity to the census? But would be inconvenient to use
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
       super(position);
 
@@ -96,7 +97,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       if (this.isInRiver() && Board.tickIntervalHasPassed(0.15) && this.acceleration !== null) {
          const lifetime = 1.5;
             
-         new Particle({
+         new TexturedParticle({
             type: ParticleType.waterSplash,
             spawnPosition: this.position.copy(),
             initialVelocity: null,
@@ -107,23 +108,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
             },
             scale: (age: number): number => {
                return lerp(1, 2, age / lifetime);
-            },
-            lifetime: lifetime
-         });
-      }
-
-      if (this.isInRiver() && Board.tickIntervalHasPassed(0.05)) {
-         const lifetime = 1;
-            
-         new Particle({
-            type: ParticleType.waterDroplet,
-            spawnPosition: this.position.copy(),
-            initialVelocity: new Vector(randFloat(40, 60), 2 * Math.PI * Math.random()),
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            angularVelocity: randFloat(2, 3) * randSign(),
-            opacity: (age: number): number => {
-               return lerp(0.75, 0, age / lifetime);
             },
             lifetime: lifetime
          });
@@ -160,25 +144,25 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          }    
       }
 
-      if (this.statusEffects.hasOwnProperty("fire")) {
+      if (this.statusEffects.hasOwnProperty("burning")) {
          // If the entity is in a river, clear the fire effect
          if (this.isInRiver()) {
-            this.clearStatusEffect("fire");
+            this.clearStatusEffect("burning");
          } else {
             // Fire tick
-            if (this.statusEffects.fire!.ticksElapsed % 15 === 0) {
+            if (this.statusEffects.burning!.ticksElapsed % 15 === 0) {
                this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire);
             }
 
             // Fire particle effects
-         if (this.statusEffects.fire!.ticksElapsed % 2 === 0) {
+            if (this.statusEffects.burning!.ticksElapsed % 2 === 0) {
                const spawnPosition = this.position.copy();
                const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
                spawnPosition.add(offset);
 
                const lifetime = 1.5;
                
-               new Particle({
+               new TexturedParticle({
                   type: ParticleType.smokeBlack,
                   spawnPosition: spawnPosition,
                   initialVelocity: new Vector(30, 0),
@@ -195,62 +179,12 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
                   lifetime: lifetime
                });
             }
-            
-            // Embers
-            if (this.statusEffects.fire!.ticksElapsed % 3 === 0) {
-               const spawnPosition = this.position.copy();
-               const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-               spawnPosition.add(offset);
-
-               const lifetime = randFloat(0.6, 1.2);
-
-               const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
-               const velocityOffset = new Vector(30, Math.PI);
-               velocity.add(velocityOffset);
-               
-               new Particle({
-                  type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
-                  spawnPosition: spawnPosition,
-                  initialVelocity: velocity,
-                  initialAcceleration: new Vector(randFloat(0, 80), 2 * Math.PI * Math.random()),
-                  drag: 60,
-                  initialRotation: 2 * Math.PI * Math.random(),
-                  angularVelocity: randFloat(-60, 60),
-                  angularDrag: 60,
-                  opacity: (age: number): number => {
-                     let opacity = 1 - age / lifetime;
-                     return Math.pow(opacity, 0.3);
-                  },
-                  lifetime: lifetime
-               });
-            }
          }
       }
 
       if (this.hasStatusEffect("poisoned")) {
          if (this.statusEffects.poisoned!.ticksElapsed % 10 === 0) {
             this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.poison);
-         }
-
-         // Poisoned particle effects
-         if (this.statusEffects.poisoned!.ticksElapsed % 2 === 0) {
-            const spawnPosition = this.position.copy();
-            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-            spawnPosition.add(offset);
-
-            const lifetime = 1.5;
-            
-            new Particle({
-               type: ParticleType.poisonDroplet,
-               spawnPosition: spawnPosition,
-               initialVelocity: null,
-               initialAcceleration: null,
-               initialRotation: 2 * Math.PI * Math.random(),
-               opacity: (age: number): number => {
-                  return lerp(0.75, 0, age / lifetime);
-               },
-               lifetime: lifetime
-            });
          }
       }
    }
@@ -278,8 +212,15 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       delete this.statusEffects[type];
    }
 
-   public getStatusEffects(): Array<StatusEffectType> {
-      return Object.keys(this.statusEffects) as Array<StatusEffectType>;
+   public getStatusEffectData(): Array<StatusEffectData> {
+      const data = new Array<StatusEffectData>();
+      for (const [type, statusEffect] of Object.entries(this.statusEffects) as ReadonlyArray<[StatusEffectType, StatusEffect]>) {
+         data.push({
+            type: type,
+            ticksElapsed: statusEffect.ticksElapsed
+         });
+      }
+      return data;
    }
 
    protected createBloodPoolParticle(): void {
@@ -290,33 +231,13 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       spawnPosition.add(offset);
 
       const type = randItem([ParticleType.bloodPoolSmall, ParticleType.bloodPoolMedium, ParticleType.bloodPoolLarge])
-      new Particle({
+      new TexturedParticle({
          type: type,
          spawnPosition: spawnPosition,
          initialVelocity: null,
          initialAcceleration: null,
          initialRotation: 2 * Math.PI * Math.random(),
          opacity: (age: number) => {
-            return 1 - age / lifetime;
-         },
-         lifetime: lifetime
-      });
-   }
-
-   protected createBloodParticle(hitDirection: number): void {
-      const spawnPosition = this.position.copy();
-      const offset = new Vector(32, hitDirection + Math.PI + 0.2 * Math.PI * (Math.random() - 0.5)).convertToPoint();
-      spawnPosition.add(offset);
-
-      const lifetime = randFloat(0.25, 0.4)
-
-      new Particle({
-         type: Math.random() < 0.6 ? ParticleType.blood : ParticleType.bloodLarge,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(randFloat(75, 125), 4 * Math.PI * (Math.random() - 0.5)),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         opacity: (age: number): number => {
             return 1 - age / lifetime;
          },
          lifetime: lifetime
@@ -337,7 +258,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       const offset = new Vector(footstepOffset / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
       spawnPosition.add(offset);
 
-      new Particle({
+      new TexturedParticle({
          type: ParticleType.footprint,
          spawnPosition: spawnPosition,
          initialVelocity: null,

@@ -12,6 +12,7 @@ import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Board from "../../Board";
 import Snowball from "../Snowball";
 import Particle from "../../Particle";
+import MonocolourParticle from "../../MonocolourParticle";
 
 enum SnowThrowStage {
    windup,
@@ -191,14 +192,8 @@ class Yeti extends Mob {
          }
       });
 
-      this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
+      this.createEvent("hurt", () => {
          this.createBloodPoolParticle();
-
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
-            }
-         }
       });
    }
 
@@ -331,9 +326,9 @@ class Yeti extends Mob {
          
          const lifetime = randFloat(0.8, 0.12);
 
-         const brightnessMultiplier = randFloat(-0.25, 0.1);
+         // TODO: Return varied colour
       
-         new Particle({
+         new MonocolourParticle({
             type: ParticleType.snow,
             spawnPosition: position,
             initialVelocity: new Vector(randFloat(40, 100), 2 * Math.PI * Math.random()),
@@ -344,8 +339,7 @@ class Yeti extends Mob {
                return 1 - Math.pow(age / lifetime, 0.4);
             },
             lifetime: lifetime,
-            scale: 2,
-            tint: [brightnessMultiplier, brightnessMultiplier, brightnessMultiplier]
+            scale: 2
          });
       }  
    }

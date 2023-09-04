@@ -6,6 +6,7 @@ import { createItem } from "../items/item-creation";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import Particle from "../Particle";
 import Board from "../Board";
+import TexturedParticle from "../TexturedParticle";
 
 interface HeatingRecipe {
    readonly ingredientType: ItemType;
@@ -123,9 +124,6 @@ class Campfire extends Entity {
             if (Board.tickIntervalHasPassed(0.1)) {
                this.createSmokeParticle();
             }
-            if (Board.tickIntervalHasPassed(0.15)) {
-               this.createEmberParticle();
-            }
          }
       }
    }
@@ -137,7 +135,7 @@ class Campfire extends Entity {
 
       const lifetime = 1.5;
       
-      new Particle({
+      new TexturedParticle({
          type: ParticleType.smokeBlack,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(30, 0),
@@ -150,34 +148,6 @@ class Campfire extends Entity {
          scale: (age: number): number => {
             const deathProgress = age / lifetime
             return 1 + deathProgress * 2;
-         },
-         lifetime: lifetime
-      });
-   }
-
-   private createEmberParticle(): void {
-      const spawnPosition = this.position.copy();
-      const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
-
-      const lifetime = randFloat(0.6, 1.2);
-
-      const velocity = new Vector(randFloat(100, 140), 2 * Math.PI * Math.random());
-      const velocityOffset = new Vector(30, Math.PI);
-      velocity.add(velocityOffset);
-      
-      new Particle({
-         type: Math.random() < 0.5 ? ParticleType.emberRed : ParticleType.emberOrange,
-         spawnPosition: spawnPosition,
-         initialVelocity: velocity,
-         initialAcceleration: new Vector(randFloat(0, 80), 2 * Math.PI * Math.random()),
-         drag: 60,
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularVelocity: randFloat(-60, 60),
-         angularDrag: 60,
-         opacity: (age: number): number => {
-            let opacity = 1 - age / lifetime;
-            return Math.pow(opacity, 0.3);
          },
          lifetime: lifetime
       });

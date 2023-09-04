@@ -4,6 +4,7 @@ import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Particle from "../../Particle";
+import TexturedParticle from "../../TexturedParticle";
 
 const generateRandomFlowers = (): ReadonlyArray<CactusBodyFlowerData> => {
    // Generate random number of flowers from 1 to 5, weighted low
@@ -117,21 +118,6 @@ class Cactus extends Entity {
          }
       });
 
-      // Create cactus spine particles when hurt
-      this.createEvent("hurt", (_damage, _attackingEntity, _knockback, hitDirection: number | null): void => {
-         if (hitDirection === null) return;
-         
-         for (let i = 0; i < 3; i++) {
-            const flyDirection = hitDirection + Math.PI + 0.8 * (Math.random() - 0.5);
-            this.createCactusSpineParticle(flyDirection);
-         }
-
-         const numRandomDirectionSpines = randInt(1, 3);
-         for (let i = 0; i < numRandomDirectionSpines; i++) {
-            this.createCactusSpineParticle(2 * Math.PI * Math.random());
-         }
-      });
-
       this.createEvent("death", (): void => {
          this.createFlowerParticles();
       });
@@ -167,7 +153,7 @@ class Cactus extends Entity {
       
       const lifetime = randFloat(3, 5);
       
-      new Particle({
+      new TexturedParticle({
          type: particleType,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(randFloat(30, 50), 2 * Math.PI * Math.random()),
@@ -226,26 +212,6 @@ class Cactus extends Entity {
       }
    }
 
-   private createCactusSpineParticle(flyDirection: number): void {
-      const spawnPosition = this.position.copy();
-      const offset = new Vector(Cactus.RADIUS - 5, flyDirection).convertToPoint();
-      spawnPosition.add(offset);
-      
-      const lifetime = randFloat(0.2, 0.3);
-
-      new Particle({
-         type: ParticleType.cactusSpine,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(randFloat(150, 200), flyDirection),
-         initialAcceleration: null,
-         initialRotation: flyDirection,
-         opacity: (age: number) => {
-            return 1 - age / lifetime;
-         },
-         lifetime: lifetime
-      });
-   }
-   
    public getClientArgs(): [flowers: ReadonlyArray<CactusBodyFlowerData>, limbs: ReadonlyArray<CactusLimbData>] {
       return [this.flowers, this.limbs];
    }

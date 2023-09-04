@@ -13,6 +13,11 @@ import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-
 import Tribe from "./Tribe";
 import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
 
+interface KilledEntityInfo {
+   readonly id: number;
+   readonly boundingChunks: ReadonlyArray<Chunk>;
+}
+
 abstract class Board {
    /** Average number of random ticks done in a chunk a second */
    private static readonly RANDOM_TICK_RATE = 1;
@@ -46,6 +51,9 @@ abstract class Board {
    private static joinBuffer = new Array<GameObject>();
 
    private static tribes = new Array<Tribe>();
+
+   /** The IDs of all entities which have been killed since the start of the current tick */
+   public static killedEntities = new Array<KilledEntityInfo>();
 
    public static setup(): void {
       const generationInfo = generateTerrain();
@@ -176,7 +184,7 @@ abstract class Board {
       
       for (const particle of this.particles) {
          particle.tick();
-         particle.age();
+         particle.incrementAge();
          if (particle.getAge() >= particle.lifetime) {
             removedParticles.push(particle);
          }

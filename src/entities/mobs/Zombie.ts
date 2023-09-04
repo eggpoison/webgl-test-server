@@ -1,4 +1,4 @@
-import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
+import { ItemType, ParticleType, PlayerCauseOfDeath, Point, SETTINGS, Vector, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -8,6 +8,7 @@ import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import MonocolourParticle from "../../MonocolourParticle";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -107,16 +108,46 @@ class Zombie extends Mob {
          if (attackingEntity !== null) {
             this.attackingEntities[attackingEntity.id] = Zombie.ATTACK_PURSUE_TIME;
          }
+      });
 
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
+      this.createEvent("death", () => {
+         const position = this.position.copy();
+         const offset = 2 * Math.PI * Math.random();
+         this.a(position, offset);
+         let i = 0;
+         const a = setInterval(() => {
+            if (++i === 3) {
+               clearInterval(a);
             }
-         }
+            this.a(position, offset);
+         }, 0.1 * 1000);
       });
 
       if (Math.random() < 0.1) {
          itemCreationComponent.createItemOnDeath(ItemType.eyeball, 1, true);
+      }
+   }
+
+   private a(position: Point, offset: number): void {
+      const num = 5;
+      for (let i = 0; i < num; i++) {
+         let direction = 2 * Math.PI / num * i + offset;
+         direction += randFloat(-0.3, 0.3);
+
+         const lifetime = 0.35;
+
+         const spawnPosition = position.copy();
+         new MonocolourParticle({
+            type: Math.random() < 0.5 ? ParticleType.bloodLarge : ParticleType.blood,
+            spawnPosition: spawnPosition,
+            initialVelocity: new Vector(randFloat(150, 200), direction),
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            opacity: (age: number): number => {
+               return 1 - age / lifetime;
+            },
+            lifetime: lifetime
+         });
       }
    }
 
@@ -143,8 +174,8 @@ class Zombie extends Mob {
       // If day time, ignite
       if (Board.time >= 6 && Board.time < 18) {
          // Ignite randomly or stay on fire if already on fire
-         if (super.hasStatusEffect("fire") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
-            super.applyStatusEffect("fire", 5);
+         if (super.hasStatusEffect("burning") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
+            super.applyStatusEffect("burning", 5);
          }
       }
 

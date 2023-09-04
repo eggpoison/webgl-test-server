@@ -4,6 +4,7 @@ import Tile from "../tiles/Tile";
 import AI, { BaseAIParams } from "./AI";
 import Particle from "../Particle";
 import Board from "../Board";
+import TexturedParticle from "../TexturedParticle";
 
 type FoodSource = {
    /** Amount of food given by eating the source */
@@ -100,7 +101,7 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
 
       const lifetime = randFloat(1, 1.5);
 
-      new Particle({
+      new TexturedParticle({
          type: ParticleType.dirt,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),

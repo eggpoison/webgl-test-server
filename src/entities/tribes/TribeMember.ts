@@ -28,7 +28,9 @@ abstract class TribeMember extends Mob {
    protected abstract readonly footstepInterval: number;
 
    protected selectedItemSlot = 1;
-   
+
+   public isEating = false;
+
    public lastAttackTicks = -99999;
    public lastEatTicks = -99999;
 
@@ -46,14 +48,8 @@ abstract class TribeMember extends Mob {
 
       inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
 
-      this.createEvent("hurt", (_1, _2, _3, hitDirection: number | null): void => {
+      this.createEvent("hurt", () => {
          this.createBloodPoolParticle();
-
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
-            }
-         }
       });
 
       this.createEvent("on_item_place", (placedItem: Entity): void => {
@@ -294,7 +290,7 @@ abstract class TribeMember extends Mob {
       return null;
    }
 
-   protected getActiveItem(): ItemType | null {
+   protected getActiveItemType(): ItemType | null {
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
 
       if (hotbarInventory.itemSlots.hasOwnProperty(this.selectedItemSlot)) {
@@ -302,6 +298,16 @@ abstract class TribeMember extends Mob {
          return item.type;
       }
       return null;
+   }
+
+   protected getFoodEatingType(): ItemType | -1 {
+      if (this.isEating) {
+         const activeItemType = this.getActiveItemType();
+         if (activeItemType !== null) {
+            return activeItemType;
+         }
+      }
+      return -1;
    }
 }
 

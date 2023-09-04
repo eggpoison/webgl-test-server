@@ -4,6 +4,7 @@ import ItemCreationComponent from "../../entity-components/ItemCreationComponent
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Particle from "../../Particle";
+import TexturedParticle from "../../TexturedParticle";
 
 class Boulder extends Entity {
    private static readonly RADIUS = 40;
@@ -60,7 +61,7 @@ class Boulder extends Entity {
 
       const lifetime = randFloat(0.3, 0.6);
       
-      new Particle({
+      new TexturedParticle({
          type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),

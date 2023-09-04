@@ -4,6 +4,7 @@ import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import Board from "../Board";
 import Particle from "../Particle";
+import MonocolourParticle from "../MonocolourParticle";
 
 class Snowball extends Entity {
    private static readonly CASCADE_THRESHOLD = 100;
@@ -78,7 +79,7 @@ class Snowball extends Entity {
    private createSnowParticle(): void {
       const lifetime = randFloat(0.6, 0.8);
       
-      new Particle({
+      new MonocolourParticle({
          type: ParticleType.snow,
          spawnPosition: this.position.copy(),
          initialVelocity: new Vector(randFloat(40, 60), 2 * Math.PI * Math.random()),

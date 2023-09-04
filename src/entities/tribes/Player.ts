@@ -1,4 +1,4 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemType, ParticleType, PlayerInventoryData, Point, randFloat, randItem, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemType, PlayerInventoryData, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item from "../../items/generic/Item";
 import StackableItem from "../../items/generic/StackableItem";
@@ -8,7 +8,6 @@ import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
-import Particle from "../../Particle";
 
 const bundleItemData = (item: Item): ItemData => {
    return {
@@ -34,11 +33,7 @@ class Player extends TribeMember {
 
    public readonly username: string;
 
-   private hitsTaken = new Array<HitData>();
-
    protected footstepInterval = 0.15;
-
-   public isEating = false;
 
    constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
       super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
@@ -57,58 +52,19 @@ class Player extends TribeMember {
       this.username = username;
 
       this.tribe = tribe;
-
-      this.createEvent("hurt", (_1, _2, knockback: number, hitDirection: number | null): void => {
-         this.hitsTaken.push({
-            knockback: knockback,
-            hitDirection: hitDirection
-         });
-      });
    }
 
-   public tick(): void {
-      super.tick();
-
-      if (this.isEating && Board.tickIntervalHasPassed(0.25)) {
-         const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
-         if (hotbarInventory.itemSlots.hasOwnProperty(this.selectedItemSlot)) {
-            for (let i = 0; i < 3; i++) {
-               const spawnPosition = this.position.copy();
-               const offset = new Vector(37, this.rotation).convertToPoint();
-               spawnPosition.add(offset);
-               const offset2 = new Vector(randFloat(0, 6), 2 * Math.PI * Math.random()).convertToPoint();
-               spawnPosition.add(offset2);
-   
-               const velocity = new Vector(randFloat(90, 130), 2 * Math.PI * Math.random());
-               if (this.velocity !== null) {
-                  velocity.add(this.velocity);
-               }
-               
-               const lifetime = randFloat(0.3, 0.4);
-               
-               const particle = new Particle({
-                  type: ParticleType.white1x1,
-                  spawnPosition: spawnPosition,
-                  initialVelocity: velocity,
-                  initialAcceleration: null,
-                  initialRotation: 2 * Math.PI * Math.random(),
-                  drag: velocity.magnitude * 0.75,
-                  opacity: (age: number) => {
-                     return 1 - Math.pow(age / lifetime, 3);
-                  },
-                  lifetime: lifetime,
-                  scale: 1.5
-               });
-   
-               const itemType = hotbarInventory.itemSlots[this.selectedItemSlot].type;
-               particle.foodItemType = itemType;
-            }
-         }
-      }
-   }
-
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
-      return [this.tribe !== null ? this.tribe.id : null, this.tribeType, this.getArmourItemType(), this.getActiveItem(), this.lastAttackTicks, this.lastEatTicks, this.username];
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
+      return [
+         this.tribe !== null ? this.tribe.id : null,
+         this.tribeType,
+         this.getArmourItemType(),
+         this.getActiveItemType(),
+         this.getFoodEatingType(),
+         this.lastAttackTicks,
+         this.lastEatTicks,
+         this.username
+      ];
    }
 
    public calculateAttackedEntity(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -135,14 +91,6 @@ class Player extends TribeMember {
       if (closestEntity === null) return null;
 
       return closestEntity;
-   }
-
-   public getHitsTaken(): ReadonlyArray<HitData> {
-      return this.hitsTaken;
-   }
-
-   public clearHitsTaken(): void {
-      this.hitsTaken = new Array<HitData>();
    }
 
    public processCraftingPacket(craftingRecipe: CraftingRecipe): void {

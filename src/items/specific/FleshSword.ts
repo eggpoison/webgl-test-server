@@ -2,10 +2,11 @@ import { Vector, ParticleType, lerp } from "webgl-test-shared";
 import Particle from "../../Particle";
 import Entity from "../../entities/Entity";
 import SwordItem from "../generic/SwordItem";
+import TexturedParticle from "../../TexturedParticle";
 
 class FleshSword extends SwordItem {
    public damageEntity(entity: Entity): void {
-      entity.applyStatusEffect("poisoned", 3);
+   entity.applyStatusEffect("poisoned", 3);
 
       // Create slime puddle
       const spawnPosition = entity.position.copy();
@@ -14,7 +15,7 @@ class FleshSword extends SwordItem {
 
       const lifetime = 7.5;
       
-      new Particle({
+      new TexturedParticle({
          type: ParticleType.slimePuddle,
          spawnPosition: spawnPosition,
          initialVelocity: null,

@@ -23,10 +23,9 @@ export interface ParticleInfo {
    readonly drag?: number;
    /** Number of seconds the particle lasts before being destroyed */
    readonly lifetime: number;
-   readonly tint?: ParticleTint;
 }
 
-class Particle {
+abstract class Particle {
    public readonly id: number;
 
    public readonly type: ParticleType;
@@ -42,11 +41,7 @@ class Particle {
    public readonly scale: number | ((age: number) => number);
    public readonly drag: number;
    public readonly lifetime: number;
-   public readonly tint: ParticleTint;
-
-   // TODO: This really sucks. Find better system
-   public foodItemType = -1;
-
+   
    private chunk: Chunk;
 
    private _age = 0;
@@ -66,7 +61,6 @@ class Particle {
       this.opacity = info.opacity;
       this.scale = typeof info.scale !== "undefined" ? info.scale : 1;
       this.drag = typeof info.drag !== "undefined" ? info.drag : 0;
-      this.tint = info.tint || [0, 0, 0];
       this.lifetime = info.lifetime;
 
       this.chunk = this.calculateContainingChunk();
@@ -169,7 +163,7 @@ class Particle {
       }
    }
 
-   public age(): void {
+   public incrementAge(): void {
       this._age += 1 / SETTINGS.TPS;
    }
 

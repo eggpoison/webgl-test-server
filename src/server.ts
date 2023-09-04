@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, ParticleData, TribeData, TribeType, RectangularHitboxData, CircularHitboxData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, MonocolourParticleData, TexturedParticleData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -15,7 +15,8 @@ import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Tombstone from "./entities/Tombstone";
+import TexturedParticle from "./TexturedParticle";
+import Chunk from "./Chunk";
 
 /*
 
@@ -29,91 +30,97 @@ const bundleHitboxData = (hitbox: RectangularHitbox | CircularHitbox): Rectangul
       // Circular hitbox
       return {
          radius: (hitbox as CircularHitbox).radius,
-         offset: typeof hitbox.offset !== "undefined" ? hitbox.offset.package() : undefined
+         offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : undefined,
+         offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : undefined
       };
    } else {
       return {
          width: (hitbox as RectangularHitbox).width,
          height: (hitbox as RectangularHitbox).height,
-         offset: typeof hitbox.offset !== "undefined" ? hitbox.offset.package() : undefined
+         offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : undefined,
+         offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : undefined
       };
    }
 }
 
-const _GameObjectSubclassData = {
-   entity: (_: EntityData<EntityType>) => {},
-   droppedItem: (_: DroppedItemData) => {},
-   projectile: (_: ProjectileData) => {}
-} satisfies Record<keyof GameObjectSubclasses, (arg: any) => void>;
+const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
+   const healthComponent = entity.getComponent("health");
 
-type GameObjectSubclassData<T extends keyof GameObjectSubclasses> = Parameters<(typeof _GameObjectSubclassData)[T]>[0];
-
-const bundleGameObjectData = <T extends keyof GameObjectSubclasses>(i: T, gameObject: _GameObject<T, GameObjectEvents>): GameObjectSubclassData<T> => {
-   const baseGameObjectData: GameObjectData = {
-      id: gameObject.id,
-      position: gameObject.position.package(),
-      velocity: gameObject.velocity !== null ? gameObject.velocity.package() : null,
-      rotation: gameObject.rotation,
-      mass: gameObject.mass,
-      hitboxes: Array.from(gameObject.hitboxes).map(hitbox => {
+   return {
+      id: entity.id,
+      position: entity.position.package(),
+      velocity: entity.velocity !== null ? entity.velocity.package() : null,
+      rotation: entity.rotation,
+      mass: entity.mass,
+      hitboxes: Array.from(entity.hitboxes).map(hitbox => {
          return bundleHitboxData(hitbox);
-      })
+      }),
+      type: entity.type,
+      clientArgs: entity.getClientArgs(),
+      statusEffects: entity.getStatusEffectData(),
+      mobAIType: entity instanceof Mob ? ((entity as Mob).getCurrentAIType() || "---") : undefined,
+      hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : []
    };
-
-   switch (i) {
-      case "entity": {
-         const entity = gameObject as unknown as Entity;
-
-         const healthComponent = entity.getComponent("health")!;
-
-         const entityData: Mutable<Partial<EntityData<EntityType>>> = baseGameObjectData;
-         entityData.type = entity.type;
-         entityData.clientArgs = entity.getClientArgs();
-         entityData.secondsSinceLastHit = healthComponent !== null ? healthComponent.getSecondsSinceLastHit() : null;
-         entityData.statusEffects = entity.getStatusEffects();
-
-         if (entity instanceof Mob) {
-            entityData.special = {
-               mobAIType: (entity as Mob).getCurrentAIType() || "none"
-            };
-         }
-
-         return entityData as EntityData<EntityType>;
-      }
-      case "droppedItem": {
-         const droppedItem = gameObject as unknown as DroppedItem;
-
-         const droppedItemData: Mutable<Partial<DroppedItemData>> = baseGameObjectData;
-         droppedItemData.type = droppedItem.item.type;
-
-         return droppedItemData as DroppedItemData;
-      }
-      case "projectile": {
-         const projectile = gameObject as unknown as Projectile;
-
-         const projectileData: Mutable<Partial<ProjectileData>> = baseGameObjectData;
-         projectileData.type = projectile.type;
-
-         return projectileData as ProjectileData;
-      }
-   }
-
-   throw new Error("bad");
 }
 
-const bundleEntityDataArray = (player: Player, chunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
-   const entityDataArray = new Array<EntityData<EntityType>>();
+const bundleDroppedItemData = (droppedItem: DroppedItem): DroppedItemData => {
+   return {
+      id: droppedItem.id,
+      position: droppedItem.position.package(),
+      velocity: droppedItem.velocity !== null ? droppedItem.velocity.package() : null,
+      rotation: droppedItem.rotation,
+      mass: droppedItem.mass,
+      hitboxes: Array.from(droppedItem.hitboxes).map(hitbox => {
+         return bundleHitboxData(hitbox);
+      }),
+      type: droppedItem.item.type
+   };
+}
+
+const bundleProjectileData = (projectile: Projectile): ProjectileData => {
+   return {
+      id: projectile.id,
+      position: projectile.position.package(),
+      velocity: projectile.velocity !== null ? projectile.velocity.package() : null,
+      rotation: projectile.rotation,
+      mass: projectile.mass,
+      hitboxes: Array.from(projectile.hitboxes).map(hitbox => {
+         return bundleHitboxData(hitbox);
+      }),
+      type: projectile.type
+   };
+}
+
+const getPlayerVisibleEntities = (chunkBounds: VisibleChunkBounds): ReadonlyArray<Entity> => {
+   const entities = new Array<Entity>();
    const seenIDs = new Set<number>();
    
    for (let chunkX = chunkBounds[0]; chunkX <= chunkBounds[1]; chunkX++) {
       for (let chunkY = chunkBounds[2]; chunkY <= chunkBounds[3]; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const entity of chunk.getEntities()) {
-            if (entity !== player && !seenIDs.has(entity.id)) {
-               entityDataArray.push(bundleGameObjectData("entity", entity));
+            if (!seenIDs.has(entity.id)) {
+               entities.push(entity);
                seenIDs.add(entity.id);
             }
          }
+      }
+   }
+
+   return entities;
+}
+
+const bundleEntityDataArray = (visibleEntities: ReadonlyArray<Entity>): ReadonlyArray<EntityData<EntityType>> => {
+   const entityDataArray = new Array<EntityData<EntityType>>();
+   
+   for (const entity of visibleEntities) {
+      const entityData = bundleEntityData(entity);
+      entityDataArray.push(entityData);
+
+      // Reset hits taken
+      const healthComponent = entity.getComponent("health");
+      if (healthComponent !== null) {
+         healthComponent.hitsTaken = [];
       }
    }
 
@@ -129,7 +136,7 @@ const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): Rea
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const droppedItem of chunk.getDroppedItems()) {
             if (!seenIDs.has(droppedItem.id)) {
-               droppedItemDataArray.push(bundleGameObjectData("droppedItem", droppedItem));
+               droppedItemDataArray.push(bundleDroppedItemData(droppedItem));
                seenIDs.add(droppedItem.id);
             }
          }
@@ -148,7 +155,7 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const projectile of chunk.getProjectiles()) {
             if (!seenIDs.has(projectile.id)) {
-               projectileDataArray.push(bundleGameObjectData("projectile", projectile));
+               projectileDataArray.push(bundleProjectileData(projectile));
                seenIDs.add(projectile.id);
             }
          }
@@ -158,8 +165,8 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    return projectileDataArray;
 }
 
-const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<ParticleData> => {
-   const particles = new Array<ParticleData>();
+const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<MonocolourParticleData | TexturedParticleData> => {
+   const particles = new Array<MonocolourParticleData | TexturedParticleData>();
 
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
@@ -172,23 +179,68 @@ const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): Readonl
                opacity = particle.opacity(particle.getAge());
             }
 
-            particles.push({
-               id: particle.id,
-               type: particle.type,
-               position: particle.position.package(),
-               velocity: particle.velocity?.package() || null,
-               acceleration: particle.acceleration?.package() || null,
-               rotation: particle.rotation,
-               opacity: opacity,
-               scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
-               tint: particle.tint,
-               foodItemType: particle.foodItemType
-            });
+            if (particle.hasOwnProperty("colour")) {
+               // Monocolour
+               particles.push({
+                  id: particle.id,
+                  type: particle.type,
+                  position: particle.position.package(),
+                  velocity: particle.velocity?.package() || null,
+                  acceleration: particle.acceleration?.package() || null,
+                  rotation: particle.rotation,
+                  opacity: opacity,
+                  scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
+                  age: particle.getAge(),
+                  lifetime: particle.lifetime
+               });
+            } else {
+               // Textured
+               particles.push({
+                  id: particle.id,
+                  type: particle.type,
+                  position: particle.position.package(),
+                  velocity: particle.velocity?.package() || null,
+                  acceleration: particle.acceleration?.package() || null,
+                  rotation: particle.rotation,
+                  opacity: opacity,
+                  scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
+                  age: particle.getAge(),
+                  lifetime: particle.lifetime,
+                  tint: (particle as TexturedParticle).tint
+               });
+            }
          }
       }
    }
 
    return particles;
+}
+
+const calculateKilledEntityIDs = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<number> => {
+   const visibleChunks = new Set<Chunk>();
+   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
+      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+         visibleChunks.add(chunk);
+      }
+   }
+
+   // Calculate killed entity IDs for entities visible to the player
+   const killedEntityIDs = new Array<number>();
+   for (const killedEntityInfo of Board.killedEntities) {
+      let isInVisibleChunks = false;
+      for (const chunk of killedEntityInfo.boundingChunks) {
+         if (visibleChunks.has(chunk)) {
+            isInVisibleChunks = true;
+            break;
+         }
+      }
+      if (isInVisibleChunks) {
+         killedEntityIDs.push(killedEntityInfo.id);
+      }
+   }
+
+   return killedEntityIDs;
 }
 
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -229,7 +281,7 @@ class GameServer {
          // Start the server
          this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
          this.handlePlayerConnections();
-         console.log(`Server started on port ${SETTINGS.SERVER_PORT}`);
+         console.log("Server started on port " + SETTINGS.SERVER_PORT);
       }
 
       if (typeof this.tickInterval === "undefined") {
@@ -269,9 +321,6 @@ class GameServer {
 
       Board.updateTiles();
 
-      // Send game data packets to all players
-      this.sendGameDataPackets();
-
       // Push tribes from buffer
       while (TribeBuffer.hasTribes()) {
          const tribeJoinInfo = TribeBuffer.popTribe();
@@ -283,6 +332,9 @@ class GameServer {
       runTribeSpawnAttempt();
 
       Board.removeFlaggedGameObjects();
+
+      // Send game data packets to all players
+      this.sendGameDataPackets();
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -334,6 +386,8 @@ class GameServer {
          // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), false, tribe);
          // tribe.registerNewHut(hut);
 
+         // new Tree(new Point(spawnPosition.x + 200, spawnPosition.y), false);
+
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
          });
@@ -368,13 +422,15 @@ class GameServer {
                }
             }
 
+            const visibleEntities = getPlayerVisibleEntities(playerData.visibleChunkBounds);
+
             const initialGameDataPacket: InitialGameDataPacket = {
                playerID: player.id,
                tiles: serverTileData,
                waterRocks: Board.waterRocks,
                riverSteppingStones: Board.riverSteppingStones,
                riverFlowDirections: Board.getRiverFlowDirections(),
-               entityDataArray: bundleEntityDataArray(player, playerData.visibleChunkBounds),
+               entityDataArray: bundleEntityDataArray(visibleEntities),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
                particles: packagePlayerParticles(playerData.visibleChunkBounds),
@@ -419,10 +475,9 @@ class GameServer {
                tileUpdates: [],
                serverTicks: Board.ticks,
                serverTime: Board.time,
-               hitsTaken: [],
                playerHealth: 20,
-               statusEffects: [],
-               tribeData: null
+               tribeData: null,
+               killedEntityIDs: []
             };
 
             this.playerDataRecord[socket.id] = playerData as PlayerData;
@@ -522,9 +577,6 @@ class GameServer {
 
          const tileUpdates = Board.popTileUpdates();
          
-         const hitsTaken = player.getHitsTaken();
-         player.clearHitsTaken();
-
          const extendedVisibleChunkBounds: VisibleChunkBounds = [
             Math.max(playerData.visibleChunkBounds[0] - 1, 0),
             Math.min(playerData.visibleChunkBounds[1] + 1, SETTINGS.BOARD_SIZE - 1),
@@ -540,9 +592,13 @@ class GameServer {
             area: player.tribe.getArea().map(tile => [tile.x, tile.y])
          } : null;
 
+         const visibleEntities = getPlayerVisibleEntities(extendedVisibleChunkBounds);
+
+         const killedEntityIDs = calculateKilledEntityIDs(extendedVisibleChunkBounds);
+         
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
-            entityDataArray: bundleEntityDataArray(player, extendedVisibleChunkBounds),
+            entityDataArray: bundleEntityDataArray(visibleEntities),
             droppedItemDataArray: bundleDroppedItemDataArray(extendedVisibleChunkBounds),
             projectileDataArray: bundleProjectileDataArray(extendedVisibleChunkBounds),
             particles: packagePlayerParticles(extendedVisibleChunkBounds),
@@ -550,16 +606,18 @@ class GameServer {
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
-            hitsTaken: hitsTaken,
             playerHealth: player.getComponent("health")!.getHealth(),
-            statusEffects: player.getStatusEffects() as Array<StatusEffectType>,
             gameObjectDebugData: gameObjectDebugData,
-            tribeData: tribeData
+            tribeData: tribeData,
+            killedEntityIDs: killedEntityIDs
          };
 
          // Send the game data to the player
          socket.emit("game_data_packet", gameDataPacket);
       }
+
+      // Reset the killed entity IDs
+      Board.killedEntities = [];
    }
 
    private handlePlayerDisconnect(socket: ISocket): void {

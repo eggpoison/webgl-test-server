@@ -6,6 +6,7 @@ import Zombie from "./mobs/Zombie";
 import Board from "../Board";
 import Particle from "../Particle";
 import TombstoneDeathManager from "../tombstone-deaths";
+import TexturedParticle from "../TexturedParticle";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
@@ -89,7 +90,7 @@ class Tombstone extends Entity {
    
       const lifetime = randFloat(0.3, 0.6);
       
-      new Particle({
+      new TexturedParticle({
          type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),
@@ -156,7 +157,7 @@ class Tombstone extends Entity {
 
       const speedMultiplier = randFloat(1, 2.2);
       
-      new Particle({
+      new TexturedParticle({
          type: ParticleType.dirt,
          spawnPosition: spawnPosition,
          initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
