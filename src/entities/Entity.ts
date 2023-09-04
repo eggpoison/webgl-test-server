@@ -160,17 +160,23 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
                const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
                spawnPosition.add(offset);
 
-               const lifetime = 1.5;
+               const lifetime = randFloat(1, 1.25);
+
+               const fadeInTime = 0.15;
                
                new TexturedParticle({
                   type: ParticleType.smokeBlack,
                   spawnPosition: spawnPosition,
                   initialVelocity: new Vector(30, 0),
-                  initialAcceleration: new Vector(80, 0),
+                  // initialAcceleration: new Vector(80, 0),
+                  initialAcceleration: new Vector(40, Math.random()),
                   initialRotation: 2 * Math.PI * Math.random(),
                   angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
                   opacity: (age: number): number => {
-                     return lerp(0.75, 0, age / lifetime);
+                     if (age <= fadeInTime) {
+                        return age / fadeInTime;
+                     }
+                     return lerp(0.75, 0, (age - fadeInTime) / (lifetime - fadeInTime));
                   },
                   scale: (age: number): number => {
                      const deathProgress = age / lifetime
