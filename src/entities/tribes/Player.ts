@@ -1,7 +1,6 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, HitData, InventoryData, ItemData, ItemType, PlayerInventoryData, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, canCraftRecipe, CraftingRecipe, InventoryData, ItemData, ItemType, PlayerInventoryData, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import Item from "../../items/generic/Item";
-import StackableItem from "../../items/generic/StackableItem";
+import Item, { getItemStackSize } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
@@ -99,7 +98,7 @@ class Player extends TribeMember {
       // Don't craft past items' stack size
       const craftingOutputInventory = inventoryComponent.getInventory("craftingOutputSlot");
       const craftingOutputItem = craftingOutputInventory.itemSlots.hasOwnProperty(1) ? craftingOutputInventory.itemSlots[1] : null;
-      if (craftingOutputItem !== null && (craftingOutputItem.type !== craftingRecipe.product || !craftingOutputItem.hasOwnProperty("stackSize") || craftingOutputItem.count + craftingRecipe.yield > (craftingOutputItem as StackableItem).stackSize)) {
+      if (craftingOutputItem !== null && (craftingOutputItem.type !== craftingRecipe.product || !craftingOutputItem.hasOwnProperty("stackSize") || craftingOutputItem.count + craftingRecipe.yield > getItemStackSize(craftingOutputItem))) {
          return;
       }
       
@@ -188,10 +187,8 @@ class Player extends TribeMember {
       const inventoryComponent = this.getComponent("inventory")!;
 
       const item = inventoryComponent.getItem("hotbar", itemSlot);
-      if (item === null) return;
-
-      if (typeof item.use !== "undefined") {
-         item.use(this, "hotbar");
+      if (item !== null)  {
+         this.useItem(item, itemSlot);
       }
    }
 

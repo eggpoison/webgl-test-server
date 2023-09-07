@@ -102,7 +102,7 @@ class Zombie extends Mob {
          }
       });
 
-      this.createEvent("hurt", (_1, attackingEntity: Entity | null, _knockback: number, hitDirection: number | null): void => {
+      this.createEvent("hurt", (_, attackingEntity: Entity | null): void => {
          this.createBloodPoolParticle();
 
          if (attackingEntity !== null) {
@@ -110,44 +110,8 @@ class Zombie extends Mob {
          }
       });
 
-      this.createEvent("death", () => {
-         const position = this.position.copy();
-         const offset = 2 * Math.PI * Math.random();
-         this.a(position, offset);
-         let i = 0;
-         const a = setInterval(() => {
-            if (++i === 3) {
-               clearInterval(a);
-            }
-            this.a(position, offset);
-         }, 0.1 * 1000);
-      });
-
       if (Math.random() < 0.1) {
          itemCreationComponent.createItemOnDeath(ItemType.eyeball, 1, true);
-      }
-   }
-
-   private a(position: Point, offset: number): void {
-      const num = 5;
-      for (let i = 0; i < num; i++) {
-         let direction = 2 * Math.PI / num * i + offset;
-         direction += randFloat(-0.3, 0.3);
-
-         const lifetime = 0.35;
-
-         const spawnPosition = position.copy();
-         new MonocolourParticle({
-            type: Math.random() < 0.5 ? ParticleType.bloodLarge : ParticleType.blood,
-            spawnPosition: spawnPosition,
-            initialVelocity: new Vector(randFloat(150, 200), direction),
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            opacity: (age: number): number => {
-               return 1 - age / lifetime;
-            },
-            lifetime: lifetime
-         });
       }
    }
 

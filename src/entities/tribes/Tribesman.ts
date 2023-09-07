@@ -1,4 +1,4 @@
-import { EntityType, InventoryData, ItemType, Point, TribeType } from "webgl-test-shared";
+import { EntityType, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -10,12 +10,10 @@ import ItemChaseAI from "../../mob-ai/ItemChaseAI";
 import DroppedItem from "../../items/DroppedItem";
 import MoveAI from "../../mob-ai/MoveAI";
 import Barrel from "./Barrel";
-import StackableItem from "../../items/generic/StackableItem";
 import TribeTotem from "./TribeTotem";
 import TribeHut from "./TribeHut";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
-import ToolItem from "../../items/generic/ToolItem";
-import BowItem from "../../items/generic/BowItem";
+import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 
 /*
 Priorities while in a tribe:
@@ -197,7 +195,7 @@ class Tribesman extends TribeMember {
          }
 
          const item = inventory.itemSlots[itemSlot];
-         if (item.type === droppedItem.item.type && item.hasOwnProperty("stackSize") && (item as StackableItem).stackSize - item.count > 0) {
+         if (item.type === droppedItem.item.type && itemIsStackable(item.type) && getItemStackSize(item) - item.count > 0) {
             return true;
          }
       }
@@ -242,8 +240,15 @@ class Tribesman extends TribeMember {
       const inventoryComponent = this.getComponent("inventory")!;
       const item = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
 
-      if (item !== null && item.hasOwnProperty("toolType") && (item as ToolItem).toolType === "bow") {
-         this.doRangedAttack(item as BowItem);
+      // If not holding an item, do a regular attack
+      if (item === null) {
+         this.doMeleeAttack();
+         return;
+      }
+
+      const itemCategory = ITEM_TYPE_RECORD[item.type];
+      if (itemCategory === "bow") {
+         this.doRangedAttack(item, this.selectedItemSlot);
       } else {
          this.doMeleeAttack();
       }
@@ -260,10 +265,8 @@ class Tribesman extends TribeMember {
       }
    }
 
-   private doRangedAttack(bow: BowItem): void {
-      if (typeof bow.use !== "undefined") {
-         bow.use(this, "hotbar");
-      }
+   private doRangedAttack(bow: Item, itemSlot: number): void {
+      this.useItem(bow, itemSlot)
       this.lastAttackTicks = Board.ticks;
    }
 

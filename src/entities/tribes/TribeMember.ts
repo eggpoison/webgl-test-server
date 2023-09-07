@@ -1,4 +1,4 @@
-import { EntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BowItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, ParticleType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -10,12 +10,74 @@ import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
 import TribeBuffer from "../../TribeBuffer";
 import Barrel from "./Barrel";
-import ArmourItem from "../../items/generic/ArmourItem";
 import DroppedItem from "../../items/DroppedItem";
-import ToolItem from "../../items/generic/ToolItem";
-import Item from "../../items/generic/Item";
+import Item from "../../items/Item";
+import Hitbox from "../../hitboxes/Hitbox";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import Projectile from "../../Projectile";
+import ENTITY_CLASS_RECORD from "../../entity-classes";
+import TexturedParticle from "../../TexturedParticle";
+
+enum PlaceableItemHitboxType {
+   circular = 0,
+   rectangular = 1
+}
+
+interface PlaceableItemHitboxInfo {
+   readonly type: PlaceableItemHitboxType;
+}
+
+interface PlaceableItemCircularHitboxInfo extends PlaceableItemHitboxInfo {
+   readonly type: PlaceableItemHitboxType.circular;
+   readonly radius: number;
+}
+
+interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
+   readonly type: PlaceableItemHitboxType.rectangular;
+   readonly width: number;
+   readonly height: number;
+}
+
+const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>> = {
+   [ItemType.workbench]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 80,
+      height: 80
+   },
+   [ItemType.tribe_totem]: {
+      type: PlaceableItemHitboxType.circular,
+      radius: 50
+   },
+   [ItemType.tribe_hut]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 80,
+      height: 80
+   },
+   [ItemType.barrel]: {
+      type: PlaceableItemHitboxType.circular,
+      radius: 40
+   },
+   [ItemType.campfire]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 104,
+      height: 104
+   },
+   [ItemType.furnace]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 80,
+      height: 80
+   }
+};
 
 abstract class TribeMember extends Mob {
+   private static readonly placeTestRectangularHitbox = new RectangularHitbox();
+   private static readonly placeTestCircularHitbox = new CircularHitbox();
+
+   private static readonly ARROW_WIDTH = 20;
+   private static readonly ARROW_HEIGHT = 64;
+   private static readonly ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(TribeMember.ARROW_WIDTH / 2, 2) + Math.pow(TribeMember.ARROW_HEIGHT, 2));
+   
    private static readonly DEATH_ITEM_DROP_RANGE = 38;
    
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
@@ -31,8 +93,10 @@ abstract class TribeMember extends Mob {
 
    public isEating = false;
 
-   public lastAttackTicks = -99999;
-   public lastEatTicks = -99999;
+   protected lastAttackTicks = -99999;
+   protected lastEatTicks = -99999;
+
+   private bowCooldowns: Record<number, number> = {};
 
    constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -102,20 +166,16 @@ abstract class TribeMember extends Mob {
       // Armour defence
       const armourInventory = inventoryComponent.getInventory("armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
-         const armourItem = armourInventory.itemSlots[1] as ArmourItem;
-         this.getComponent("health")!.addDefence(armourItem.defence, "armour");
+         const itemInfo = ITEM_INFO_RECORD[armourInventory.itemSlots[1].type] as ArmourItemInfo;
+         this.getComponent("health")!.addDefence(itemInfo.defence, "armour");
       } else {
          this.getComponent("health")!.removeDefence("armour");
       }
 
-      // Tick items
-      const hotbarInventory = inventoryComponent.getInventory("hotbar");
-      for (let itemSlot = 1; itemSlot <= hotbarInventory.width; itemSlot++) {
-         if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
-            const item = hotbarInventory.itemSlots[itemSlot];
-            if (typeof item.tick !== "undefined") {
-               item.tick();
-            }
+      for (const itemSlot of Object.keys(this.bowCooldowns) as unknown as ReadonlyArray<number>) {
+         this.bowCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
+         if (this.bowCooldowns[itemSlot] < 0) {
+            delete this.bowCooldowns[itemSlot];
          }
       }
    }
@@ -155,14 +215,6 @@ abstract class TribeMember extends Mob {
       if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
          return true;
       }
-
-      // Don't attack tribe buildings
-      // if (entity.type === "barrel" && (entity as Barrel).tribe === this.tribe) {
-      //    return true;
-      // }
-      // if (entity.type === "tribe_totem" && (entity as TribeTotem).tribe === this.tribe) {
-      //    return true;
-      // }
 
       return false;
    }
@@ -230,42 +282,85 @@ abstract class TribeMember extends Mob {
    }
 
    /**
-    * @param target The entity to attack
+    * @param targetEntity The entity to attack
     * @param itemSlot The item slot being used to attack the entity
     */
-   protected attackEntity(target: Entity, itemSlot: number): void {
+   protected attackEntity(targetEntity: Entity, itemSlot: number): void {
       // Find the selected item
       const inventoryComponent = this.getComponent("inventory")!;
       const item = inventoryComponent.getItem("hotbar", itemSlot);
 
-      const attackDamage = this.calculateItemDamage(target, item);
+      const attackDamage = this.calculateItemDamage(item, targetEntity);
       const attackKnockback = this.calculateItemKnockback(item);
 
-      const hitDirection = this.position.calculateAngleBetween(target.position);
+      const hitDirection = this.position.calculateAngleBetween(targetEntity.position);
 
       // Register the hit
       const attackHash = this.id.toString();
-      const healthComponent = target.getComponent("health")!; // Attack targets always have a health component
+      const healthComponent = targetEntity.getComponent("health")!; // Attack targets always have a health component
       healthComponent.damage(attackDamage, attackKnockback, hitDirection, this, PlayerCauseOfDeath.tribe_member, attackHash);
-      target.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+      targetEntity.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
 
-      if (item !== null && typeof item.damageEntity !== "undefined") {
-         item.damageEntity(target);
+      if (item !== null && item.type === ItemType.flesh_sword) {
+         targetEntity.applyStatusEffect("poisoned", 3);
+
+         // Create slime puddle
+         const spawnPosition = targetEntity.position.copy();
+         const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+         spawnPosition.add(offset);
+   
+         const lifetime = 7.5;
+         
+         new TexturedParticle({
+            type: ParticleType.slimePuddle,
+            spawnPosition: spawnPosition,
+            initialVelocity: null,
+            initialAcceleration: null,
+            initialRotation: 2 * Math.PI * Math.random(),
+            opacity: (age: number): number => {
+               return lerp(0.75, 0, age / lifetime);
+            },
+            lifetime: lifetime
+         });
       }
 
       this.lastAttackTicks = Board.ticks;
    }
 
-   private calculateItemDamage(entity: Entity, item: Item | null): number {
+   private calculateItemDamage(item: Item | null, entityToAttack: Entity): number {
       if (item === null) {
          return 1;
       }
 
-      if (item.hasOwnProperty("toolType")) {
-         return (item as ToolItem).getAttackDamage(entity);
+      const itemCategory = ITEM_TYPE_RECORD[item.type];
+      switch (itemCategory) {
+         case "sword": {
+            if (entityToAttack instanceof Mob || entityToAttack.hasOwnProperty("tribe")) {
+               const itemInfo = ITEM_INFO_RECORD[item.type] as SwordItemInfo;
+               return itemInfo.damage;
+            }
+            return 1;
+         }
+         case "axe": {
+            const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
+            if (entityToAttack.type === "tree") {
+               return itemInfo.damage;
+            } else {
+               return Math.floor(itemInfo.damage / 2);
+            }
+         }
+         case "pickaxe": {
+            const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
+            if (entityToAttack.type === "boulder" || entityToAttack.type === "tombstone") {
+               return itemInfo.damage;
+            } else {
+               return Math.floor(itemInfo.damage / 2);
+            }
+         }
+         default: {
+            return 1;
+         }
       }
-
-      return 1;
    }
 
    private calculateItemKnockback(item: Item | null): number {
@@ -273,8 +368,9 @@ abstract class TribeMember extends Mob {
          return TribeMember.DEFAULT_ATTACK_KNOCKBACK;
       }
 
-      if (item.hasOwnProperty("toolType")) {
-         return (item as ToolItem).knockback;
+      const itemInfo = ITEM_INFO_RECORD[item.type];
+      if (itemInfo.hasOwnProperty("toolType")) {
+         return (itemInfo as ToolItemInfo).knockback;
       }
 
       return TribeMember.DEFAULT_ATTACK_KNOCKBACK;
@@ -308,6 +404,181 @@ abstract class TribeMember extends Mob {
          }
       }
       return -1;
+   }
+
+   protected useItem(item: Item, itemSlot: number): void {
+      const itemCategory = ITEM_TYPE_RECORD[item.type];
+
+      const inventoryComponent = this.getComponent("inventory")!;
+
+      switch (itemCategory) {
+         case "armour": {
+            // 
+            // Equip the armour
+            // 
+            
+            const targetItem = inventoryComponent.getItem("armourSlot", 1);
+            // If the target item slot has a different item type, don't attempt to transfer
+            if (targetItem !== null && targetItem.type !== item.type) {
+               return;
+            }
+   
+            // Move from hotbar to armour slot
+            inventoryComponent.removeItemFromInventory("hotbar", itemSlot);
+            inventoryComponent.addItemToSlot("armourSlot", 1, item.type, 1);
+            break;
+         }
+         case "food": {
+            const healthComponent = this.getComponent("health")!;
+
+            // Don't use food if already at maximum health
+            if (healthComponent.getHealth() >= healthComponent.maxHealth) return;
+
+            const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
+
+            // Heal entity
+            healthComponent.heal(itemInfo.healAmount);
+
+            inventoryComponent.consumeItem("hotbar", itemSlot, 1);
+
+            this.lastEatTicks = Board.ticks;
+            break;
+         }
+         case "placeable": {
+            // Calculate the position to spawn the placeable entity at
+            const spawnPosition = this.position.copy();
+            const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, this.rotation);
+            spawnPosition.add(offsetVector.convertToPoint());
+
+            // Make sure the placeable item can be placed
+            if (!this.canBePlaced(spawnPosition, this.rotation, item.type)) return;
+            
+            const itemInfo = ITEM_INFO_RECORD[item.type] as PlaceableItemInfo;
+            
+            // Spawn the placeable entity
+            const entityClass = ENTITY_CLASS_RECORD[itemInfo.entityType]();
+            const placedEntity = new entityClass(spawnPosition, false);
+
+            // Rotate it to match the entity's rotation
+            placedEntity.rotation = this.rotation;
+
+            inventoryComponent.consumeItem("hotbar", itemSlot, 1);
+
+            this.callEvents("on_item_place", placedEntity);
+            break;
+         }
+         case "bow": {
+            if (!this.canFire(itemSlot)) {
+               return;
+            }
+
+            const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
+
+            this.bowCooldowns[itemSlot] = itemInfo.projectileAttackCooldown;
+
+            const spawnPosition = this.position.copy();
+            const offset = new Vector(25, this.rotation).convertToPoint();
+            spawnPosition.add(offset);
+            
+            const arrowProjectile = new Projectile(spawnPosition, ProjectileType.woodenArrow, 1.5);
+            arrowProjectile.velocity = new Vector(itemInfo.projectileSpeed, this.rotation);
+            arrowProjectile.rotation = this.rotation;
+
+            const hitbox = new RectangularHitbox();
+            hitbox.setHitboxInfo(TribeMember.ARROW_WIDTH, TribeMember.ARROW_HEIGHT);
+            arrowProjectile.addHitbox(hitbox);
+
+            arrowProjectile.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
+               if (arrowProjectile.isRemoved) {
+                  return;
+               }
+               
+               // Don't damage any friendly entities
+               if (this.entityIsFriendly(collidingEntity)) {
+                  return;
+               }
+               
+               const healthComponent = collidingEntity.getComponent("health");
+               if (healthComponent !== null) {
+                  const attackHash = item.id.toString();
+
+                  if (!healthComponent.isInvulnerable(attackHash)) {
+                     arrowProjectile.remove();
+                  }
+                  
+                  const hitDirection = arrowProjectile.position.calculateAngleBetween(collidingEntity.position);
+                  healthComponent.damage(itemInfo.projectileDamage, itemInfo.projectileKnockback, hitDirection, this, PlayerCauseOfDeath.arrow, attackHash);
+                  healthComponent.addLocalInvulnerabilityHash(attackHash, 0.3);
+               }
+            });
+
+            // TODO: This is a shitty way of doing this, and can destroy the arrow too early
+            // Also doesn't account for wall tiles
+            arrowProjectile.tickCallback = (): void => {
+               // Destroy the arrow if it reaches the border
+               if (arrowProjectile.position.x <= TribeMember.ARROW_DESTROY_DISTANCE || arrowProjectile.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - TribeMember.ARROW_DESTROY_DISTANCE || arrowProjectile.position.y <= TribeMember.ARROW_DESTROY_DISTANCE || arrowProjectile.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - TribeMember.ARROW_DESTROY_DISTANCE) {
+                  arrowProjectile.remove();
+                  return;
+               }
+            }
+            break;
+         }
+      }
+   }
+
+   private canFire(itemSlot: number): boolean {
+      return !this.bowCooldowns.hasOwnProperty(itemSlot);
+   }
+
+   private canBePlaced(spawnPosition: Point, rotation: number, itemType: ItemType): boolean {
+      // Update the place test hitbox to match the placeable item's info
+      const testHitboxInfo = PLACEABLE_ITEM_HITBOX_INFO[itemType]!
+
+      const tempHitboxObject = {
+         position: spawnPosition,
+         rotation: rotation
+      };
+
+      let placeTestHitbox: Hitbox;
+      if (testHitboxInfo.type === PlaceableItemHitboxType.circular) {
+         // Circular
+         TribeMember.placeTestCircularHitbox.setHitboxInfo(testHitboxInfo.radius);
+         placeTestHitbox = TribeMember.placeTestCircularHitbox;
+      } else {
+         // Rectangular
+         TribeMember.placeTestRectangularHitbox.setHitboxInfo(testHitboxInfo.width, testHitboxInfo.height);
+         placeTestHitbox = TribeMember.placeTestRectangularHitbox;
+      }
+
+      placeTestHitbox.setHitboxObject(tempHitboxObject);
+      placeTestHitbox.updatePosition();
+      placeTestHitbox.updateHitboxBounds();
+
+      const minChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      
+      const previouslyCheckedEntityIDs = new Set<number>();
+
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = Board.getChunk(chunkX, chunkY);
+            for (const entity of chunk.getEntities()) {
+               if (!previouslyCheckedEntityIDs.has(entity.id)) {
+                  for (const hitbox of entity.hitboxes) {   
+                     if (placeTestHitbox.isColliding(hitbox)) {
+                        return false;
+                     }
+                  }
+                  
+                  previouslyCheckedEntityIDs.add(entity.id);
+               }
+            }
+         }
+      }
+
+      return true;
    }
 }
 

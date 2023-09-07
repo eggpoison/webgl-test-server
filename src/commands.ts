@@ -1,10 +1,10 @@
 import { BiomeName, EntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
-import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
 import ENTITY_CLASS_RECORD from "./entity-classes";
+import Item from "./items/Item";
 
 const ENTITY_SPAWN_RANGE = 200;
 
@@ -44,7 +44,7 @@ const giveItem = (username: string, itemType: ItemType, amount: number): void =>
       return;
    }
 
-   const item = createItem(itemType, amount);
+   const item = new Item(itemType, amount);
    player.getComponent("inventory")!.addItem(item);
 }
 

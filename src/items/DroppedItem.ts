@@ -1,6 +1,6 @@
 import { Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-import Item from "./generic/Item";
+import Item from "./Item";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 
 interface EntityPickupCooldown {

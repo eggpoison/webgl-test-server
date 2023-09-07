@@ -68,29 +68,6 @@ class Snowball extends Entity {
       if (this.velocity !== null && this.canDamage && this.velocity.magnitude <= Snowball.CASCADE_THRESHOLD) {
          this.canDamage = false;
       }
-
-      if (this.canDamage) {
-         if (Board.tickIntervalHasPassed(0.05)) {
-            this.createSnowParticle();
-         }
-      }
-   }
-
-   private createSnowParticle(): void {
-      const lifetime = randFloat(0.6, 0.8);
-      
-      new MonocolourParticle({
-         type: ParticleType.snow,
-         spawnPosition: this.position.copy(),
-         initialVelocity: new Vector(randFloat(40, 60), 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         opacity: (age: number): number => {
-            return 1 - age / lifetime;
-         },
-         lifetime: lifetime,
-         scale: randInt(1, 2)
-      });
    }
 
    public getClientArgs(): [size: SnowballSize] {

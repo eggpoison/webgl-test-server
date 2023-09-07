@@ -5,8 +5,6 @@ import TombstoneDeathManager from "../tombstone-deaths";
 import Player from "../entities/tribes/Player";
 import Board from "../Board";
 
-let a = 0;
-
 class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
 

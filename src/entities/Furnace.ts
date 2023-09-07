@@ -4,9 +4,8 @@ import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent, { serializeInventoryData } from "../entity-components/InventoryComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Board from "../Board";
-import Particle from "../Particle";
-import { createItem } from "../items/item-creation";
 import TexturedParticle from "../TexturedParticle";
+import Item from "../items/Item";
 
 interface HeatingRecipe {
    readonly ingredientType: ItemType;
@@ -114,7 +113,7 @@ class Furnace extends Entity {
                inventoryComponent.consumeItemTypeFromInventory("ingredientInventory", this.currentRecipe.ingredientType, this.currentRecipe.ingredientAmount);
 
                // Add to output inventory
-               const item = createItem(this.currentRecipe.productType, this.currentRecipe.productAmount);
+               const item = new Item(this.currentRecipe.productType, this.currentRecipe.productAmount);
                inventoryComponent.addItemToInventory("outputInventory", item);
    
                this.heatingProgress = 0;

@@ -509,28 +509,50 @@ class GameServer {
          });
 
          socket.on("attack_packet", (attackPacket: AttackPacket) => {
-            this.processAttackPacket(socket, attackPacket);
+            if (!this.playerDataRecord.hasOwnProperty(socket.id)) {
+               return;
+            }
+
+            const player = this.playerDataRecord[socket.id].instance;
+            player.processAttackPacket(attackPacket);
          });
 
          socket.on("crafting_packet", (craftingRecipe: CraftingRecipe) => {
-            this.processCraftingPacket(socket, craftingRecipe);
+            if (!this.playerDataRecord.hasOwnProperty(socket.id)) {
+               return;
+            }
+
+            const playerData = this.playerDataRecord[socket.id];
+            playerData.instance.processCraftingPacket(craftingRecipe);
          });
 
-         socket.on("item_pickup_packet", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
-            this.processItemPickupPacket(socket, entityID, inventoryName, itemSlot, amount);
+         socket.on("item_pickup", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
+            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
+               const playerData = this.playerDataRecord[socket.id];
+               playerData.instance.processItemPickupPacket(entityID, inventoryName, itemSlot, amount);
+            }
          });
 
-         socket.on("item_release_packet", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
-            this.processItemReleasePacket(socket, entityID, inventoryName, itemSlot, amount);
+         socket.on("item_release", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
+            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
+               const playerData = this.playerDataRecord[socket.id];
+               playerData.instance.processItemReleasePacket(entityID, inventoryName, itemSlot, amount);
+            }
          });
 
          socket.on("item_use_packet", (itemSlot: number) => {
-            this.processItemUsePacket(socket, itemSlot);
+            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
+               const player = this.playerDataRecord[socket.id].instance;
+               player.processItemUsePacket(itemSlot);
+            }
          });
 
          socket.on("throw_held_item_packet", (throwDirection: number) => {
-            this.processThrowHeldItemPacket(socket, throwDirection);
-         })
+            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
+               const player = this.playerDataRecord[socket.id].instance;
+               player.throwHeldItem(throwDirection);
+            }
+         });
 
          socket.on("respawn", () => {
             this.respawnPlayer(socket);
@@ -595,7 +617,7 @@ class GameServer {
          const visibleEntities = getPlayerVisibleEntities(extendedVisibleChunkBounds);
 
          const killedEntityIDs = calculateKilledEntityIDs(extendedVisibleChunkBounds);
-         
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             entityDataArray: bundleEntityDataArray(visibleEntities),
@@ -648,46 +670,6 @@ class GameServer {
       }
    }
 
-   private processCraftingPacket(socket: ISocket, craftingRecipe: CraftingRecipe): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processCraftingPacket(craftingRecipe);
-      }
-   }
-
-   private processItemPickupPacket(socket: ISocket, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processItemPickupPacket(entityID, inventoryName, itemSlot, amount);
-      }
-   }
-
-   private processItemReleasePacket(socket: ISocket, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const playerData = this.playerDataRecord[socket.id];
-         playerData.instance.processItemReleasePacket(entityID, inventoryName, itemSlot, amount);
-      }
-   }
-
-   private processItemUsePacket(socket: ISocket, itemSlot: number): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const player = this.playerDataRecord[socket.id].instance;
-         player.processItemUsePacket(itemSlot);
-      }
-   }
-
-   private processThrowHeldItemPacket(socket: ISocket, throwDirection: number): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const player = this.playerDataRecord[socket.id].instance;
-         player.throwHeldItem(throwDirection);
-      }
-   }
-   
-   private async processAttackPacket(socket: ISocket, attackPacket: AttackPacket): Promise<void> {
-      const player = this.playerDataRecord[socket.id].instance;
-      player.processAttackPacket(attackPacket);
-   }
-
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
       const playerData = this.playerDataRecord[socket.id];
 
@@ -709,17 +691,17 @@ class GameServer {
    }
 
    private respawnPlayer(socket: ISocket): void {
-      const { username, tribe } = this.playerDataRecord[socket.id];
+      const playerData = this.playerDataRecord[socket.id];
 
       // Calculate spawn position
       let spawnPosition: Point;
-      if (tribe !== null) {
-         spawnPosition = tribe.totem.position.copy();
+      if (playerData.tribe !== null) {
+         spawnPosition = playerData.tribe.totem.position.copy();
       } else {
          spawnPosition = this.generatePlayerSpawnPosition();
       }
 
-      const playerEntity = new Player(spawnPosition, false, username, tribe);
+      const playerEntity = new Player(spawnPosition, false, playerData.username, playerData.tribe);
 
       // Update the player data's instance
       this.playerDataRecord[socket.id].instance = playerEntity;

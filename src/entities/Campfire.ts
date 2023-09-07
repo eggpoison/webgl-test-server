@@ -2,11 +2,10 @@ import { InventoryData, ItemType, ParticleType, Point, SETTINGS, Vector, lerp, r
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent, { serializeInventoryData } from "../entity-components/InventoryComponent";
-import { createItem } from "../items/item-creation";
-import CircularHitbox from "../hitboxes/CircularHitbox";
-import Particle from "../Particle";
 import Board from "../Board";
 import TexturedParticle from "../TexturedParticle";
+import CircularHitbox from "../hitboxes/CircularHitbox";
+import Item from "../items/Item";
 
 interface HeatingRecipe {
    readonly ingredientType: ItemType;
@@ -113,7 +112,7 @@ class Campfire extends Entity {
                inventoryComponent.consumeItemTypeFromInventory("ingredientInventory", this.currentRecipe.ingredientType, this.currentRecipe.ingredientAmount);
 
                // Add to output inventory
-               const item = createItem(this.currentRecipe.productType, this.currentRecipe.productAmount);
+               const item = new Item(this.currentRecipe.productType, this.currentRecipe.productAmount);
                inventoryComponent.addItemToInventory("outputInventory", item);
    
                this.heatingProgress = 0;
