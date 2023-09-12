@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BowItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -282,32 +282,12 @@ abstract class TribeMember extends Mob {
       // Register the hit
       const attackHash = this.id.toString();
       const healthComponent = targetEntity.getComponent("health")!; // Attack targets always have a health component
-      healthComponent.damage(attackDamage, attackKnockback, hitDirection, this, PlayerCauseOfDeath.tribe_member, attackHash);
+      const hitFlags = item !== null && item.type === ItemType.flesh_sword ? HitFlags.HIT_BY_FLESH_SWORD : 0
+      healthComponent.damage(attackDamage, attackKnockback, hitDirection, this, PlayerCauseOfDeath.tribe_member, hitFlags, attackHash);
       targetEntity.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
 
       if (item !== null && item.type === ItemType.flesh_sword) {
          targetEntity.applyStatusEffect("poisoned", 3);
-
-         // @Incomplete
-
-         // // Create slime puddle
-         // const spawnPosition = targetEntity.position.copy();
-         // const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-         // spawnPosition.add(offset);
-   
-         // const lifetime = 7.5;
-         
-         // new TexturedParticle({
-         //    type: ParticleType.slimePuddle,
-         //    spawnPosition: spawnPosition,
-         //    initialVelocity: null,
-         //    initialAcceleration: null,
-         //    initialRotation: 2 * Math.PI * Math.random(),
-         //    opacity: (age: number): number => {
-         //       return lerp(0.75, 0, age / lifetime);
-         //    },
-         //    lifetime: lifetime
-         // });
       }
 
       this.lastAttackTicks = Board.ticks;
@@ -493,7 +473,7 @@ abstract class TribeMember extends Mob {
                   }
                   
                   const hitDirection = arrowProjectile.position.calculateAngleBetween(collidingEntity.position);
-                  healthComponent.damage(itemInfo.projectileDamage, itemInfo.projectileKnockback, hitDirection, this, PlayerCauseOfDeath.arrow, attackHash);
+                  healthComponent.damage(itemInfo.projectileDamage, itemInfo.projectileKnockback, hitDirection, this, PlayerCauseOfDeath.arrow, 0, attackHash);
                   healthComponent.addLocalInvulnerabilityHash(attackHash, 0.3);
                }
             });

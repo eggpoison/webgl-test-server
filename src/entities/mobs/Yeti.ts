@@ -169,7 +169,7 @@ class Yeti extends Mob {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(Yeti.CONTACT_DAMAGE, Yeti.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.yeti, "yeti");
+            healthComponent.damage(Yeti.CONTACT_DAMAGE, Yeti.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.yeti, 0, "yeti");
             healthComponent.addLocalInvulnerabilityHash("yeti", 0.3);
          }
       });
@@ -291,7 +291,7 @@ class Yeti extends Mob {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(4, 100, hitDirection, null, PlayerCauseOfDeath.snowball);
+            healthComponent.damage(4, 100, hitDirection, null, PlayerCauseOfDeath.snowball, 0);
             healthComponent.addLocalInvulnerabilityHash("snowball", 0.3);
          }
       });

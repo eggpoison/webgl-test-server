@@ -27,8 +27,7 @@ class Cow extends Mob {
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
       this.setAIParam("hunger", randInt(0, 50));
-      // this.setAIParam("metabolism", 2.5);
-      this.setAIParam("metabolism", 40);
+      this.setAIParam("metabolism", 2.5);
 
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,

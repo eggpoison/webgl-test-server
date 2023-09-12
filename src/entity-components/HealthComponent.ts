@@ -92,7 +92,7 @@ class HealthComponent extends Component {
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
-   public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, attackHash?: string): boolean {
+   public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, hitFlags: number, attackHash?: string): boolean {
       if (this.isInvulnerable(attackHash) || this.isDead()) return false;
 
       this.entity.callEvents("hurt", damage, attackingEntity, knockback, hitDirection);
@@ -121,7 +121,8 @@ class HealthComponent extends Component {
 
       this.hitsTaken.push({
          knockback: knockback,
-         angleFromAttacker: hitDirection
+         angleFromAttacker: hitDirection,
+         flags: hitFlags
       });
       
       if (this.hasGlobalInvulnerability) {

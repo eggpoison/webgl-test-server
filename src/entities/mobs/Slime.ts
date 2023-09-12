@@ -181,7 +181,7 @@ class Slime extends Mob {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const contactDamage = Slime.CONTACT_DAMAGE[this.size];
-            healthComponent.damage(contactDamage, 0, null, this, PlayerCauseOfDeath.slime, "slime");
+            healthComponent.damage(contactDamage, 0, null, this, PlayerCauseOfDeath.slime, 0, "slime");
             healthComponent.addLocalInvulnerabilityHash("slime", 0.3);
          }
       });

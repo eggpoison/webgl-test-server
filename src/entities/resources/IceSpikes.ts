@@ -71,7 +71,7 @@ class IceSpikes extends Entity {
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
             
-            healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.ice_spikes, "ice_spikes");
+            healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.ice_spikes, 0, "ice_spikes");
             healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
 
             collidingEntity.applyStatusEffect("freezing", 5);
@@ -147,11 +147,11 @@ class IceSpikes extends Entity {
             if (healthComponent !== null) {
                if (collidingEntity.type === "ice_spikes") {
                   // Instantly destroy ice spikes
-                  healthComponent.damage(99999, 0, 0, null, PlayerCauseOfDeath.ice_spikes);
+                  healthComponent.damage(99999, 0, 0, null, PlayerCauseOfDeath.ice_spikes, 0);
                } else {
                   const hitDirection = projectile.position.calculateAngleBetween(collidingEntity.position);
    
-                  healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, PlayerCauseOfDeath.ice_shards, "ice_shards");
+                  healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, PlayerCauseOfDeath.ice_shards, 0, "ice_shards");
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
                   if (collidingEntity.type !== "yeti") {

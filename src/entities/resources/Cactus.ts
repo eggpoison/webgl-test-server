@@ -109,7 +109,7 @@ class Cactus extends Entity {
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-            healthComponent.damage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.cactus, "cactus");
+            healthComponent.damage(Cactus.CONTACT_DAMAGE, Cactus.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.cactus, 0, "cactus");
             healthComponent.addLocalInvulnerabilityHash("cactus", 0.3);
          }
       });

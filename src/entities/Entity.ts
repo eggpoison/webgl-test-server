@@ -130,14 +130,14 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          } else {
             // Fire tick
             if (this.statusEffects.burning!.ticksElapsed % 15 === 0) {
-               this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire);
+               this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
             }
          }
       }
 
       if (this.hasStatusEffect("poisoned")) {
          if (this.statusEffects.poisoned!.ticksElapsed % 10 === 0) {
-            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.poison);
+            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
          }
       }
    }

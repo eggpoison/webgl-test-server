@@ -13,7 +13,7 @@ const killPlayer = (username: string): void => {
    if (player === null) return;
 
    // Kill the player
-   player.getComponent("health")!.damage(999999, 0, null, null, PlayerCauseOfDeath.god);
+   player.getComponent("health")!.damage(999999, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const damagePlayer = (username: string, damage: number): void => {
@@ -21,7 +21,7 @@ const damagePlayer = (username: string, damage: number): void => {
    if (player === null) return;
 
    // Damage the player
-   player.getComponent("health")!.damage(damage, 0, null, null, PlayerCauseOfDeath.god);
+   player.getComponent("health")!.damage(damage, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const healPlayer = (username: string, healing: number): void => {

@@ -89,7 +89,7 @@ class Zombie extends Mob {
             const healthBeforeAttack = playerHealthComponent.getHealth();
 
             // Damage and knock back the player
-            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.zombie, "zombie");
+            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.zombie, 0, "zombie");
             playerHealthComponent.addLocalInvulnerabilityHash("zombie", 0.3);
 
             // Push the zombie away from the entity
