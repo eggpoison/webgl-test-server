@@ -252,9 +252,6 @@ class Yeti extends Mob {
       for (let i = 0; i < numSmallProjectiles; i++) {
          this.createSnowball(SnowballSize.small, throwAngle);
       }
-
-      // @Incomplete
-      // this.createSnowImpactParticles(throwAngle);
    }
 
    private createSnowball(size: SnowballSize, throwAngle: number): void {
@@ -299,36 +296,6 @@ class Yeti extends Mob {
          }
       });
    }
-
-   // private createSnowImpactParticles(throwAngle: number): void {
-   //    const impactPosition = this.position.copy();
-   //    const offset = new Vector(Yeti.SNOW_THROW_OFFSET + 20, throwAngle).convertToPoint();
-   //    impactPosition.add(offset);
-      
-   //    for (let i = 0; i < 30; i++) {
-   //       const position = impactPosition.copy();
-   //       const offset = new Vector(randFloat(0, 20), 2 * Math.PI * Math.random()).convertToPoint();
-   //       position.add(offset);
-         
-   //       const lifetime = randFloat(0.8, 0.12);
-
-   //       // TODO: Return varied colour
-      
-   //       new MonocolourParticle({
-   //          type: ParticleType.snow,
-   //          spawnPosition: position,
-   //          initialVelocity: new Vector(randFloat(40, 100), 2 * Math.PI * Math.random()),
-   //          initialAcceleration: null,
-   //          initialRotation: 2 * Math.PI * Math.random(),
-   //          angularVelocity: randFloat(-30, 30),
-   //          opacity: (age: number): number => {
-   //             return 1 - Math.pow(age / lifetime, 0.4);
-   //          },
-   //          lifetime: lifetime,
-   //          scale: 2
-   //       });
-   //    }  
-   // }
 
    public getClientArgs(): [attackProgress: number] {
       return [this.snowThrowAttackProgress];

@@ -27,7 +27,8 @@ class Cow extends Mob {
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
       this.setAIParam("hunger", randInt(0, 50));
-      this.setAIParam("metabolism", 2.5);
+      // this.setAIParam("metabolism", 2.5);
+      this.setAIParam("metabolism", 40);
 
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
@@ -112,8 +113,17 @@ class Cow extends Mob {
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
    }
 
-   public getClientArgs(): [species: CowSpecies] {
-      return [this.species];
+   public getClientArgs(): [species: CowSpecies, grazeProgress: number] {
+      const currentAI = this.getCurrentAI();
+      
+      let grazeProgress;
+      if (currentAI !== null && currentAI.type === "tileConsume") {
+         grazeProgress = (currentAI as TileConsumeAI).getGrazeProgress();
+      } else {
+         grazeProgress = -1;
+      }
+
+      return [this.species, grazeProgress];
    }
 }
 

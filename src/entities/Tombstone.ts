@@ -14,7 +14,6 @@ class Tombstone extends Entity {
    
    /** Average number of zombies that are created by the tombstone in a second */
    private static readonly ZOMBIE_SPAWN_RATE = 0.05;
-   // private static readonly ZOMBIE_SPAWN_RATE = 0.75;
    /** Distance the zombies spawn from the tombstone */
    private static readonly ZOMBIE_SPAWN_DISTANCE = 48;
    /** Maximum amount of zombies that can be spawned by one tombstone */
@@ -95,47 +94,12 @@ class Tombstone extends Entity {
       }
 
       if (this.isSpawningZombie) {
-         // @Incomplete
-         // const spawnProgress = this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME;
-         // if (spawnProgress < 0.8) {
-         //    if (Math.random() < 7.5 / SETTINGS.TPS) {
-         //       this.createDirtParticle();
-         //    }
-         // } else {
-         //    if (Math.random() < 20 / SETTINGS.TPS) {
-         //       this.createDirtParticle();
-         //    }
-         // }
-         
          this.zombieSpawnTimer += 1 / SETTINGS.TPS;
          if (this.zombieSpawnTimer >= Tombstone.ZOMBIE_SPAWN_TIME) {
             this.spawnZombie();
          }
       }
    }
-
-   // private createDirtParticle(): void {
-   //    const spawnPosition = this.zombieSpawnPosition.copy();
-   //    const offset = new Vector(10 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-   //    spawnPosition.add(offset);
-
-   //    if (!Board.isInBoard(spawnPosition)) return;
-
-   //    const speedMultiplier = randFloat(1, 2.2);
-      
-   //    new TexturedParticle({
-   //       type: ParticleType.dirt,
-   //       spawnPosition: spawnPosition,
-   //       initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
-   //       initialAcceleration: null,
-   //       initialRotation: 2 * Math.PI * Math.random(),
-   //       angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
-   //       angularAcceleration: -4 * speedMultiplier,
-   //       opacity: 1,
-   //       drag: 300,
-   //       lifetime: 1.5
-   //    });
-   // }
 
    private spawnZombie(): void {
       // Note: tombstone type 0 is the golden tombstone
@@ -152,8 +116,14 @@ class Tombstone extends Entity {
       this.isSpawningZombie = false;
    }
 
-   public getClientArgs(): [tombstoneType: number, deathInfo: DeathInfo | null] {
-      return [this.tombstoneType, this.deathInfo];
+   public getClientArgs(): [tombstoneType: number, zombieSpawnProgress: number, zombieSpawnX: number, zombieSpawnY: number, deathInfo: DeathInfo | null] {
+      return [
+         this.tombstoneType,
+         this.isSpawningZombie ? this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME : -1,
+         this.isSpawningZombie ? this.zombieSpawnPosition.x : -1,
+         this.isSpawningZombie ? this.zombieSpawnPosition.y : -1,
+         this.deathInfo
+      ];
    }
 }
 

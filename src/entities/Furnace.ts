@@ -61,7 +61,7 @@ class Furnace extends Entity {
    
    private static readonly SIZE = 80;
 
-   private heatingProgress = 0;
+   private heatingTimer = 0;
    private currentRecipe: HeatingRecipe | null = null;
    private remainingHeat = 0;
    
@@ -105,8 +105,8 @@ class Furnace extends Entity {
          }
 
          if (this.remainingHeat > 0) {
-            this.heatingProgress += 1 / SETTINGS.TPS;
-            if (this.heatingProgress >= this.currentRecipe.heatingTime) {
+            this.heatingTimer += 1 / SETTINGS.TPS;
+            if (this.heatingTimer >= this.currentRecipe.heatingTime) {
                // Remove from ingredient inventory
                inventoryComponent.consumeItemTypeFromInventory("ingredientInventory", this.currentRecipe.ingredientType, this.currentRecipe.ingredientAmount);
 
@@ -114,51 +114,22 @@ class Furnace extends Entity {
                const item = new Item(this.currentRecipe.productType, this.currentRecipe.productAmount);
                inventoryComponent.addItemToInventory("outputInventory", item);
    
-               this.heatingProgress = 0;
+               this.heatingTimer = 0;
                this.currentRecipe = null;
             }
 
             this.remainingHeat -= 1 / SETTINGS.TPS;
-
-            // @Incomplete
-            // if (Board.tickIntervalHasPassed(0.1)) {
-            //    this.createSmokeParticle();
-            // }
          }
       }
    }
 
-   // private createSmokeParticle(): void {
-   //    const spawnPosition = this.position.copy();
-   //    const offset = new Vector(5 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-   //    spawnPosition.add(offset);
-
-   //    const lifetime = 1.5;
-      
-   //    new TexturedParticle({
-   //       type: ParticleType.smokeBlack,
-   //       spawnPosition: spawnPosition,
-   //       initialVelocity: new Vector(30, 0),
-   //       initialAcceleration: new Vector(80, 0),
-   //       initialRotation: 2 * Math.PI * Math.random(),
-   //       angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
-   //       opacity: (age: number): number => {
-   //          return lerp(0.5, 0, age / lifetime);
-   //       },
-   //       scale: (age: number): number => {
-   //          const deathProgress = age / lifetime
-   //          return 1 + deathProgress * 2;
-   //       },
-   //       lifetime: lifetime
-   //    });
-   // }
-
-   public getClientArgs(): [fuelInventory: InventoryData, ingredientInveotry: InventoryData, outputInventory: InventoryData] {
+   public getClientArgs(): [fuelInventory: InventoryData, ingredientInveotry: InventoryData, outputInventory: InventoryData, heatingProgress: number] {
       const inventoryComponent = this.getComponent("inventory")!;
       return [
          serializeInventoryData(inventoryComponent.getInventory("fuelInventory"), "fuelInventory"),
          serializeInventoryData(inventoryComponent.getInventory("ingredientInventory"), "ingredientInventory"),
-         serializeInventoryData(inventoryComponent.getInventory("outputInventory"), "outputInventory")
+         serializeInventoryData(inventoryComponent.getInventory("outputInventory"), "outputInventory"),
+         this.currentRecipe !== null ? this.heatingTimer / this.currentRecipe.heatingTime : -1
       ];
    }
 }
