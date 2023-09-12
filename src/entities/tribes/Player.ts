@@ -1,6 +1,6 @@
-import { AttackPacket, canCraftRecipe, CraftingRecipe, InventoryData, ItemData, ItemType, PlayerInventoryData, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BackpackItemInfo, canCraftRecipe, CRAFTING_RECIPES, CraftingRecipe, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import Item, { getItemStackSize } from "../../items/Item";
+import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
@@ -8,17 +8,7 @@ import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
 
-const bundleItemData = (item: Item): ItemData => {
-   return {
-      type: item.type,
-      count: item.count,
-      id: item.id
-   };
-}
-
 class Player extends TribeMember {
-   private static readonly DEFAULT_KNOCKBACK = 100;
-
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
    private static readonly ITEM_THROW_FORCE = 100;
    private static readonly ITEM_THROW_OFFSET = 32;
@@ -32,8 +22,6 @@ class Player extends TribeMember {
 
    public readonly username: string;
 
-   protected footstepInterval = 0.15;
-
    constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
       super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
 
@@ -43,7 +31,7 @@ class Player extends TribeMember {
 
       const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
-      inventoryComponent.createNewInventory("backpack", 0, 0, true);
+      inventoryComponent.createNewInventory("backpack", -1, -1, true);
       inventoryComponent.createNewInventory("backpackItemSlot", 1, 1, false);
       inventoryComponent.createNewInventory("craftingOutputSlot", 1, 1, false);
       inventoryComponent.createNewInventory("heldItemSlot", 1, 1, false);
@@ -92,14 +80,21 @@ class Player extends TribeMember {
       return closestEntity;
    }
 
-   public processCraftingPacket(craftingRecipe: CraftingRecipe): void {
+   public processCraftingPacket(recipeIndex: number): void {
+      if (recipeIndex < 0 || recipeIndex >= CRAFTING_RECIPES.length) {
+         return;
+      }
+      
       const inventoryComponent = this.getComponent("inventory")!;
+      const craftingRecipe = CRAFTING_RECIPES[recipeIndex];
       
       // Don't craft past items' stack size
       const craftingOutputInventory = inventoryComponent.getInventory("craftingOutputSlot");
-      const craftingOutputItem = craftingOutputInventory.itemSlots.hasOwnProperty(1) ? craftingOutputInventory.itemSlots[1] : null;
-      if (craftingOutputItem !== null && (craftingOutputItem.type !== craftingRecipe.product || !craftingOutputItem.hasOwnProperty("stackSize") || craftingOutputItem.count + craftingRecipe.yield > getItemStackSize(craftingOutputItem))) {
-         return;
+      if (craftingOutputInventory.itemSlots.hasOwnProperty(1)) {
+         const craftingOutputItem = craftingOutputInventory.itemSlots[1];
+         if ((craftingOutputItem.type !== craftingRecipe.product || !itemIsStackable(craftingOutputItem.type) || craftingOutputItem.count + craftingRecipe.yield > getItemStackSize(craftingOutputItem))) {
+            return;
+         }
       }
       
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
@@ -107,7 +102,7 @@ class Player extends TribeMember {
 
       if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe, SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)) {
          // Consume ingredients
-         for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients) as unknown as ReadonlyArray<[ItemType, number]>) {
+         for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
             // Prioritise consuming ingredients from the backpack inventory first
             const amountConsumedFromBackpackInventory = inventoryComponent.consumeItemTypeFromInventory("backpack", ingredientType, ingredientCount);
 
@@ -170,6 +165,12 @@ class Player extends TribeMember {
 
       // If all of the item was added, clear the held item
       playerInventoryComponent.consumeItemTypeFromInventory("heldItemSlot", heldItem.type, amountAdded);
+
+      // If the player put a backpack into the backpack slot, update their backpack
+      if (entityID === this.id && inventoryName === "backpackItemSlot") {
+         const itemInfo = ITEM_INFO_RECORD[heldItem.type] as BackpackItemInfo;
+         playerInventoryComponent.resizeInventory("backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
+      }
    }
 
    public processAttackPacket(attackPacket: AttackPacket): void {
@@ -211,37 +212,6 @@ class Player extends TribeMember {
          
          inventoryComponent.removeItemFromInventory("heldItemSlot", 1);
       }
-   }
-
-   /**
-    * Bundles the player's items into a format which can be transferred between the server and client.
-    */
-   public bundleInventoryData(): PlayerInventoryData {
-      const inventoryData: PlayerInventoryData = {
-         hotbar: this.bundleInventory("hotbar"),
-         backpackInventory: this.bundleInventory("backpack"),
-         backpackSlot: this.bundleInventory("backpackItemSlot"),
-         heldItemSlot: this.bundleInventory("heldItemSlot"),
-         craftingOutputItemSlot: this.bundleInventory("craftingOutputSlot"),
-         armourSlot: this.bundleInventory("armourSlot")
-      };
-
-      return inventoryData;
-   }
-
-   private bundleInventory(inventoryName: string): InventoryData {
-      const inventory = this.getComponent("inventory")!.getInventory(inventoryName);
-
-      const inventoryData: InventoryData = {
-         itemSlots: {},
-         width: inventory.width,
-         height: inventory.height,
-         inventoryName: inventoryName
-      };
-      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
-         inventoryData.itemSlots[itemSlot] = bundleItemData(item);
-      }
-      return inventoryData;
    }
 
    public setTribe(tribe: Tribe | null): void {

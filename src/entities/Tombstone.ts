@@ -1,11 +1,10 @@
-import { DeathInfo, ParticleType, Point, randFloat, randItem, randSign, SETTINGS, Vector } from "webgl-test-shared";
+import { DeathInfo, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
 import Board from "../Board";
 import TombstoneDeathManager from "../tombstone-deaths";
-import TexturedParticle from "../TexturedParticle";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
@@ -96,16 +95,17 @@ class Tombstone extends Entity {
       }
 
       if (this.isSpawningZombie) {
-         const spawnProgress = this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME;
-         if (spawnProgress < 0.8) {
-            if (Math.random() < 7.5 / SETTINGS.TPS) {
-               this.createDirtParticle();
-            }
-         } else {
-            if (Math.random() < 20 / SETTINGS.TPS) {
-               this.createDirtParticle();
-            }
-         }
+         // @Incomplete
+         // const spawnProgress = this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME;
+         // if (spawnProgress < 0.8) {
+         //    if (Math.random() < 7.5 / SETTINGS.TPS) {
+         //       this.createDirtParticle();
+         //    }
+         // } else {
+         //    if (Math.random() < 20 / SETTINGS.TPS) {
+         //       this.createDirtParticle();
+         //    }
+         // }
          
          this.zombieSpawnTimer += 1 / SETTINGS.TPS;
          if (this.zombieSpawnTimer >= Tombstone.ZOMBIE_SPAWN_TIME) {
@@ -114,28 +114,28 @@ class Tombstone extends Entity {
       }
    }
 
-   private createDirtParticle(): void {
-      const spawnPosition = this.zombieSpawnPosition.copy();
-      const offset = new Vector(10 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
+   // private createDirtParticle(): void {
+   //    const spawnPosition = this.zombieSpawnPosition.copy();
+   //    const offset = new Vector(10 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+   //    spawnPosition.add(offset);
 
-      if (!Board.isInBoard(spawnPosition)) return;
+   //    if (!Board.isInBoard(spawnPosition)) return;
 
-      const speedMultiplier = randFloat(1, 2.2);
+   //    const speedMultiplier = randFloat(1, 2.2);
       
-      new TexturedParticle({
-         type: ParticleType.dirt,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
-         angularAcceleration: -4 * speedMultiplier,
-         opacity: 1,
-         drag: 300,
-         lifetime: 1.5
-      });
-   }
+   //    new TexturedParticle({
+   //       type: ParticleType.dirt,
+   //       spawnPosition: spawnPosition,
+   //       initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
+   //       initialAcceleration: null,
+   //       initialRotation: 2 * Math.PI * Math.random(),
+   //       angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
+   //       angularAcceleration: -4 * speedMultiplier,
+   //       opacity: 1,
+   //       drag: 300,
+   //       lifetime: 1.5
+   //    });
+   // }
 
    private spawnZombie(): void {
       // Note: tombstone type 0 is the golden tombstone

@@ -17,7 +17,7 @@ export function findAvailableEntityID(): number {
 
 export type GameObject = Entity | DroppedItem | Projectile;
 
-export interface GameObjectSubclasses {
+interface GameObjectSubclasses {
    entity: Entity;
    droppedItem: DroppedItem;
    projectile: Projectile;

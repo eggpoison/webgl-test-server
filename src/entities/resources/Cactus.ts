@@ -1,10 +1,8 @@
-import { CactusBodyFlowerData, CactusFlowerSize, CactusLimbData, CactusLimbFlowerData, ItemType, ParticleType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
+import { CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import Particle from "../../Particle";
-import TexturedParticle from "../../TexturedParticle";
 
 const generateRandomFlowers = (): ReadonlyArray<CactusBodyFlowerData> => {
    // Generate random number of flowers from 1 to 5, weighted low
@@ -74,8 +72,6 @@ class Cactus extends Entity {
 
    public static readonly LIMB_PADDING = 10;
 
-   private static readonly FLOWER_PARTICLE_FADE_TIME = 1;
-
    private readonly flowers: ReadonlyArray<CactusBodyFlowerData>;
    private readonly limbs: ReadonlyArray<CactusLimbData>;
 
@@ -117,99 +113,6 @@ class Cactus extends Entity {
             healthComponent.addLocalInvulnerabilityHash("cactus", 0.3);
          }
       });
-
-      this.createEvent("death", (): void => {
-         this.createFlowerParticles();
-      });
-   }
-
-   private createFlowerParticles(): void {
-      for (const flower of this.flowers) {
-         const flowerPosition = this.position.copy();
-         const offsetDirection = flower.column * Math.PI / 4;
-         const flowerOffset = new Vector(flower.height, offsetDirection).convertToPoint();
-         flowerPosition.add(flowerOffset);
-
-         this.createFlowerParticle(flowerPosition, flower.type, flower.size, flower.rotation);
-      }
-
-      for (const limb of this.limbs) {
-         if (typeof limb.flower !== "undefined") {
-            const limbPosition = this.position.copy();
-            const offset = new Vector(Cactus.RADIUS, limb.direction).convertToPoint();
-            limbPosition.add(offset);
-
-            const flowerPosition = limbPosition.copy();
-            const flowerOffset = new Vector(limb.flower.height, limb.flower.direction).convertToPoint();
-            flowerPosition.add(flowerOffset);
-
-            this.createFlowerParticle(flowerPosition, limb.flower.type, CactusFlowerSize.small, limb.flower.rotation);
-         }
-      }
-   }
-
-   private createFlowerParticle(spawnPosition: Point, flowerType: number, size: CactusFlowerSize, rotation: number): void {
-      const particleType = this.getFlowerParticleType(flowerType, size);
-      
-      const lifetime = randFloat(3, 5);
-      
-      new TexturedParticle({
-         type: particleType,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(randFloat(30, 50), 2 * Math.PI * Math.random()),
-         drag: 75,
-         initialAcceleration: null,
-         initialRotation: rotation,
-         angularVelocity: Math.PI * randFloat(-1, 1),
-         angularDrag: 1.5 * Math.PI,
-         opacity: (age: number): number => {
-            if (age < lifetime - Cactus.FLOWER_PARTICLE_FADE_TIME) {
-               return 1;
-            } else {
-               return lerp(1, 0, (age - (lifetime - Cactus.FLOWER_PARTICLE_FADE_TIME)) / Cactus.FLOWER_PARTICLE_FADE_TIME);
-            }
-         },
-         lifetime: lifetime
-      });
-   }
-
-   private getFlowerParticleType(flowerType: number, size: CactusFlowerSize): ParticleType {
-      switch (flowerType) {
-         case 0: {
-            if (size === CactusFlowerSize.small) {
-               return ParticleType.cactusFlower1;
-            } else {
-               return ParticleType.cactusFlower1_2;
-            }
-         }
-         case 1: {
-            if (size === CactusFlowerSize.small) {
-               return ParticleType.cactusFlower2;
-            } else {
-               return ParticleType.cactusFlower2_2;
-            }
-         }
-         case 2: {
-            if (size === CactusFlowerSize.small) {
-               return ParticleType.cactusFlower3;
-            } else {
-               return ParticleType.cactusFlower3_2;
-            }
-         }
-         case 3: {
-            if (size === CactusFlowerSize.small) {
-               return ParticleType.cactusFlower4;
-            } else {
-               return ParticleType.cactusFlower4_2;
-            }
-         }
-         case 4: {
-            return ParticleType.cactusFlower5;
-         }
-         default: {
-            throw new Error(`Unknown flower type '${flowerType}.`);
-         }
-      }
    }
 
    public getClientArgs(): [flowers: ReadonlyArray<CactusBodyFlowerData>, limbs: ReadonlyArray<CactusLimbData>] {

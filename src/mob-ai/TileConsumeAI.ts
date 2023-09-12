@@ -1,10 +1,7 @@
-import { ParticleType, Point, SETTINGS, TileInfo, TileType, Vector, randFloat, randSign } from "webgl-test-shared";
+import { SETTINGS, TileInfo, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import Tile from "../tiles/Tile";
 import AI, { BaseAIParams } from "./AI";
-import Particle from "../Particle";
-import Board from "../Board";
-import TexturedParticle from "../TexturedParticle";
 
 type FoodSource = {
    /** Amount of food given by eating the source */
@@ -55,12 +52,13 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
       super.tick();
 
       if (this.canGraze()) {
-         if (Board.tickIntervalHasPassed(0.1)) {
-            const spawnPosition = this.mob.position.copy();
-            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random());
-            spawnPosition.add(offset.convertToPoint());
-            this.createDirtParticle(spawnPosition);
-         }
+         // @Incomplete
+         // if (Board.tickIntervalHasPassed(0.1)) {
+         //    const spawnPosition = this.mob.position.copy();
+         //    const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random());
+         //    spawnPosition.add(offset.convertToPoint());
+         //    this.createDirtParticle(spawnPosition);
+         // }
 
          this.grazeTimer -= 1 / SETTINGS.TPS;
          if (this.grazeTimer <= 0) {
@@ -88,34 +86,35 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
 
       this.mob.setAIParam("hunger", 0);
 
-      for (let i = 0; i < 15; i++) {
-         const x = (previousTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (previousTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-         const spawnPosition = new Point(x, y);
-         this.createDirtParticle(spawnPosition);
-      }
+      // @Incomplete
+      // for (let i = 0; i < 15; i++) {
+      //    const x = (previousTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      //    const y = (previousTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      //    const spawnPosition = new Point(x, y);
+      //    this.createDirtParticle(spawnPosition);
+      // }
    }
 
-   private createDirtParticle(spawnPosition: Point): void {
-      const speedMultiplier = randFloat(1, 2.2);
+   // private createDirtParticle(spawnPosition: Point): void {
+   //    const speedMultiplier = randFloat(1, 2.2);
 
-      const lifetime = randFloat(1, 1.5);
+   //    const lifetime = randFloat(1, 1.5);
 
-      new TexturedParticle({
-         type: ParticleType.dirt,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
-         angularAcceleration: -4 * speedMultiplier,
-         opacity: (age: number) => {
-            return Math.pow(1 - age / lifetime, 0.5);
-         },
-         drag: 300,
-         lifetime: lifetime
-      });
-   }
+   //    new TexturedParticle({
+   //       type: ParticleType.dirt,
+   //       spawnPosition: spawnPosition,
+   //       initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
+   //       initialAcceleration: null,
+   //       initialRotation: 2 * Math.PI * Math.random(),
+   //       angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
+   //       angularAcceleration: -4 * speedMultiplier,
+   //       opacity: (age: number) => {
+   //          return Math.pow(1 - age / lifetime, 0.5);
+   //       },
+   //       drag: 300,
+   //       lifetime: lifetime
+   //    });
+   // }
 
    protected _getWeight(): number {
       const hunger = this.mob.getAIParam("hunger")!;

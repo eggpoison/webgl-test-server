@@ -1,10 +1,8 @@
-import { InventoryData, ItemType, ParticleType, Point, SETTINGS, Vector, lerp, randFloat } from "webgl-test-shared";
+import { InventoryData, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent, { serializeInventoryData } from "../entity-components/InventoryComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-import Board from "../Board";
-import TexturedParticle from "../TexturedParticle";
 import Item from "../items/Item";
 
 interface HeatingRecipe {
@@ -121,37 +119,39 @@ class Furnace extends Entity {
             }
 
             this.remainingHeat -= 1 / SETTINGS.TPS;
-            if (Board.tickIntervalHasPassed(0.1)) {
-               this.createSmokeParticle();
-            }
+
+            // @Incomplete
+            // if (Board.tickIntervalHasPassed(0.1)) {
+            //    this.createSmokeParticle();
+            // }
          }
       }
    }
 
-   private createSmokeParticle(): void {
-      const spawnPosition = this.position.copy();
-      const offset = new Vector(5 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
+   // private createSmokeParticle(): void {
+   //    const spawnPosition = this.position.copy();
+   //    const offset = new Vector(5 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+   //    spawnPosition.add(offset);
 
-      const lifetime = 1.5;
+   //    const lifetime = 1.5;
       
-      new TexturedParticle({
-         type: ParticleType.smokeBlack,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(30, 0),
-         initialAcceleration: new Vector(80, 0),
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
-         opacity: (age: number): number => {
-            return lerp(0.5, 0, age / lifetime);
-         },
-         scale: (age: number): number => {
-            const deathProgress = age / lifetime
-            return 1 + deathProgress * 2;
-         },
-         lifetime: lifetime
-      });
-   }
+   //    new TexturedParticle({
+   //       type: ParticleType.smokeBlack,
+   //       spawnPosition: spawnPosition,
+   //       initialVelocity: new Vector(30, 0),
+   //       initialAcceleration: new Vector(80, 0),
+   //       initialRotation: 2 * Math.PI * Math.random(),
+   //       angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
+   //       opacity: (age: number): number => {
+   //          return lerp(0.5, 0, age / lifetime);
+   //       },
+   //       scale: (age: number): number => {
+   //          const deathProgress = age / lifetime
+   //          return 1 + deathProgress * 2;
+   //       },
+   //       lifetime: lifetime
+   //    });
+   // }
 
    public getClientArgs(): [fuelInventory: InventoryData, ingredientInveotry: InventoryData, outputInventory: InventoryData] {
       const inventoryComponent = this.getComponent("inventory")!;

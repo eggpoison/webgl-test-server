@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, CraftingRecipe, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, GameObjectData, Mutable, VisibleChunkBounds, StatusEffectType, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, MonocolourParticleData, TexturedParticleData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
-import _GameObject, { GameObjectEvents, GameObjectSubclasses } from "./GameObject";
+import _GameObject from "./GameObject";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import Mob from "./entities/mobs/Mob";
@@ -15,8 +15,8 @@ import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import TexturedParticle from "./TexturedParticle";
 import Chunk from "./Chunk";
+import Item from "./items/Item";
 
 /*
 
@@ -165,57 +165,6 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    return projectileDataArray;
 }
 
-const packagePlayerParticles = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<MonocolourParticleData | TexturedParticleData> => {
-   const particles = new Array<MonocolourParticleData | TexturedParticleData>();
-
-   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
-      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-         const chunk = Board.getChunk(chunkX, chunkY);
-         for (const particle of chunk.getParticles()) {
-            let opacity: number;
-            if (typeof particle.opacity === "number") {
-               opacity = particle.opacity;
-            } else {
-               opacity = particle.opacity(particle.getAge());
-            }
-
-            if (particle.hasOwnProperty("colour")) {
-               // Monocolour
-               particles.push({
-                  id: particle.id,
-                  type: particle.type,
-                  position: particle.position.package(),
-                  velocity: particle.velocity?.package() || null,
-                  acceleration: particle.acceleration?.package() || null,
-                  rotation: particle.rotation,
-                  opacity: opacity,
-                  scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
-                  age: particle.getAge(),
-                  lifetime: particle.lifetime
-               });
-            } else {
-               // Textured
-               particles.push({
-                  id: particle.id,
-                  type: particle.type,
-                  position: particle.position.package(),
-                  velocity: particle.velocity?.package() || null,
-                  acceleration: particle.acceleration?.package() || null,
-                  rotation: particle.rotation,
-                  opacity: opacity,
-                  scale: typeof particle.scale !== "number" ? particle.scale(particle.getAge()) : particle.scale,
-                  age: particle.getAge(),
-                  lifetime: particle.lifetime,
-                  tint: (particle as TexturedParticle).tint
-               });
-            }
-         }
-      }
-   }
-
-   return particles;
-}
-
 const calculateKilledEntityIDs = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<number> => {
    const visibleChunks = new Set<Chunk>();
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
@@ -304,8 +253,6 @@ class GameServer {
       Board.removeFlaggedGameObjects();
       
       Board.pushJoinBuffer();
-
-      Board.updateParticles();
 
       Board.updateTribes();
 
@@ -433,7 +380,6 @@ class GameServer {
                entityDataArray: bundleEntityDataArray(visibleEntities),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
-               particles: packagePlayerParticles(playerData.visibleChunkBounds),
                inventory: {
                   hotbar: {
                      itemSlots: {},
@@ -517,13 +463,13 @@ class GameServer {
             player.processAttackPacket(attackPacket);
          });
 
-         socket.on("crafting_packet", (craftingRecipe: CraftingRecipe) => {
+         socket.on("crafting_packet", (recipeIndex: number) => {
             if (!this.playerDataRecord.hasOwnProperty(socket.id)) {
                return;
             }
 
             const playerData = this.playerDataRecord[socket.id];
-            playerData.instance.processCraftingPacket(craftingRecipe);
+            playerData.instance.processCraftingPacket(recipeIndex);
          });
 
          socket.on("item_pickup", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
@@ -623,8 +569,7 @@ class GameServer {
             entityDataArray: bundleEntityDataArray(visibleEntities),
             droppedItemDataArray: bundleDroppedItemDataArray(extendedVisibleChunkBounds),
             projectileDataArray: bundleProjectileDataArray(extendedVisibleChunkBounds),
-            particles: packagePlayerParticles(extendedVisibleChunkBounds),
-            inventory: player.bundleInventoryData(),
+            inventory: this.bundlePlayerInventoryData(player),
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
@@ -640,6 +585,38 @@ class GameServer {
 
       // Reset the killed entity IDs
       Board.killedEntities = [];
+   }
+
+   private bundlePlayerInventoryData(player: Player): PlayerInventoryData {
+      const inventoryData: PlayerInventoryData = {
+         hotbar: this.bundleInventory(player, "hotbar"),
+         backpackInventory: this.bundleInventory(player, "backpack"),
+         backpackSlot: this.bundleInventory(player, "backpackItemSlot"),
+         heldItemSlot: this.bundleInventory(player, "heldItemSlot"),
+         craftingOutputItemSlot: this.bundleInventory(player, "craftingOutputSlot"),
+         armourSlot: this.bundleInventory(player, "armourSlot")
+      };
+
+      return inventoryData;
+   }
+
+   private bundleInventory(player: Player, inventoryName: string): InventoryData {
+      const inventory = player.getComponent("inventory")!.getInventory(inventoryName);
+
+      const inventoryData: InventoryData = {
+         itemSlots: {},
+         width: inventory.width,
+         height: inventory.height,
+         inventoryName: inventoryName
+      };
+      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
+         inventoryData.itemSlots[itemSlot] = {
+            type: item.type,
+            count: item.count,
+            id: item.id
+         };
+      }
+      return inventoryData;
    }
 
    private handlePlayerDisconnect(socket: ISocket): void {
@@ -663,7 +640,7 @@ class GameServer {
             rotation: player.rotation,
             terminalVelocity: player.terminalVelocity,
             health: player.getComponent("health")!.getHealth(),
-            inventory: player.bundleInventoryData()
+            inventory: this.bundlePlayerInventoryData(player)
          };
 
          socket.emit("game_data_sync_packet", packet);

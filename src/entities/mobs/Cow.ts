@@ -1,5 +1,4 @@
 import { CowSpecies, ItemType, Point, randInt, SETTINGS } from "webgl-test-shared";
-import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -18,8 +17,6 @@ class Cow extends Mob {
    public mass = 1.5;
 
    public species: CowSpecies;
-
-   private numFootstepsTaken = 0;
 
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
@@ -113,23 +110,6 @@ class Cow extends Mob {
 
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
-
-      this.createEvent("hurt", () => {
-         for (let i = 0; i < 2; i++) {
-            this.createBloodPoolParticle();
-         }
-      });
-   }
-
-   public tick(): void {
-      super.tick();
-
-      // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 5);
-
-         this.numFootstepsTaken++;
-      }
    }
 
    public getClientArgs(): [species: CowSpecies] {

@@ -1,4 +1,4 @@
-import { ItemType, ParticleType, PlayerCauseOfDeath, Point, SETTINGS, Vector, randFloat } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -8,7 +8,6 @@ import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
-import MonocolourParticle from "../../MonocolourParticle";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -24,8 +23,6 @@ class Zombie extends Mob {
 
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
-
-   private numFootstepsTaken = 0;
 
    // Stores the ids of all entities which have recently attacked the zombie
    private readonly attackingEntities: Record<number, number> = {};
@@ -103,8 +100,6 @@ class Zombie extends Mob {
       });
 
       this.createEvent("hurt", (_, attackingEntity: Entity | null): void => {
-         this.createBloodPoolParticle();
-
          if (attackingEntity !== null) {
             this.attackingEntities[attackingEntity.id] = Zombie.ATTACK_PURSUE_TIME;
          }
@@ -141,13 +136,6 @@ class Zombie extends Mob {
          if (super.hasStatusEffect("burning") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
             super.applyStatusEffect("burning", 5);
          }
-      }
-
-      // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
-
-         this.numFootstepsTaken++;
       }
    }
 

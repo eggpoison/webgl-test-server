@@ -259,7 +259,10 @@ class InventoryComponent extends Component {
       
       let remainingAmountToConsume = amount;
       let totalAmountConsumed = 0;
-      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) continue;
+
+         const item = inventory.itemSlots[itemSlot];
          if (item.type !== itemType) continue;
 
          const amountConsumed = Math.min(remainingAmountToConsume, item.count);

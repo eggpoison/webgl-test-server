@@ -8,7 +8,6 @@ import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
-import Particle from "./Particle";
 import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
@@ -34,9 +33,6 @@ abstract class Board {
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
    public static readonly projectiles = new Set<Projectile>();
 
-   /** Stores all particles currently in the game */
-   public static readonly particles = new Set<Particle>();
-   
    private static tiles: Array<Array<Tile>>;
    private static chunks: Array<Array<Chunk>>;
 
@@ -175,27 +171,6 @@ abstract class Board {
       return this.tribes;
    }
 
-   public static addParticle(particle: Particle): void {
-      this.particles.add(particle);
-   }
-
-   public static updateParticles(): void {
-      const removedParticles = new Array<Particle>();
-      
-      for (const particle of this.particles) {
-         particle.tick();
-         particle.incrementAge();
-         if (particle.getAge() >= particle.lifetime) {
-            removedParticles.push(particle);
-         }
-      }
-
-      for (const removedParticle of removedParticles) {
-         this.particles.delete(removedParticle);
-         removedParticle.getChunk().removeParticle(removedParticle);
-      }
-   }
-   
    /** Removes game objects flagged for deletion */
    public static removeFlaggedGameObjects(): void {
       for (const gameObject of this.gameObjectsToRemove) {

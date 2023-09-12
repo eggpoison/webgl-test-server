@@ -1,12 +1,10 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, ParticleType, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectData, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffectData, StatusEffectType, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { addEntityToCensus } from "../census";
-import Board from "../Board";
-import TexturedParticle from "../TexturedParticle";
 
 export interface EntityComponents {
    readonly health: HealthComponent;
@@ -93,25 +91,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       }
       
       this.tickStatusEffects();
-
-      if (this.isInRiver() && Board.tickIntervalHasPassed(0.15) && this.acceleration !== null) {
-         const lifetime = 1.5;
-            
-         new TexturedParticle({
-            type: ParticleType.waterSplash,
-            spawnPosition: this.position.copy(),
-            initialVelocity: null,
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            opacity: (age: number): number => {
-               return lerp(0.75, 0, age / lifetime);
-            },
-            scale: (age: number): number => {
-               return lerp(1, 2, age / lifetime);
-            },
-            lifetime: lifetime
-         });
-      }
    }
 
    public getMoveSpeedMultiplier(): number {
@@ -152,38 +131,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
             // Fire tick
             if (this.statusEffects.burning!.ticksElapsed % 15 === 0) {
                this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire);
-            }
-
-            // Fire particle effects
-            if (this.statusEffects.burning!.ticksElapsed % 2 === 0) {
-               const spawnPosition = this.position.copy();
-               const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-               spawnPosition.add(offset);
-
-               const lifetime = randFloat(1, 1.25);
-
-               const fadeInTime = 0.15;
-               
-               new TexturedParticle({
-                  type: ParticleType.smokeBlack,
-                  spawnPosition: spawnPosition,
-                  initialVelocity: new Vector(30, 0),
-                  // initialAcceleration: new Vector(80, 0),
-                  initialAcceleration: new Vector(40, Math.random()),
-                  initialRotation: 2 * Math.PI * Math.random(),
-                  angularAcceleration: 0.75 * Math.PI * randFloat(-1, 1),
-                  opacity: (age: number): number => {
-                     if (age <= fadeInTime) {
-                        return age / fadeInTime;
-                     }
-                     return lerp(0.75, 0, (age - fadeInTime) / (lifetime - fadeInTime));
-                  },
-                  scale: (age: number): number => {
-                     const deathProgress = age / lifetime
-                     return 1 + deathProgress * 2;
-                  },
-                  lifetime: lifetime
-               });
             }
          }
       }
@@ -227,55 +174,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          });
       }
       return data;
-   }
-
-   protected createBloodPoolParticle(): void {
-      const lifetime = 7.5;
-
-      const spawnPosition = this.position.copy();
-      const offset = new Vector(20 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
-
-      const type = randItem([ParticleType.bloodPoolSmall, ParticleType.bloodPoolMedium, ParticleType.bloodPoolLarge])
-      new TexturedParticle({
-         type: type,
-         spawnPosition: spawnPosition,
-         initialVelocity: null,
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         opacity: (age: number) => {
-            return 1 - age / lifetime;
-         },
-         lifetime: lifetime
-      });
-   }
-
-   protected createFootprintParticle(numFootstepsTaken: number, footstepOffset: number, scale: number, lifetime: number): void {
-      if (this.velocity === null) {
-         return;
-      }
-
-      if (this.tile.type === "water") {
-         return;
-      }
-
-      const footstepAngleOffset = numFootstepsTaken % 2 === 0 ? Math.PI : 0;
-      const spawnPosition = this.position.copy();
-      const offset = new Vector(footstepOffset / 2, this.velocity.direction + footstepAngleOffset + Math.PI/2).convertToPoint();
-      spawnPosition.add(offset);
-
-      new TexturedParticle({
-         type: ParticleType.footprint,
-         spawnPosition: spawnPosition,
-         initialVelocity: null,
-         initialAcceleration: null,
-         initialRotation: this.velocity.direction,
-         opacity: (age: number): number => {
-            return lerp(0.75, 0, age / lifetime);
-         },
-         lifetime: lifetime,
-         scale: scale
-      });
    }
 
    public getDebugData(): GameObjectDebugData {

@@ -53,8 +53,6 @@ class Tribesman extends TribeMember {
 
    public readonly mass = 1;
    
-   protected readonly footstepInterval = 0.35;
-   
    constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
 

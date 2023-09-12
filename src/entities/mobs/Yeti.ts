@@ -1,4 +1,4 @@
-import { GameObjectDebugData, ItemType, ParticleType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -11,8 +11,6 @@ import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Board from "../../Board";
 import Snowball from "../Snowball";
-import Particle from "../../Particle";
-import MonocolourParticle from "../../MonocolourParticle";
 
 enum SnowThrowStage {
    windup,
@@ -71,8 +69,6 @@ class Yeti extends Mob {
 
    // Stores the ids of all entities which have recently attacked the yeti
    private readonly attackingEntities: Record<number, number> = {};
-
-   private numFootstepsTaken = 0;
 
    private attackTarget: Entity | null = null;
    private isThrowingSnow = false;
@@ -191,10 +187,6 @@ class Yeti extends Mob {
             removeYetiTerritory(tile.x, tile.y);
          }
       });
-
-      this.createEvent("hurt", () => {
-         this.createBloodPoolParticle();
-      });
    }
 
    public tick(): void {
@@ -205,13 +197,6 @@ class Yeti extends Mob {
          if (this.attackingEntities[id] <= 0) {
             delete this.attackingEntities[id];
          }
-      }
-
-      // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.55)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 40, 1.5, 8);
-
-         this.numFootstepsTaken++;
       }
 
       if (this.isThrowingSnow) {
@@ -268,7 +253,8 @@ class Yeti extends Mob {
          this.createSnowball(SnowballSize.small, throwAngle);
       }
 
-      this.createSnowImpactParticles(throwAngle);
+      // @Incomplete
+      // this.createSnowImpactParticles(throwAngle);
    }
 
    private createSnowball(size: SnowballSize, throwAngle: number): void {
@@ -314,35 +300,35 @@ class Yeti extends Mob {
       });
    }
 
-   private createSnowImpactParticles(throwAngle: number): void {
-      const impactPosition = this.position.copy();
-      const offset = new Vector(Yeti.SNOW_THROW_OFFSET + 20, throwAngle).convertToPoint();
-      impactPosition.add(offset);
+   // private createSnowImpactParticles(throwAngle: number): void {
+   //    const impactPosition = this.position.copy();
+   //    const offset = new Vector(Yeti.SNOW_THROW_OFFSET + 20, throwAngle).convertToPoint();
+   //    impactPosition.add(offset);
       
-      for (let i = 0; i < 30; i++) {
-         const position = impactPosition.copy();
-         const offset = new Vector(randFloat(0, 20), 2 * Math.PI * Math.random()).convertToPoint();
-         position.add(offset);
+   //    for (let i = 0; i < 30; i++) {
+   //       const position = impactPosition.copy();
+   //       const offset = new Vector(randFloat(0, 20), 2 * Math.PI * Math.random()).convertToPoint();
+   //       position.add(offset);
          
-         const lifetime = randFloat(0.8, 0.12);
+   //       const lifetime = randFloat(0.8, 0.12);
 
-         // TODO: Return varied colour
+   //       // TODO: Return varied colour
       
-         new MonocolourParticle({
-            type: ParticleType.snow,
-            spawnPosition: position,
-            initialVelocity: new Vector(randFloat(40, 100), 2 * Math.PI * Math.random()),
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            angularVelocity: randFloat(-30, 30),
-            opacity: (age: number): number => {
-               return 1 - Math.pow(age / lifetime, 0.4);
-            },
-            lifetime: lifetime,
-            scale: 2
-         });
-      }  
-   }
+   //       new MonocolourParticle({
+   //          type: ParticleType.snow,
+   //          spawnPosition: position,
+   //          initialVelocity: new Vector(randFloat(40, 100), 2 * Math.PI * Math.random()),
+   //          initialAcceleration: null,
+   //          initialRotation: 2 * Math.PI * Math.random(),
+   //          angularVelocity: randFloat(-30, 30),
+   //          opacity: (age: number): number => {
+   //             return 1 - Math.pow(age / lifetime, 0.4);
+   //          },
+   //          lifetime: lifetime,
+   //          scale: 2
+   //       });
+   //    }  
+   // }
 
    public getClientArgs(): [attackProgress: number] {
       return [this.snowThrowAttackProgress];

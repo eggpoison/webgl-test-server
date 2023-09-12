@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BowItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, ParticleType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BowItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -17,7 +17,6 @@ import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Projectile from "../../Projectile";
 import ENTITY_CLASS_RECORD from "../../entity-classes";
-import TexturedParticle from "../../TexturedParticle";
 
 enum PlaceableItemHitboxType {
    circular = 0,
@@ -85,10 +84,6 @@ abstract class TribeMember extends Mob {
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
 
-   private numFootstepsTaken = 0;
-
-   protected abstract readonly footstepInterval: number;
-
    protected selectedItemSlot = 1;
 
    public isEating = false;
@@ -111,10 +106,6 @@ abstract class TribeMember extends Mob {
       this.tribeType = tribeType;
 
       inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
-
-      this.createEvent("hurt", () => {
-         this.createBloodPoolParticle();
-      });
 
       this.createEvent("on_item_place", (placedItem: Entity): void => {
          if (placedItem.type === "tribe_totem") {
@@ -153,13 +144,6 @@ abstract class TribeMember extends Mob {
 
    public tick(): void {
       super.tick();
-
-      // Footsteps
-      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(this.footstepInterval)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
-
-         this.numFootstepsTaken++;
-      }
 
       const inventoryComponent = this.getComponent("inventory")!
       
@@ -304,24 +288,26 @@ abstract class TribeMember extends Mob {
       if (item !== null && item.type === ItemType.flesh_sword) {
          targetEntity.applyStatusEffect("poisoned", 3);
 
-         // Create slime puddle
-         const spawnPosition = targetEntity.position.copy();
-         const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-         spawnPosition.add(offset);
+         // @Incomplete
+
+         // // Create slime puddle
+         // const spawnPosition = targetEntity.position.copy();
+         // const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
+         // spawnPosition.add(offset);
    
-         const lifetime = 7.5;
+         // const lifetime = 7.5;
          
-         new TexturedParticle({
-            type: ParticleType.slimePuddle,
-            spawnPosition: spawnPosition,
-            initialVelocity: null,
-            initialAcceleration: null,
-            initialRotation: 2 * Math.PI * Math.random(),
-            opacity: (age: number): number => {
-               return lerp(0.75, 0, age / lifetime);
-            },
-            lifetime: lifetime
-         });
+         // new TexturedParticle({
+         //    type: ParticleType.slimePuddle,
+         //    spawnPosition: spawnPosition,
+         //    initialVelocity: null,
+         //    initialAcceleration: null,
+         //    initialRotation: 2 * Math.PI * Math.random(),
+         //    opacity: (age: number): number => {
+         //       return lerp(0.75, 0, age / lifetime);
+         //    },
+         //    lifetime: lifetime
+         // });
       }
 
       this.lastAttackTicks = Board.ticks;
@@ -474,7 +460,7 @@ abstract class TribeMember extends Mob {
 
             const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
 
-            this.bowCooldowns[itemSlot] = itemInfo.projectileAttackCooldown;
+            this.bowCooldowns[itemSlot] = itemInfo.shotCooldown;
 
             const spawnPosition = this.position.copy();
             const offset = new Vector(25, this.rotation).convertToPoint();

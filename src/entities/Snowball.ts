@@ -1,10 +1,7 @@
-import { ParticleType, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, Vector, randFloat, randInt, randSign } from "webgl-test-shared";
+import { Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import Board from "../Board";
-import Particle from "../Particle";
-import MonocolourParticle from "../MonocolourParticle";
 
 class Snowball extends Entity {
    private static readonly CASCADE_THRESHOLD = 100;
@@ -14,7 +11,7 @@ class Snowball extends Entity {
    private static readonly MAX_HEALTHS: Record<SnowballSize, number> = {
       [SnowballSize.small]: 5,
       [SnowballSize.large]: 10
-   }
+   };
 
    private readonly size: SnowballSize;
 
