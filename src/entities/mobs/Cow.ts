@@ -1,5 +1,4 @@
-import { CowSpecies, Point, randInt, SETTINGS } from "webgl-test-shared";
-import Board from "../../Board";
+import { CowSpecies, ItemType, Point, randInt, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -18,8 +17,6 @@ class Cow extends Mob {
    public mass = 1.5;
 
    public species: CowSpecies;
-
-   private numFootstepsTaken = 0;
 
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
@@ -89,7 +86,7 @@ class Cow extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          metabolism: 20,
-         itemTargets: new Set(["berry"])
+         itemTargets: new Set([ItemType.berry])
       }));
 
       // this.addAI(new BerryBushShakeAI(this, {
@@ -112,35 +109,21 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
-      this.getComponent("item_creation")!.createItemOnDeath("raw_beef", randInt(1, 2), false);
-      this.getComponent("item_creation")!.createItemOnDeath("leather", randInt(0, 2), true);
-
-      this.createEvent("hurt", (_1, _2, _knockback: number, hitDirection: number | null): void => {
-         for (let i = 0; i < 2; i++) {
-            this.createBloodPoolParticle();
-         }
-
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
-            }
-         }
-      });
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
+      this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
    }
 
-   public tick(): void {
-      super.tick();
-
-      // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 5);
-
-         this.numFootstepsTaken++;
+   public getClientArgs(): [species: CowSpecies, grazeProgress: number] {
+      const currentAI = this.getCurrentAI();
+      
+      let grazeProgress;
+      if (currentAI !== null && currentAI.type === "tileConsume") {
+         grazeProgress = (currentAI as TileConsumeAI).getGrazeProgress();
+      } else {
+         grazeProgress = -1;
       }
-   }
 
-   public getClientArgs(): [species: CowSpecies] {
-      return [this.species];
+      return [this.species, grazeProgress];
    }
 }
 

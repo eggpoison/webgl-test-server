@@ -1,9 +1,7 @@
-import { ParticleType, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, Vector, randFloat, randInt, randSign } from "webgl-test-shared";
+import { Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import Board from "../Board";
-import Particle from "../Particle";
 
 class Snowball extends Entity {
    private static readonly CASCADE_THRESHOLD = 100;
@@ -68,29 +66,6 @@ class Snowball extends Entity {
       if (this.velocity !== null && this.canDamage && this.velocity.magnitude <= Snowball.CASCADE_THRESHOLD) {
          this.canDamage = false;
       }
-
-      if (this.canDamage) {
-         if (Board.tickIntervalHasPassed(0.05)) {
-            this.createSnowParticle();
-         }
-      }
-   }
-
-   private createSnowParticle(): void {
-      const lifetime = randFloat(0.6, 0.8);
-      
-      new Particle({
-         type: ParticleType.snow,
-         spawnPosition: this.position.copy(),
-         initialVelocity: new Vector(randFloat(40, 60), 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         opacity: (age: number): number => {
-            return 1 - age / lifetime;
-         },
-         lifetime: lifetime,
-         scale: randInt(1, 2)
-      });
    }
 
    public getClientArgs(): [size: SnowballSize] {

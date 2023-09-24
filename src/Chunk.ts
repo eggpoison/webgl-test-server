@@ -1,6 +1,5 @@
 import { Point, RiverSteppingStoneData, RiverSteppingStoneSize } from "webgl-test-shared";
 import { GameObject } from "./GameObject";
-import Particle from "./Particle";
 import Projectile from "./Projectile";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -18,8 +17,6 @@ class Chunk {
    private readonly entities = new Set<Entity>();
    private readonly droppedItems = new Set<DroppedItem>();
    private readonly projectiles = new Set<Projectile>();
-
-   private readonly particles = new Set<Particle>();
 
    public readonly riverSteppingStones = new Array<RiverSteppingStone>();
 
@@ -81,18 +78,6 @@ class Chunk {
 
    public getProjectiles(): Set<Projectile> {
       return this.projectiles;
-   }
-
-   public addParticle(particle: Particle): void {
-      this.particles.add(particle);
-   }
-
-   public removeParticle(particle: Particle): void {
-      this.particles.delete(particle);
-   }
-
-   public getParticles(): ReadonlySet<Particle> {
-      return this.particles;
    }
 
    public addRiverSteppingStone(steppingStoneData: RiverSteppingStoneData): void {

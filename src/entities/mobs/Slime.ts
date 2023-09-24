@@ -1,4 +1,4 @@
-import { Mutable, PlayerCauseOfDeath, Point, RESOURCE_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -136,7 +136,7 @@ class Slime extends Mob {
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
-            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_TYPES.includes(entity.type);
+            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type);
          }
       }));
       // Merge AI
@@ -165,7 +165,7 @@ class Slime extends Mob {
       }));
 
       const dropAmount = randInt(...Slime.SLIME_DROP_AMOUNTS[size]);
-      itemCreationComponent.createItemOnDeath("slimeball", dropAmount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.slimeball, dropAmount, true);
 
       this.size = size;
 
@@ -176,12 +176,12 @@ class Slime extends Mob {
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type === "slime" || collidingEntity.type === "slimewisp" || RESOURCE_TYPES.includes(collidingEntity.type)) return;
+         if (collidingEntity.type === "slime" || collidingEntity.type === "slimewisp" || RESOURCE_ENTITY_TYPES.includes(collidingEntity.type)) return;
          
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const contactDamage = Slime.CONTACT_DAMAGE[this.size];
-            healthComponent.damage(contactDamage, 0, null, this, PlayerCauseOfDeath.slime, "slime");
+            healthComponent.damage(contactDamage, 0, null, this, PlayerCauseOfDeath.slime, 0, "slime");
             healthComponent.addLocalInvulnerabilityHash("slime", 0.3);
          }
       });

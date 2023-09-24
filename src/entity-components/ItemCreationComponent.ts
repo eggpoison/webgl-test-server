@@ -1,8 +1,8 @@
 import { ItemType, Vector } from "webgl-test-shared";
-import { createItem } from "../items/item-creation";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import Entity from "../entities/Entity";
+import Item from "../items/Item";
 
 class ItemCreationComponent extends Component {
    /** Max units that an item can spawn away from the entity when dead */
@@ -21,7 +21,7 @@ class ItemCreationComponent extends Component {
             const position = this.entity.position.copy();
             position.add(new Vector(magnitude, direction).convertToPoint());
 
-            const item = createItem(itemType, 1);
+            const item = new Item(itemType, 1);
             new DroppedItem(position, item);
          }
       });

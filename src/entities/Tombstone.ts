@@ -1,10 +1,9 @@
-import { DeathInfo, ParticleType, Point, randFloat, randItem, randSign, SETTINGS, Vector } from "webgl-test-shared";
+import { DeathInfo, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
 import Board from "../Board";
-import Particle from "../Particle";
 import TombstoneDeathManager from "../tombstone-deaths";
 
 class Tombstone extends Entity {
@@ -15,7 +14,6 @@ class Tombstone extends Entity {
    
    /** Average number of zombies that are created by the tombstone in a second */
    private static readonly ZOMBIE_SPAWN_RATE = 0.05;
-   // private static readonly ZOMBIE_SPAWN_RATE = 0.75;
    /** Distance the zombies spawn from the tombstone */
    private static readonly ZOMBIE_SPAWN_DISTANCE = 48;
    /** Maximum amount of zombies that can be spawned by one tombstone */
@@ -69,39 +67,6 @@ class Tombstone extends Entity {
          zombieSpawnPositions.push(spawnPosition);
       }
       this.zombieSpawnPositions = zombieSpawnPositions;
-
-      this.createEvent("hurt", (): void => {
-         for (let i = 0; i < 4; i++) {
-            this.createRockParticle();
-         }
-      });
-   
-      this.createEvent("death", (): void => {
-         for (let i = 0; i < 8; i++) {
-            this.createRockParticle();
-         }
-      });
-   }
-   private createRockParticle(): void {
-      const spawnPosition = this.position.copy();
-      const offset = new Point(randFloat(-Tombstone.WIDTH/2, Tombstone.WIDTH/2), randFloat(-Tombstone.HEIGHT/2, Tombstone.HEIGHT/2));
-      spawnPosition.add(offset);
-   
-      const lifetime = randFloat(0.3, 0.6);
-      
-      new Particle({
-         type: Math.random() < 0.5 ? ParticleType.rock : ParticleType.rockLarge,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(randFloat(50, 70), 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularVelocity: 2 * Math.PI * randFloat(-1, 1),
-         angularDrag: 1 * Math.PI,
-         opacity: (age: number): number => {
-            return 1 - age/lifetime;
-         },
-         lifetime: lifetime
-      });
    }
 
    public tick(): void {
@@ -129,45 +94,11 @@ class Tombstone extends Entity {
       }
 
       if (this.isSpawningZombie) {
-         const spawnProgress = this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME;
-         if (spawnProgress < 0.8) {
-            if (Math.random() < 7.5 / SETTINGS.TPS) {
-               this.createDirtParticle();
-            }
-         } else {
-            if (Math.random() < 20 / SETTINGS.TPS) {
-               this.createDirtParticle();
-            }
-         }
-         
          this.zombieSpawnTimer += 1 / SETTINGS.TPS;
          if (this.zombieSpawnTimer >= Tombstone.ZOMBIE_SPAWN_TIME) {
             this.spawnZombie();
          }
       }
-   }
-
-   private createDirtParticle(): void {
-      const spawnPosition = this.zombieSpawnPosition.copy();
-      const offset = new Vector(10 * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
-
-      if (!Board.isInBoard(spawnPosition)) return;
-
-      const speedMultiplier = randFloat(1, 2.2);
-      
-      new Particle({
-         type: ParticleType.dirt,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
-         angularAcceleration: -4 * speedMultiplier,
-         opacity: 1,
-         drag: 300,
-         lifetime: 1.5
-      });
    }
 
    private spawnZombie(): void {
@@ -185,8 +116,14 @@ class Tombstone extends Entity {
       this.isSpawningZombie = false;
    }
 
-   public getClientArgs(): [tombstoneType: number, deathInfo: DeathInfo | null] {
-      return [this.tombstoneType, this.deathInfo];
+   public getClientArgs(): [tombstoneType: number, zombieSpawnProgress: number, zombieSpawnX: number, zombieSpawnY: number, deathInfo: DeathInfo | null] {
+      return [
+         this.tombstoneType,
+         this.isSpawningZombie ? this.zombieSpawnTimer / Tombstone.ZOMBIE_SPAWN_TIME : -1,
+         this.isSpawningZombie ? this.zombieSpawnPosition.x : -1,
+         this.isSpawningZombie ? this.zombieSpawnPosition.y : -1,
+         this.deathInfo
+      ];
    }
 }
 

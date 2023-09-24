@@ -1,10 +1,11 @@
-import { BiomeName, EntityType, ITEM_TYPE_LITERALS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
-import { createItem } from "./items/item-creation";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
 import ENTITY_CLASS_RECORD from "./entity-classes";
+import Item from "./items/Item";
+import Tile from "./tiles/Tile";
 
 const ENTITY_SPAWN_RANGE = 200;
 
@@ -13,7 +14,7 @@ const killPlayer = (username: string): void => {
    if (player === null) return;
 
    // Kill the player
-   player.getComponent("health")!.damage(999999, 0, null, null, PlayerCauseOfDeath.god);
+   player.getComponent("health")!.damage(999999, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const damagePlayer = (username: string, damage: number): void => {
@@ -21,7 +22,7 @@ const damagePlayer = (username: string, damage: number): void => {
    if (player === null) return;
 
    // Damage the player
-   player.getComponent("health")!.damage(damage, 0, null, null, PlayerCauseOfDeath.god);
+   player.getComponent("health")!.damage(damage, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const healPlayer = (username: string, healing: number): void => {
@@ -40,7 +41,11 @@ const giveItem = (username: string, itemType: ItemType, amount: number): void =>
    const player = SERVER.getPlayerFromUsername(username);
    if (player === null) return;
 
-   const item = createItem(itemType, amount);
+   if (amount === 0) {
+      return;
+   }
+
+   const item = new Item(itemType, amount);
    player.getComponent("inventory")!.addItem(item);
 }
 
@@ -61,8 +66,16 @@ const tpBiome = (username: string, biomeName: BiomeName): void => {
       console.warn(`No available tiles of biome '${biomeName}' to teleport to.`);
       return;
    }
+
+   let numAttempts = 0;
+   let tile: Tile;
+   do {
+      tile = randItem(potentialTiles);
+      if (++numAttempts === 999) {
+         return;
+      }
+   } while (tile.isWall);
    
-   const tile = randItem(potentialTiles);
    const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
    const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
 
@@ -141,22 +154,19 @@ export function registerCommand(command: string, player: Player): void {
       }
 
       case "give": {
+         const itemType = commandComponents[1];
+
+         if (!Object.keys(ItemType).includes(itemType.toString())) {
+            break;
+         }
+
+         const confirmedItemType = ItemType[itemType as keyof typeof ItemType];
+
          if (numParameters === 1) {
-            const itemType = commandComponents[1] as ItemType;
-            if (!ITEM_TYPE_LITERALS.includes(itemType)) {
-               return;
-            }
-            
-            giveItem(player.username, itemType, 1);
+            giveItem(player.username, confirmedItemType, 1);
          } else if (numParameters === 2) {
-            const itemType = commandComponents[1] as ItemType;
-            if (!ITEM_TYPE_LITERALS.includes(itemType)) {
-               return;
-            }
-
             const amount = commandComponents[2] as number;
-
-            giveItem(player.username, itemType, amount);
+            giveItem(player.username, confirmedItemType, amount);
          }
          
          break;

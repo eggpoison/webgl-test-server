@@ -1,8 +1,7 @@
-import { GameObjectDebugData, ItemType } from "webgl-test-shared";
+import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
-import FoodItem from "../items/generic/FoodItem";
 import { GameObject } from "../GameObject";
 
 interface ItemConsumeAIParams extends BaseAIParams<"itemConsume"> {
@@ -83,7 +82,8 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       if (droppedItem.item.hasOwnProperty("eatTime")) {
          const healthComponent = this.mob.getComponent("health");
          if (healthComponent !== null) {
-            healthComponent.heal((droppedItem.item as FoodItem).healAmount);
+            const itemInfo = ITEM_INFO_RECORD[droppedItem.item.type] as FoodItemInfo;
+            healthComponent.heal(itemInfo.healAmount);
          }
       }
       

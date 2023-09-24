@@ -1,10 +1,9 @@
-import { GameObjectDebugData, Mutable, PlayerCauseOfDeath, SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS, Vector } from "webgl-test-shared";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";
 import Player from "../entities/tribes/Player";
-
-let a = 0;
+import Board from "../Board";
 
 class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
@@ -23,6 +22,8 @@ class HealthComponent extends Component {
 
    /** Amount of seconds that has passed since the entity was last hit */
    private secondsSinceLastHit: number | null = null;
+
+   public hitsTaken = new Array<HitData>();
 
    constructor(maxHealth: number, hasGlobalInvulnerability: boolean) {
       super();
@@ -91,7 +92,7 @@ class HealthComponent extends Component {
     * @param damage The amount of damage given
     * @returns Whether the damage was received
     */
-   public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, attackHash?: string): boolean {
+   public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, hitFlags: number, attackHash?: string): boolean {
       if (this.isInvulnerable(attackHash) || this.isDead()) return false;
 
       this.entity.callEvents("hurt", damage, attackingEntity, knockback, hitDirection);
@@ -111,8 +112,19 @@ class HealthComponent extends Component {
          if (this.entity.type === "player") {
             TombstoneDeathManager.registerNewDeath((this.entity as Player).username, causeOfDeath);
          }
+
+         Board.killedEntities.push({
+            id: this.entity.id,
+            boundingChunks: this.entity.boundingChunks
+         });
       }
 
+      this.hitsTaken.push({
+         knockback: knockback,
+         angleFromAttacker: hitDirection,
+         flags: hitFlags
+      });
+      
       if (this.hasGlobalInvulnerability) {
          this.globalInvulnerabilityTimer = HealthComponent.INVULNERABILITY_DURATION;
       }

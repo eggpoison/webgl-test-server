@@ -1,4 +1,4 @@
-import { EntityType, InventoryData, ItemSlotsData, ItemType, Point, TribeType } from "webgl-test-shared";
+import { EntityType, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -10,12 +10,10 @@ import ItemChaseAI from "../../mob-ai/ItemChaseAI";
 import DroppedItem from "../../items/DroppedItem";
 import MoveAI from "../../mob-ai/MoveAI";
 import Barrel from "./Barrel";
-import StackableItem from "../../items/generic/StackableItem";
 import TribeTotem from "./TribeTotem";
 import TribeHut from "./TribeHut";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
-import ToolItem from "../../items/generic/ToolItem";
-import BowItem from "../../items/generic/BowItem";
+import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 
 /*
 Priorities while in a tribe:
@@ -47,7 +45,6 @@ class Tribesman extends TribeMember {
    private static readonly ATTACK_OFFSET = 80;
    /** Max distance from the attack position that the attack will be registered from */
    private static readonly ATTACK_RADIUS = 60;
-   // private static readonly ATTACK_KNOCKBACK = 150;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_ATTACK_DISTANCE = 120;
@@ -55,10 +52,6 @@ class Tribesman extends TribeMember {
    private static readonly BARREL_DEPOSIT_DISTANCE = 80;
 
    public readonly mass = 1;
-   
-   protected readonly footstepInterval = 0.35;
-
-   private selectedItemSlot = 1;
    
    constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
@@ -73,7 +66,7 @@ class Tribesman extends TribeMember {
 
       // If the tribesman is a frostling, spawn with a bow
       if (tribeType === TribeType.frostlings) {
-         inventoryComponent.addItemToSlot("hotbar", 1, "wooden_bow", 1);
+         inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
 
       this.tribe = tribe;
@@ -117,16 +110,6 @@ class Tribesman extends TribeMember {
          }
       }));
 
-      // AI for picking up items
-      this.addAI(new ItemChaseAI(this, {
-         aiWeightMultiplier: 0.8,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
-         itemIsChased: (item: DroppedItem): boolean => {
-            return this.canPickupItem(item);
-         }
-      }));
-
       // AI for returning resources to tribe
       this.addAI(new MoveAI(this, {
          aiWeightMultiplier: 0.9,
@@ -150,6 +133,16 @@ class Tribesman extends TribeMember {
                   this.depositResources(nearestBarrel);
                }
             }
+         }
+      }));
+
+      // AI for picking up items
+      this.addAI(new ItemChaseAI(this, {
+         aiWeightMultiplier: 0.8,
+         acceleration: Tribesman.WALK_ACCELERATION,
+         terminalVelocity: Tribesman.WALK_SPEED,
+         itemIsChased: (item: DroppedItem): boolean => {
+            return this.canPickupItem(item);
          }
       }));
 
@@ -200,7 +193,7 @@ class Tribesman extends TribeMember {
          }
 
          const item = inventory.itemSlots[itemSlot];
-         if (item.type === droppedItem.item.type && item.hasOwnProperty("stackSize") && (item as StackableItem).stackSize - item.count > 0) {
+         if (item.type === droppedItem.item.type && itemIsStackable(item.type) && getItemStackSize(item) - item.count > 0) {
             return true;
          }
       }
@@ -245,8 +238,15 @@ class Tribesman extends TribeMember {
       const inventoryComponent = this.getComponent("inventory")!;
       const item = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
 
-      if (item !== null && item.hasOwnProperty("toolType") && (item as ToolItem).toolType === "bow") {
-         this.doRangedAttack(item as BowItem);
+      // If not holding an item, do a regular attack
+      if (item === null) {
+         this.doMeleeAttack();
+         return;
+      }
+
+      const itemCategory = ITEM_TYPE_RECORD[item.type];
+      if (itemCategory === "bow") {
+         this.doRangedAttack(item, this.selectedItemSlot);
       } else {
          this.doMeleeAttack();
       }
@@ -260,27 +260,24 @@ class Tribesman extends TribeMember {
       // Register the hit
       if (target !== null) {
          this.attackEntity(target, this.selectedItemSlot);
-         // const attackHash = this.id.toString();
-         // const attackDirection = this.position.calculateAngleBetween(target.position);
-
-         // const healthComponent = target.getComponent("health")!; // Attack targets always have a health component
-         // healthComponent.damage(1, Tribesman.ATTACK_KNOCKBACK, attackDirection, this, attackHash);
-         // healthComponent.addLocalInvulnerabilityHash(attackHash, 0.3);
       }
    }
 
-   private doRangedAttack(bow: BowItem): void {
-      if (typeof bow.use !== "undefined") {
-         bow.use(this, "hotbar");
-      }
+   private doRangedAttack(bow: Item, itemSlot: number): void {
+      this.useItem(bow, itemSlot)
+      this.lastAttackTicks = Board.ticks;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
          this.getArmourItemType(),
+         this.getActiveItemType(),
+         this.getFoodEatingType(),
+         this.lastAttackTicks,
+         this.lastEatTicks,
          serializeInventoryData(hotbarInventory, "hotbar")
       ];
    }

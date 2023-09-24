@@ -1,6 +1,5 @@
 import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
-import Hitbox from "./hitboxes/Hitbox";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
@@ -18,7 +17,7 @@ export function findAvailableEntityID(): number {
 
 export type GameObject = Entity | DroppedItem | Projectile;
 
-export interface GameObjectSubclasses {
+interface GameObjectSubclasses {
    entity: Entity;
    droppedItem: DroppedItem;
    projectile: Projectile;
@@ -40,6 +39,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    
    /** Unique identifier for each game object */
    public readonly id: number;
+
+   public ageTicks = 0;
 
    /** Position of the object in the world */
    public position: Point;
@@ -118,6 +119,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public tick(): void {
+      this.ageTicks++;
+      
       this.applyPhysics();
       this.updateHitboxes();
       this.updateContainingChunks();

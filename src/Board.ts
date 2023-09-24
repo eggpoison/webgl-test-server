@@ -1,4 +1,4 @@
-import { Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -8,10 +8,14 @@ import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
-import Particle from "./Particle";
 import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
+
+interface KilledEntityInfo {
+   readonly id: number;
+   readonly boundingChunks: ReadonlyArray<Chunk>;
+}
 
 abstract class Board {
    /** Average number of random ticks done in a chunk a second */
@@ -29,9 +33,6 @@ abstract class Board {
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
    public static readonly projectiles = new Set<Projectile>();
 
-   /** Stores all particles currently in the game */
-   public static readonly particles = new Set<Particle>();
-   
    private static tiles: Array<Array<Tile>>;
    private static chunks: Array<Array<Chunk>>;
 
@@ -46,6 +47,9 @@ abstract class Board {
    private static joinBuffer = new Array<GameObject>();
 
    private static tribes = new Array<Tribe>();
+
+   /** The IDs of all entities which have been killed since the start of the current tick */
+   public static killedEntities = new Array<KilledEntityInfo>();
 
    public static setup(): void {
       const generationInfo = generateTerrain();
@@ -167,27 +171,6 @@ abstract class Board {
       return this.tribes;
    }
 
-   public static addParticle(particle: Particle): void {
-      this.particles.add(particle);
-   }
-
-   public static updateParticles(): void {
-      const removedParticles = new Array<Particle>();
-      
-      for (const particle of this.particles) {
-         particle.tick();
-         particle.age();
-         if (particle.getAge() >= particle.lifetime) {
-            removedParticles.push(particle);
-         }
-      }
-
-      for (const removedParticle of removedParticles) {
-         this.particles.delete(removedParticle);
-         removedParticle.getChunk().removeParticle(removedParticle);
-      }
-   }
-   
    /** Removes game objects flagged for deletion */
    public static removeFlaggedGameObjects(): void {
       for (const gameObject of this.gameObjectsToRemove) {
@@ -214,7 +197,7 @@ abstract class Board {
          }
          case "droppedItem": {
             delete this.droppedItems[gameObject.id];
-            if (gameObject.item.type === "flesh_sword") {
+            if (gameObject.item.type === ItemType.flesh_sword) {
                removeFleshSword(gameObject);
             }
             break;
@@ -265,7 +248,7 @@ abstract class Board {
          }
 
          // Flesh sword AI
-         if (gameObject.i === "droppedItem" && gameObject.item.type === "flesh_sword") {
+         if (gameObject.i === "droppedItem" && gameObject.item.type === ItemType.flesh_sword) {
             runFleshSwordAI(gameObject);
          }
       }
@@ -374,7 +357,7 @@ abstract class Board {
          }
          case "droppedItem": {
             this.droppedItems[gameObject.id] = gameObject;
-            if (gameObject.item.type === "flesh_sword") {
+            if (gameObject.item.type === ItemType.flesh_sword) {
                addFleshSword(gameObject);
             }
             break;

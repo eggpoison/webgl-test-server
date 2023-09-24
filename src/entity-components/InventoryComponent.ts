@@ -1,11 +1,8 @@
-import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType } from "webgl-test-shared";
-import Item, { itemIsStackable } from "../items/generic/Item";
-import StackableItem from "../items/generic/StackableItem";
-import { createItem } from "../items/item-creation";
+import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType, StackableItemInfo } from "webgl-test-shared";
+import Item, { itemIsStackable } from "../items/Item";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import { GameObject } from "../GameObject";
-import Entity from "../entities/Entity";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 
@@ -170,16 +167,17 @@ class InventoryComponent extends Component {
       let remainingAmountToAdd = item.count;
       let amountAdded = 0;
 
-      const itemIsStackable = item.hasOwnProperty("stackSize");
-
+      const isStackable = itemIsStackable(item.type);
       const inventory = this.getInventory(inventoryName);
 
-      if (itemIsStackable) {
+      if (isStackable) {
+         const stackSize = (ITEM_INFO_RECORD[item.type] as StackableItemInfo).stackSize;
+         
          // If there is already an item of the same type in the inventory, add it there
          for (const [itemSlot, currentItem] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
             // If the item is of the same type, add it
             if (currentItem.type === item.type) {
-               const maxAddAmount = Math.min((item as StackableItem).stackSize - currentItem.count, remainingAmountToAdd);
+               const maxAddAmount = Math.min(stackSize - currentItem.count, remainingAmountToAdd);
                inventory.itemSlots[itemSlot].count += maxAddAmount;
                remainingAmountToAdd -= maxAddAmount;
                amountAdded += maxAddAmount;
@@ -193,13 +191,14 @@ class InventoryComponent extends Component {
          // If the slot is empty then add the rest of the item
          if (!inventory.itemSlots.hasOwnProperty(i)) {
             let addAmount: number;
-            if (itemIsStackable) {
-               addAmount = Math.min((item as StackableItem).stackSize, remainingAmountToAdd);
+            if (isStackable) {
+               const stackSize = (ITEM_INFO_RECORD[item.type] as StackableItemInfo).stackSize;
+               addAmount = Math.min(stackSize, remainingAmountToAdd);
             } else {
                addAmount = 1;
             }
 
-            inventory.itemSlots[i] = createItem(item.type, addAmount);
+            inventory.itemSlots[i] = new Item(item.type, addAmount);
 
             amountAdded += addAmount;
             remainingAmountToAdd -= addAmount;
@@ -235,7 +234,7 @@ class InventoryComponent extends Component {
          if (itemIsStackable(itemType)) {
             // If the item is stackable, add as many as the stack size of the item would allow
 
-            const stackSize = (ITEM_INFO_RECORD[itemType] as StackableItem).stackSize;
+            const stackSize = (ITEM_INFO_RECORD[itemType] as StackableItemInfo).stackSize;
             
             amountAdded = Math.min(amount, stackSize - item.count);
             item.count += amountAdded;
@@ -245,7 +244,7 @@ class InventoryComponent extends Component {
          }
       } else {
          amountAdded = amount;
-         inventory.itemSlots[itemSlot] = createItem(itemType, amount);
+         inventory.itemSlots[itemSlot] = new Item(itemType, amount);
       }
 
       return amountAdded;
@@ -260,7 +259,10 @@ class InventoryComponent extends Component {
       
       let remainingAmountToConsume = amount;
       let totalAmountConsumed = 0;
-      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) continue;
+
+         const item = inventory.itemSlots[itemSlot];
          if (item.type !== itemType) continue;
 
          const amountConsumed = Math.min(remainingAmountToConsume, item.count);
@@ -277,16 +279,26 @@ class InventoryComponent extends Component {
       return totalAmountConsumed;
    }
 
-   public consumeItem(inventoryName: string, itemSlot: number, amount: number): void {
+   /**
+    * @returns The amount of items consumed
+    */
+   public consumeItem(inventoryName: string, itemSlot: number, amount: number): number {
       const inventory = this.getInventory(inventoryName);
       
       const item = inventory.itemSlots[itemSlot];
-      if (typeof item === "undefined") return;
+      if (typeof item === "undefined") return 0;
 
       item.count -= amount;
+
+      // If all items have been removed, delete that item
       if (item.count <= 0) {
          delete inventory.itemSlots[itemSlot];
+         // As the item count is 0 or negative, we add instead of subtract
+         return amount + item.count;
       }
+
+      // If there are still items remaining, then the full amount has been consumed
+      return amount;
    }
 
    public removeItemFromInventory(inventoryName: string, itemSlot: number): void {

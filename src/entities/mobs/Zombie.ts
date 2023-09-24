@@ -1,4 +1,4 @@
-import { PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -23,8 +23,6 @@ class Zombie extends Mob {
 
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
-
-   private numFootstepsTaken = 0;
 
    // Stores the ids of all entities which have recently attacked the zombie
    private readonly attackingEntities: Record<number, number> = {};
@@ -91,7 +89,7 @@ class Zombie extends Mob {
             const healthBeforeAttack = playerHealthComponent.getHealth();
 
             // Damage and knock back the player
-            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.zombie, "zombie");
+            playerHealthComponent.damage(Zombie.ATTACK_DAMAGE, Zombie.ATTACK_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.zombie, 0, "zombie");
             playerHealthComponent.addLocalInvulnerabilityHash("zombie", 0.3);
 
             // Push the zombie away from the entity
@@ -101,22 +99,14 @@ class Zombie extends Mob {
          }
       });
 
-      this.createEvent("hurt", (_1, attackingEntity: Entity | null, _knockback: number, hitDirection: number | null): void => {
-         this.createBloodPoolParticle();
-
+      this.createEvent("hurt", (_, attackingEntity: Entity | null): void => {
          if (attackingEntity !== null) {
             this.attackingEntities[attackingEntity.id] = Zombie.ATTACK_PURSUE_TIME;
-         }
-
-         if (hitDirection !== null) {
-            for (let i = 0; i < 10; i++) {
-               this.createBloodParticle(hitDirection);
-            }
          }
       });
 
       if (Math.random() < 0.1) {
-         itemCreationComponent.createItemOnDeath("eyeball", 1, true);
+         itemCreationComponent.createItemOnDeath(ItemType.eyeball, 1, true);
       }
    }
 
@@ -143,16 +133,9 @@ class Zombie extends Mob {
       // If day time, ignite
       if (Board.time >= 6 && Board.time < 18) {
          // Ignite randomly or stay on fire if already on fire
-         if (super.hasStatusEffect("fire") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
-            super.applyStatusEffect("fire", 5);
+         if (super.hasStatusEffect("burning") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
+            super.applyStatusEffect("burning", 5);
          }
-      }
-
-      // Create footsteps
-      if (this.acceleration !== null && this.velocity !== null && Board.tickIntervalHasPassed(0.3)) {
-         this.createFootprintParticle(this.numFootstepsTaken, 20, 1, 4);
-
-         this.numFootstepsTaken++;
       }
    }
 

@@ -1,9 +1,7 @@
-import { ParticleType, Point, SETTINGS, TileInfo, TileType, Vector, randFloat, randSign } from "webgl-test-shared";
+import { SETTINGS, TileInfo, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import Tile from "../tiles/Tile";
 import AI, { BaseAIParams } from "./AI";
-import Particle from "../Particle";
-import Board from "../Board";
 
 type FoodSource = {
    /** Amount of food given by eating the source */
@@ -54,13 +52,6 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
       super.tick();
 
       if (this.canGraze()) {
-         if (Board.tickIntervalHasPassed(0.1)) {
-            const spawnPosition = this.mob.position.copy();
-            const offset = new Vector(30 * Math.random(), 2 * Math.PI * Math.random());
-            spawnPosition.add(offset.convertToPoint());
-            this.createDirtParticle(spawnPosition);
-         }
-
          this.grazeTimer -= 1 / SETTINGS.TPS;
          if (this.grazeTimer <= 0) {
             const foodInfo = this.tileTargets.get(this.mob.tile.type)!;
@@ -86,34 +77,14 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
       new Tile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall);
 
       this.mob.setAIParam("hunger", 0);
-
-      for (let i = 0; i < 15; i++) {
-         const x = (previousTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (previousTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-         const spawnPosition = new Point(x, y);
-         this.createDirtParticle(spawnPosition);
-      }
    }
 
-   private createDirtParticle(spawnPosition: Point): void {
-      const speedMultiplier = randFloat(1, 2.2);
+   public getGrazeProgress(): number {
+      if (!this.tileTargets.has(this.mob.tile.type)) {
+         return -1;
+      }
 
-      const lifetime = randFloat(1, 1.5);
-
-      new Particle({
-         type: ParticleType.dirt,
-         spawnPosition: spawnPosition,
-         initialVelocity: new Vector(80 * speedMultiplier, 2 * Math.PI * Math.random()),
-         initialAcceleration: null,
-         initialRotation: 2 * Math.PI * Math.random(),
-         angularVelocity: Math.PI * randFloat(3, 4) * randSign(),
-         angularAcceleration: -4 * speedMultiplier,
-         opacity: (age: number) => {
-            return Math.pow(1 - age / lifetime, 0.5);
-         },
-         drag: 300,
-         lifetime: lifetime
-      });
+      return 1 - this.grazeTimer / this.tileTargets.get(this.mob.tile.type)!.grazeTime;
    }
 
    protected _getWeight(): number {
@@ -123,7 +94,6 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
       if (this.canGraze() && hunger >= 95) {
          return 1;
       }
-
       return 0;
    }
 

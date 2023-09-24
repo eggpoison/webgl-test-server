@@ -1,11 +1,10 @@
-import { Point, SETTINGS, Vector } from "webgl-test-shared";
+import { ItemType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import DroppedItem from "../../items/DroppedItem";
-import { createItem } from "../../items/item-creation";
 import Board from "../../Board";
-import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import Item from "../../items/Item";
 
 class BerryBush extends Entity {
    private static readonly HEALTH = 10;
@@ -78,7 +77,7 @@ class BerryBush extends Entity {
    private dropBerry(): void {
       this.numBerries--;
 
-      const berry = createItem("berry", 1);
+      const berry = new Item(ItemType.berry, 1);
 
       // Generate new spawn positions until we find one inside the board
       let position: Point;

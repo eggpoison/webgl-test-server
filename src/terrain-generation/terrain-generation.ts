@@ -209,12 +209,6 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
          crossingDirection = startTile.flowDirection + directionOffset - Math.PI/2;
       }
 
-      // console.log(startTile.tileX, startTile.tileY);
-      // validStartTiles.push({
-      //    x: startTile.tileX,
-      //    y: startTile.tileY
-      // });
-
       let a1!: number;
       let b1!: number;
 

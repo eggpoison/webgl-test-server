@@ -80,20 +80,26 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.008,
       spawnValidationFunction: Yeti.spawnValidationFunction
    },
-   // {
-   //    entityType: "ice_spikes",
-   //    spawnableTiles: ["ice", "permafrost"],
-   //    spawnRate: 0.015,
-   //    maxDensity: 0.06,
-   //    // spawnRate: 0.015 * 50,
-   //    // maxDensity: 0.06 * 50
-   // },
-   // {
-   //    entityType: "slimewisp",
-   //    spawnableTiles: ["slime"],
-   //    spawnRate: 0.2,
-   //    maxDensity: 0.3
-   // }
+   {
+      entityType: "ice_spikes",
+      spawnableTiles: ["ice", "permafrost"],
+      spawnRate: 0.015,
+      maxDensity: 0.06,
+      // spawnRate: 0.015 * 50,
+      // maxDensity: 0.06 * 50
+   },
+   {
+      entityType: "slimewisp",
+      spawnableTiles: ["slime"],
+      spawnRate: 0.2,
+      maxDensity: 0.3
+   },
+   {
+      entityType: "krumblid",
+      spawnableTiles: ["sand"],
+      spawnRate: 0.15,
+      maxDensity: 0.02
+   }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */

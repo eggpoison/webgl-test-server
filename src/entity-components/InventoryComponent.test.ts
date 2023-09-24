@@ -1,14 +1,14 @@
+import Item from "../items/Item";
 import InventoryComponent from "./InventoryComponent";
-import { createItem } from "../items/item-creation";
-import { ITEM_INFO_RECORD } from "webgl-test-shared";
+import { ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
 
 test("Items can't be added past their stack size", () => {
    // Create a test inventory
    const inventoryComponent = new InventoryComponent();
    inventoryComponent.createNewInventory("inventory", 10, 1, true);
 
-   const woodStackSize = ITEM_INFO_RECORD.wood.stackSize;
-   const item = createItem("wood", woodStackSize + 1);
+   const woodStackSize = ITEM_INFO_RECORD[ItemType.wood].stackSize;
+   const item = new Item(ItemType.wood, woodStackSize + 1);
 
    inventoryComponent.addItem(item);
 
