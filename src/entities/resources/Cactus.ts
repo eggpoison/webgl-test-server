@@ -83,6 +83,7 @@ class Cactus extends Entity {
          item_creation: itemCreationComponent
       }, "cactus", isNaturallySpawned);
 
+      this.rotation = 2 * Math.PI * Math.random();
 
       const hitbox = new CircularHitbox();
       hitbox.setHitboxInfo(Cactus.RADIUS - Cactus.HITBOX_PADDING);
@@ -100,8 +101,7 @@ class Cactus extends Entity {
          this.addHitbox(hitbox);
       }
 
-      const spineDropCount = randInt(2, 5);
-      itemCreationComponent.createItemOnDeath(ItemType.cactus_spine, spineDropCount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.cactus_spine, randInt(2, 5), true);
 
       this.isStatic = true;
       

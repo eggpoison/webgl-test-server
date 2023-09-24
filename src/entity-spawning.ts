@@ -67,12 +67,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.005,
       maxDensity: 0.025
    },
-   // {
-   //    entityType: "cactus",
-   //    spawnableTiles: ["sand"],
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.03
-   // },
+   {
+      entityType: "cactus",
+      spawnableTiles: ["sand"],
+      spawnRate: 0.005,
+      maxDensity: 0.03
+   },
    {
       entityType: "yeti",
       spawnableTiles: ["snow"],
@@ -88,18 +88,18 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       // spawnRate: 0.015 * 50,
       // maxDensity: 0.06 * 50
    },
-   {
-      entityType: "slimewisp",
-      spawnableTiles: ["slime"],
-      spawnRate: 0.2,
-      maxDensity: 0.3
-   },
-   {
-      entityType: "krumblid",
-      spawnableTiles: ["sand"],
-      spawnRate: 0.15,
-      maxDensity: 0.02
-   }
+   // {
+   //    entityType: "slimewisp",
+   //    spawnableTiles: ["slime"],
+   //    spawnRate: 0.2,
+   //    maxDensity: 0.3
+   // },
+   // {
+   //    entityType: "krumblid",
+   //    spawnableTiles: ["sand"],
+   //    spawnRate: 0.15,
+   //    maxDensity: 0.02
+   // }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */
