@@ -1,4 +1,4 @@
-import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
+import { ArmourItemInfo, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -8,6 +8,7 @@ import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import TribeMember from "../tribes/TribeMember";
 
 class Zombie extends Mob {
    /** Chance for a zombie to spontaneously combust every second */
@@ -82,7 +83,7 @@ class Zombie extends Mob {
 
       // Hurt enemies on collision
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
-         if (this.shouldAttackEntity(collidingEntity)) {
+         if (collidingEntity.type === "player" || this.shouldAttackEntity(collidingEntity)) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
             const playerHealthComponent = collidingEntity.getComponent("health")!;
 
@@ -116,7 +117,18 @@ class Zombie extends Mob {
          return true;
       }
 
-      return entity.type === "player" || entity.type === "tribesman" || entity.type === "tribe_totem" || entity.type === "tribe_hut";
+      // Attack tribe members, but only if they aren't wearing a meat suit
+      if (entity.type === "player" || entity.type === "tribesman") {
+         const armourInventory = (entity as TribeMember).getComponent("inventory")!.getInventory("armourSlot");
+         if (armourInventory.itemSlots.hasOwnProperty(1)) {
+            if (armourInventory.itemSlots[1].type === ItemType.meat_suit) {
+               return false;
+            }
+         }
+         return true;
+      }
+
+      return entity.type === "tribe_totem" || entity.type === "tribe_hut" || entity.type === "barrel";
    }
 
    public tick(): void {
