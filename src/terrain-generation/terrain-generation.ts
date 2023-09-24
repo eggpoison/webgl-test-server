@@ -285,7 +285,8 @@ function generateTerrain(): TerrainGenerationInfo {
    generateBiomeInfo(tileInfoArray);
 
    // Generate rivers
-   const riverTiles = generateRiverTiles();
+   // const riverTiles = generateRiverTiles();
+   const riverTiles = new Array<WaterTileGenerationInfo>();
 
    const riverFlowDirections: Record<number, Record<number, number>> = {};
 

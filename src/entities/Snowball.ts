@@ -13,12 +13,13 @@ class Snowball extends Entity {
    private static readonly MAX_HEALTHS: Record<SnowballSize, number> = {
       [SnowballSize.small]: 5,
       [SnowballSize.large]: 10
-   }
+   };
 
    private readonly size: SnowballSize;
 
    private age = 0;
    private readonly lifetime = randFloat(...Snowball.LIFETIME);
+   // private readonly lifetime = 0.75;
 
    private angularVelocity = randFloat(1, 2) * Math.PI * randSign();
 

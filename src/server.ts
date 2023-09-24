@@ -16,6 +16,8 @@ import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Tombstone from "./entities/Tombstone";
+import BerryBush from "./entities/resources/BerryBush";
+import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -327,6 +329,16 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
          // const spawnPosition = new Point(50, 50);
+
+         // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
+         // for (let i = 0; i < 8; i++) {
+         //    const p = o.copy();
+         //    const offset = new Vector(125, i / 4 * Math.PI);
+         //    p.add(offset.convertToPoint());
+         //    const b = new BerryBush(p, false);
+         //    b.rotation = i / 4 * Math.PI;
+         // }
+         // new Cow(o.copy(), false);
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
