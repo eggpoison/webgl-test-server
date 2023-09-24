@@ -333,6 +333,16 @@ class GameServer {
          }, 2000);
          // const spawnPosition = new Point(50, 50);
 
+         // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
+         // for (let i = 0; i < 8; i++) {
+         //    const p = o.copy();
+         //    const offset = new Vector(125, i / 4 * Math.PI);
+         //    p.add(offset.convertToPoint());
+         //    const b = new BerryBush(p, false);
+         //    b.rotation = i / 4 * Math.PI;
+         // }
+         // new Cow(o.copy(), false);
+
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
          // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y), false);

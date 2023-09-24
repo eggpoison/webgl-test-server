@@ -244,13 +244,13 @@ class Yeti extends Mob {
    private throwSnow(target: Entity): void {
       const throwAngle = this.position.calculateAngleBetween(target.position);
 
-      const numLargeProjectiles = randInt(1, 2);
-      for (let i = 0; i < numLargeProjectiles; i++) {
+      // Large snowballs
+      for (let i = 0; i < 2; i++) {
          this.createSnowball(SnowballSize.large, throwAngle);
       }
 
-      const numSmallProjectiles = randInt(2, 3);
-      for (let i = 0; i < numSmallProjectiles; i++) {
+      // Small snowballs
+      for (let i = 0; i < 3; i++) {
          this.createSnowball(SnowballSize.small, throwAngle);
       }
 

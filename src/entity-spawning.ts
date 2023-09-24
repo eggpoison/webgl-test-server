@@ -43,8 +43,10 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "berry_bush",
       spawnableTiles: ["grass"],
-      spawnRate: 0.001,
-      maxDensity: 0.0025
+      // spawnRate: 0.001,
+      // maxDensity: 0.0025
+      spawnRate: 0.005,
+      maxDensity: 0.005,
    },
    {
       entityType: "tree",
@@ -65,12 +67,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.005,
       maxDensity: 0.025
    },
-   {
-      entityType: "cactus",
-      spawnableTiles: ["sand"],
-      spawnRate: 0.005,
-      maxDensity: 0.03
-   },
+   // {
+   //    entityType: "cactus",
+   //    spawnableTiles: ["sand"],
+   //    spawnRate: 0.005,
+   //    maxDensity: 0.03
+   // },
    {
       entityType: "yeti",
       spawnableTiles: ["snow"],

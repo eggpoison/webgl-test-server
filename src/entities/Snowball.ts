@@ -17,6 +17,7 @@ class Snowball extends Entity {
 
    private age = 0;
    private readonly lifetime = randFloat(...Snowball.LIFETIME);
+   // private readonly lifetime = 0.75;
 
    private angularVelocity = randFloat(1, 2) * Math.PI * randSign();
 
