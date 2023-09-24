@@ -478,9 +478,16 @@ abstract class TribeMember extends Mob {
                }
             });
 
-            // TODO: This is a shitty way of doing this, and can destroy the arrow too early
+            // @Cleanup This is a shitty way of doing this (ideally shouldn't attach a listener), and can destroy the arrow too early
             // Also doesn't account for wall tiles
             arrowProjectile.tickCallback = (): void => {
+               if (arrowProjectile.velocity !== null) {
+                  arrowProjectile.velocity.magnitude -= itemInfo.airResistance / SETTINGS.TPS;
+                  if (arrowProjectile.velocity.magnitude <= 0) {
+                     arrowProjectile.velocity = null;
+                  }
+               }
+               
                // Destroy the arrow if it reaches the border
                if (arrowProjectile.position.x <= TribeMember.ARROW_DESTROY_DISTANCE || arrowProjectile.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - TribeMember.ARROW_DESTROY_DISTANCE || arrowProjectile.position.y <= TribeMember.ARROW_DESTROY_DISTANCE || arrowProjectile.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - TribeMember.ARROW_DESTROY_DISTANCE) {
                   arrowProjectile.remove();

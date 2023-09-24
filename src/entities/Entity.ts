@@ -7,9 +7,9 @@ import _GameObject, { GameObjectEvents } from "../GameObject";
 import { addEntityToCensus } from "../census";
 
 export interface EntityComponents {
-   readonly health: HealthComponent;
-   readonly inventory: InventoryComponent;
-   readonly item_creation: ItemCreationComponent;
+   health: HealthComponent;
+   inventory: InventoryComponent;
+   item_creation: ItemCreationComponent;
 }
 
 const filterTickableComponents = (components: Partial<EntityComponents>): ReadonlyArray<Component> => {
@@ -56,7 +56,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
-   // TODO: Remove the "isNaturallySpawned" flag. Perhaps instead make a function which adds the entity to the census? But would be inconvenient to use
+   // @Cleanup Remove the "isNaturallySpawned" flag. Perhaps instead make a function which adds the entity to the census? But would be inconvenient to use
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
       super(position);
 

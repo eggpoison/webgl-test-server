@@ -5,6 +5,7 @@ import { getTilesOfBiome } from "./census";
 import Board from "./Board";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Item from "./items/Item";
+import Tile from "./tiles/Tile";
 
 const ENTITY_SPAWN_RANGE = 200;
 
@@ -65,8 +66,16 @@ const tpBiome = (username: string, biomeName: BiomeName): void => {
       console.warn(`No available tiles of biome '${biomeName}' to teleport to.`);
       return;
    }
+
+   let numAttempts = 0;
+   let tile: Tile;
+   do {
+      tile = randItem(potentialTiles);
+      if (++numAttempts === 999) {
+         return;
+      }
+   } while (tile.isWall);
    
-   const tile = randItem(potentialTiles);
    const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
    const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
 

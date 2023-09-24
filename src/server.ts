@@ -17,6 +17,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
+import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -55,6 +56,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       hitboxes: Array.from(entity.hitboxes).map(hitbox => {
          return bundleHitboxData(hitbox);
       }),
+      ageTicks: entity.ageTicks,
       type: entity.type,
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
@@ -73,6 +75,7 @@ const bundleDroppedItemData = (droppedItem: DroppedItem): DroppedItemData => {
       hitboxes: Array.from(droppedItem.hitboxes).map(hitbox => {
          return bundleHitboxData(hitbox);
       }),
+      ageTicks: droppedItem.ageTicks,
       type: droppedItem.item.type
    };
 }
@@ -87,6 +90,7 @@ const bundleProjectileData = (projectile: Projectile): ProjectileData => {
       hitboxes: Array.from(projectile.hitboxes).map(hitbox => {
          return bundleHitboxData(hitbox);
       }),
+      ageTicks: projectile.ageTicks,
       type: projectile.type
    };
 }
@@ -251,13 +255,13 @@ class GameServer {
 
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
-      
-      Board.pushJoinBuffer();
 
       Board.updateTribes();
 
       Board.updateGameObjects();
       Board.resolveCollisions();
+      
+      Board.pushJoinBuffer();
 
       // Age items
       if (Board.ticks % SETTINGS.TPS === 0) {
@@ -323,6 +327,10 @@ class GameServer {
 
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
+
+         setTimeout(() => {
+            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y), false);
+         }, 2000);
          // const spawnPosition = new Point(50, 50);
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);

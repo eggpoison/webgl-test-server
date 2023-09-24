@@ -40,6 +40,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Unique identifier for each game object */
    public readonly id: number;
 
+   public ageTicks = 0;
+
    /** Position of the object in the world */
    public position: Point;
    /** Velocity of the object */
@@ -117,6 +119,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public tick(): void {
+      this.ageTicks++;
+      
       this.applyPhysics();
       this.updateHitboxes();
       this.updateContainingChunks();

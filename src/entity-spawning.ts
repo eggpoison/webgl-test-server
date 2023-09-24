@@ -91,6 +91,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["slime"],
       spawnRate: 0.2,
       maxDensity: 0.3
+   },
+   {
+      entityType: "krumblid",
+      spawnableTiles: ["sand"],
+      spawnRate: 0.15,
+      maxDensity: 0.02
    }
 ];
 

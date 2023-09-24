@@ -62,6 +62,7 @@ class Yeti extends Mob {
    private static readonly SNOW_THROW_WINDUP_TIME = 1.75;
    private static readonly SNOW_THROW_HOLD_TIME = 0.1;
    private static readonly SNOW_THROW_RETURN_TIME = 0.6;
+   private static readonly SNOW_THROW_KICKBACK_AMOUNT = 110;
 
    public readonly mass = 3;
    
@@ -252,6 +253,9 @@ class Yeti extends Mob {
       for (let i = 0; i < numSmallProjectiles; i++) {
          this.createSnowball(SnowballSize.small, throwAngle);
       }
+
+      // Kickback
+      this.addVelocity(new Vector(Yeti.SNOW_THROW_KICKBACK_AMOUNT, throwAngle + Math.PI));
    }
 
    private createSnowball(size: SnowballSize, throwAngle: number): void {

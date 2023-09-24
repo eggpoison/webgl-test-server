@@ -24,8 +24,8 @@ abstract class Board {
    public static ticks: number = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   // public static time: number = 6;
-   public static time: number = 0;
+   public static time: number = 6;
+   // public static time: number = 0;
 
    private static readonly gameObjects = new Set<GameObject>();
 

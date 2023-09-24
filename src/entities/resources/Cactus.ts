@@ -106,6 +106,10 @@ class Cactus extends Entity {
       this.isStatic = true;
       
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
+         if (collidingEntity.type === "krumblid") {
+            return;
+         }
+         
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);

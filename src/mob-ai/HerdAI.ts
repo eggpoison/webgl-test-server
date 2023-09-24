@@ -172,8 +172,6 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
       }
 
       // Wall avoidance (turn away from the nearest wall)
-      // TODO: (problem) Currently this system has priorities over which wall to steer away from, which is a problem in corners
-      // Top wall > right wall > bottom wall > left wall
 
       {
       
