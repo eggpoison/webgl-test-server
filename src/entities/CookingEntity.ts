@@ -21,6 +21,14 @@ const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
       productAmount: 1,
       cookTime: 5,
       usableHeatingEntityTypes: ["campfire", "furnace"]
+   },
+   {
+      ingredientType: ItemType.meat_suit,
+      ingredientAmount: 1,
+      productType: ItemType.cooked_beef,
+      productAmount: 5,
+      cookTime: 5,
+      usableHeatingEntityTypes: ["campfire", "furnace"]
    }
 ];
 
