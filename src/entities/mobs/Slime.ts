@@ -1,4 +1,4 @@
-import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, STATUS_EFFECT_MODIFIERS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -49,11 +49,13 @@ class Slime extends Mob {
    ];
 
    /** Weights of each type of slime and slimewisp used when merging */
-   private static readonly SLIME_WEIGHTS: ReadonlyArray<number> = [
+   private static readonly SLIME_MERGE_WEIGHTS: ReadonlyArray<number> = [
       2, // small slime
       5, // medium slime
       11 // large slime
    ];
+
+   private static readonly SLIME_MASSES = [1, 1.5, 2];
 
    private static readonly VISION: ReadonlyArray<number> = [
       200, // small slime
@@ -78,6 +80,9 @@ class Slime extends Mob {
    private static readonly ANGER_DIFFUSE_MULTIPLIER = 0.15;
    
    private static readonly MAX_ANGER_PROPAGATION_CHAIN_LENGTH = 5;
+
+   private static readonly HEALING_ON_SLIME_PER_SECOND = 0.5;
+   private static readonly HEALING_PROC_INTERVAL = 0.1;
    
    private mergeTimer = Slime.MERGE_TIME;
 
@@ -102,7 +107,8 @@ class Slime extends Mob {
 
       const speedMultiplier = Slime.SPEED_MULTIPLIERS[size];
 
-      this.mergeWeight = Slime.SLIME_WEIGHTS[size];
+      this.mergeWeight = Slime.SLIME_MERGE_WEIGHTS[size];
+      this.mass = Slime.SLIME_MASSES[size];
 
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
@@ -217,6 +223,15 @@ class Slime extends Mob {
          }
       }
 
+      // Remove anger at an entity if the entity is dead
+      for (let i = 0; i < this.angeredEntities.length; i++) {
+         const angerInfo = this.angeredEntities[i];
+         if (angerInfo.target.isRemoved) {
+            this.angeredEntities.splice(i, 1);
+            i--;
+         }
+      }
+
       // Decrease anger
       for (let i = this.angeredEntities.length - 1; i >= 0; i--) {
          const angerInfo = this.angeredEntities[i];
@@ -251,6 +266,13 @@ class Slime extends Mob {
             }
          }
       }
+
+      // Heal when standing on slime blocks
+      if (this.tile.type === "slime") {
+         if (Board.tickIntervalHasPassed(Slime.HEALING_PROC_INTERVAL)) {
+            this.getComponent("health")!.heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
+         }
+      }
    }
 
    /**
@@ -268,7 +290,7 @@ class Slime extends Mob {
 
       this.mergeWeight += otherSlime.mergeWeight;
 
-      if (this.size < SlimeSize.large && this.mergeWeight >= Slime.SLIME_WEIGHTS[this.size + 1]) {
+      if (this.size < SlimeSize.large && this.mergeWeight >= Slime.SLIME_MERGE_WEIGHTS[this.size + 1]) {
          const slime = new Slime(new Point((this.position.x + otherSlime.position.x) / 2, (this.position.y + otherSlime.position.y) / 2), false, this.size + 1);
 
          // Add orbs from the 2 existing slimes
@@ -367,6 +389,14 @@ class Slime extends Mob {
             propagationInfo.chainLength--;
          }
       }
+   }
+
+   protected overrideTileMoveSpeedMultiplier(): number | null {
+      // Slimes move at normal speed on slime blocks
+      if (this.tile.type === "slime") {
+         return 1;
+      }
+      return null;
    }
    
    public getClientArgs(): [size: SlimeSize, eyeRotation: number, orbs: ReadonlyArray<SlimeOrbData>] {

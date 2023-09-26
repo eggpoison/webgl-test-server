@@ -17,6 +17,8 @@ class Slimewisp extends Mob {
 
    private mergeTimer = Slimewisp.MERGE_TIME;
 
+   public mass = 0.5;
+
    constructor(position: Point, isNaturallySpawned: boolean) {
       super(position, {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)

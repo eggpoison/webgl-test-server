@@ -61,7 +61,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
       mobAIType: entity instanceof Mob ? ((entity as Mob).getCurrentAIType() || "---") : undefined,
-      hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : []
+      hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : [],
+      amountHealed: healthComponent !== null ? healthComponent.amountHealedSinceLastPacketSend : 0
    };
 }
 
@@ -121,10 +122,11 @@ const bundleEntityDataArray = (visibleEntities: ReadonlyArray<Entity>): Readonly
       const entityData = bundleEntityData(entity);
       entityDataArray.push(entityData);
 
-      // Reset hits taken
+      // Reset hits taken and amount healed
       const healthComponent = entity.getComponent("health");
       if (healthComponent !== null) {
          healthComponent.hitsTaken = [];
+         healthComponent.amountHealedSinceLastPacketSend = 0;
       }
    }
 

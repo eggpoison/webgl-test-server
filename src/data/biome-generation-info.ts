@@ -122,8 +122,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            tileType: "rock",
-            // tileType: "darkRock",
+            // tileType: "rock",
+            tileType: "darkRock",
             isWall: true,
             noiseRequirements: {
                scale: 7,
@@ -168,7 +168,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          //    isWall: false
          // }
          {
-            tileType: "sludge",
+            // @Temporary
+            tileType: "slime",
             isWall: false,
             noiseRequirements: {
                scale: 5,

@@ -25,6 +25,8 @@ class HealthComponent extends Component {
 
    public hitsTaken = new Array<HitData>();
 
+   public amountHealedSinceLastPacketSend = 0;
+
    constructor(maxHealth: number, hasGlobalInvulnerability: boolean) {
       super();
 
@@ -146,10 +148,17 @@ class HealthComponent extends Component {
    }
 
    public heal(healAmount: number): void {
+      let amountHealed: number;
+
       this.health += healAmount;
       if (this.health > this.maxHealth) {
+         amountHealed = healAmount - (this.health - this.maxHealth); // Calculate by removing excess healing from amount healed
          this.health = this.maxHealth;
+      } else {
+         amountHealed = healAmount;
       }
+
+      this.amountHealedSinceLastPacketSend += amountHealed;
    }
 
    public addLocalInvulnerabilityHash(hash: string, invulnerabiityDurationSeconds: number): void {

@@ -90,7 +90,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "slimewisp",
-      spawnableTiles: ["slime"],
+      // spawnableTiles: ["slime"],
+      spawnableTiles: ["slime", "sludge"],
       spawnRate: 0.2,
       maxDensity: 0.3
    },
