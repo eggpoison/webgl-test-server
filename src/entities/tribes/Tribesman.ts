@@ -437,7 +437,7 @@ class Tribesman extends TribeMember {
       this.lastAttackTicks = Board.ticks;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData, activeItemSlot: number] {
       const inventoryComponent = this.getComponent("inventory")!;
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
 
@@ -451,7 +451,8 @@ class Tribesman extends TribeMember {
          this.getFoodEatingType(),
          this.lastAttackTicks,
          this.lastEatTicks,
-         serializeInventoryData(hotbarInventory, "hotbar")
+         serializeInventoryData(hotbarInventory, "hotbar"),
+         this.selectedItemSlot
       ];
    }
 }
