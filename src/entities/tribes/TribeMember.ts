@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -30,7 +30,7 @@ export enum AttackToolType {
 }
 
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
-   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush") {
+   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush" || entity.type === "cactus" || entity.type === "snowball") {
       return AttackToolType.weapon;
    }
    if (pickaxeDamageableEntities.includes(entity.type)) {
@@ -63,7 +63,7 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
    readonly height: number;
 }
 
-const PLACEABLE_ITEM_HITBOX_INFO = {
+const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo> = {
    [ItemType.workbench]: {
       type: PlaceableItemHitboxType.rectangular,
       width: Workbench.SIZE,
@@ -98,11 +98,9 @@ const PLACEABLE_ITEM_HITBOX_INFO = {
       height: Furnace.SIZE,
       placeOffset: Furnace.SIZE / 2
    }
-} satisfies Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>>;
+};
 
-type PlaceableItemType = keyof typeof PLACEABLE_ITEM_HITBOX_INFO;
-
-function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is keyof typeof PLACEABLE_ITEM_HITBOX_INFO {
+function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is PlaceableItemType {
    if (!PLACEABLE_ITEM_HITBOX_INFO.hasOwnProperty(itemType)) {
       throw new Error(`Entity type '${itemType}' is not placeable.`);
    }

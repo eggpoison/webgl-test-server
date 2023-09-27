@@ -34,6 +34,8 @@ class TribeTotem extends Entity {
    private readonly banners: Record<number, TribeTotemBanner> = {};
 
    private readonly availableBannerPositions = Array.from(new Set(TRIBE_TOTEM_POSITIONS));
+
+   public mass = 2.5;
    
    constructor(position: Point) {
       super(position, {

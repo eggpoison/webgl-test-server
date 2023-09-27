@@ -10,6 +10,8 @@ class TribeHut extends Entity {
    public static readonly SIZE = 88;
 
    public readonly tribe: Tribe;
+
+   public mass = 1.5;
    
    constructor(position: Point, tribe: Tribe) {
       super(position, {
