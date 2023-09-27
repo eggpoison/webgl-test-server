@@ -77,6 +77,9 @@ class Slime extends Mob {
       75
    ];
 
+   /** Limit to the number of entities that can be in a slime's vision range for them to be able to merge */
+   private static readonly MAX_ENTITIES_IN_RANGE_FOR_MERGE = 7;
+
    private static readonly ANGER_DIFFUSE_MULTIPLIER = 0.15;
    
    private static readonly MAX_ANGER_PROPAGATION_CHAIN_LENGTH = 5;
@@ -151,6 +154,11 @@ class Slime extends Mob {
          acceleration: 60 * speedMultiplier,
          terminalVelocity: 30 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
+            // If there are more slimes in the vision range than is allowed, don't merge
+            if (this.entitiesInVisionRange.size > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
+               return false;
+            }
+            
             if (entity.type === "slime") {
                return this.wantsToMerge(entity as Slime);
             }
@@ -399,7 +407,7 @@ class Slime extends Mob {
       return null;
    }
    
-   public getClientArgs(): [size: SlimeSize, eyeRotation: number, orbs: ReadonlyArray<SlimeOrbData>] {
+   public getClientArgs(): [size: SlimeSize, eyeRotation: number, orbs: ReadonlyArray<SlimeOrbData>, anger: number] {
       const orbs = new Array<SlimeOrbData>();
       // Convert from moving orbs to regular orbs
       for (const orb of this.orbs) {
@@ -409,8 +417,18 @@ class Slime extends Mob {
             size: orb.size
          });
       }
+
+      let anger = -1;
+      if (this.angeredEntities.length > 0) {
+         // Find maximum anger
+         for (const angerInfo of this.angeredEntities) {
+            if (angerInfo.angerAmount > anger) {
+               anger = angerInfo.angerAmount;
+            }
+         }
+      }
       
-      return [this.size, this.eyeRotation, orbs];
+      return [this.size, this.eyeRotation, orbs, anger];
    }
 }
 
