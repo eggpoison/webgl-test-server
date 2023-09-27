@@ -117,7 +117,7 @@ class Tribe {
       const offset = new Vector(10, hut.rotation).convertToPoint();
       position.add(offset);
       
-      const tribesman = new Tribesman(position, false, this.tribeType, this);
+      const tribesman = new Tribesman(position, this.tribeType, this);
       tribesman.rotation = hut.rotation;
 
       this.members.push(tribesman);

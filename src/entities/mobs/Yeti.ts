@@ -52,6 +52,8 @@ class Yeti extends Mob {
    private static readonly MIN_TERRITORY_SIZE = 50;
    private static readonly MAX_TERRITORY_SIZE = 100;
 
+   private static readonly VISION_RANGE = SETTINGS.TILE_SIZE * 7;
+
    private static readonly ATTACK_PURSUE_TIME = 5;
 
    private static readonly SNOW_THROW_COOLDOWN = 7;
@@ -85,7 +87,7 @@ class Yeti extends Mob {
       super(position, {
          health: new HealthComponent(Yeti.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "yeti", SETTINGS.TILE_SIZE * 7, true);
+      }, "yeti", Yeti.VISION_RANGE);
 
       this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 1);
@@ -94,6 +96,7 @@ class Yeti extends Mob {
       hitbox.setHitboxInfo(Yeti.SIZE / 2);
       this.addHitbox(hitbox);
 
+      // Snow throw AI
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1.5,
          acceleration: 0,
@@ -103,6 +106,7 @@ class Yeti extends Mob {
          }
       }));
 
+      // Regular chase AI
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
          acceleration: 200,
@@ -201,31 +205,38 @@ class Yeti extends Mob {
       }
 
       if (this.isThrowingSnow) {
-         switch (this.snowThrowStage) {
-            case SnowThrowStage.windup: {
-               this.snowThrowAttackProgress -= 1 / SETTINGS.TPS / Yeti.SNOW_THROW_WINDUP_TIME;
-               if (this.snowThrowAttackProgress <= 0) {
-                  this.throwSnow(this.attackTarget!);
-                  this.snowThrowAttackProgress = 0;
-                  this.snowThrowCooldown = Yeti.SNOW_THROW_COOLDOWN;
-                  this.snowThrowStage = SnowThrowStage.hold;
-                  this.snowThrowHoldTimer = 0;
+         // If the target has run outside the yeti's vision range, cancel the attack
+         if (this.attackTarget !== null && this.position.calculateDistanceBetween(this.attackTarget.position) > Yeti.VISION_RANGE) {
+            this.snowThrowAttackProgress = 1;
+            this.attackTarget = null;
+            this.isThrowingSnow = false;
+         } else {
+            switch (this.snowThrowStage) {
+               case SnowThrowStage.windup: {
+                  this.snowThrowAttackProgress -= 1 / SETTINGS.TPS / Yeti.SNOW_THROW_WINDUP_TIME;
+                  if (this.snowThrowAttackProgress <= 0) {
+                     this.throwSnow(this.attackTarget!);
+                     this.snowThrowAttackProgress = 0;
+                     this.snowThrowCooldown = Yeti.SNOW_THROW_COOLDOWN;
+                     this.snowThrowStage = SnowThrowStage.hold;
+                     this.snowThrowHoldTimer = 0;
+                  }
+                  break;
                }
-               break;
-            }
-            case SnowThrowStage.hold: {
-               this.snowThrowHoldTimer += 1 / SETTINGS.TPS;
-               if (this.snowThrowHoldTimer >= Yeti.SNOW_THROW_HOLD_TIME) {
-                  this.snowThrowStage = SnowThrowStage.return;
+               case SnowThrowStage.hold: {
+                  this.snowThrowHoldTimer += 1 / SETTINGS.TPS;
+                  if (this.snowThrowHoldTimer >= Yeti.SNOW_THROW_HOLD_TIME) {
+                     this.snowThrowStage = SnowThrowStage.return;
+                  }
+                  break;
                }
-               break;
-            }
-            case SnowThrowStage.return: {
-               this.snowThrowAttackProgress += 1 / SETTINGS.TPS / Yeti.SNOW_THROW_RETURN_TIME;
-               if (this.snowThrowAttackProgress >= 1) {
-                  this.snowThrowAttackProgress = 1;
-                  this.attackTarget = null;
-                  this.isThrowingSnow = false;
+               case SnowThrowStage.return: {
+                  this.snowThrowAttackProgress += 1 / SETTINGS.TPS / Yeti.SNOW_THROW_RETURN_TIME;
+                  if (this.snowThrowAttackProgress >= 1) {
+                     this.snowThrowAttackProgress = 1;
+                     this.attackTarget = null;
+                     this.isThrowingSnow = false;
+                  }
                }
             }
          }
@@ -273,7 +284,7 @@ class Yeti extends Mob {
       }
       const velocity = new Vector(velocityMagnitude, angle);
 
-      const snowball = new Snowball(position, false, size);
+      const snowball = new Snowball(position, size);
       snowball.velocity = velocity;
 
       // Keep track of the snowball

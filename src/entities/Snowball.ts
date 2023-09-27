@@ -23,10 +23,10 @@ class Snowball extends Entity {
 
    public canDamage = true;
 
-   constructor(position: Point, isNaturallySpawned: boolean, size: SnowballSize = SnowballSize.small) {
+   constructor(position: Point, size: SnowballSize = SnowballSize.small) {
       super(position, {
          health: new HealthComponent(Snowball.MAX_HEALTHS[size], false)
-      }, "snowball", isNaturallySpawned);
+      }, "snowball");
 
       this.size = size;
 

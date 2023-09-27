@@ -482,7 +482,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
-         const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
+         let dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
+         if (this.i === "entity" && (this as unknown as Entity).type === "slime" && gameObject.i === "entity" && (gameObject as unknown as Entity).type === "slime") {
+            dist += 0.15;
+         }
          const forceMultiplier = 1 / dist;
          
          const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * gameObject.mass / this.mass;

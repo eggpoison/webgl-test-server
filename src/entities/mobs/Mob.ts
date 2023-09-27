@@ -22,8 +22,8 @@ abstract class Mob extends Entity {
    protected entitiesInVisionRange = new Set<Entity>();
    public droppedItemsInVisionRange = new Set<DroppedItem>();
    
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean) {
-      super(position, components, entityType, isNaturallySpawned);
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
+      super(position, components, entityType);
 
       this.visionRange = visionRange;
    }
@@ -69,7 +69,7 @@ abstract class Mob extends Entity {
       }
       
       this.entitiesInVisionRange = this.calculateEntitiesInVisionRange();
-      // this.droppedItemsInVisionRange = this.calculateDroppedItemsInVisionRange();
+      this.droppedItemsInVisionRange = this.calculateDroppedItemsInVisionRange();
 
       // Update the values of all AI's
       for (const ai of this.ais) {

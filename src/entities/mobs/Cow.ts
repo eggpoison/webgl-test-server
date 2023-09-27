@@ -4,7 +4,6 @@ import ItemCreationComponent from "../../entity-components/ItemCreationComponent
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Mob from "./Mob";
 import EscapeAI from "../../mob-ai/EscapeAI";
-import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import HerdAI from "../../mob-ai/HerdAI";
@@ -18,11 +17,11 @@ class Cow extends Mob {
 
    public species: CowSpecies;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "cow", SETTINGS.TILE_SIZE * 4, isNaturallySpawned);
+      }, "cow", SETTINGS.TILE_SIZE * 4);
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 

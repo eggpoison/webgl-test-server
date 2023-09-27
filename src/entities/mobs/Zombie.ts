@@ -28,13 +28,13 @@ class Zombie extends Mob {
    // Stores the ids of all entities which have recently attacked the zombie
    private readonly attackingEntities: Record<number, number> = {};
 
-   constructor(position: Point, isNaturallySpawned: boolean, isGolden: boolean = false) {
+   constructor(position: Point, isGolden: boolean = false) {
       const itemCreationComponent = new ItemCreationComponent();
       
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "zombie", 270, isNaturallySpawned);
+      }, "zombie", 270);
 
       const speedMultiplier = randFloat(0.9, 1.1);
 

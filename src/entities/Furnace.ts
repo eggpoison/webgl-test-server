@@ -6,14 +6,14 @@ import HeatingEntity from "./CookingEntity";
 class Furnace extends HeatingEntity {
    private static readonly MAX_HEALTH = 25;
    
-   private static readonly SIZE = 80;
+   public static readonly SIZE = 80;
 
    public mass = 2.5;
    
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Furnace.MAX_HEALTH, false)
-      }, "furnace", isNaturallySpawned);
+      }, "furnace");
 
 
       const hitbox = new RectangularHitbox();

@@ -11,23 +11,23 @@ class Barrel extends Entity {
    
    private static readonly MAX_HEALTH = 20;
    
-   private static readonly RADIUS = 40;
+   public static readonly SIZE = 80;
 
    public mass = 1.5;
 
    public tribe: Tribe | null = null;
    
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       const inventoryComponent = new InventoryComponent();
       
       super(position, {
          health: new HealthComponent(Barrel.MAX_HEALTH, false),
          inventory: inventoryComponent
-      }, "barrel", isNaturallySpawned);
+      }, "barrel");
 
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Barrel.RADIUS);
+      hitbox.setHitboxInfo(Barrel.SIZE / 2);
       this.addHitbox(hitbox);
 
       inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT, false);

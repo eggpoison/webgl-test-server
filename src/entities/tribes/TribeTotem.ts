@@ -27,7 +27,7 @@ for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
 class TribeTotem extends Entity {
    private static readonly MAX_HEALTH = 50;
 
-   private static readonly RADIUS = 60;
+   public static readonly SIZE = 120;
 
    public tribe: Tribe | null = null;
 
@@ -35,14 +35,14 @@ class TribeTotem extends Entity {
 
    private readonly availableBannerPositions = Array.from(new Set(TRIBE_TOTEM_POSITIONS));
    
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(TribeTotem.MAX_HEALTH, false)
-      }, "tribe_totem", isNaturallySpawned);
+      }, "tribe_totem");
 
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(TribeTotem.RADIUS);
+      hitbox.setHitboxInfo(TribeTotem.SIZE / 2);
       this.addHitbox(hitbox);
 
       this.isStatic = true;

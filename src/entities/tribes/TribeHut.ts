@@ -7,14 +7,14 @@ import Tribe from "../../Tribe";
 class TribeHut extends Entity {
    private static readonly MAX_HEALTH = 25;
 
-   private static readonly SIZE = 88;
+   public static readonly SIZE = 88;
 
    public readonly tribe: Tribe;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribe: Tribe) {
+   constructor(position: Point, tribe: Tribe) {
       super(position, {
          health: new HealthComponent(TribeHut.MAX_HEALTH, false)
-      }, "tribe_hut", isNaturallySpawned);
+      }, "tribe_hut");
 
       const hitbox = new RectangularHitbox();
       hitbox.setHitboxInfo(TribeHut.SIZE, TribeHut.SIZE);
@@ -25,8 +25,8 @@ class TribeHut extends Entity {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [] {
-      return [];
+   public getClientArgs(): [tribeID: number] {
+      return [this.tribe.id];
    }
 }
 

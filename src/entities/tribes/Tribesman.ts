@@ -1,6 +1,6 @@
-import { EntityType, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, TribeType } from "webgl-test-shared";
+import { ArmourItemInfo, EntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
-import TribeMember from "./TribeMember";
+import TribeMember, { AttackToolType, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import WanderAI from "../../mob-ai/WanderAI";
 import Board from "../../Board";
@@ -32,19 +32,16 @@ class Tribesman extends TribeMember {
    
    private static readonly VISION_RANGE = 320;
 
-   private static readonly WALK_SPEED = 75;
-   private static readonly WALK_ACCELERATION = 150;
-
-   private static readonly RUN_SPEED = 150;
-   private static readonly RUN_ACCELERATION = 300;
+   private static readonly TERMINAL_VELOCITY = 150;
+   private static readonly ACCELERATION = 300;
 
    private static readonly ENEMY_TARGETS: ReadonlyArray<EntityType> = ["slime", "yeti", "zombie", "tombstone"];
    private static readonly RESOURCE_TARGETS: ReadonlyArray<EntityType> = ["cow", "cactus", "tree", "berry_bush", "boulder", "ice_spikes"];
 
    /** How far away from the entity the attack is done */
-   private static readonly ATTACK_OFFSET = 80;
+   private static readonly ATTACK_OFFSET = 50;
    /** Max distance from the attack position that the attack will be registered from */
-   private static readonly ATTACK_RADIUS = 60;
+   private static readonly ATTACK_RADIUS = 50;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_ATTACK_DISTANCE = 120;
@@ -53,8 +50,8 @@ class Tribesman extends TribeMember {
 
    public readonly mass = 1;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
-      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
+   constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
+      super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
 
 
       const hitbox = new CircularHitbox();
@@ -74,12 +71,11 @@ class Tribesman extends TribeMember {
       // AI for attacking enemies
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
-         terminalVelocity: Tribesman.RUN_SPEED,
-         acceleration: Tribesman.RUN_ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.tribe !== null) {
-
                // Attack enemy tribe buildings
                if (entity.type === "barrel" && (entity as Barrel).tribe !== this.tribe) {
                   return true;
@@ -105,6 +101,12 @@ class Tribesman extends TribeMember {
          },
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
+
+            // Equip the best weapon the tribesman has
+            const bestWeaponSlot = this.getBestWeaponSlot();
+            if (bestWeaponSlot !== null) {
+               this.selectedItemSlot = bestWeaponSlot;
+            }
             
             this.doAttack();
          }
@@ -113,8 +115,8 @@ class Tribesman extends TribeMember {
       // AI for returning resources to tribe
       this.addAI(new MoveAI(this, {
          aiWeightMultiplier: 0.9,
-         terminalVelocity: Tribesman.WALK_SPEED,
-         acceleration: Tribesman.WALK_ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
          getMoveTargetPosition: (): Point | null => {
             if (!this.inventoryIsFull()) return null;
 
@@ -139,8 +141,8 @@ class Tribesman extends TribeMember {
       // AI for picking up items
       this.addAI(new ItemChaseAI(this, {
          aiWeightMultiplier: 0.8,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
+         acceleration: Tribesman.ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          itemIsChased: (item: DroppedItem): boolean => {
             return this.canPickupItem(item);
          }
@@ -149,8 +151,8 @@ class Tribesman extends TribeMember {
       // AI for gathering resources
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 0.6,
-         terminalVelocity: Tribesman.RUN_SPEED,
-         acceleration: Tribesman.RUN_ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.inventoryIsFull()) return false;
@@ -159,6 +161,33 @@ class Tribesman extends TribeMember {
          },
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
+
+            // Equip the tool for the job
+            let bestToolSlot: number | null;
+            const attackToolType = getEntityAttackToolType(targetEntity);
+            switch (attackToolType) {
+               case AttackToolType.weapon: {
+                  bestToolSlot = this.getBestWeaponSlot();
+                  if (bestToolSlot === null) {
+                     bestToolSlot = this.getBestPickaxeSlot();
+                  }
+                  if (bestToolSlot === null) {
+                     bestToolSlot = this.getBestAxeSlot();
+                  }
+                  break;
+               }
+               case AttackToolType.pickaxe: {
+                  bestToolSlot = this.getBestPickaxeSlot();
+                  break;
+               }
+               case AttackToolType.axe: {
+                  bestToolSlot = this.getBestAxeSlot();
+                  break;
+               }
+            }
+            if (bestToolSlot !== null) {
+               this.selectedItemSlot = bestToolSlot;
+            }
             
             this.doMeleeAttack();
          }
@@ -167,8 +196,8 @@ class Tribesman extends TribeMember {
       // AI for patrolling tribe area
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
+         acceleration: Tribesman.ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          wanderRate: 0.3,
          shouldWander: (position: Point): boolean => {
             if (this.tribe === null) return true;
@@ -221,16 +250,156 @@ class Tribesman extends TribeMember {
    private depositResources(barrel: Barrel): void {
       const tribesmanInventoryComponent = this.getComponent("inventory")!;
       const barrelInventoryComponent = barrel.getComponent("inventory")!;
-      
       const tribesmanInventory = tribesmanInventoryComponent.getInventory("hotbar");
-      for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
-         // Add the item to the barrel inventory
-         const amountAdded = barrelInventoryComponent.addItemToInventory("inventory", item);
 
-         // Remove from the tribesman inventory
+      // 
+      // Isolate the items the tribesman will want to keep
+      // 
+      const bestWeaponItemSlot = this.getBestWeaponSlot();
+      let bestPickaxeLevel = -1;
+      let bestPickaxeItemSlot = -1;
+      let bestAxeLevel = -1;
+      let bestAxeItemSlot = -1;
+      let bestArmourLevel = -1;
+      let bestArmourItemSlot = -1;
+      let firstFoodItemSlot = -1; // Tribesman will only keep the first food item type in their inventory
+      for (let itemSlot = 1; itemSlot <= tribesmanInventory.width * tribesmanInventory.height; itemSlot++) {
+         if (!tribesmanInventory.itemSlots.hasOwnProperty(itemSlot)) {
+            continue;
+         }
+
+         const item = tribesmanInventory.itemSlots[itemSlot];
+         
+         const itemInfo = ITEM_INFO_RECORD[item.type];
+         const itemCategory = ITEM_TYPE_RECORD[item.type];
+         switch (itemCategory) {
+            case "pickaxe": {
+               if ((itemInfo as ToolItemInfo).level > bestPickaxeLevel) {
+                  bestPickaxeLevel = (itemInfo as ToolItemInfo).level;
+                  bestPickaxeItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "axe": {
+               if ((itemInfo as ToolItemInfo).level > bestAxeLevel) {
+                  bestAxeLevel = (itemInfo as ToolItemInfo).level;
+                  bestAxeItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "armour": {
+               if ((itemInfo as ArmourItemInfo).level > bestArmourLevel) {
+                  bestArmourLevel = (itemInfo as ArmourItemInfo).level;
+                  bestArmourItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "food": {
+               if (firstFoodItemSlot === -1) {
+                  firstFoodItemSlot = itemSlot;
+               }
+               break;
+            }
+         }
+      }
+      
+      for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
          const itemSlot = Number(_itemSlot);
+         
+         if (itemSlot === bestWeaponItemSlot || itemSlot === bestAxeItemSlot || itemSlot === bestPickaxeItemSlot || itemSlot === bestArmourItemSlot || itemSlot === firstFoodItemSlot) {
+            continue;
+         }
+         
+         // Add the item to the barrel inventory and remove from tribesman inventory
+         const amountAdded = barrelInventoryComponent.addItemToInventory("inventory", item);
          tribesmanInventoryComponent.consumeItem("hotbar", itemSlot, amountAdded);
       }
+   }
+
+   // @Cleanup: Copy and paste
+
+   private getBestWeaponSlot(): number | null {
+      const tribesmanInventory = this.getComponent("inventory")!.getInventory("hotbar");
+
+      let bestWeaponLevel = -1;
+      let bestWeaponItemSlot = -1;
+      for (let itemSlot = 1; itemSlot <= tribesmanInventory.width * tribesmanInventory.height; itemSlot++) {
+         if (!tribesmanInventory.itemSlots.hasOwnProperty(itemSlot)) {
+            continue;
+         }
+
+         const item = tribesmanInventory.itemSlots[itemSlot];
+         
+         const itemInfo = ITEM_INFO_RECORD[item.type];
+         const itemCategory = ITEM_TYPE_RECORD[item.type];
+         if (itemCategory === "sword" || itemCategory === "bow") {
+            if ((itemInfo as ToolItemInfo).level > bestWeaponLevel) {
+               bestWeaponLevel = (itemInfo as ToolItemInfo).level;
+               bestWeaponItemSlot = itemSlot;
+            }
+         }
+      }
+
+      if (bestWeaponItemSlot !== -1) {
+         return bestWeaponItemSlot;
+      }
+      return null;
+   }
+
+   private getBestPickaxeSlot(): number | null {
+      const tribesmanInventory = this.getComponent("inventory")!.getInventory("hotbar");
+
+      let bestPickaxeLevel = -1;
+      let bestPickaxeItemSlot = -1;
+      for (let itemSlot = 1; itemSlot <= tribesmanInventory.width * tribesmanInventory.height; itemSlot++) {
+         if (!tribesmanInventory.itemSlots.hasOwnProperty(itemSlot)) {
+            continue;
+         }
+
+         const item = tribesmanInventory.itemSlots[itemSlot];
+         
+         const itemInfo = ITEM_INFO_RECORD[item.type];
+         const itemCategory = ITEM_TYPE_RECORD[item.type];
+         if (itemCategory === "pickaxe") {
+            if ((itemInfo as ToolItemInfo).level > bestPickaxeLevel) {
+               bestPickaxeLevel = (itemInfo as ToolItemInfo).level;
+               bestPickaxeItemSlot = itemSlot;
+            }
+         }
+      }
+
+      if (bestPickaxeItemSlot !== -1) {
+         return bestPickaxeItemSlot;
+      }
+      return null;
+   }
+
+   private getBestAxeSlot(): number | null {
+      const tribesmanInventory = this.getComponent("inventory")!.getInventory("hotbar");
+
+      let bestAxeLevel = -1;
+      let bestAxeItemSlot = -1;
+      for (let itemSlot = 1; itemSlot <= tribesmanInventory.width * tribesmanInventory.height; itemSlot++) {
+         if (!tribesmanInventory.itemSlots.hasOwnProperty(itemSlot)) {
+            continue;
+         }
+
+         const item = tribesmanInventory.itemSlots[itemSlot];
+         
+         const itemInfo = ITEM_INFO_RECORD[item.type];
+         const itemCategory = ITEM_TYPE_RECORD[item.type];
+         if (itemCategory === "pickaxe") {
+            if ((itemInfo as ToolItemInfo).level > bestAxeLevel) {
+               bestAxeLevel = (itemInfo as ToolItemInfo).level;
+               bestAxeItemSlot = itemSlot;
+            }
+         }
+      }
+
+      if (bestAxeItemSlot !== -1) {
+         return bestAxeItemSlot;
+      }
+      return null;
    }
 
    private doAttack(): void {
@@ -268,17 +437,22 @@ class Tribesman extends TribeMember {
       this.lastAttackTicks = Board.ticks;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData, activeItemSlot: number] {
+      const inventoryComponent = this.getComponent("inventory")!;
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
-         this.getArmourItemType(),
+         serializeInventoryData(inventoryComponent.getInventory("armourSlot"), "armourSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpack"), "backpack"),
          this.getActiveItemType(),
          this.getFoodEatingType(),
          this.lastAttackTicks,
          this.lastEatTicks,
-         serializeInventoryData(hotbarInventory, "hotbar")
+         serializeInventoryData(hotbarInventory, "hotbar"),
+         this.selectedItemSlot
       ];
    }
 }

@@ -6,17 +6,17 @@ import HeatingEntity from "./CookingEntity";
 class Campfire extends HeatingEntity {
    private static readonly MAX_HEALTH = 25;
    
-   private static readonly RADIUS = 40;
+   public static readonly SIZE = 14;
 
    public mass = 2;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Campfire.MAX_HEALTH, false),
-      }, "campfire", isNaturallySpawned);
+      }, "campfire");
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Campfire.RADIUS);
+      hitbox.setHitboxInfo(Campfire.SIZE / 2);
       this.addHitbox(hitbox);
    }
 }

@@ -1,4 +1,4 @@
-import { AttackPacket, BackpackItemInfo, canCraftRecipe, CRAFTING_RECIPES, CraftingRecipe, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BackpackItemInfo, canCraftRecipe, CRAFTING_RECIPES, CraftingRecipe, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
@@ -7,6 +7,7 @@ import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
+import { Inventory, serializeInventoryData } from "../../entity-components/InventoryComponent";
 
 class Player extends TribeMember {
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
@@ -14,16 +15,16 @@ class Player extends TribeMember {
    private static readonly ITEM_THROW_OFFSET = 32;
 
    /** How far away from the entity the attack is done */
-   private static readonly ATTACK_OFFSET = 80;
+   private static readonly ATTACK_OFFSET = 50;
    /** Max distance from the attack position that the attack will be registered from */
-   private static readonly ATTACK_RADIUS = 60;
+   private static readonly ATTACK_RADIUS = 50;
 
    public readonly mass = 1;
 
    public readonly username: string;
 
-   constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
-      super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
+   constructor(position: Point, username: string, tribe: Tribe | null) {
+      super(position, "player", 0, TribeType.plainspeople);
 
       const hitbox = new CircularHitbox();
       hitbox.setHitboxInfo(32);
@@ -31,8 +32,6 @@ class Player extends TribeMember {
 
       const inventoryComponent = this.getComponent("inventory")!;
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
-      inventoryComponent.createNewInventory("backpack", -1, -1, true);
-      inventoryComponent.createNewInventory("backpackItemSlot", 1, 1, false);
       inventoryComponent.createNewInventory("craftingOutputSlot", 1, 1, false);
       inventoryComponent.createNewInventory("heldItemSlot", 1, 1, false);
 
@@ -41,11 +40,15 @@ class Player extends TribeMember {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
+      const inventoryComponent = this.getComponent("inventory")!;
+      
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
-         this.getArmourItemType(),
+         serializeInventoryData(inventoryComponent.getInventory("armourSlot"), "armourSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpack"), "backpack"),
          this.getActiveItemType(),
          this.getFoodEatingType(),
          this.lastAttackTicks,
@@ -100,7 +103,7 @@ class Player extends TribeMember {
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const backpackInventory = inventoryComponent.getInventory("backpack");
 
-      if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe, SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE)) {
+      if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe)) {
          // Consume ingredients
          for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
             // Prioritise consuming ingredients from the backpack inventory first
@@ -165,12 +168,6 @@ class Player extends TribeMember {
 
       // If all of the item was added, clear the held item
       playerInventoryComponent.consumeItemTypeFromInventory("heldItemSlot", heldItem.type, amountAdded);
-
-      // If the player put a backpack into the backpack slot, update their backpack
-      if (entityID === this.id && inventoryName === "backpackItemSlot") {
-         const itemInfo = ITEM_INFO_RECORD[heldItem.type] as BackpackItemInfo;
-         playerInventoryComponent.resizeInventory("backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
-      }
    }
 
    public processAttackPacket(attackPacket: AttackPacket): void {

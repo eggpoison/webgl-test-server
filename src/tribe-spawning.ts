@@ -110,7 +110,7 @@ const findValidHutPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArra
 }
 
 const spawnTribe = (position: Point, tribeType: TribeType): void => {
-   const totem = new TribeTotem(position, false);
+   const totem = new TribeTotem(position);
    const tribe = new Tribe(tribeType, totem);
    Board.addTribe(tribe);
 
@@ -124,7 +124,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
       const hutPosition = findValidHutPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
-         const hut = new TribeHut(hutPosition, false, tribe);
+         const hut = new TribeHut(hutPosition, tribe);
          tribe.registerNewHut(hut);
          hut.rotation = 2 * Math.PI * Math.random();
          buildingPositions.push(hutPosition);

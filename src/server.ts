@@ -61,7 +61,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
       mobAIType: entity instanceof Mob ? ((entity as Mob).getCurrentAIType() || "---") : undefined,
-      hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : []
+      hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : [],
+      amountHealed: healthComponent !== null ? healthComponent.amountHealedSinceLastPacketSend : 0
    };
 }
 
@@ -121,10 +122,11 @@ const bundleEntityDataArray = (visibleEntities: ReadonlyArray<Entity>): Readonly
       const entityData = bundleEntityData(entity);
       entityDataArray.push(entityData);
 
-      // Reset hits taken
+      // Reset hits taken and amount healed
       const healthComponent = entity.getComponent("health");
       if (healthComponent !== null) {
          healthComponent.hitsTaken = [];
+         healthComponent.amountHealedSinceLastPacketSend = 0;
       }
    }
 
@@ -328,9 +330,9 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
-         setTimeout(() => {
-            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y), false);
-         }, 2000);
+         // setTimeout(() => {
+         //    new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+         // }, 2000);
          // const spawnPosition = new Point(50, 50);
 
          // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
@@ -367,7 +369,7 @@ class GameServer {
             }
             
             // Spawn the player entity
-            const player = new Player(spawnPosition, false, playerData.username, null);
+            const player = new Player(spawnPosition, playerData.username, null);
             playerData.instance = player;
 
             const tiles = Board.getTiles();
@@ -415,7 +417,7 @@ class GameServer {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "backpackItemSlot"
+                     inventoryName: "backpackSlot"
                   },
                   heldItemSlot: {
                      itemSlots: {},
@@ -609,7 +611,7 @@ class GameServer {
       const inventoryData: PlayerInventoryData = {
          hotbar: this.bundleInventory(player, "hotbar"),
          backpackInventory: this.bundleInventory(player, "backpack"),
-         backpackSlot: this.bundleInventory(player, "backpackItemSlot"),
+         backpackSlot: this.bundleInventory(player, "backpackSlot"),
          heldItemSlot: this.bundleInventory(player, "heldItemSlot"),
          craftingOutputItemSlot: this.bundleInventory(player, "craftingOutputSlot"),
          armourSlot: this.bundleInventory(player, "armourSlot")
@@ -696,7 +698,7 @@ class GameServer {
          spawnPosition = this.generatePlayerSpawnPosition();
       }
 
-      const playerEntity = new Player(spawnPosition, false, playerData.username, playerData.tribe);
+      const playerEntity = new Player(spawnPosition, playerData.username, playerData.tribe);
 
       // Update the player data's instance
       this.playerDataRecord[socket.id].instance = playerEntity;
