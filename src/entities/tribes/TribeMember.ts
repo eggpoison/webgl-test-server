@@ -301,7 +301,7 @@ abstract class TribeMember extends Mob {
       const itemCategory = ITEM_TYPE_RECORD[item.type];
       switch (itemCategory) {
          case "sword": {
-            if (entityToAttack instanceof Mob || entityToAttack.hasOwnProperty("tribe")) {
+            if (entityToAttack instanceof Mob || entityToAttack.type === "cactus" || entityToAttack.hasOwnProperty("tribe")) {
                const itemInfo = ITEM_INFO_RECORD[item.type] as SwordItemInfo;
                return itemInfo.damage;
             }
