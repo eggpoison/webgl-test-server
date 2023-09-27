@@ -524,6 +524,7 @@ abstract class TribeMember extends Mob {
                   }
                   
                   placedEntity = new TribeHut(spawnPosition, this.tribe);
+                  placedEntity.rotation = this.rotation; // This has to be done before the hut is registered in its tribe
                   this.tribe.registerNewHut(placedEntity as TribeHut);
                   break;
                }

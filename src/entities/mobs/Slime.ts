@@ -201,7 +201,7 @@ class Slime extends Mob {
       });
 
       this.createEvent("hurt", (_damage: number, attackingEntity: Entity | null): void => {
-         if (attackingEntity === null) return;
+         if (attackingEntity === null || RESOURCE_ENTITY_TYPES.includes(attackingEntity.type)) return;
 
          this.addEntityAnger(attackingEntity, 1, { chainLength: 0, propagatedEntityIDs: new Set() });
          this.propagateAnger(attackingEntity, 1);

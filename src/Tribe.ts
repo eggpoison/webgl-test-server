@@ -114,7 +114,7 @@ class Tribe {
       const position = hut.position.copy();
 
       // Offset the spawn position so the tribesman comes out of the correct side of the hut
-      const offset = new Vector(10, hut.rotation).convertToPoint();
+      const offset = Point.fromVectorForm(10, hut.rotation);
       position.add(offset);
       
       const tribesman = new Tribesman(position, this.tribeType, this);
