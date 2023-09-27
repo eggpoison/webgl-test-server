@@ -20,6 +20,28 @@ import Workbench from "../Workbench";
 import Campfire from "../Campfire";
 import Furnace from "../Furnace";
 
+const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone"];
+const axeDamageableEntities: ReadonlyArray<EntityType> = ["tree"];
+
+export enum AttackToolType {
+   weapon,
+   pickaxe,
+   axe
+}
+
+export function getEntityAttackToolType(entity: Entity): AttackToolType {
+   if (entity instanceof Mob || entity.hasOwnProperty("tribe")) {
+      return AttackToolType.weapon;
+   }
+   if (pickaxeDamageableEntities.includes(entity.type)) {
+      return AttackToolType.pickaxe;
+   }
+   if (axeDamageableEntities.includes(entity.type)) {
+      return AttackToolType.axe;
+   }
+   throw new Error(`Can't find action tool type for entity type '${entity.type}'.`);
+}
+
 enum PlaceableItemHitboxType {
    circular = 0,
    rectangular = 1
@@ -336,10 +358,11 @@ abstract class TribeMember extends Mob {
          return 1;
       }
 
+      const attackToolType = getEntityAttackToolType(entityToAttack);
       const itemCategory = ITEM_TYPE_RECORD[item.type];
       switch (itemCategory) {
          case "sword": {
-            if (entityToAttack instanceof Mob || entityToAttack.hasOwnProperty("tribe")) {
+            if (attackToolType === AttackToolType.weapon) {
                const itemInfo = ITEM_INFO_RECORD[item.type] as SwordItemInfo;
                return itemInfo.damage;
             }
@@ -347,15 +370,14 @@ abstract class TribeMember extends Mob {
          }
          case "axe": {
             const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
-            if (entityToAttack.type === "tree") {
+            if (attackToolType === AttackToolType.axe) {
                return itemInfo.damage;
-            } else {
-               return Math.floor(itemInfo.damage / 2);
             }
+            return Math.floor(itemInfo.damage / 2);
          }
          case "pickaxe": {
             const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
-            if (entityToAttack.type === "boulder" || entityToAttack.type === "tombstone") {
+            if (attackToolType === AttackToolType.pickaxe) {
                return itemInfo.damage;
             } else {
                return Math.floor(itemInfo.damage / 2);
