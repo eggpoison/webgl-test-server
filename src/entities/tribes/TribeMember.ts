@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -27,6 +27,7 @@ enum PlaceableItemHitboxType {
 
 interface PlaceableItemHitboxInfo {
    readonly type: PlaceableItemHitboxType;
+   readonly placeOffset: number;
 }
 
 interface PlaceableItemCircularHitboxInfo extends PlaceableItemHitboxInfo {
@@ -43,31 +44,37 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
 const PLACEABLE_ITEM_HITBOX_INFO = {
    [ItemType.workbench]: {
       type: PlaceableItemHitboxType.rectangular,
-      width: 80,
-      height: 80
+      width: Workbench.SIZE,
+      height: Workbench.SIZE,
+      placeOffset: Workbench.SIZE / 2
    },
    [ItemType.tribe_totem]: {
       type: PlaceableItemHitboxType.circular,
-      radius: 50
+      radius: TribeTotem.SIZE / 2,
+      placeOffset: TribeTotem.SIZE / 2
    },
    [ItemType.tribe_hut]: {
       type: PlaceableItemHitboxType.rectangular,
-      width: 80,
-      height: 80
+      width: TribeHut.SIZE,
+      height: TribeHut.SIZE,
+      placeOffset: TribeHut.SIZE / 2
    },
    [ItemType.barrel]: {
       type: PlaceableItemHitboxType.circular,
-      radius: 40
+      radius: TribeHut.SIZE / 2,
+      placeOffset: TribeHut.SIZE / 2
    },
    [ItemType.campfire]: {
       type: PlaceableItemHitboxType.rectangular,
-      width: 104,
-      height: 104
+      width: Campfire.SIZE,
+      height: Campfire.SIZE,
+      placeOffset: Campfire.SIZE / 2
    },
    [ItemType.furnace]: {
       type: PlaceableItemHitboxType.rectangular,
-      width: 80,
-      height: 80
+      width: Furnace.SIZE,
+      height: Furnace.SIZE,
+      placeOffset: Furnace.SIZE / 2
    }
 } satisfies Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>>;
 
@@ -80,8 +87,8 @@ function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is keyo
 }
 
 abstract class TribeMember extends Mob {
-   private static readonly placeTestRectangularHitbox = new RectangularHitbox();
-   private static readonly placeTestCircularHitbox = new CircularHitbox();
+   private static readonly testRectangularHitbox = new RectangularHitbox();
+   private static readonly testCircularHitbox = new CircularHitbox();
 
    private static readonly ARROW_WIDTH = 20;
    private static readonly ARROW_HEIGHT = 64;
@@ -116,8 +123,8 @@ abstract class TribeMember extends Mob {
       this.tribeType = tribeType;
 
       inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
-      inventoryComponent.createNewInventory("backpack", -1, -1, false);
       inventoryComponent.createNewInventory("backpackSlot", 1, 1, false);
+      inventoryComponent.createNewInventory("backpack", -1, -1, false);
 
       // Drop inventory on death
       this.createEvent("death", () => {
@@ -161,6 +168,14 @@ abstract class TribeMember extends Mob {
          if (this.bowCooldowns[itemSlot] < 0) {
             delete this.bowCooldowns[itemSlot];
          }
+      }
+
+      // Update backpack
+      if (inventoryComponent.getInventory("backpackSlot").itemSlots.hasOwnProperty(1)) {
+         const itemInfo = ITEM_INFO_RECORD[inventoryComponent.getInventory("backpackSlot").itemSlots[1].type] as BackpackItemInfo;
+         inventoryComponent.resizeInventory("backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
+      } else {
+         inventoryComponent.resizeInventory("backpack", -1, -1);
       }
    }
 
@@ -231,6 +246,21 @@ abstract class TribeMember extends Mob {
       const attackPosition = this.position.copy();
       attackPosition.add(offset.convertToPoint());
 
+      // 
+      // Prepare the test hitbox
+      // 
+
+      const tempHitboxObject = {
+         position: attackPosition,
+         rotation: 0
+      };
+
+      TribeMember.testCircularHitbox.setHitboxInfo(attackRadius);
+
+      TribeMember.testCircularHitbox.setHitboxObject(tempHitboxObject);
+      TribeMember.testCircularHitbox.updatePosition();
+      TribeMember.testCircularHitbox.updateHitboxBounds();
+
       const minChunkX = Math.max(Math.min(Math.floor((attackPosition.x - attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor((attackPosition.x + attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const minChunkY = Math.max(Math.min(Math.floor((attackPosition.y - attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
@@ -241,13 +271,21 @@ abstract class TribeMember extends Mob {
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
-
             for (const entity of chunk.getEntities()) {
                // Skip entities that are already in the array
                if (attackedEntities.includes(entity)) continue;
 
-               const dist = attackPosition.calculateDistanceBetween(entity.position);
-               if (dist <= attackRadius) attackedEntities.push(entity);
+               // Check for any hitboxes within range
+               let isColliding = false;
+               for (const hitbox of entity.hitboxes) {
+                  if (TribeMember.testCircularHitbox.isColliding(hitbox)) {
+                     isColliding = true;
+                     break;
+                  }
+               }
+               if (isColliding) {
+                  attackedEntities.push(entity);
+               }
             }
          }
       }
@@ -413,9 +451,12 @@ abstract class TribeMember extends Mob {
          case "placeable": {
             assertItemTypeIsPlaceable(item.type);
 
+            const placeInfo = PLACEABLE_ITEM_HITBOX_INFO[item.type];
+
             // Calculate the position to spawn the placeable entity at
+            // @Speed: Garbage collection
             const spawnPosition = this.position.copy();
-            const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, this.rotation);
+            const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset, this.rotation);
             spawnPosition.add(offsetVector.convertToPoint());
 
             // Make sure the placeable item can be placed
@@ -545,12 +586,12 @@ abstract class TribeMember extends Mob {
       let placeTestHitbox: Hitbox;
       if (testHitboxInfo.type === PlaceableItemHitboxType.circular) {
          // Circular
-         TribeMember.placeTestCircularHitbox.setHitboxInfo(testHitboxInfo.radius);
-         placeTestHitbox = TribeMember.placeTestCircularHitbox;
+         TribeMember.testCircularHitbox.setHitboxInfo(testHitboxInfo.radius);
+         placeTestHitbox = TribeMember.testCircularHitbox;
       } else {
          // Rectangular
-         TribeMember.placeTestRectangularHitbox.setHitboxInfo(testHitboxInfo.width, testHitboxInfo.height);
-         placeTestHitbox = TribeMember.placeTestRectangularHitbox;
+         TribeMember.testRectangularHitbox.setHitboxInfo(testHitboxInfo.width, testHitboxInfo.height);
+         placeTestHitbox = TribeMember.testRectangularHitbox;
       }
 
       placeTestHitbox.setHitboxObject(tempHitboxObject);

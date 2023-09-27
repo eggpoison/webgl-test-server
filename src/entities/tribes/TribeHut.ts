@@ -7,7 +7,7 @@ import Tribe from "../../Tribe";
 class TribeHut extends Entity {
    private static readonly MAX_HEALTH = 25;
 
-   private static readonly SIZE = 88;
+   public static readonly SIZE = 88;
 
    public readonly tribe: Tribe;
    

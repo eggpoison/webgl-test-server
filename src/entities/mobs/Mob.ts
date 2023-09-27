@@ -69,7 +69,7 @@ abstract class Mob extends Entity {
       }
       
       this.entitiesInVisionRange = this.calculateEntitiesInVisionRange();
-      // this.droppedItemsInVisionRange = this.calculateDroppedItemsInVisionRange();
+      this.droppedItemsInVisionRange = this.calculateDroppedItemsInVisionRange();
 
       // Update the values of all AI's
       for (const ai of this.ais) {

@@ -11,7 +11,7 @@ class Barrel extends Entity {
    
    private static readonly MAX_HEALTH = 20;
    
-   private static readonly RADIUS = 40;
+   public static readonly SIZE = 80;
 
    public mass = 1.5;
 
@@ -27,7 +27,7 @@ class Barrel extends Entity {
 
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Barrel.RADIUS);
+      hitbox.setHitboxInfo(Barrel.SIZE / 2);
       this.addHitbox(hitbox);
 
       inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT, false);

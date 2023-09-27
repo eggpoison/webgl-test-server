@@ -7,7 +7,7 @@ import Board from "../../Board";
 import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
-import { serializeInventoryData } from "../../entity-components/InventoryComponent";
+import { Inventory, serializeInventoryData } from "../../entity-components/InventoryComponent";
 
 class Player extends TribeMember {
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
@@ -15,9 +15,9 @@ class Player extends TribeMember {
    private static readonly ITEM_THROW_OFFSET = 32;
 
    /** How far away from the entity the attack is done */
-   private static readonly ATTACK_OFFSET = 80;
+   private static readonly ATTACK_OFFSET = 50;
    /** Max distance from the attack position that the attack will be registered from */
-   private static readonly ATTACK_RADIUS = 60;
+   private static readonly ATTACK_RADIUS = 50;
 
    public readonly mass = 1;
 
@@ -40,7 +40,7 @@ class Player extends TribeMember {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
       const inventoryComponent = this.getComponent("inventory")!;
       
       return [
@@ -48,6 +48,7 @@ class Player extends TribeMember {
          this.tribeType,
          serializeInventoryData(inventoryComponent.getInventory("armourSlot"), "armourSlot"),
          serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpack"), "backpack"),
          this.getActiveItemType(),
          this.getFoodEatingType(),
          this.lastAttackTicks,
@@ -167,12 +168,6 @@ class Player extends TribeMember {
 
       // If all of the item was added, clear the held item
       playerInventoryComponent.consumeItemTypeFromInventory("heldItemSlot", heldItem.type, amountAdded);
-
-      // If the player put a backpack into the backpack slot, update their backpack
-      if (entityID === this.id && inventoryName === "backpackSlot") {
-         const itemInfo = ITEM_INFO_RECORD[heldItem.type] as BackpackItemInfo;
-         playerInventoryComponent.resizeInventory("backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
-      }
    }
 
    public processAttackPacket(attackPacket: AttackPacket): void {

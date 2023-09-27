@@ -42,9 +42,9 @@ class Tribesman extends TribeMember {
    private static readonly RESOURCE_TARGETS: ReadonlyArray<EntityType> = ["cow", "cactus", "tree", "berry_bush", "boulder", "ice_spikes"];
 
    /** How far away from the entity the attack is done */
-   private static readonly ATTACK_OFFSET = 80;
+   private static readonly ATTACK_OFFSET = 50;
    /** Max distance from the attack position that the attack will be registered from */
-   private static readonly ATTACK_RADIUS = 60;
+   private static readonly ATTACK_RADIUS = 50;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_ATTACK_DISTANCE = 120;
@@ -267,7 +267,7 @@ class Tribesman extends TribeMember {
       this.lastAttackTicks = Board.ticks;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
       const inventoryComponent = this.getComponent("inventory")!;
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
 
@@ -276,6 +276,7 @@ class Tribesman extends TribeMember {
          this.tribeType,
          serializeInventoryData(inventoryComponent.getInventory("armourSlot"), "armourSlot"),
          serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpack"), "backpack"),
          this.getActiveItemType(),
          this.getFoodEatingType(),
          this.lastAttackTicks,
