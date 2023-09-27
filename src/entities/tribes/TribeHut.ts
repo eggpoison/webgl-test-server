@@ -11,10 +11,10 @@ class TribeHut extends Entity {
 
    public readonly tribe: Tribe;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribe: Tribe) {
+   constructor(position: Point, tribe: Tribe) {
       super(position, {
          health: new HealthComponent(TribeHut.MAX_HEALTH, false)
-      }, "tribe_hut", isNaturallySpawned);
+      }, "tribe_hut");
 
       const hitbox = new RectangularHitbox();
       hitbox.setHitboxInfo(TribeHut.SIZE, TribeHut.SIZE);

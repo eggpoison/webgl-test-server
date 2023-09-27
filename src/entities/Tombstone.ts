@@ -35,10 +35,10 @@ class Tombstone extends Entity {
 
    private readonly deathInfo: DeathInfo | null;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Tombstone.MAX_HEALTH, false)
-      }, "tombstone", isNaturallySpawned);
+      }, "tombstone");
 
       this.deathInfo = TombstoneDeathManager.popDeath();
 
@@ -107,7 +107,7 @@ class Tombstone extends Entity {
       
       // Spawn zombie
       // Copy the position to avoid having multiple zombies quantum entangled together
-      const zombie = new Zombie(this.zombieSpawnPosition, false, isGolden);
+      const zombie = new Zombie(this.zombieSpawnPosition, isGolden);
 
       // Keep track of the zombie
       this.currentSpawnedZombieCount++;

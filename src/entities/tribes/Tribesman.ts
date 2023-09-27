@@ -50,8 +50,8 @@ class Tribesman extends TribeMember {
 
    public readonly mass = 1;
    
-   constructor(position: Point, isNaturallySpawned: boolean, tribeType: TribeType, tribe: Tribe) {
-      super(position, "tribesman", Tribesman.VISION_RANGE, isNaturallySpawned, tribeType);
+   constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
+      super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
 
 
       const hitbox = new CircularHitbox();

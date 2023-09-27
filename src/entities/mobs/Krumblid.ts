@@ -18,11 +18,11 @@ class Krumblid extends Mob {
 
    public mass = 0.75;
    
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Krumblid.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "krumblid", SETTINGS.TILE_SIZE * 3.5, isNaturallySpawned);
+      }, "krumblid", SETTINGS.TILE_SIZE * 3.5);
 
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(2, 3), true);
 

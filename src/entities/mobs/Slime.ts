@@ -100,13 +100,13 @@ class Slime extends Mob {
 
    private readonly angeredEntities = new Array<EntityAnger>();
 
-   constructor(position: Point, isNaturallySpawned: boolean, size: SlimeSize = SlimeSize.small) {
+   constructor(position: Point, size: SlimeSize = SlimeSize.small) {
       const itemCreationComponent = new ItemCreationComponent();
       
       super(position, {
          health: new HealthComponent(Slime.MAX_HEALTH[size], false),
          item_creation: itemCreationComponent
-      }, "slime", Slime.VISION[size], isNaturallySpawned);
+      }, "slime", Slime.VISION[size]);
 
       const speedMultiplier = Slime.SPEED_MULTIPLIERS[size];
 
@@ -299,7 +299,7 @@ class Slime extends Mob {
       this.mergeWeight += otherSlime.mergeWeight;
 
       if (this.size < SlimeSize.large && this.mergeWeight >= Slime.SLIME_MERGE_WEIGHTS[this.size + 1]) {
-         const slime = new Slime(new Point((this.position.x + otherSlime.position.x) / 2, (this.position.y + otherSlime.position.y) / 2), false, this.size + 1);
+         const slime = new Slime(new Point((this.position.x + otherSlime.position.x) / 2, (this.position.y + otherSlime.position.y) / 2), this.size + 1);
 
          // Add orbs from the 2 existing slimes
          for (const orb of this.orbs) {

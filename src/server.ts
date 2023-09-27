@@ -330,9 +330,9 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
-         setTimeout(() => {
-            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y), false);
-         }, 2000);
+         // setTimeout(() => {
+         //    new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+         // }, 2000);
          // const spawnPosition = new Point(50, 50);
 
          // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
@@ -369,7 +369,7 @@ class GameServer {
             }
             
             // Spawn the player entity
-            const player = new Player(spawnPosition, false, playerData.username, null);
+            const player = new Player(spawnPosition, playerData.username, null);
             playerData.instance = player;
 
             const tiles = Board.getTiles();
@@ -698,7 +698,7 @@ class GameServer {
          spawnPosition = this.generatePlayerSpawnPosition();
       }
 
-      const playerEntity = new Player(spawnPosition, false, playerData.username, playerData.tribe);
+      const playerEntity = new Player(spawnPosition, playerData.username, playerData.tribe);
 
       // Update the player data's instance
       this.playerDataRecord[socket.id].instance = playerEntity;

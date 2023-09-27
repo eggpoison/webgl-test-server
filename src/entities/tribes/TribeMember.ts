@@ -30,7 +30,7 @@ export enum AttackToolType {
 }
 
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
-   if (entity instanceof Mob || entity.hasOwnProperty("tribe")) {
+   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush") {
       return AttackToolType.weapon;
    }
    if (pickaxeDamageableEntities.includes(entity.type)) {
@@ -132,7 +132,7 @@ abstract class TribeMember extends Mob {
 
    private bowCooldowns: Record<number, number> = {};
 
-   constructor(position: Point, entityType: EntityType, visionRange: number, isNaturallySpawned: boolean, tribeType: TribeType) {
+   constructor(position: Point, entityType: EntityType, visionRange: number, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
 
       const inventoryComponent = new InventoryComponent();
@@ -140,7 +140,7 @@ abstract class TribeMember extends Mob {
       super(position, {
          health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
-      }, entityType, visionRange, isNaturallySpawned);
+      }, entityType, visionRange);
 
       this.tribeType = tribeType;
 
@@ -492,7 +492,7 @@ abstract class TribeMember extends Mob {
                   break;
                }
                case ItemType.tribe_totem: {
-                  placedEntity = new TribeTotem(spawnPosition, false)
+                  placedEntity = new TribeTotem(spawnPosition);
                   TribeBuffer.addTribe(this.tribeType, placedEntity as TribeTotem, this);
                   break;
                }
@@ -501,20 +501,20 @@ abstract class TribeMember extends Mob {
                      throw new Error("Tribe member didn't belong to a tribe when placing a hut");
                   }
                   
-                  placedEntity = new TribeHut(spawnPosition, false, this.tribe);
+                  placedEntity = new TribeHut(spawnPosition, this.tribe);
                   this.tribe.registerNewHut(placedEntity as TribeHut);
                   break;
                }
                case ItemType.barrel: {
-                  placedEntity = new Barrel(spawnPosition, false);
+                  placedEntity = new Barrel(spawnPosition);
                   break;
                }
                case ItemType.campfire: {
-                  placedEntity = new Campfire(spawnPosition, false);
+                  placedEntity = new Campfire(spawnPosition);
                   break;
                }
                case ItemType.furnace: {
-                  placedEntity = new Furnace(spawnPosition, false);
+                  placedEntity = new Furnace(spawnPosition);
                   break;
                }
             }

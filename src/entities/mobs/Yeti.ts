@@ -87,7 +87,7 @@ class Yeti extends Mob {
       super(position, {
          health: new HealthComponent(Yeti.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent()
-      }, "yeti", Yeti.VISION_RANGE, true);
+      }, "yeti", Yeti.VISION_RANGE);
 
       this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 1);
@@ -284,7 +284,7 @@ class Yeti extends Mob {
       }
       const velocity = new Vector(velocityMagnitude, angle);
 
-      const snowball = new Snowball(position, false, size);
+      const snowball = new Snowball(position, size);
       snowball.velocity = velocity;
 
       // Keep track of the snowball

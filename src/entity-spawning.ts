@@ -3,7 +3,7 @@ import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
 import Yeti from "./entities/mobs/Yeti";
-import { getEntityCount, getTileTypeCount } from "./census";
+import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 
 export type EntitySpawnInfo = {
    /** The type of entity to spawn */
@@ -146,11 +146,13 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       return;
    }
 
+   // @Incomplete @Cleanup: Make all cows spawn with the same type
    // const cowSpecies = randInt(0, 1);
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
-   new entityClass(spawnOrigin, true);
+   const entity = new entityClass(spawnOrigin, true);
+   addEntityToCensus(entity);
 
    if (typeof spawnInfo.packSpawningInfo === "undefined") {
       return;
@@ -171,7 +173,8 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
       if (spawnPositionIsValid(spawnPosition)) {
-         new entityClass(spawnPosition, true);
+         const entity = new entityClass(spawnPosition, true);
+         addEntityToCensus(entity);
          i++;
       }
 

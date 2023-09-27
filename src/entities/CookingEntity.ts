@@ -60,10 +60,10 @@ abstract class HeatingEntity extends Entity {
    private currentRecipe: HeatingRecipe | null = null;
    private remainingHeat = 0;
    
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
       components.inventory = new InventoryComponent();
       
-      super(position, components, entityType, isNaturallySpawned);
+      super(position, components, entityType);
 
       components.inventory.createNewInventory("fuelInventory", 1, 1, false);
       components.inventory.createNewInventory("ingredientInventory", 1, 1, false);

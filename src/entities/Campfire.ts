@@ -10,10 +10,10 @@ class Campfire extends HeatingEntity {
 
    public mass = 2;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Campfire.MAX_HEALTH, false),
-      }, "campfire", isNaturallySpawned);
+      }, "campfire");
 
       const hitbox = new CircularHitbox();
       hitbox.setHitboxInfo(Campfire.SIZE / 2);

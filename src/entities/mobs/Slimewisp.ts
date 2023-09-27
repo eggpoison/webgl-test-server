@@ -19,10 +19,10 @@ class Slimewisp extends Mob {
 
    public mass = 0.5;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)
-      }, "slimewisp", SETTINGS.TILE_SIZE * 1.5, isNaturallySpawned);
+      }, "slimewisp", SETTINGS.TILE_SIZE * 1.5);
 
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
@@ -66,7 +66,7 @@ class Slimewisp extends Mob {
 
       // Create a slime between the two wisps
       const slimeSpawnPosition = new Point((this.position.x + otherSlimewisp.position.x) / 2, (this.position.y + otherSlimewisp.position.y) / 2);
-      new Slime(slimeSpawnPosition, false);
+      new Slime(slimeSpawnPosition);
    
       this.remove();
       otherSlimewisp.remove();

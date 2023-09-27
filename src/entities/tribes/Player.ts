@@ -23,8 +23,8 @@ class Player extends TribeMember {
 
    public readonly username: string;
 
-   constructor(position: Point, isNaturallySpawned: boolean, username: string, tribe: Tribe | null) {
-      super(position, "player", 0, isNaturallySpawned, TribeType.plainspeople);
+   constructor(position: Point, username: string, tribe: Tribe | null) {
+      super(position, "player", 0, TribeType.plainspeople);
 
       const hitbox = new CircularHitbox();
       hitbox.setHitboxInfo(32);

@@ -75,13 +75,13 @@ class Cactus extends Entity {
    private readonly flowers: ReadonlyArray<CactusBodyFlowerData>;
    private readonly limbs: ReadonlyArray<CactusLimbData>;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent();
 
       super(position, {
          health: new HealthComponent(Cactus.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "cactus", isNaturallySpawned);
+      }, "cactus");
 
 
       const hitbox = new CircularHitbox();

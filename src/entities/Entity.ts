@@ -4,7 +4,6 @@ import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
-import { addEntityToCensus } from "../census";
 
 export interface EntityComponents {
    health: HealthComponent;
@@ -54,8 +53,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};
 
-   // @Cleanup Remove the "isNaturallySpawned" flag. Perhaps instead make a function which adds the entity to the census? But would be inconvenient to use
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, isNaturallySpawned: boolean) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
       super(position);
 
       this.type = entityType;
@@ -70,10 +68,6 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       // Load components. Must be done after all of them set their entity as the components might reference each other
       for (const component of Object.values(components) as Array<Component>) {
          if (typeof component.onLoad !== "undefined") component.onLoad();
-      }
-
-      if (isNaturallySpawned) {
-         addEntityToCensus(this);
       }
    }
 

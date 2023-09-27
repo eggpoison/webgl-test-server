@@ -17,13 +17,13 @@ class Barrel extends Entity {
 
    public tribe: Tribe | null = null;
    
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       const inventoryComponent = new InventoryComponent();
       
       super(position, {
          health: new HealthComponent(Barrel.MAX_HEALTH, false),
          inventory: inventoryComponent
-      }, "barrel", isNaturallySpawned);
+      }, "barrel");
 
 
       const hitbox = new CircularHitbox();

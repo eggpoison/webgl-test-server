@@ -1,4 +1,4 @@
-import { ItemType, Point, Vector, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, Point, randInt } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -11,13 +11,13 @@ class Boulder extends Entity {
 
    private readonly boulderType: number;
 
-   constructor(position: Point, isNaturallySpawned: boolean) {
+   constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent();
 
       super(position, {
          health: new HealthComponent(Boulder.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "boulder", isNaturallySpawned);
+      }, "boulder");
 
       const hitbox = new CircularHitbox();
       hitbox.setHitboxInfo(Boulder.RADIUS);
