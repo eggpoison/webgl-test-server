@@ -25,8 +25,8 @@ class TribeHut extends Entity {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [] {
-      return [];
+   public getClientArgs(): [tribeID: number] {
+      return [this.tribe.id];
    }
 }
 

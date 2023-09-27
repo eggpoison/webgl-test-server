@@ -79,7 +79,6 @@ class Tribesman extends TribeMember {
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.tribe !== null) {
-
                // Attack enemy tribe buildings
                if (entity.type === "barrel" && (entity as Barrel).tribe !== this.tribe) {
                   return true;
@@ -268,12 +267,15 @@ class Tribesman extends TribeMember {
       this.lastAttackTicks = Board.ticks;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armour: ItemType | null, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData] {
+      const inventoryComponent = this.getComponent("inventory")!;
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+
       return [
          this.tribe !== null ? this.tribe.id : null,
          this.tribeType,
-         this.getArmourItemType(),
+         serializeInventoryData(inventoryComponent.getInventory("armourSlot"), "armourSlot"),
+         serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
          this.getActiveItemType(),
          this.getFoodEatingType(),
          this.lastAttackTicks,

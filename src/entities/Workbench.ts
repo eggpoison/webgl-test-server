@@ -8,7 +8,6 @@ class Workbench extends Entity {
    constructor(position: Point) {
       super(position, {}, "workbench", false);
 
-
       const hitbox = new RectangularHitbox();
       hitbox.setHitboxInfo(80, 80);
       this.addHitbox(hitbox);

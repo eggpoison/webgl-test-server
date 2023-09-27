@@ -16,7 +16,9 @@ import Hitbox from "../../hitboxes/Hitbox";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Projectile from "../../Projectile";
-import ENTITY_CLASS_RECORD from "../../entity-classes";
+import Workbench from "../Workbench";
+import Campfire from "../Campfire";
+import Furnace from "../Furnace";
 
 enum PlaceableItemHitboxType {
    circular = 0,
@@ -38,7 +40,7 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
    readonly height: number;
 }
 
-const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>> = {
+const PLACEABLE_ITEM_HITBOX_INFO = {
    [ItemType.workbench]: {
       type: PlaceableItemHitboxType.rectangular,
       width: 80,
@@ -67,7 +69,15 @@ const PLACEABLE_ITEM_HITBOX_INFO: Partial<Record<ItemType, PlaceableItemCircular
       width: 80,
       height: 80
    }
-};
+} satisfies Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>>;
+
+type PlaceableItemType = keyof typeof PLACEABLE_ITEM_HITBOX_INFO;
+
+function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is keyof typeof PLACEABLE_ITEM_HITBOX_INFO {
+   if (!PLACEABLE_ITEM_HITBOX_INFO.hasOwnProperty(itemType)) {
+      throw new Error(`Entity type '${itemType}' is not placeable.`);
+   }
+}
 
 abstract class TribeMember extends Mob {
    private static readonly placeTestRectangularHitbox = new RectangularHitbox();
@@ -106,18 +116,8 @@ abstract class TribeMember extends Mob {
       this.tribeType = tribeType;
 
       inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
-
-      this.createEvent("on_item_place", (placedItem: Entity): void => {
-         if (placedItem.type === "tribe_totem") {
-            TribeBuffer.addTribe(this.tribeType, placedItem as TribeTotem, this);
-         } else if (placedItem.type === "tribe_hut") {
-            if (this.tribe === null) {
-               throw new Error("Tribe member didn't belong to a tribe when placing a hut");
-            }
-
-            this.tribe.registerNewHut(placedItem as TribeHut);
-         }
-      });
+      inventoryComponent.createNewInventory("backpack", -1, -1, false);
+      inventoryComponent.createNewInventory("backpackSlot", 1, 1, false);
 
       // Drop inventory on death
       this.createEvent("death", () => {
@@ -411,6 +411,8 @@ abstract class TribeMember extends Mob {
             break;
          }
          case "placeable": {
+            assertItemTypeIsPlaceable(item.type);
+
             // Calculate the position to spawn the placeable entity at
             const spawnPosition = this.position.copy();
             const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE, this.rotation);
@@ -419,18 +421,46 @@ abstract class TribeMember extends Mob {
             // Make sure the placeable item can be placed
             if (!this.canBePlaced(spawnPosition, this.rotation, item.type)) return;
             
-            const itemInfo = ITEM_INFO_RECORD[item.type] as PlaceableItemInfo;
-            
             // Spawn the placeable entity
-            const entityClass = ENTITY_CLASS_RECORD[itemInfo.entityType]();
-            const placedEntity = new entityClass(spawnPosition, false);
+            let placedEntity: Entity;
+            switch (item.type) {
+               case ItemType.workbench: {
+                  placedEntity = new Workbench(spawnPosition);
+                  break;
+               }
+               case ItemType.tribe_totem: {
+                  placedEntity = new TribeTotem(spawnPosition, false)
+                  TribeBuffer.addTribe(this.tribeType, placedEntity as TribeTotem, this);
+                  break;
+               }
+               case ItemType.tribe_hut: {
+                  if (this.tribe === null) {
+                     throw new Error("Tribe member didn't belong to a tribe when placing a hut");
+                  }
+                  
+                  placedEntity = new TribeHut(spawnPosition, false, this.tribe);
+                  this.tribe.registerNewHut(placedEntity as TribeHut);
+                  break;
+               }
+               case ItemType.barrel: {
+                  placedEntity = new Barrel(spawnPosition, false);
+                  break;
+               }
+               case ItemType.campfire: {
+                  placedEntity = new Campfire(spawnPosition, false);
+                  break;
+               }
+               case ItemType.furnace: {
+                  placedEntity = new Furnace(spawnPosition, false);
+                  break;
+               }
+            }
 
             // Rotate it to match the entity's rotation
             placedEntity.rotation = this.rotation;
 
             inventoryComponent.consumeItem("hotbar", itemSlot, 1);
 
-            this.callEvents("on_item_place", placedEntity);
             break;
          }
          case "bow": {
@@ -503,7 +533,7 @@ abstract class TribeMember extends Mob {
       return !this.bowCooldowns.hasOwnProperty(itemSlot);
    }
 
-   private canBePlaced(spawnPosition: Point, rotation: number, itemType: ItemType): boolean {
+   private canBePlaced(spawnPosition: Point, rotation: number, itemType: PlaceableItemType): boolean {
       // Update the place test hitbox to match the placeable item's info
       const testHitboxInfo = PLACEABLE_ITEM_HITBOX_INFO[itemType]!
 

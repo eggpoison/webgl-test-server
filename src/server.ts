@@ -417,7 +417,7 @@ class GameServer {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "backpackItemSlot"
+                     inventoryName: "backpackSlot"
                   },
                   heldItemSlot: {
                      itemSlots: {},
@@ -611,7 +611,7 @@ class GameServer {
       const inventoryData: PlayerInventoryData = {
          hotbar: this.bundleInventory(player, "hotbar"),
          backpackInventory: this.bundleInventory(player, "backpack"),
-         backpackSlot: this.bundleInventory(player, "backpackItemSlot"),
+         backpackSlot: this.bundleInventory(player, "backpackSlot"),
          heldItemSlot: this.bundleInventory(player, "heldItemSlot"),
          craftingOutputItemSlot: this.bundleInventory(player, "craftingOutputSlot"),
          armourSlot: this.bundleInventory(player, "armourSlot")

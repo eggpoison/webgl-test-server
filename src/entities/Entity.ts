@@ -31,7 +31,6 @@ interface StatusEffect {
 interface EntityEvents extends GameObjectEvents {
    hurt: (damage: number, attackingEntity: Entity | null, knockback: number, hitDirection: number | null) => void;
    death: (attackingEntity: Entity | null) => void;
-   on_item_place: (placedEntity: Entity) => void;
 }
 
 abstract class Entity extends _GameObject<"entity", EntityEvents> {
@@ -50,8 +49,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],
-      during_entity_collision: [],
-      on_item_place: []
+      during_entity_collision: []
    };
 
    private readonly statusEffects: Partial<Record<StatusEffectType, StatusEffect>> = {};

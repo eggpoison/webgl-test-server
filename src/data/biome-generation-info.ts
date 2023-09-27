@@ -170,6 +170,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          {
             // @Temporary
             tileType: "slime",
+            // tileType: "sludge",
             isWall: false,
             noiseRequirements: {
                scale: 5,
