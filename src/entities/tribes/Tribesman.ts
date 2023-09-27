@@ -1,6 +1,6 @@
-import { ArmourItemInfo, EntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeType } from "webgl-test-shared";
+import { ArmourItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
-import TribeMember, { AttackToolType, getEntityAttackToolType } from "./TribeMember";
+import TribeMember, { AttackToolType, TribeMemberAction, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import WanderAI from "../../mob-ai/WanderAI";
 import Board from "../../Board";
@@ -102,6 +102,8 @@ class Tribesman extends TribeMember {
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
 
+            this.currentAction = TribeMemberAction.none;
+
             // Equip the best weapon the tribesman has
             const bestWeaponSlot = this.getBestWeaponSlot();
             if (bestWeaponSlot !== null) {
@@ -109,6 +111,43 @@ class Tribesman extends TribeMember {
             }
             
             this.doAttack();
+         }
+      }));
+
+      // AI for healing when missing health
+      this.addAI(new MoveAI(this, {
+         aiWeightMultiplier: 0.95,
+         terminalVelocity: 0,
+         acceleration: 0,
+         getMoveTargetPosition: () => {
+            const healthComponent = this.getComponent("health")!;
+            if (healthComponent.getHealth() >= healthComponent.maxHealth) {
+               return null;
+            }
+               
+            const foodItemSlot = this.getFoodItemSlot();
+            if (foodItemSlot !== null) {
+               // @Incomplete: Make a new StopAI so that the tribesman doesn't change rotation when eating
+               return new Point(0, 0);
+            }
+            return null;
+         },
+         callback: () => {
+            const foodItemSlot = this.getFoodItemSlot();
+            if (foodItemSlot !== null) {
+               this.selectedItemSlot = foodItemSlot;
+
+               // If the food is only just being eaten, reset the food timer so that the food isn't immediately eaten
+               if (this.currentAction !== TribeMemberAction.eat) {
+                  const foodItem = this.getComponent("inventory")!.getItem("hotbar", foodItemSlot)!;
+                  const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
+                  this.foodEatingTimer = itemInfo.eatTime;
+               }
+               
+               this.currentAction = TribeMemberAction.eat;
+            }
+            
+            return null;
          }
       }));
 
@@ -128,6 +167,8 @@ class Tribesman extends TribeMember {
             return null;
          },
          callback: () => {
+            this.currentAction = TribeMemberAction.none;
+
             const nearestBarrel = this.findNearestBarrel();
             if (nearestBarrel !== null) {
                const distance = this.position.calculateDistanceBetween(nearestBarrel.position);
@@ -145,6 +186,9 @@ class Tribesman extends TribeMember {
          terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          itemIsChased: (item: DroppedItem): boolean => {
             return this.canPickupItem(item);
+         },
+         callback: () => {
+            this.currentAction = TribeMemberAction.none;
          }
       }));
 
@@ -161,6 +205,8 @@ class Tribesman extends TribeMember {
          },
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
+
+            this.currentAction = TribeMemberAction.none;
 
             // Equip the tool for the job
             let bestToolSlot: number | null;
@@ -204,6 +250,9 @@ class Tribesman extends TribeMember {
             
             const tile = Board.getTileAtPosition(position);
             return this.tribe.tileIsInArea(tile.x, tile.y);
+         },
+         callback: () => {
+            this.currentAction = TribeMemberAction.none;
          }
       }));
    }
@@ -435,6 +484,17 @@ class Tribesman extends TribeMember {
    private doRangedAttack(bow: Item, itemSlot: number): void {
       this.useItem(bow, itemSlot)
       this.lastAttackTicks = Board.ticks;
+   }
+
+   private getFoodItemSlot(): number | null {
+      const hotbar = this.getComponent("inventory")!.getInventory("hotbar");
+      for (const [_itemSlot, item] of Object.entries(hotbar.itemSlots)) {
+         const itemCategory = ITEM_TYPE_RECORD[item.type];
+         if (itemCategory === "food") {
+            return Number(_itemSlot);
+         }
+      }
+      return null;
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData, activeItemSlot: number] {

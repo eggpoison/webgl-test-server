@@ -99,7 +99,7 @@ const summonEntities = (username: string, unguardedEntityType: string, amount: n
       const offset = new Vector(ENTITY_SPAWN_RANGE * (Math.random() + 1) / 2, 2 * Math.PI * Math.random()).convertToPoint();
       spawnPosition.add(offset);
 
-      new entityClass(spawnPosition, false);
+      new entityClass(spawnPosition);
    }
 }
 

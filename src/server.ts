@@ -18,6 +18,7 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
 import Cow from "./entities/mobs/Cow";
+import { TribeMemberAction } from "./entities/tribes/TribeMember";
 
 /*
 
@@ -677,14 +678,20 @@ class GameServer {
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
-      playerData.instance.isEating = playerDataPacket.isEating;
+
+      if (playerDataPacket.isEating) {
+         if (playerData.instance.currentAction !== TribeMemberAction.eat) {
+            playerData.instance.startEating();
+         }
+      } else {
+         playerData.instance.currentAction = TribeMemberAction.none;
+      }
    }
 
    private generatePlayerSpawnPosition(): Point {
       const xSpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
       const ySpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-      const position = new Point(xSpawnPosition, ySpawnPosition);
-      return position;
+      return new Point(xSpawnPosition, ySpawnPosition);
    }
 
    private respawnPlayer(socket: ISocket): void {

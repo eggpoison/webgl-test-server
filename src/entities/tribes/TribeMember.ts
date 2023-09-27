@@ -29,6 +29,11 @@ export enum AttackToolType {
    axe
 }
 
+export enum TribeMemberAction {
+   eat,
+   none
+}
+
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
    if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush" || entity.type === "cactus" || entity.type === "snowball") {
       return AttackToolType.weapon;
@@ -123,7 +128,8 @@ abstract class TribeMember extends Mob {
 
    protected selectedItemSlot = 1;
 
-   public isEating = false;
+   public currentAction = TribeMemberAction.none;
+   protected foodEatingTimer = 0;
 
    protected lastAttackTicks = -99999;
    protected lastEatTicks = -99999;
@@ -196,6 +202,24 @@ abstract class TribeMember extends Mob {
          inventoryComponent.resizeInventory("backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
       } else {
          inventoryComponent.resizeInventory("backpack", -1, -1);
+      }
+
+      // Food
+      if (this.currentAction === TribeMemberAction.eat) {
+         this.foodEatingTimer -= 1 / SETTINGS.TPS;
+
+         if (this.foodEatingTimer <= 0) {
+            const item = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
+            if (item !== null) {
+               const itemCategory = ITEM_TYPE_RECORD[item.type];
+               if (itemCategory === "food") {
+                  this.useItem(item, this.selectedItemSlot);
+
+                  const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
+                  this.foodEatingTimer = itemInfo.eatTime;
+               }
+            }
+         }
       }
    }
 
@@ -421,7 +445,7 @@ abstract class TribeMember extends Mob {
    }
 
    protected getFoodEatingType(): ItemType | -1 {
-      if (this.isEating) {
+      if (this.currentAction === TribeMemberAction.eat) {
          const activeItemType = this.getActiveItemType();
          if (activeItemType !== null) {
             return activeItemType;

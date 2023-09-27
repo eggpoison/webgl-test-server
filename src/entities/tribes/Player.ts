@@ -1,13 +1,13 @@
-import { AttackPacket, BackpackItemInfo, canCraftRecipe, CRAFTING_RECIPES, CraftingRecipe, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BackpackItemInfo, canCraftRecipe, CRAFTING_RECIPES, CraftingRecipe, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
-import TribeMember from "./TribeMember";
+import TribeMember, { TribeMemberAction } from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
-import { Inventory, serializeInventoryData } from "../../entity-components/InventoryComponent";
+import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 
 class Player extends TribeMember {
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
@@ -219,6 +219,17 @@ class Player extends TribeMember {
 
    public setSelectedItemSlot(selectedItemSlot: number): void {
       this.selectedItemSlot = selectedItemSlot;
+   }
+
+   public startEating(): void {
+      // Reset the food timer so that the food isn't immediately eaten
+      const foodItem = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot);
+      if (foodItem !== null) {
+         const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
+         this.foodEatingTimer = itemInfo.eatTime;
+      }
+      
+      this.currentAction = TribeMemberAction.eat;
    }
 }
 
