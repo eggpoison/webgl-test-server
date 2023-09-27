@@ -1,4 +1,4 @@
-import { EntityType, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, TribeType } from "webgl-test-shared";
+import { ArmourItemInfo, EntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -32,11 +32,8 @@ class Tribesman extends TribeMember {
    
    private static readonly VISION_RANGE = 320;
 
-   private static readonly WALK_SPEED = 75;
-   private static readonly WALK_ACCELERATION = 150;
-
-   private static readonly RUN_SPEED = 150;
-   private static readonly RUN_ACCELERATION = 300;
+   private static readonly TERMINAL_VELOCITY = 150;
+   private static readonly ACCELERATION = 300;
 
    private static readonly ENEMY_TARGETS: ReadonlyArray<EntityType> = ["slime", "yeti", "zombie", "tombstone"];
    private static readonly RESOURCE_TARGETS: ReadonlyArray<EntityType> = ["cow", "cactus", "tree", "berry_bush", "boulder", "ice_spikes"];
@@ -74,8 +71,8 @@ class Tribesman extends TribeMember {
       // AI for attacking enemies
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 1,
-         terminalVelocity: Tribesman.RUN_SPEED,
-         acceleration: Tribesman.RUN_ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.tribe !== null) {
@@ -112,8 +109,8 @@ class Tribesman extends TribeMember {
       // AI for returning resources to tribe
       this.addAI(new MoveAI(this, {
          aiWeightMultiplier: 0.9,
-         terminalVelocity: Tribesman.WALK_SPEED,
-         acceleration: Tribesman.WALK_ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
          getMoveTargetPosition: (): Point | null => {
             if (!this.inventoryIsFull()) return null;
 
@@ -138,8 +135,8 @@ class Tribesman extends TribeMember {
       // AI for picking up items
       this.addAI(new ItemChaseAI(this, {
          aiWeightMultiplier: 0.8,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
+         acceleration: Tribesman.ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          itemIsChased: (item: DroppedItem): boolean => {
             return this.canPickupItem(item);
          }
@@ -148,8 +145,8 @@ class Tribesman extends TribeMember {
       // AI for gathering resources
       this.addAI(new ChaseAI(this, {
          aiWeightMultiplier: 0.6,
-         terminalVelocity: Tribesman.RUN_SPEED,
-         acceleration: Tribesman.RUN_ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
          desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.inventoryIsFull()) return false;
@@ -166,8 +163,8 @@ class Tribesman extends TribeMember {
       // AI for patrolling tribe area
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
-         acceleration: Tribesman.WALK_ACCELERATION,
-         terminalVelocity: Tribesman.WALK_SPEED,
+         acceleration: Tribesman.ACCELERATION,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          wanderRate: 0.3,
          shouldWander: (position: Point): boolean => {
             if (this.tribe === null) return true;
@@ -220,14 +217,77 @@ class Tribesman extends TribeMember {
    private depositResources(barrel: Barrel): void {
       const tribesmanInventoryComponent = this.getComponent("inventory")!;
       const barrelInventoryComponent = barrel.getComponent("inventory")!;
-      
       const tribesmanInventory = tribesmanInventoryComponent.getInventory("hotbar");
-      for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
-         // Add the item to the barrel inventory
-         const amountAdded = barrelInventoryComponent.addItemToInventory("inventory", item);
 
-         // Remove from the tribesman inventory
+      // 
+      // Isolate the items the tribesman will want to keep
+      // 
+      let bestWeaponLevel = -1;
+      let bestWeaponItemSlot = -1;
+      let bestPickaxeLevel = -1;
+      let bestPickaxeItemSlot = -1;
+      let bestAxeLevel = -1;
+      let bestAxeItemSlot = -1;
+      let bestArmourLevel = -1;
+      let bestArmourItemSlot = -1;
+      let firstFoodItemSlot = -1; // Tribesman will only keep the first food item type in their inventory
+      for (let itemSlot = 1; itemSlot <= tribesmanInventory.width * tribesmanInventory.height; itemSlot++) {
+         if (!tribesmanInventory.itemSlots.hasOwnProperty(itemSlot)) {
+            continue;
+         }
+
+         const item = tribesmanInventory.itemSlots[itemSlot];
+         
+         const itemInfo = ITEM_INFO_RECORD[item.type];
+         const itemCategory = ITEM_TYPE_RECORD[item.type];
+         switch (itemCategory) {
+            case "sword":
+            case "bow": {
+               if ((itemInfo as ToolItemInfo).level > bestWeaponLevel) {
+                  bestWeaponLevel = (itemInfo as ToolItemInfo).level;
+                  bestWeaponItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "pickaxe": {
+               if ((itemInfo as ToolItemInfo).level > bestPickaxeLevel) {
+                  bestPickaxeLevel = (itemInfo as ToolItemInfo).level;
+                  bestPickaxeItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "axe": {
+               if ((itemInfo as ToolItemInfo).level > bestAxeLevel) {
+                  bestAxeLevel = (itemInfo as ToolItemInfo).level;
+                  bestAxeItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "armour": {
+               if ((itemInfo as ArmourItemInfo).level > bestArmourLevel) {
+                  bestArmourLevel = (itemInfo as ArmourItemInfo).level;
+                  bestArmourItemSlot = itemSlot;
+               }
+               break;
+            }
+            case "food": {
+               if (firstFoodItemSlot === -1) {
+                  firstFoodItemSlot = itemSlot;
+               }
+               break;
+            }
+         }
+      }
+      
+      for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
          const itemSlot = Number(_itemSlot);
+         
+         if (itemSlot === bestWeaponItemSlot || itemSlot === bestAxeItemSlot || itemSlot === bestPickaxeItemSlot || itemSlot === bestArmourItemSlot || itemSlot === firstFoodItemSlot) {
+            continue;
+         }
+         
+         // Add the item to the barrel inventory and remove from tribesman inventory
+         const amountAdded = barrelInventoryComponent.addItemToInventory("inventory", item);
          tribesmanInventoryComponent.consumeItem("hotbar", itemSlot, amountAdded);
       }
    }
