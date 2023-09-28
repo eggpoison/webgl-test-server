@@ -33,7 +33,7 @@ class IceSpikes extends Entity {
    private readonly rootIceSpike: IceSpikes;
 
    constructor(position: Point, rootIceSpike?: IceSpikes) {
-      const itemCreationComponent = new ItemCreationComponent();
+      const itemCreationComponent = new ItemCreationComponent(48);
 
       super(position, {
          health: new HealthComponent(IceSpikes.MAX_HEALTH, false),

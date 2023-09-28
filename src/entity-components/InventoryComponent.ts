@@ -50,7 +50,7 @@ class InventoryComponent extends Component {
    private readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 
    public onLoad(): void {
-      this.entity.createEvent("enter_collision", (collidingGameObject: GameObject): void => {
+      this.entity.createEvent("during_collision", (collidingGameObject: GameObject): void => {
          if (collidingGameObject.i === "droppedItem") {
             this.pickupDroppedItem(collidingGameObject);
          }

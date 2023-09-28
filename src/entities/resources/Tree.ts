@@ -25,7 +25,7 @@ class Tree extends Entity {
 
       super(position, {
          health: new HealthComponent(Tree.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent()
+         item_creation: new ItemCreationComponent(48)
       }, "tree");
 
       const hitbox = new CircularHitbox();

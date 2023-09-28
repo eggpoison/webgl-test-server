@@ -101,7 +101,7 @@ class Slime extends Mob {
    private readonly angeredEntities = new Array<EntityAnger>();
 
    constructor(position: Point, size: SlimeSize = SlimeSize.small) {
-      const itemCreationComponent = new ItemCreationComponent();
+      const itemCreationComponent = new ItemCreationComponent(48);
       
       super(position, {
          health: new HealthComponent(Slime.MAX_HEALTH[size], false),

@@ -18,7 +18,7 @@ class FrozenYeti extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(FrozenYeti.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent()
+         item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2)
       }, "frozen_yeti", SETTINGS.TILE_SIZE * 4);
 
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.deep_frost_heart, randInt(2, 3), true);

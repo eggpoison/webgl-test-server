@@ -86,7 +86,7 @@ class Yeti extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Yeti.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent()
+         item_creation: new ItemCreationComponent(Yeti.SIZE / 2)
       }, "yeti", Yeti.VISION_RANGE);
 
       this.setAIParam("hunger", randInt(0, 50));

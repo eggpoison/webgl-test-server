@@ -20,7 +20,7 @@ class Cow extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent()
+         item_creation: new ItemCreationComponent(48)
       }, "cow", SETTINGS.TILE_SIZE * 4);
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;

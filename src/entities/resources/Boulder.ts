@@ -12,7 +12,7 @@ class Boulder extends Entity {
    private readonly boulderType: number;
 
    constructor(position: Point) {
-      const itemCreationComponent = new ItemCreationComponent();
+      const itemCreationComponent = new ItemCreationComponent(48);
 
       super(position, {
          health: new HealthComponent(Boulder.MAX_HEALTH, false),

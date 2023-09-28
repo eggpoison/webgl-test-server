@@ -1,9 +1,8 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
-import TRIBE_INFO_RECORD from "webgl-test-shared/lib/tribes";
 import Tribe from "../../Tribe";
 import TribeHut from "./TribeHut";
 import TribeTotem from "./TribeTotem";
