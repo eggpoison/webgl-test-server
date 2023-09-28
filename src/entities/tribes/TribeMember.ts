@@ -117,6 +117,8 @@ abstract class TribeMember extends Mob {
    
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
+   private static readonly DEEP_FROST_ARMOUR_IMMUNITY_TIME = 20;
+
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
 
@@ -130,6 +132,8 @@ abstract class TribeMember extends Mob {
    protected lastBowChargeTicks = -99999;
 
    protected bowCooldowns: Record<number, number> = {};
+
+   public immunityTimer = 0;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -160,6 +164,12 @@ abstract class TribeMember extends Mob {
                new DroppedItem(position, item);
             }
          }
+      });
+
+      // Lose immunity to damage if the tribe member is hit
+      this.createEvent("hurt", () => {
+         this.removeImmunity();
+         this.immunityTimer = TribeMember.DEEP_FROST_ARMOUR_IMMUNITY_TIME;
       });
    }
 
@@ -220,6 +230,27 @@ abstract class TribeMember extends Mob {
             break;
          }
       }
+
+      this.immunityTimer -= 1 / SETTINGS.TPS;
+      if (this.immunityTimer <= 0) {
+         this.attemptToBecomeImmune();
+         this.immunityTimer = 0;
+      }
+   }
+
+   private attemptToBecomeImmune(): void {
+      const armour = this.getComponent("inventory")!.getItem("armourSlot", 1);
+      if (armour !== null && armour.type === ItemType.deep_frost_armour) {
+         this.addImmunity();
+      }
+   }
+
+   private addImmunity(): void {
+      this.getComponent("health")!.addDefence(99999, "deep_frost_armour_immunity");
+   }
+
+   private removeImmunity(): void {
+      this.getComponent("health")!.removeDefence("deep_frost_armour_immunity");
    }
 
    protected overrideTileMoveSpeedMultiplier(): number | null {

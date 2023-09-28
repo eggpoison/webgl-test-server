@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -442,7 +442,8 @@ class GameServer {
                serverTime: Board.time,
                playerHealth: 20,
                tribeData: null,
-               killedEntityIDs: []
+               killedEntityIDs: [],
+               hasFrostShield: false
             };
 
             this.playerDataRecord[socket.id] = playerData as PlayerData;
@@ -583,6 +584,8 @@ class GameServer {
 
          const killedEntityIDs = calculateKilledEntityIDs(extendedVisibleChunkBounds);
 
+         const playerArmour = player.getComponent("inventory")!.getItem("armourSlot", 1);
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             entityDataArray: bundleEntityDataArray(visibleEntities),
@@ -595,7 +598,8 @@ class GameServer {
             playerHealth: player.getComponent("health")!.getHealth(),
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
-            killedEntityIDs: killedEntityIDs
+            killedEntityIDs: killedEntityIDs,
+            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deep_frost_armour
          };
 
          // Send the game data to the player
