@@ -14,7 +14,8 @@ const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
 ];
 
 export function attemptToSpreadGrassTile(grassTile: Tile): void {
-   if (Math.random() < 0.05 / SETTINGS.TPS) {
+   // if (Math.random() < 0.05 / SETTINGS.TPS) {
+   if (Math.random() < 0.2 / SETTINGS.TPS) {
       for (const offset of OFFSETS) {
          const tileX = grassTile.x + offset[0];
          const tileY = grassTile.y + offset[1];

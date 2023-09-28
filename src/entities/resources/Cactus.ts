@@ -83,6 +83,7 @@ class Cactus extends Entity {
          item_creation: itemCreationComponent
       }, "cactus");
 
+      this.rotation = 2 * Math.PI * Math.random();
 
       const hitbox = new CircularHitbox();
       hitbox.setHitboxInfo(Cactus.RADIUS - Cactus.HITBOX_PADDING);
@@ -100,16 +101,11 @@ class Cactus extends Entity {
          this.addHitbox(hitbox);
       }
 
-      const spineDropCount = randInt(2, 5);
-      itemCreationComponent.createItemOnDeath(ItemType.cactus_spine, spineDropCount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.cactus_spine, randInt(2, 5), true);
 
       this.isStatic = true;
       
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type === "krumblid") {
-            return;
-         }
-         
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);

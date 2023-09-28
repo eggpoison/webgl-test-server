@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector, clampToBoardDimensions } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -29,6 +29,13 @@ export interface GameObjectEvents {
    during_collision: (collidingGameObject: GameObject) => void;
    enter_entity_collision: (collidingEntity: Entity) => void;
    during_entity_collision: (collidingEntity: Entity) => void;
+}
+
+enum TileCollisionAxis {
+   none = 0,
+   x = 1,
+   y = 2,
+   diagonal = 3
 }
 
 export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
@@ -331,9 +338,97 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
    }
 
+   private checkForTileCollision(tile: Tile, hitbox: CircularHitbox): TileCollisionAxis {
+      // Get the distance between the player's position and the center of the tile
+      const xDist = Math.abs(this.position.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE);
+      const yDist = Math.abs(this.position.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE);
+
+      if (xDist <= hitbox.radius) {
+         return TileCollisionAxis.y;
+      }
+      if (yDist <= hitbox.radius) {
+         return TileCollisionAxis.x;
+      }
+
+      const cornerDistance = Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
+
+      if (cornerDistance <= Math.sqrt(Math.pow(SETTINGS.TILE_SIZE, 2) / 2) + hitbox.radius) {
+         return TileCollisionAxis.diagonal;
+      }
+
+      return TileCollisionAxis.none;
+   }
+
+   private resolveXAxisTileCollision(tile: Tile, hitbox: CircularHitbox): void {
+      const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
+      const xDir = xDist >= 0 ? 1 : -1;
+      this.position.x = tile.x * SETTINGS.TILE_SIZE + (0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + hitbox.radius * xDir;
+
+      this.stopXVelocity();
+   }
+
+   private resolveYAxisTileCollision(tile: Tile, hitbox: CircularHitbox): void {
+      const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
+      const yDir = yDist >= 0 ? 1 : -1;
+      this.position.y = tile.y * SETTINGS.TILE_SIZE + (0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + hitbox.radius * yDir;
+
+      this.stopYVelocity();
+   }
+
+   private resolveDiagonalTileCollision(tile: Tile, hitbox: CircularHitbox): void {
+      const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
+      const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
+
+      const xDir = xDist >= 0 ? 1 : -1;
+      const yDir = yDist >= 0 ? 1 : -1;
+
+      const xDistFromEdge = Math.abs(xDist - SETTINGS.TILE_SIZE/2);
+      const yDistFromEdge = Math.abs(yDist - SETTINGS.TILE_SIZE/2);
+
+      const moveAxis: "x" | "y" = yDistFromEdge >= xDistFromEdge ? "y" : "x";
+
+      if (moveAxis === "x") {
+         this.position.x = (tile.x + 0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + hitbox.radius * xDir;
+         this.stopXVelocity();
+      } else {
+         this.position.y = (tile.y + 0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + hitbox.radius * yDir;
+         this.stopYVelocity();
+      }
+   }
+
    public resolveWallTileCollisions(): void {
       for (const hitbox of this.hitboxes) {
-         let minTileX
+         if (!(hitbox instanceof CircularHitbox)) {
+            continue;
+         }
+         
+         const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
+         const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
+         const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
+         const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
+   
+         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+            for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+               const tile = Board.getTile(tileX, tileY);
+               if (tile.isWall) {
+                  const collisionAxis = this.checkForTileCollision(tile, hitbox);
+                  switch (collisionAxis) {
+                     case TileCollisionAxis.x: {
+                        this.resolveXAxisTileCollision(tile, hitbox);
+                        break;
+                     }
+                     case TileCollisionAxis.y: {
+                        this.resolveYAxisTileCollision(tile, hitbox);
+                        break;
+                     }
+                     case TileCollisionAxis.diagonal: {
+                        this.resolveDiagonalTileCollision(tile, hitbox);
+                        break;
+                     }
+                  }
+               }
+            }
+         }
       }
    }
    
@@ -376,6 +471,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public collide(gameObject: GameObject): void {
+      // @Cleanup This shouldn't be hardcoded
+      // Krumblids and cacti don't collide
+      if (gameObject.i === "entity" && this.i === "entity" && ((gameObject.type === "cactus" && (this as unknown as Entity).type === "krumblid") || (gameObject.type === "krumblid" && (this as unknown as Entity).type === "cactus"))) {
+         return;
+      }
+      
       if (!this.isStatic && gameObject.i !== "droppedItem" && this.i !== "droppedItem") {
          // Calculate the force of the push
          // Force gets greater the closer together the objects are

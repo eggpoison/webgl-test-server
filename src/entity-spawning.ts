@@ -67,12 +67,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.005,
       maxDensity: 0.025
    },
-   // {
-   //    entityType: "cactus",
-   //    spawnableTiles: ["sand"],
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.03
-   // },
+   {
+      entityType: "cactus",
+      spawnableTiles: ["sand"],
+      spawnRate: 0.005,
+      maxDensity: 0.03
+   },
    {
       entityType: "yeti",
       spawnableTiles: ["snow"],
@@ -98,8 +98,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "krumblid",
       spawnableTiles: ["sand"],
-      spawnRate: 0.15,
-      maxDensity: 0.02
+      spawnRate: 0.005,
+      maxDensity: 0.015
    },
    {
       entityType: "frozen_yeti",

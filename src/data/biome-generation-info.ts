@@ -148,67 +148,63 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    },
    swamp: {
       spawnRequirements: {
-         // minTemperature: 0.7,
-         // minHumidity: 0.8
          minTemperature: 0.5,
          minHumidity: 0.8
       },
       tiles: [
-         // {
-         //    tileType: "slime",
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 2.5,
-         //       minWeight: 0.2
-         //    },
-         //    minDist: 4
-         // },
-         // {
-         //    tileType: "slime",
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 2.5,
-         //       minWeight: 0.6
-         //    },
-         //    minDist: 2
-         // },
-         // {
-         //    tileType: "sludge",
-         //    isWall: false
-         // }
          {
-            // @Temporary
             tileType: "slime",
-            // tileType: "sludge",
             isWall: false,
             noiseRequirements: {
-               scale: 5,
-               minWeight: 0.25
+               scale: 2.5,
+               minWeight: 0.2
             },
-            minDist: 3
+            minDist: 4
          },
          {
-            tileType: "sludge",
+            tileType: "slime",
             isWall: false,
             noiseRequirements: {
-               scale: 5,
-               minWeight: 0.4
+               scale: 2.5,
+               minWeight: 0.6
             },
             minDist: 2
          },
          {
             tileType: "sludge",
-            isWall: false,
-            noiseRequirements: {
-               scale: 5,
-               minWeight: 0.6
-            },
-            minDist: 1
-         },
-         {
-            tileType: "dirt",
             isWall: false
          }
+         // {
+         //    tileType: "sludge",
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 5,
+         //       minWeight: 0.25
+         //    },
+         //    minDist: 3
+         // },
+         // {
+         //    tileType: "sludge",
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 5,
+         //       minWeight: 0.4
+         //    },
+         //    minDist: 2
+         // },
+         // {
+         //    tileType: "sludge",
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 5,
+         //       minWeight: 0.6
+         //    },
+         //    minDist: 1
+         // },
+         // {
+         //    tileType: "dirt",
+         //    isWall: false
+         // }
       ]
    },
    grasslands: {
