@@ -100,6 +100,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["sand"],
       spawnRate: 0.15,
       maxDensity: 0.02
+   },
+   {
+      entityType: "frozen_yeti",
+      spawnableTiles: ["frost"],
+      spawnRate: 0.004,
+      maxDensity: 0.008
    }
 ];
 

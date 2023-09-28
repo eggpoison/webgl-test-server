@@ -1,10 +1,10 @@
-import { AttackPacket, BackpackItemInfo, canCraftRecipe, CRAFTING_RECIPES, CraftingRecipe, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, canCraftRecipe, CRAFTING_RECIPES, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
-import TribeMember, { TribeMemberAction } from "./TribeMember";
+import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
@@ -40,7 +40,7 @@ class Player extends TribeMember {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, displayName: string] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, displayName: string] {
       const inventoryComponent = this.getComponent("inventory")!;
       
       return [
@@ -50,9 +50,9 @@ class Player extends TribeMember {
          serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
          serializeInventoryData(inventoryComponent.getInventory("backpack"), "backpack"),
          this.getActiveItemType(),
+         this.currentAction,
          this.getFoodEatingType(),
-         this.lastAttackTicks,
-         this.lastEatTicks,
+         this.getLastActionTicks(),
          this.username
       ];
    }
@@ -227,6 +227,18 @@ class Player extends TribeMember {
       if (foodItem !== null) {
          const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
          this.foodEatingTimer = itemInfo.eatTime;
+      }
+      
+      this.currentAction = TribeMemberAction.eat;
+   }
+
+   public startChargingBow(): void {
+      // Reset the cooldown so the bow doesn't fire immediately
+      const bow = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot);
+      if (bow !== null) {
+         const itemInfo = ITEM_INFO_RECORD[bow.type] as BowItemInfo;
+         this.bowCooldowns[this.selectedItemSlot] = itemInfo.shotCooldown;
+         this.lastBowChargeTicks = Board.ticks;
       }
       
       this.currentAction = TribeMemberAction.eat;

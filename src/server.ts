@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -17,8 +17,6 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
-import Cow from "./entities/mobs/Cow";
-import { TribeMemberAction } from "./entities/tribes/TribeMember";
 
 /*
 
@@ -679,13 +677,12 @@ class GameServer {
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
 
-      if (playerDataPacket.isEating) {
-         if (playerData.instance.currentAction !== TribeMemberAction.eat) {
-            playerData.instance.startEating();
-         }
-      } else {
-         playerData.instance.currentAction = TribeMemberAction.none;
+      if (playerDataPacket.action === TribeMemberAction.eat && playerData.instance.currentAction !== TribeMemberAction.eat) {
+         playerData.instance.startEating();
+      } else if (playerDataPacket.action === TribeMemberAction.charge_bow && playerData.instance.currentAction !== TribeMemberAction.charge_bow) {
+         playerData.instance.startChargingBow();
       }
+      playerData.instance.currentAction = playerDataPacket.action;
    }
 
    private generatePlayerSpawnPosition(): Point {

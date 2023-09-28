@@ -1,6 +1,6 @@
-import { ArmourItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeType } from "webgl-test-shared";
+import { ArmourItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeMemberAction, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
-import TribeMember, { AttackToolType, TribeMemberAction, getEntityAttackToolType } from "./TribeMember";
+import TribeMember, { AttackToolType, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import WanderAI from "../../mob-ai/WanderAI";
 import Board from "../../Board";
@@ -102,15 +102,28 @@ class Tribesman extends TribeMember {
          callback: (targetEntity: Entity | null) => {
             if (targetEntity === null) return;
 
-            this.currentAction = TribeMemberAction.none;
-
             // Equip the best weapon the tribesman has
             const bestWeaponSlot = this.getBestWeaponSlot();
             if (bestWeaponSlot !== null) {
                this.selectedItemSlot = bestWeaponSlot;
+
+               // Don't do a melee attack if using a bow, instead charge the bow
+               const selectedItem = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot)!;
+               const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
+               if (weaponCategory === "bow") {
+                  this.currentAction = TribeMemberAction.charge_bow;
+
+                  // If the bow is fully charged, fire it
+                  if (!this.bowCooldowns.hasOwnProperty(this.selectedItemSlot)) {
+                     this.useItem(selectedItem, this.selectedItemSlot);
+                  }
+                  return;
+               }
             }
+
+            this.currentAction = TribeMemberAction.none;
             
-            this.doAttack();
+            this.doMeleeAttack();
          }
       }));
 
@@ -451,25 +464,6 @@ class Tribesman extends TribeMember {
       return null;
    }
 
-   private doAttack(): void {
-      // Find the selected item
-      const inventoryComponent = this.getComponent("inventory")!;
-      const item = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
-
-      // If not holding an item, do a regular attack
-      if (item === null) {
-         this.doMeleeAttack();
-         return;
-      }
-
-      const itemCategory = ITEM_TYPE_RECORD[item.type];
-      if (itemCategory === "bow") {
-         this.doRangedAttack(item, this.selectedItemSlot);
-      } else {
-         this.doMeleeAttack();
-      }
-   }
-
    private doMeleeAttack(): void {
       // Find the attack target
       const attackTargets = this.calculateRadialAttackTargets(Tribesman.ATTACK_OFFSET, Tribesman.ATTACK_RADIUS);
@@ -479,11 +473,6 @@ class Tribesman extends TribeMember {
       if (target !== null) {
          this.attackEntity(target, this.selectedItemSlot);
       }
-   }
-
-   private doRangedAttack(bow: Item, itemSlot: number): void {
-      this.useItem(bow, itemSlot)
-      this.lastAttackTicks = Board.ticks;
    }
 
    private getFoodItemSlot(): number | null {
@@ -497,7 +486,7 @@ class Tribesman extends TribeMember {
       return null;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, foodEatingType: ItemType | -1, lastAttackTicks: number, lastEatTicks: number, inventory: InventoryData, activeItemSlot: number] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number] {
       const inventoryComponent = this.getComponent("inventory")!;
       const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
 
@@ -508,9 +497,9 @@ class Tribesman extends TribeMember {
          serializeInventoryData(inventoryComponent.getInventory("backpackSlot"), "backpackSlot"),
          serializeInventoryData(inventoryComponent.getInventory("backpack"), "backpack"),
          this.getActiveItemType(),
+         this.currentAction,
          this.getFoodEatingType(),
-         this.lastAttackTicks,
-         this.lastEatTicks,
+         this.getLastActionTicks(),
          serializeInventoryData(hotbarInventory, "hotbar"),
          this.selectedItemSlot
       ];

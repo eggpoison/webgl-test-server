@@ -21,6 +21,7 @@ import Campfire from "./entities/Campfire";
 import Furnace from "./entities/Furnace";
 import Snowball from "./entities/Snowball";
 import Krumblid from "./entities/mobs/Krumblid";
+import FrozenYeti from "./entities/mobs/FrozenYeti";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any[]) => Entity)> = {
    cow: () => Cow,
@@ -43,7 +44,8 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...ar
    campfire: () => Campfire,
    furnace: () => Furnace,
    snowball: () => Snowball,
-   krumblid: () => Krumblid
+   krumblid: () => Krumblid,
+   frozen_yeti: () => FrozenYeti
 };
 
 export default ENTITY_CLASS_RECORD;

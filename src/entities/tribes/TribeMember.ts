@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -20,18 +20,13 @@ import Workbench from "../Workbench";
 import Campfire from "../Campfire";
 import Furnace from "../Furnace";
 
-const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone"];
+const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone", "ice_spikes"];
 const axeDamageableEntities: ReadonlyArray<EntityType> = ["tree"];
 
 export enum AttackToolType {
    weapon,
    pickaxe,
    axe
-}
-
-export enum TribeMemberAction {
-   eat,
-   none
 }
 
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
@@ -133,8 +128,9 @@ abstract class TribeMember extends Mob {
 
    protected lastAttackTicks = -99999;
    protected lastEatTicks = -99999;
+   protected lastBowChargeTicks = -99999;
 
-   private bowCooldowns: Record<number, number> = {};
+   protected bowCooldowns: Record<number, number> = {};
 
    constructor(position: Point, entityType: EntityType, visionRange: number, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -204,21 +200,25 @@ abstract class TribeMember extends Mob {
          inventoryComponent.resizeInventory("backpack", -1, -1);
       }
 
-      // Food
-      if (this.currentAction === TribeMemberAction.eat) {
-         this.foodEatingTimer -= 1 / SETTINGS.TPS;
+      const selectedItem = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
 
-         if (this.foodEatingTimer <= 0) {
-            const item = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
-            if (item !== null) {
-               const itemCategory = ITEM_TYPE_RECORD[item.type];
-               if (itemCategory === "food") {
-                  this.useItem(item, this.selectedItemSlot);
-
-                  const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
-                  this.foodEatingTimer = itemInfo.eatTime;
+      switch (this.currentAction) {
+         case TribeMemberAction.eat: {
+            this.foodEatingTimer -= 1 / SETTINGS.TPS;
+   
+            if (this.foodEatingTimer <= 0) {
+               if (selectedItem !== null) {
+                  const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];
+                  if (itemCategory === "food") {
+                     this.useItem(selectedItem, this.selectedItemSlot);
+   
+                     const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as FoodItemInfo;
+                     this.foodEatingTimer = itemInfo.eatTime;
+                  }
                }
             }
+
+            break;
          }
       }
    }
@@ -554,8 +554,9 @@ abstract class TribeMember extends Mob {
                return;
             }
 
-            const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
+            this.lastBowChargeTicks = Board.ticks;
 
+            const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
             this.bowCooldowns[itemSlot] = itemInfo.shotCooldown;
 
             const spawnPosition = this.position.copy();
@@ -668,6 +669,20 @@ abstract class TribeMember extends Mob {
       }
 
       return true;
+   }
+
+   protected getLastActionTicks(): number {
+      switch (this.currentAction) {
+         case TribeMemberAction.charge_bow: {
+            return this.lastBowChargeTicks;
+         }
+         case TribeMemberAction.eat: {
+            return this.lastEatTicks;
+         }
+         case TribeMemberAction.none: {
+            return this.lastAttackTicks;
+         }
+      }
    }
 }
 
