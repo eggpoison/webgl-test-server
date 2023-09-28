@@ -16,7 +16,7 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly desiredDistance?: number;
+   public desiredDistance?: number;
    public entityIsChased: (entity: Entity) => boolean;
 
    private target: Entity | null = null;

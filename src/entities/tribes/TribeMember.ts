@@ -589,8 +589,9 @@ abstract class TribeMember extends Mob {
             const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
             this.bowCooldowns[itemSlot] = itemInfo.shotCooldown;
 
+            // Offset the arrow's spawn to be just outside of the tribe member's hitbox
             const spawnPosition = this.position.copy();
-            const offset = new Vector(25, this.rotation).convertToPoint();
+            const offset = new Vector(35, this.rotation).convertToPoint();
             spawnPosition.add(offset);
             
             const arrowProjectile = new Projectile(spawnPosition, ProjectileType.woodenArrow, 1.5);
@@ -641,6 +642,7 @@ abstract class TribeMember extends Mob {
                   return;
                }
             }
+            
             break;
          }
       }

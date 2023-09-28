@@ -1,4 +1,4 @@
-import { ArmourItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeMemberAction, TribeType } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, ToolItemInfo, TribeMemberAction, TribeType } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -44,7 +44,8 @@ class Tribesman extends TribeMember {
    private static readonly ATTACK_RADIUS = 50;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
-   private static readonly DESIRED_ATTACK_DISTANCE = 120;
+   private static readonly DESIRED_MELEE_ATTACK_DISTANCE = 120;
+   private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 500;
 
    private static readonly BARREL_DEPOSIT_DISTANCE = 80;
 
@@ -69,11 +70,11 @@ class Tribesman extends TribeMember {
       this.tribe = tribe;
 
       // AI for attacking enemies
-      this.addAI(new ChaseAI(this, {
+      const enemyAttackAI = new ChaseAI(this, {
          aiWeightMultiplier: 1,
          terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          acceleration: Tribesman.ACCELERATION,
-         desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
+         desiredDistance: Tribesman.DESIRED_MELEE_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.tribe !== null) {
                // Attack enemy tribe buildings
@@ -111,21 +112,33 @@ class Tribesman extends TribeMember {
                const selectedItem = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot)!;
                const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
                if (weaponCategory === "bow") {
+                  // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
+                  if (this.currentAction !== TribeMemberAction.charge_bow) {
+                     const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
+                     this.bowCooldowns[this.selectedItemSlot] = itemInfo.shotCooldown;
+                  }
                   this.currentAction = TribeMemberAction.charge_bow;
+                  
+                  enemyAttackAI.desiredDistance = Tribesman.DESIRED_RANGED_ATTACK_DISTANCE
 
                   // If the bow is fully charged, fire it
                   if (!this.bowCooldowns.hasOwnProperty(this.selectedItemSlot)) {
                      this.useItem(selectedItem, this.selectedItemSlot);
                   }
+
                   return;
                }
+
+               // If a melee attack is being done, update to attack at melee distance
+               enemyAttackAI.desiredDistance = Tribesman.DESIRED_MELEE_ATTACK_DISTANCE;
             }
 
             this.currentAction = TribeMemberAction.none;
             
             this.doMeleeAttack();
          }
-      }));
+      });
+      this.addAI(enemyAttackAI);
 
       // AI for healing when missing health
       this.addAI(new MoveAI(this, {
@@ -210,7 +223,7 @@ class Tribesman extends TribeMember {
          aiWeightMultiplier: 0.6,
          terminalVelocity: Tribesman.TERMINAL_VELOCITY,
          acceleration: Tribesman.ACCELERATION,
-         desiredDistance: Tribesman.DESIRED_ATTACK_DISTANCE,
+         desiredDistance: Tribesman.DESIRED_MELEE_ATTACK_DISTANCE,
          entityIsChased: (entity: Entity): boolean => {
             if (this.inventoryIsFull()) return false;
             
