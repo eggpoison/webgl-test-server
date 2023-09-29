@@ -330,9 +330,9 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
-         // setTimeout(() => {
-         //    new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
-         // }, 2000);
+         setTimeout(() => {
+            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+         }, 7000);
          // const spawnPosition = new Point(50, 50);
 
          // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
