@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, SwordItemInfo, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -105,7 +105,17 @@ function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is Plac
    }
 }
 
-abstract class TribeMember extends Mob {
+/** Relationships a tribe member can have, in increasing order of threat */
+export enum EntityRelationship {
+   friendly,
+   neutral,
+   resource,
+   hostileMob,
+   enemyBuilding,
+   enemy
+}
+
+abstract class TribeMember extends Entity {
    private static readonly testRectangularHitbox = new RectangularHitbox();
    private static readonly testCircularHitbox = new CircularHitbox();
 
@@ -118,6 +128,8 @@ abstract class TribeMember extends Mob {
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
    private static readonly DEEP_FROST_ARMOUR_IMMUNITY_TIME = 20;
+
+   private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityType> = ["yeti", "frozen_yeti", "zombie", "slime"];
 
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
@@ -143,7 +155,7 @@ abstract class TribeMember extends Mob {
       super(position, {
          health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
-      }, entityType, visionRange);
+      }, entityType);
 
       this.tribeType = tribeType;
 
@@ -264,32 +276,47 @@ abstract class TribeMember extends Mob {
       return null;
    }
 
-   public entityIsFriendly(entity: Entity): boolean {
-      if (entity === this) {
-         return true;
-      }
-      
-      if (this.tribe === null) {
-         return false;
-      }
-      
-      // Buildings of the same tribe are friendly
-      if (entity instanceof TribeHut && this.tribe.hasHut(entity)) {
-         return true;
-      }
-      if (entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
-         return true;
-      }
-      if (entity instanceof Barrel && entity.tribe === this.tribe) {
-         return true;
+   protected getEntityRelationship(entity: Entity): EntityRelationship {
+      switch (entity.type) {
+         case "tribe_hut": {
+            if (this.tribe === null || !this.tribe.hasHut(entity as TribeHut)) {
+               return EntityRelationship.enemyBuilding;
+            }
+            return EntityRelationship.friendly;
+         }
+         case "tribe_totem": {
+            if (this.tribe === null || !this.tribe.hasTotem(entity as TribeTotem)) {
+               return EntityRelationship.enemyBuilding;
+            }
+            return EntityRelationship.friendly;
+         }
+         case "barrel": {
+            if (this.tribe === null || (entity as Barrel).tribe === null) {
+               return EntityRelationship.neutral;
+            }
+            if ((entity as Barrel).tribe === this.tribe) {
+               return EntityRelationship.friendly;
+            }
+            return EntityRelationship.enemyBuilding;
+         }
+         case "player":
+         case "tribesman": {
+            if (this.tribe !== null && (entity as TribeMember).tribe === this.tribe) {
+               return EntityRelationship.friendly;
+            }
+            return EntityRelationship.enemy;
+         }
       }
 
-      // Don't attack fellow tribe members
-      if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
-         return true;
+      if (TribeMember.HOSTILE_MOB_TYPES.includes(entity.type)) {
+         return EntityRelationship.hostileMob;
       }
 
-      return false;
+      if (RESOURCE_ENTITY_TYPES.includes(entity.type) || entity instanceof Mob) {
+         return EntityRelationship.resource;
+      }
+
+      return EntityRelationship.neutral;
    }
 
    protected calculateAttackTarget(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -301,7 +328,7 @@ abstract class TribeMember extends Mob {
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
 
-         if (!this.entityIsFriendly(entity)) {
+         if (this.getEntityRelationship(entity) !== EntityRelationship.friendly) {
             const dist = this.position.calculateDistanceBetween(entity.position);
             if (dist < minDistance) {
                closestEntity = entity;
@@ -608,7 +635,7 @@ abstract class TribeMember extends Mob {
                }
                
                // Don't damage any friendly entities
-               if (this.entityIsFriendly(collidingEntity)) {
+               if (this.getEntityRelationship(collidingEntity) === EntityRelationship.friendly) {
                   return;
                }
                

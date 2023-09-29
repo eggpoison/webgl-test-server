@@ -460,6 +460,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
             this.stopYVelocity();
          }
       }
+
+      if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
+         throw new Error("Unable to properly resolve wall collisions.");
+      }
    }
 
    public isColliding(gameObject: GameObject): boolean {
