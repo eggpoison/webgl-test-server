@@ -17,6 +17,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
+import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -224,6 +225,10 @@ class GameServer {
    /** Sets up the various stuff */
    public setup() {
       spawnInitialEntities();
+
+      for (let i = 0; i < 5000; i++) {
+         new Cow(new Point(SETTINGS.TILE_SIZE * SETTINGS.BOARD_DIMENSIONS * Math.random(), SETTINGS.TILE_SIZE * SETTINGS.BOARD_DIMENSIONS * Math.random()));
+      }
    }
 
    public setTrackedGameObject(id: number | null): void {

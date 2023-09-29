@@ -9,6 +9,7 @@ import TileConsumeAI from "../../mob-ai/TileConsumeAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import FollowAI from "../../mob-ai/FollowAI";
 import WanderAI from "../../mob-ai/WanderAI";
+import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
@@ -30,8 +31,7 @@ class Cow extends Mob {
 
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
-         // wanderRate: 0.6,
-         wanderRate: 2,
+         wanderRate: 0.6,
          acceleration: 100,
          terminalVelocity: 50
       }));
@@ -88,9 +88,9 @@ class Cow extends Mob {
          itemTargets: new Set([ItemType.berry])
       }));
 
-      // this.addAI(new BerryBushShakeAI(this, {
-      //    aiWeightMultiplier: 1.1
-      // }));
+      this.addAI(new BerryBushShakeAI(this, {
+         aiWeightMultiplier: 1.1
+      }));
 
       this.addAI(new EscapeAI(this, {
          aiWeightMultiplier: 1.5,
