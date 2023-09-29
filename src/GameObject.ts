@@ -167,6 +167,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public applyPhysics(): void {
+      if (this.velocity !== null && (isNaN(this.velocity.magnitude) || isNaN(this.velocity.direction))) {
+         throw new Error("Velocity was NaN.");
+      }
+
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.tile.type];
 
       let moveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;

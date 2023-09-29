@@ -26,13 +26,14 @@ class MoveAI extends AI<"move"> implements MoveAIParams {
    public tick(): void {
       super.tick();
 
-      // Move to the target position
       const targetPosition = this.getMoveTargetPosition();
       if (targetPosition !== null) {
+         // Move to the target position
          super.moveToPosition(targetPosition, this.acceleration, this.terminalVelocity);
       } else {
-         // @Incomplete
-         // super.
+         // Stop moving if there is no target position
+         this.mob.terminalVelocity = 0;
+         this.mob.acceleration = null;
       }
    }
 

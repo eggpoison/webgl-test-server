@@ -14,8 +14,8 @@ interface ChaseAIParams extends BaseAIParams<"chase"> {
 class ChaseAI extends AI<"chase"> implements ChaseAIParams {
    public readonly type = "chase";
 
-   public readonly acceleration: number;
-   public readonly terminalVelocity: number;
+   public acceleration: number;
+   public terminalVelocity: number;
    public desiredDistance?: number;
    public entityIsChased: (entity: Entity) => boolean;
 

@@ -13,7 +13,8 @@ import Barrel from "./Barrel";
 import TribeTotem from "./TribeTotem";
 import TribeHut from "./TribeHut";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
-import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
+import { getItemStackSize, itemIsStackable } from "../../items/Item";
+import EscapeAI from "../../mob-ai/EscapeAI";
 
 /*
 Priorities while in a tribe:
@@ -31,6 +32,9 @@ class Tribesman extends TribeMember {
    private static readonly INVENTORY_SIZE = 3;
    
    private static readonly VISION_RANGE = 320;
+
+   private static readonly SLOW_TERMINAL_VELOCITY = 75;
+   private static readonly SLOW_ACCELERATION = 150;
 
    private static readonly TERMINAL_VELOCITY = 150;
    private static readonly ACCELERATION = 300;
@@ -68,6 +72,15 @@ class Tribesman extends TribeMember {
       }
 
       this.tribe = tribe;
+
+      // AI for escaping when low on health
+      this.addAI(new EscapeAI(this, {
+         aiWeightMultiplier: 1.1,
+         terminalVelocity: Tribesman.TERMINAL_VELOCITY,
+         acceleration: Tribesman.ACCELERATION,
+         escapeHealthThreshold: 10,
+         attackSubsideTime: 99999 // Never stop running when low on health
+      }));
 
       // AI for attacking enemies
       const enemyAttackAI = new ChaseAI(this, {
@@ -119,7 +132,9 @@ class Tribesman extends TribeMember {
                   }
                   this.currentAction = TribeMemberAction.charge_bow;
                   
-                  enemyAttackAI.desiredDistance = Tribesman.DESIRED_RANGED_ATTACK_DISTANCE
+                  enemyAttackAI.desiredDistance = Tribesman.DESIRED_RANGED_ATTACK_DISTANCE;
+                  enemyAttackAI.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
+                  enemyAttackAI.acceleration = Tribesman.SLOW_ACCELERATION;
 
                   // If the bow is fully charged, fire it
                   if (!this.bowCooldowns.hasOwnProperty(this.selectedItemSlot)) {
@@ -131,6 +146,8 @@ class Tribesman extends TribeMember {
 
                // If a melee attack is being done, update to attack at melee distance
                enemyAttackAI.desiredDistance = Tribesman.DESIRED_MELEE_ATTACK_DISTANCE;
+               enemyAttackAI.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
+               enemyAttackAI.acceleration = Tribesman.ACCELERATION;
             }
 
             this.currentAction = TribeMemberAction.none;

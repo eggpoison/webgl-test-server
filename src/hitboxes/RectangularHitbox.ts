@@ -6,6 +6,7 @@ class RectangularHitbox extends Hitbox {
    /** Length of half of the diagonal of the rectangle */
    public halfDiagonalLength!: number;
 
+   // @Speed @Cleanup: Seperate this into 4 variables
    public vertexPositions!: HitboxVertexPositions;
    public sideAxes!: [axis1: Vector, axis2: Vector];
 
@@ -25,6 +26,8 @@ class RectangularHitbox extends Hitbox {
       const x2 = this.hitboxObject.position.x + this.width / 2;
       const y1 = this.hitboxObject.position.y - this.height / 2;
       const y2 = this.hitboxObject.position.y + this.height / 2;
+
+      // @Speed: Garbage collection
 
       let topLeft = new Point(x1, y2);
       let topRight = new Point(x2, y2);
@@ -71,13 +74,13 @@ class RectangularHitbox extends Hitbox {
          return circleAndRectangleDoIntersect(otherHitbox.position, (otherHitbox as CircularHitbox).radius, this.position, this.width, this.height, this.hitboxObject.rotation);
       } else {
          // Rectangular hitbox
-            // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
-            const distance = this.position.calculateDistanceBetween(otherHitbox.position);
-            if (distance > this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength) {
-               return false;
-            }
-            
-            return rectanglePointsDoIntersect(this.vertexPositions, (otherHitbox as RectangularHitbox).vertexPositions, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
+         // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
+         const distance = this.position.calculateDistanceBetween(otherHitbox.position);
+         if (distance > this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength) {
+            return false;
+         }
+         
+         return rectanglePointsDoIntersect(this.vertexPositions, (otherHitbox as RectangularHitbox).vertexPositions, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
       }
    }
    

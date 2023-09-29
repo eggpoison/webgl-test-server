@@ -3,6 +3,7 @@ import Board from "./Board";
 import Tribe from "./Tribe";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
+import Barrel from "./entities/tribes/Barrel";
 
 /** Average number of spawn attempts that are done each second */
 const TRIBE_SPAWN_RATE = 0.5;
@@ -12,10 +13,10 @@ const MAX_HUT_SPAWN_ATTEMPTS = 100;
 const MIN_DISTANCE_FROM_OTHER_TRIBE = 4000;
 
 const NUM_STARTING_HUTS: Record<TribeType, number> = {
-   [TribeType.plainspeople]: 1,
-   [TribeType.frostlings]: 1,
+   [TribeType.plainspeople]: 2,
+   [TribeType.frostlings]: 2,
    [TribeType.barbarians]: 1,
-   [TribeType.goblins]: 2
+   [TribeType.goblins]: 3
 };
 
 /** Minimum distance huts will spawn from other entities when they spawn */
@@ -72,7 +73,7 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
    return true;
 }
 
-const findValidHutPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArray<Point>): Point | null => {
+const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArray<Point>): Point | null => {
    let numAttempts = 0;
    
    mainLoop: while (++numAttempts <= MAX_HUT_SPAWN_ATTEMPTS) {
@@ -81,7 +82,7 @@ const findValidHutPosition = (tribe: Tribe, otherBuildingPositions: ReadonlyArra
 
       const tile = randItem(areaTiles);
 
-      // Don't spawn huts in walls or water
+      // Don't spawn buildings in walls or water
       if (tile.isWall || tile.type === "water") {
          continue;
       }
@@ -118,10 +119,10 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 
    const buildingPositions: Array<Point> = [position];
 
-   // Starting huts
+   // Spawn huts
    for (let i = 0; i < NUM_STARTING_HUTS[tribeType]; i++) {
       // Find a valid spawn position
-      const hutPosition = findValidHutPosition(tribe, buildingPositions);
+      const hutPosition = findValidBuildingPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
          const hut = new TribeHut(hutPosition, tribe);
@@ -130,10 +131,16 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
          buildingPositions.push(hutPosition);
       }
    }
+
+   // Spawn barrel
+   const barrelSpawnPosition = findValidBuildingPosition(tribe, buildingPositions);
+   if (barrelSpawnPosition !== null) {
+      new Barrel(barrelSpawnPosition);
+   }
 }
 
 const runSpawnAttempt = (): void => {
-   if(1+1==2)return;
+   // if(1+1==2)return;
    const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
    const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
    const spawnPosition = new Point(x, y);
@@ -147,7 +154,7 @@ const runSpawnAttempt = (): void => {
 }
 
 export function runTribeSpawnAttempt(): void {
-   if(1+1==2)return;
+   // if(1+1==2)return;
    if (Math.random() < TRIBE_SPAWN_RATE) {
       runSpawnAttempt();
    }

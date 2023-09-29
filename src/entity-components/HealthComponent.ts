@@ -139,6 +139,10 @@ class HealthComponent extends Component {
    }
 
    public applyKnockback(knockback: number, knockbackDirection: number): void {
+      if (typeof knockback === "undefined" || typeof knockbackDirection === "undefined") {
+         throw new Error("Knockback was undefined");
+      }
+      
       const force = new Vector(knockback / this.entity.mass, knockbackDirection);
       if (this.entity.velocity !== null) {
          this.entity.velocity.add(force);
