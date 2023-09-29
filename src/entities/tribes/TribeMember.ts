@@ -1,9 +1,8 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SwordItemInfo, ToolItemInfo, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, SwordItemInfo, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
-import TRIBE_INFO_RECORD from "webgl-test-shared/lib/tribes";
 import Tribe from "../../Tribe";
 import TribeHut from "./TribeHut";
 import TribeTotem from "./TribeTotem";
@@ -20,7 +19,7 @@ import Workbench from "../Workbench";
 import Campfire from "../Campfire";
 import Furnace from "../Furnace";
 
-const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone"];
+const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone", "ice_spikes"];
 const axeDamageableEntities: ReadonlyArray<EntityType> = ["tree"];
 
 export enum AttackToolType {
@@ -30,7 +29,7 @@ export enum AttackToolType {
 }
 
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
-   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush" || entity.type === "cactus") {
+   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush" || entity.type === "cactus" || entity.type === "snowball") {
       return AttackToolType.weapon;
    }
    if (pickaxeDamageableEntities.includes(entity.type)) {
@@ -63,7 +62,7 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
    readonly height: number;
 }
 
-const PLACEABLE_ITEM_HITBOX_INFO = {
+const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo> = {
    [ItemType.workbench]: {
       type: PlaceableItemHitboxType.rectangular,
       width: Workbench.SIZE,
@@ -98,17 +97,25 @@ const PLACEABLE_ITEM_HITBOX_INFO = {
       height: Furnace.SIZE,
       placeOffset: Furnace.SIZE / 2
    }
-} satisfies Partial<Record<ItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo>>;
+};
 
-type PlaceableItemType = keyof typeof PLACEABLE_ITEM_HITBOX_INFO;
-
-function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is keyof typeof PLACEABLE_ITEM_HITBOX_INFO {
+function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is PlaceableItemType {
    if (!PLACEABLE_ITEM_HITBOX_INFO.hasOwnProperty(itemType)) {
       throw new Error(`Entity type '${itemType}' is not placeable.`);
    }
 }
 
-abstract class TribeMember extends Mob {
+/** Relationships a tribe member can have, in increasing order of threat */
+export enum EntityRelationship {
+   friendly,
+   neutral,
+   resource,
+   hostileMob,
+   enemyBuilding,
+   enemy
+}
+
+abstract class TribeMember extends Entity {
    private static readonly testRectangularHitbox = new RectangularHitbox();
    private static readonly testCircularHitbox = new CircularHitbox();
 
@@ -120,17 +127,25 @@ abstract class TribeMember extends Mob {
    
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
+   private static readonly DEEP_FROST_ARMOUR_IMMUNITY_TIME = 20;
+
+   private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityType> = ["yeti", "frozen_yeti", "zombie", "slime"];
+
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
 
    protected selectedItemSlot = 1;
 
-   public isEating = false;
+   public currentAction = TribeMemberAction.none;
+   protected foodEatingTimer = 0;
 
    protected lastAttackTicks = -99999;
    protected lastEatTicks = -99999;
+   protected lastBowChargeTicks = -99999;
 
-   private bowCooldowns: Record<number, number> = {};
+   protected bowCooldowns: Record<number, number> = {};
+
+   public immunityTimer = 0;
 
    constructor(position: Point, entityType: EntityType, visionRange: number, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -140,7 +155,7 @@ abstract class TribeMember extends Mob {
       super(position, {
          health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
-      }, entityType, visionRange);
+      }, entityType);
 
       this.tribeType = tribeType;
 
@@ -161,6 +176,12 @@ abstract class TribeMember extends Mob {
                new DroppedItem(position, item);
             }
          }
+      });
+
+      // Lose immunity to damage if the tribe member is hit
+      this.createEvent("hurt", () => {
+         this.removeImmunity();
+         this.immunityTimer = TribeMember.DEEP_FROST_ARMOUR_IMMUNITY_TIME;
       });
    }
 
@@ -199,6 +220,49 @@ abstract class TribeMember extends Mob {
       } else {
          inventoryComponent.resizeInventory("backpack", -1, -1);
       }
+
+      const selectedItem = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
+
+      switch (this.currentAction) {
+         case TribeMemberAction.eat: {
+            this.foodEatingTimer -= 1 / SETTINGS.TPS;
+   
+            if (this.foodEatingTimer <= 0) {
+               if (selectedItem !== null) {
+                  const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];
+                  if (itemCategory === "food") {
+                     this.useItem(selectedItem, this.selectedItemSlot);
+   
+                     const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as FoodItemInfo;
+                     this.foodEatingTimer = itemInfo.eatTime;
+                  }
+               }
+            }
+
+            break;
+         }
+      }
+
+      this.immunityTimer -= 1 / SETTINGS.TPS;
+      if (this.immunityTimer <= 0) {
+         this.attemptToBecomeImmune();
+         this.immunityTimer = 0;
+      }
+   }
+
+   private attemptToBecomeImmune(): void {
+      const armour = this.getComponent("inventory")!.getItem("armourSlot", 1);
+      if (armour !== null && armour.type === ItemType.deep_frost_armour) {
+         this.addImmunity();
+      }
+   }
+
+   private addImmunity(): void {
+      this.getComponent("health")!.addDefence(99999, "deep_frost_armour_immunity");
+   }
+
+   private removeImmunity(): void {
+      this.getComponent("health")!.removeDefence("deep_frost_armour_immunity");
    }
 
    protected overrideTileMoveSpeedMultiplier(): number | null {
@@ -212,32 +276,47 @@ abstract class TribeMember extends Mob {
       return null;
    }
 
-   public entityIsFriendly(entity: Entity): boolean {
-      if (entity === this) {
-         return true;
-      }
-      
-      if (this.tribe === null) {
-         return false;
-      }
-      
-      // Buildings of the same tribe are friendly
-      if (entity instanceof TribeHut && this.tribe.hasHut(entity)) {
-         return true;
-      }
-      if (entity instanceof TribeTotem && this.tribe.hasTotem(entity)) {
-         return true;
-      }
-      if (entity instanceof Barrel && entity.tribe === this.tribe) {
-         return true;
+   protected getEntityRelationship(entity: Entity): EntityRelationship {
+      switch (entity.type) {
+         case "tribe_hut": {
+            if (this.tribe === null || !this.tribe.hasHut(entity as TribeHut)) {
+               return EntityRelationship.enemyBuilding;
+            }
+            return EntityRelationship.friendly;
+         }
+         case "tribe_totem": {
+            if (this.tribe === null || !this.tribe.hasTotem(entity as TribeTotem)) {
+               return EntityRelationship.enemyBuilding;
+            }
+            return EntityRelationship.friendly;
+         }
+         case "barrel": {
+            if (this.tribe === null || (entity as Barrel).tribe === null) {
+               return EntityRelationship.neutral;
+            }
+            if ((entity as Barrel).tribe === this.tribe) {
+               return EntityRelationship.friendly;
+            }
+            return EntityRelationship.enemyBuilding;
+         }
+         case "player":
+         case "tribesman": {
+            if (this.tribe !== null && (entity as TribeMember).tribe === this.tribe) {
+               return EntityRelationship.friendly;
+            }
+            return EntityRelationship.enemy;
+         }
       }
 
-      // Don't attack fellow tribe members
-      if (entity instanceof TribeMember && entity.tribe !== null && entity.tribe === this.tribe) {
-         return true;
+      if (TribeMember.HOSTILE_MOB_TYPES.includes(entity.type)) {
+         return EntityRelationship.hostileMob;
       }
 
-      return false;
+      if (RESOURCE_ENTITY_TYPES.includes(entity.type) || entity instanceof Mob) {
+         return EntityRelationship.resource;
+      }
+
+      return EntityRelationship.neutral;
    }
 
    protected calculateAttackTarget(targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -249,7 +328,7 @@ abstract class TribeMember extends Mob {
          // Don't attack entities without health components
          if (entity.getComponent("health") === null) continue;
 
-         if (!this.entityIsFriendly(entity)) {
+         if (this.getEntityRelationship(entity) !== EntityRelationship.friendly) {
             const dist = this.position.calculateDistanceBetween(entity.position);
             if (dist < minDistance) {
                closestEntity = entity;
@@ -423,7 +502,7 @@ abstract class TribeMember extends Mob {
    }
 
    protected getFoodEatingType(): ItemType | -1 {
-      if (this.isEating) {
+      if (this.currentAction === TribeMemberAction.eat) {
          const activeItemType = this.getActiveItemType();
          if (activeItemType !== null) {
             return activeItemType;
@@ -502,6 +581,7 @@ abstract class TribeMember extends Mob {
                   }
                   
                   placedEntity = new TribeHut(spawnPosition, this.tribe);
+                  placedEntity.rotation = this.rotation; // This has to be done before the hut is registered in its tribe
                   this.tribe.registerNewHut(placedEntity as TribeHut);
                   break;
                }
@@ -531,12 +611,14 @@ abstract class TribeMember extends Mob {
                return;
             }
 
-            const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
+            this.lastBowChargeTicks = Board.ticks;
 
+            const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
             this.bowCooldowns[itemSlot] = itemInfo.shotCooldown;
 
+            // Offset the arrow's spawn to be just outside of the tribe member's hitbox
             const spawnPosition = this.position.copy();
-            const offset = new Vector(25, this.rotation).convertToPoint();
+            const offset = new Vector(35, this.rotation).convertToPoint();
             spawnPosition.add(offset);
             
             const arrowProjectile = new Projectile(spawnPosition, ProjectileType.woodenArrow, 1.5);
@@ -553,7 +635,7 @@ abstract class TribeMember extends Mob {
                }
                
                // Don't damage any friendly entities
-               if (this.entityIsFriendly(collidingEntity)) {
+               if (this.getEntityRelationship(collidingEntity) === EntityRelationship.friendly) {
                   return;
                }
                
@@ -587,6 +669,7 @@ abstract class TribeMember extends Mob {
                   return;
                }
             }
+            
             break;
          }
       }
@@ -645,6 +728,20 @@ abstract class TribeMember extends Mob {
       }
 
       return true;
+   }
+
+   protected getLastActionTicks(): number {
+      switch (this.currentAction) {
+         case TribeMemberAction.charge_bow: {
+            return this.lastBowChargeTicks;
+         }
+         case TribeMemberAction.eat: {
+            return this.lastEatTicks;
+         }
+         case TribeMemberAction.none: {
+            return this.lastAttackTicks;
+         }
+      }
    }
 }
 

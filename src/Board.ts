@@ -25,7 +25,6 @@ abstract class Board {
 
    /** The time of day the server is currently in (from 0 to 23) */
    public static time: number = 6;
-   // public static time: number = 0;
 
    private static readonly gameObjects = new Set<GameObject>();
 
@@ -230,6 +229,7 @@ abstract class Board {
       }
    }
 
+   // @Cleanup: variable name
    private static a: Record<number, Array<GameObject>> = {};
 
    public static updateGameObjects(): void {
@@ -240,6 +240,7 @@ abstract class Board {
 
          gameObject.calculateBoundingVolume();
          for (const chunk of gameObject.boundingChunks) {
+            // @Cleanup: variable name
             const n = chunk.y * SETTINGS.BOARD_SIZE + chunk.x;
             if (!this.a.hasOwnProperty(n)) {
                this.a[n] = new Array<GameObject>();

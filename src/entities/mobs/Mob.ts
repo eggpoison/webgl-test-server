@@ -4,10 +4,14 @@ import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
 import { AIType } from "../../mob-ai/ai-types";
 import DroppedItem from "../../items/DroppedItem";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { HitboxObject } from "../../hitboxes/Hitbox";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
    public static readonly AI_REFRESH_TIME = 4;
+
+   private static readonly testHitbox = new CircularHitbox();
    
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
@@ -68,8 +72,7 @@ abstract class Mob extends Entity {
          return;
       }
       
-      this.entitiesInVisionRange = this.calculateEntitiesInVisionRange();
-      this.droppedItemsInVisionRange = this.calculateDroppedItemsInVisionRange();
+      this.updateGameObjectsInVisionRange();
 
       // Update the values of all AI's
       for (const ai of this.ais) {
@@ -109,56 +112,62 @@ abstract class Mob extends Entity {
    }
 
    /** Finds all entities within the range of the mob's vision */
-   private calculateEntitiesInVisionRange(): Set<Entity> {
+   private updateGameObjectsInVisionRange(): void {
       const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
-      const entitiesInVisionRange = new Set<Entity>();
+      const tempHitboxObject: HitboxObject = {
+         position: this.position.copy(),
+         rotation: 0
+      };
+      Mob.testHitbox.setHitboxInfo(this.visionRange);
+      Mob.testHitbox.setHitboxObject(tempHitboxObject);
+      Mob.testHitbox.updatePosition();
+      Mob.testHitbox.updateHitboxBounds();
+      
+      this.entitiesInVisionRange = new Set<Entity>();
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
-            for (const entity of chunk.getEntities()) {
-               // Don't add existing entities
-               if (entitiesInVisionRange.has(entity)) continue;
-
-               if (Math.pow(this.position.x - entity.position.x, 2) + Math.pow(this.position.y - entity.position.y, 2) <= Math.pow(this.visionRange, 2)) {
-                  entitiesInVisionRange.add(entity);
-               }
-            }
-         }  
-      }
-
-      // Remove self from entities in vision
-      entitiesInVisionRange.delete(this);
-
-      return entitiesInVisionRange;
-   }
-
-   /** Finds all entities within the range of the mob's vision */
-   private calculateDroppedItemsInVisionRange(): Set<DroppedItem> {
-      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-
-      const droppedItemsInVisionRange = new Set<DroppedItem>();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = Board.getChunk(chunkX, chunkY);
-            for (const droppedItem of chunk.getDroppedItems()) {
-               // Don't add existing entities
-               if (droppedItemsInVisionRange.has(droppedItem)) continue;
+            for (const droppedItem of chunk.getGameObjects()) {
+               // Don't add existing game objects
+               if ((droppedItem.i === "entity" && this.entitiesInVisionRange.has(droppedItem)) || (droppedItem.i === "droppedItem" && this.droppedItemsInVisionRange.has(droppedItem)) || droppedItem === this) continue;
 
                if (Math.pow(this.position.x - droppedItem.position.x, 2) + Math.pow(this.position.y - droppedItem.position.y, 2) <= Math.pow(this.visionRange, 2)) {
-                  droppedItemsInVisionRange.add(droppedItem);
+                  switch (droppedItem.i) {
+                     case "entity": {
+                        this.entitiesInVisionRange.add(droppedItem);
+                        break;
+                     }
+                     case "droppedItem": {
+                        this.droppedItemsInVisionRange.add(droppedItem);
+                        break;
+                     }
+                  }
+                  continue;
+               }
+
+               // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
+               for (const hitbox of droppedItem.hitboxes) {
+                  if (Mob.testHitbox.isColliding(hitbox)) {
+                     switch (droppedItem.i) {
+                        case "entity": {
+                           this.entitiesInVisionRange.add(droppedItem);
+                           break;
+                        }
+                        case "droppedItem": {
+                           this.droppedItemsInVisionRange.add(droppedItem);
+                           break;
+                        }
+                     }
+                     break;
+                  }
                }
             }
          }  
       }
-
-      return droppedItemsInVisionRange;
    }
 
    public getCurrentAIType(): AIType | null {

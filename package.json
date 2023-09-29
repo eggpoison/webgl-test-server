@@ -3,7 +3,8 @@
    "scripts": {
       "start": "nodemon",
       "test": "jest --detectOpenHandles",
-      "perf": "node -r ts-node/register --prof src/server.ts"
+      "perf": "node -r ts-node/register --prof src/server.ts",
+      "debug": "nodemon --inspect"
    },
    "dependencies": {
       "@types/ws": "^8.5.3",

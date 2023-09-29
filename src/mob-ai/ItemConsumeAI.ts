@@ -46,6 +46,10 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       let target: DroppedItem | undefined;
       let minDistance: number = Number.MAX_SAFE_INTEGER;
       for (const droppedItem of this.mob.droppedItemsInVisionRange) {
+         if (!this.itemTargets.has(droppedItem.item.type)) {
+            continue;
+         }
+         
          const distance = this.mob.position.calculateDistanceBetween(droppedItem.position);
          if (distance < minDistance) {
             minDistance = distance;

@@ -90,6 +90,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "slimewisp",
+      // @Temporary
       // spawnableTiles: ["slime"],
       spawnableTiles: ["slime", "sludge"],
       spawnRate: 0.2,
@@ -100,6 +101,12 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: ["sand"],
       spawnRate: 0.005,
       maxDensity: 0.015
+   },
+   {
+      entityType: "frozen_yeti",
+      spawnableTiles: ["frost"],
+      spawnRate: 0.004,
+      maxDensity: 0.008
    }
 ];
 

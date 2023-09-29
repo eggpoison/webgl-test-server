@@ -22,7 +22,7 @@ class Krumblid extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Krumblid.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent()
+         item_creation: new ItemCreationComponent(48)
       }, "krumblid", SETTINGS.TILE_SIZE * 3.5);
 
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(2, 3), true);

@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -225,6 +225,10 @@ class GameServer {
    /** Sets up the various stuff */
    public setup() {
       spawnInitialEntities();
+
+      for (let i = 0; i < 5000; i++) {
+         new Cow(new Point(SETTINGS.TILE_SIZE * SETTINGS.BOARD_DIMENSIONS * Math.random(), SETTINGS.TILE_SIZE * SETTINGS.BOARD_DIMENSIONS * Math.random()));
+      }
    }
 
    public setTrackedGameObject(id: number | null): void {
@@ -443,7 +447,8 @@ class GameServer {
                serverTime: Board.time,
                playerHealth: 20,
                tribeData: null,
-               killedEntityIDs: []
+               killedEntityIDs: [],
+               hasFrostShield: false
             };
 
             this.playerDataRecord[socket.id] = playerData as PlayerData;
@@ -584,6 +589,8 @@ class GameServer {
 
          const killedEntityIDs = calculateKilledEntityIDs(extendedVisibleChunkBounds);
 
+         const playerArmour = player.getComponent("inventory")!.getItem("armourSlot", 1);
+
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
             entityDataArray: bundleEntityDataArray(visibleEntities),
@@ -596,7 +603,8 @@ class GameServer {
             playerHealth: player.getComponent("health")!.getHealth(),
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
-            killedEntityIDs: killedEntityIDs
+            killedEntityIDs: killedEntityIDs,
+            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deep_frost_armour
          };
 
          // Send the game data to the player
@@ -677,14 +685,19 @@ class GameServer {
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
-      playerData.instance.isEating = playerDataPacket.isEating;
+
+      if (playerDataPacket.action === TribeMemberAction.eat && playerData.instance.currentAction !== TribeMemberAction.eat) {
+         playerData.instance.startEating();
+      } else if (playerDataPacket.action === TribeMemberAction.charge_bow && playerData.instance.currentAction !== TribeMemberAction.charge_bow) {
+         playerData.instance.startChargingBow();
+      }
+      playerData.instance.currentAction = playerDataPacket.action;
    }
 
    private generatePlayerSpawnPosition(): Point {
       const xSpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
       const ySpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-      const position = new Point(xSpawnPosition, ySpawnPosition);
-      return position;
+      return new Point(xSpawnPosition, ySpawnPosition);
    }
 
    private respawnPlayer(socket: ISocket): void {

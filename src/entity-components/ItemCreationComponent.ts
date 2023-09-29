@@ -6,7 +6,13 @@ import Item from "../items/Item";
 
 class ItemCreationComponent extends Component {
    /** Max units that an item can spawn away from the entity when dead */
-   private static readonly ITEM_SPAWN_RANGE = 48;
+   private readonly itemSpawnRange: number;
+   
+   constructor(itemSpawnRange: number) {
+      super();
+
+      this.itemSpawnRange = itemSpawnRange;
+   }
 
    public createItemOnDeath(itemType: ItemType, count: number, onlyCreatedOnPlayerKill: boolean): void {
       this.entity.createEvent("death", (attackingEntity: Entity | null) => {
@@ -15,7 +21,7 @@ class ItemCreationComponent extends Component {
          }
          
          for (let i = 0; i < count; i++) {
-            const magnitude = Math.random() * ItemCreationComponent.ITEM_SPAWN_RANGE;
+            const magnitude = Math.random() * this.itemSpawnRange;
             const direction = 2 * Math.PI * Math.random();
 
             const position = this.entity.position.copy();

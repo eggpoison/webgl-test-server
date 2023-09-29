@@ -101,7 +101,7 @@ class Slime extends Mob {
    private readonly angeredEntities = new Array<EntityAnger>();
 
    constructor(position: Point, size: SlimeSize = SlimeSize.small) {
-      const itemCreationComponent = new ItemCreationComponent();
+      const itemCreationComponent = new ItemCreationComponent(48);
       
       super(position, {
          health: new HealthComponent(Slime.MAX_HEALTH[size], false),
@@ -145,7 +145,7 @@ class Slime extends Mob {
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
-            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type);
+            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type) && entity.getComponent("health") !== null;
          }
       }));
       // Merge AI
@@ -201,7 +201,7 @@ class Slime extends Mob {
       });
 
       this.createEvent("hurt", (_damage: number, attackingEntity: Entity | null): void => {
-         if (attackingEntity === null) return;
+         if (attackingEntity === null || RESOURCE_ENTITY_TYPES.includes(attackingEntity.type)) return;
 
          this.addEntityAnger(attackingEntity, 1, { chainLength: 0, propagatedEntityIDs: new Set() });
          this.propagateAnger(attackingEntity, 1);

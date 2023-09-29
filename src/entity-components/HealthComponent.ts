@@ -97,14 +97,14 @@ class HealthComponent extends Component {
    public damage(damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, hitFlags: number, attackHash?: string): boolean {
       if (this.isInvulnerable(attackHash) || this.isDead()) return false;
 
-      this.entity.callEvents("hurt", damage, attackingEntity, knockback, hitDirection);
-
       this.secondsSinceLastHit = 0;
 
       const absorbedDamage = damage * this.defence;
       const actualDamage = damage - absorbedDamage;
       
       this.health -= actualDamage;
+
+      this.entity.callEvents("hurt", damage, attackingEntity, knockback, hitDirection);
       
       // If the entity was killed by the attack, destroy the entity
       if (this.isDead()) {
@@ -139,6 +139,10 @@ class HealthComponent extends Component {
    }
 
    public applyKnockback(knockback: number, knockbackDirection: number): void {
+      if (typeof knockback === "undefined" || typeof knockbackDirection === "undefined") {
+         throw new Error("Knockback was undefined");
+      }
+      
       const force = new Vector(knockback / this.entity.mass, knockbackDirection);
       if (this.entity.velocity !== null) {
          this.entity.velocity.add(force);

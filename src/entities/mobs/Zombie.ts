@@ -29,7 +29,7 @@ class Zombie extends Mob {
    private readonly attackingEntities: Record<number, number> = {};
 
    constructor(position: Point, isGolden: boolean = false) {
-      const itemCreationComponent = new ItemCreationComponent();
+      const itemCreationComponent = new ItemCreationComponent(48);
       
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false),

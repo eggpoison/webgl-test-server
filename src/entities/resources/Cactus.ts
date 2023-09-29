@@ -76,7 +76,7 @@ class Cactus extends Entity {
    private readonly limbs: ReadonlyArray<CactusLimbData>;
 
    constructor(position: Point) {
-      const itemCreationComponent = new ItemCreationComponent();
+      const itemCreationComponent = new ItemCreationComponent(48);
 
       super(position, {
          health: new HealthComponent(Cactus.MAX_HEALTH, false),
