@@ -29,6 +29,16 @@ enum TribesmanAIType {
    idle
 }
 
+const RESOURCE_PRODUCTS: Partial<Record<EntityType, ReadonlyArray<ItemType>>> = {
+   cow: [ItemType.leather, ItemType.raw_beef],
+   berry_bush: [ItemType.berry],
+   tree: [ItemType.wood],
+   ice_spikes: [ItemType.frostcicle],
+   cactus: [ItemType.cactus_spine],
+   boulder: [ItemType.rock],
+   krumblid: [ItemType.leather]
+}
+
 class Tribesman extends TribeMember {
    private static readonly INVENTORY_SIZE = 3;
    
@@ -170,7 +180,7 @@ class Tribesman extends TribeMember {
          let minDistance = Number.MAX_SAFE_INTEGER;
          for (const droppedItem of this.droppedItemsInVisionRange) {
             const distance = this.position.calculateDistanceBetween(droppedItem.position);
-            if (distance < minDistance && this.canPickUpItem(droppedItem)) {
+            if (distance < minDistance && this.canPickUpItem(droppedItem.item.type)) {
                closestDroppedItem = droppedItem;
                minDistance = distance;
             }
@@ -198,8 +208,43 @@ class Tribesman extends TribeMember {
       }
 
       // Attack closest resource
-      if (this.resourcesInVisionRange.length > 0 && !this.inventoryIsFull()) {
-         this.attackResource();
+      if (this.resourcesInVisionRange.length > 0) {
+         // If the inventory is full, the resource should only be attacked if killing it produces an item that can be picked up
+         let minDistance = Number.MAX_SAFE_INTEGER;
+         let resourceToAttack: Entity | undefined;
+         if (this.inventoryIsFull()) {
+            for (const resource of this.resourcesInVisionRange) {
+               // Check if the resource produces an item type that can be picked up
+               let producesPickupableItemType = false;
+               if (RESOURCE_PRODUCTS.hasOwnProperty(resource.type)) {
+                  for (const itemType of RESOURCE_PRODUCTS[resource.type]!) {
+                     if (this.canPickUpItem(itemType)) {
+                        producesPickupableItemType = true;
+                        break;
+                     }
+                  }
+               }
+               if (producesPickupableItemType) {
+                  const dist = this.position.calculateDistanceBetween(resource.position);
+                  if (dist < minDistance) {
+                     resourceToAttack = resource;
+                     minDistance = dist;
+                  }
+               }
+            }
+         } else {
+            for (const resource of this.resourcesInVisionRange) {
+               const dist = this.position.calculateDistanceBetween(resource.position);
+               if (dist < minDistance) {
+                  resourceToAttack = resource;
+                  minDistance = dist;
+               }
+            }
+         }
+
+         if (typeof resourceToAttack !== "undefined") {
+            this.attackResource(resourceToAttack);
+         }
          return;
       }
 
@@ -335,21 +380,10 @@ class Tribesman extends TribeMember {
       this.doMeleeAttack();
    }
 
-   private attackResource(): void {
-      // Find the closest resource
-      let closestResource!: Entity;
-      let minDistance = Number.MAX_SAFE_INTEGER;
-      for (const resource of this.resourcesInVisionRange) {
-         const dist = this.position.calculateDistanceBetween(resource.position);
-         if (dist < minDistance) {
-            closestResource = resource;
-            minDistance = dist;
-         }
-      }
-      
+   private attackResource(resource: Entity): void {
       // Equip the tool for the job
       let bestToolSlot: number | null;
-      const attackToolType = getEntityAttackToolType(closestResource);
+      const attackToolType = getEntityAttackToolType(resource);
       switch (attackToolType) {
          case AttackToolType.weapon: {
             bestToolSlot = this.getBestWeaponSlot();
@@ -384,8 +418,8 @@ class Tribesman extends TribeMember {
             }
             this.currentAction = TribeMemberAction.charge_bow;
             
-            this.rotation = this.position.calculateAngleBetween(closestResource.position);
-            if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, closestResource.position)) {
+            this.rotation = this.position.calculateAngleBetween(resource.position);
+            if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, resource.position)) {
                this.terminalVelocity = 0;
                this.acceleration = null;
             } else {
@@ -403,8 +437,8 @@ class Tribesman extends TribeMember {
       }
 
       // If a melee attack is being done, update to attack at melee distance
-      this.rotation = this.position.calculateAngleBetween(closestResource.position);
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestResource.position)) {
+      this.rotation = this.position.calculateAngleBetween(resource.position);
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position)) {
          this.terminalVelocity = 0;
          this.acceleration = null;
       } else {
@@ -450,7 +484,7 @@ class Tribesman extends TribeMember {
       }
    }
 
-   private canPickUpItem(droppedItem: DroppedItem): boolean {
+   private canPickUpItem(itemType: ItemType): boolean {
       const inventoryComponent = this.getComponent("inventory")!;
       const inventory = inventoryComponent.getInventory("hotbar");
       
@@ -460,7 +494,7 @@ class Tribesman extends TribeMember {
          }
 
          const item = inventory.itemSlots[itemSlot];
-         if (item.type === droppedItem.item.type && itemIsStackable(item.type) && getItemStackSize(item) - item.count > 0) {
+         if (item.type === itemType && itemIsStackable(item.type) && getItemStackSize(item) - item.count > 0) {
             return true;
          }
       }

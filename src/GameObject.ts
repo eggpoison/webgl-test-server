@@ -485,7 +485,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          return;
       }
       
-      if (!this.isStatic && gameObject.i !== "droppedItem" && this.i !== "droppedItem") {
+      if (!this.isStatic && gameObject.i !== "droppedItem") {
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);

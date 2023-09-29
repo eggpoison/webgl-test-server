@@ -140,7 +140,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 }
 
 const runSpawnAttempt = (): void => {
-   if(1+1==2)return;
+   // if(1+1==2)return;
    const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
    const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
    const spawnPosition = new Point(x, y);
@@ -154,7 +154,7 @@ const runSpawnAttempt = (): void => {
 }
 
 export function runTribeSpawnAttempt(): void {
-   if(1+1==2)return;
+   // if(1+1==2)return;
    if (Math.random() < TRIBE_SPAWN_RATE) {
       runSpawnAttempt();
    }
