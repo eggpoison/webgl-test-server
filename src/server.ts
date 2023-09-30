@@ -218,7 +218,7 @@ class GameServer {
 
    private readonly playerDataRecord: Record<string, PlayerData> = {};
 
-   private tickInterval: NodeJS.Timer | undefined;
+   private tickInterval: NodeJS.Timeout | undefined;
 
    private trackedGameObjectID: number | null = null;
 

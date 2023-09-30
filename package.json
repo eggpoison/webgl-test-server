@@ -1,11 +1,12 @@
 {
    "license": "UNLICENSED",
-   "scripts": {
-      "start": "nodemon",
-      "test": "jest --detectOpenHandles",
-      "perf": "node -r ts-node/register --prof src/server.ts",
-      "debug": "nodemon --inspect"
-   },
+  "scripts": {
+     "build":  "tsc --build",
+    "start": "nodemon",
+    "test": "jest --detectOpenHandles",
+    "perf": "node -r ts-node/register --prof src/server.ts",
+    "debug": "nodemon --inspect"
+  },
    "dependencies": {
       "@types/ws": "^8.5.3",
       "socket.io": "^4.5.1",

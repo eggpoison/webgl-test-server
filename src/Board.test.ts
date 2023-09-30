@@ -4,7 +4,7 @@ import Board from "./Board";
 
 test("Game objects can be created", () => {
    const position = new Point(400, 400);
-   const cow = new Cow(position, false);
+   const cow = new Cow(position);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
    
@@ -17,7 +17,7 @@ test("Game objects can be created", () => {
 
 test("Game objects can be removed", () => {
    const position = new Point(400, 400);
-   const cow = new Cow(position, false);
+   const cow = new Cow(position);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
 
@@ -30,7 +30,7 @@ test("Game objects can be removed", () => {
 
 test("Game objects can be removed immediately after they are created", () => {
    const position = new Point(400, 400);
-   const cow = new Cow(position, false);
+   const cow = new Cow(position);
 
    cow.remove();
    
@@ -43,7 +43,7 @@ test("Game objects are moved inside the world if they are outside the world bord
    
    const outsidePosition = new Point(boardUnits + 600, 0);
 
-   const entity = new Cow(outsidePosition, false);
+   const entity = new Cow(outsidePosition);
    expect(entity.position.x).toBeLessThan(boardUnits);
 
    entity.remove();

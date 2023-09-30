@@ -7,7 +7,7 @@ test("Entities can be added to the census", () => {
    const numEntitiesBefore = getEntityCount("cow");
 
    const position = new Point(200, 200);
-   const cow = new Cow(position, true);
+   const cow = new Cow(position);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
 
@@ -22,7 +22,7 @@ test("Entities can be added to the census", () => {
 
 test("Entities can be removed from the census", () => {
    const position = new Point(200, 200);
-   const cow = new Cow(position, true);
+   const cow = new Cow(position);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
 
@@ -40,7 +40,7 @@ test("Entities which aren't naturally spawned aren't counted towards the census"
    const numEntitiesBefore = getEntityCount("cow");
 
    const position = new Point(200, 200);
-   const cow = new Cow(position, false);
+   const cow = new Cow(position);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
 

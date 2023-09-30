@@ -5,7 +5,7 @@ import Board from "./Board";
 
 test("Entities can't be spawned too close to each other", () => {
    const position = new Point(200, 200);
-   const cow = new Cow(position, false);
+   const cow = new Cow(position);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
 
@@ -18,7 +18,7 @@ test("Entities can't be spawned too close to each other", () => {
 
 test("Entities can be spawned far away from each other", () => {
    const position1 = new Point(200, 200);
-   const cow = new Cow(position1, false);
+   const cow = new Cow(position1);
 
    Board.forcePushGameObjectFromJoinBuffer(cow);
 
