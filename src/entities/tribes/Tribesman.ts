@@ -140,7 +140,7 @@ class Tribesman extends TribeMember {
       this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this, 1));
 
       // Escape from enemies when low on health
-      if (this.getComponent("health")!.getHealth() <= 10 && this.enemiesInVisionRange.length > 0) {
+      if (this.getComponent("health")!.getHealth() <= 7.5 && this.enemiesInVisionRange.length > 0) {
          this.escape();
          this.lastAIType = TribesmanAIType.escaping;
          this.currentAction = TribeMemberAction.none;
@@ -366,7 +366,7 @@ class Tribesman extends TribeMember {
       }
 
       // If a melee attack is being done, update to attack at melee distance
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestEnemy.position)) {
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestEnemy.position) && false) {
          this.terminalVelocity = 0;
          this.acceleration = null;
       } else {
@@ -438,7 +438,7 @@ class Tribesman extends TribeMember {
 
       // If a melee attack is being done, update to attack at melee distance
       this.rotation = this.position.calculateAngleBetween(resource.position);
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position)) {
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position) && false) {
          this.terminalVelocity = 0;
          this.acceleration = null;
       } else {

@@ -401,6 +401,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public resolveWallTileCollisions(): void {
+      let didUpdatePosition = false;
+      
       for (const hitbox of this.hitboxes) {
          if (!(hitbox instanceof CircularHitbox)) {
             continue;
@@ -430,8 +432,16 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
                         break;
                      }
                   }
+                  didUpdatePosition = true;
                }
             }
+         }
+      }
+
+      if (didUpdatePosition) {
+         for (const hitbox of this.hitboxes) {
+            hitbox.updatePosition();
+            hitbox.updateHitboxBounds();
          }
       }
    }
@@ -442,9 +452,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       for (const hitbox of this.hitboxes) {
          // Left wall
          if (hitbox.bounds[0] < 0) {
-            this.stopXVelocity();
             this.position.x -= hitbox.bounds[0];
-         // Right wall
+            this.stopXVelocity();
+            // Right wall
          } else if (hitbox.bounds[1] > boardUnits) {
             this.position.x -= hitbox.bounds[1] - boardUnits;
             this.stopXVelocity();
@@ -454,7 +464,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          if (hitbox.bounds[2] < 0) {
             this.position.y -= hitbox.bounds[2];
             this.stopYVelocity();
-         // Top wall
+            // Top wall
          } else if (hitbox.bounds[3] > boardUnits) {
             this.position.y -= hitbox.bounds[3] - boardUnits;
             this.stopYVelocity();
@@ -462,6 +472,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
 
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
+         console.log(this.hitboxes);
          throw new Error("Unable to properly resolve wall collisions.");
       }
    }
