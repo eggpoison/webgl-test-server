@@ -23,6 +23,8 @@ class Player extends TribeMember {
 
    public readonly username: string;
 
+   public interactingEntityID: number | null = null;
+
    constructor(position: Point, username: string, tribe: Tribe | null) {
       super(position, "player", 0, TribeType.plainspeople);
 

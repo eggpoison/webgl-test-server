@@ -170,6 +170,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       if (this.velocity !== null && (isNaN(this.velocity.magnitude) || isNaN(this.velocity.direction))) {
          throw new Error("Velocity was NaN.");
       }
+      if (this.acceleration !== null && (isNaN(this.acceleration.magnitude) || isNaN(this.acceleration.direction))) {
+         throw new Error("Acceleration was NaN.");
+      }
 
       const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.tile.type];
 
@@ -257,6 +260,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          velocity.magnitude /= SETTINGS.TPS;
          
          this.position.add(velocity.convertToPoint());
+      }
+
+      if (isNaN(this.position.x)) {
+         throw new Error("Position was NaN.");
       }
    }
 
@@ -404,6 +411,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       let didUpdatePosition = false;
       
       for (const hitbox of this.hitboxes) {
+         // @Incomplete: Rectangular wall tiles collisions
+         
          if (!(hitbox instanceof CircularHitbox)) {
             continue;
          }
@@ -474,6 +483,13 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
          console.log(this.hitboxes);
          throw new Error("Unable to properly resolve wall collisions.");
+      }
+      // @Temporary
+      if (isNaN(this.position.x)) {
+         for (const hitbox of this.hitboxes) {
+            console.log(hitbox.bounds);
+         }
+         throw new Error();
       }
    }
 

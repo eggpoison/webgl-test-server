@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TribeType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -16,6 +16,15 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
+import TribeHut from "./entities/tribes/TribeHut";
+import TribeTotem from "./entities/tribes/TribeTotem";
+<<<<<<< HEAD
+=======
+import Cow from "./entities/mobs/Cow";
+import BerryBush from "./entities/resources/BerryBush";
+import TribeHut from "./entities/tribes/TribeHut";
+import TribeTotem from "./entities/tribes/TribeTotem";
+>>>>>>> 27115ccd32dd4dce235ff58c27f618f88763a745
 
 /*
 
@@ -231,7 +240,7 @@ class GameServer {
 
       if (typeof this.tickInterval === "undefined") {
          this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         // this.tickInterval = setInterval(() => this.tick(), 5);
+         // this.tickInterval = setInterval(() => this.tick(), 3);
       }
    }
 
@@ -333,6 +342,9 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
+         // new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+         // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
+
          // const spawnPosition = new Point(50, 50);
 
          // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
@@ -347,11 +359,15 @@ class GameServer {
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y), false);
-         // const tribe = new Tribe(TribeType.goblins, totem);
+         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
+         const tribe = new Tribe(TribeType.frostlings, totem);
 
-         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), false, tribe);
-         // tribe.registerNewHut(hut);
+         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), tribe);
+         tribe.registerNewHut(hut);
+         // const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
+         // tribe.registerNewHut(hut2);
+         // const hut3 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 400), tribe);
+         // tribe.registerNewHut(hut3);
 
          // new Tree(new Point(spawnPosition.x + 200, spawnPosition.y), false);
 
@@ -678,6 +694,7 @@ class GameServer {
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
+      playerData.instance.interactingEntityID = playerDataPacket.interactingEntityID;
 
       if (playerDataPacket.action === TribeMemberAction.eat && playerData.instance.currentAction !== TribeMemberAction.eat) {
          playerData.instance.startEating();

@@ -33,10 +33,16 @@ abstract class Hitbox {
       if (typeof this.offset !== "undefined") {
          this.position.add(this.offset);
       }
+      if (isNaN(this.position.x)) {
+         throw new Error("Invalid position.");
+      }
    }
 
    public setPosition(position: Point): void {
       this.position = position;
+      if (isNaN(this.position.x)) {
+         throw new Error("Invalid position.");
+      }
    }
 
    public abstract isColliding(otherHitbox: RectangularHitbox | CircularHitbox): boolean;

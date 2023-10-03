@@ -23,8 +23,8 @@ abstract class Mob extends Entity {
 
    private aiParams: Record<string, number> = {};
 
-   protected entitiesInVisionRange = new Set<Entity>();
-   public droppedItemsInVisionRange = new Set<DroppedItem>();
+   protected readonly entitiesInVisionRange = new Set<Entity>();
+   public readonly droppedItemsInVisionRange = new Set<DroppedItem>();
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
       super(position, components, entityType);
@@ -127,13 +127,16 @@ abstract class Mob extends Entity {
       Mob.testHitbox.updatePosition();
       Mob.testHitbox.updateHitboxBounds();
       
-      this.entitiesInVisionRange = new Set<Entity>();
+      this.entitiesInVisionRange.clear();
+      this.droppedItemsInVisionRange.clear();
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
             for (const droppedItem of chunk.getGameObjects()) {
                // Don't add existing game objects
-               if ((droppedItem.i === "entity" && this.entitiesInVisionRange.has(droppedItem)) || (droppedItem.i === "droppedItem" && this.droppedItemsInVisionRange.has(droppedItem)) || droppedItem === this) continue;
+               if ((droppedItem.i === "entity" && this.entitiesInVisionRange.has(droppedItem)) || (droppedItem.i === "droppedItem" && this.droppedItemsInVisionRange.has(droppedItem)) || droppedItem === this) {
+                  continue;
+               }
 
                if (Math.pow(this.position.x - droppedItem.position.x, 2) + Math.pow(this.position.y - droppedItem.position.y, 2) <= Math.pow(this.visionRange, 2)) {
                   switch (droppedItem.i) {

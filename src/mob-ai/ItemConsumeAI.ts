@@ -1,8 +1,9 @@
-import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
+import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType, SETTINGS } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
 import { GameObject } from "../GameObject";
+import Board from "../Board";
 
 interface ItemConsumeAIParams extends BaseAIParams<"itemConsume"> {
    readonly acceleration: number;
@@ -60,9 +61,9 @@ class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
       if (typeof target === "undefined") {
          this.target = null;
          return;
-      } else {
-         this.target = target;
       }
+
+      this.target = target;
 
       // Move to the target dropped item
       super.moveToPosition(this.target.position, this.acceleration, this.terminalVelocity);
