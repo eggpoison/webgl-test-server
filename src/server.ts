@@ -6,7 +6,6 @@ import { registerCommand } from "./commands";
 import _GameObject from "./GameObject";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
-import Mob from "./entities/mobs/Mob";
 import DroppedItem from "./items/DroppedItem";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
@@ -17,7 +16,6 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
-import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -60,7 +58,6 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       type: entity.type,
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
-      mobAIType: entity instanceof Mob ? ((entity as Mob).getCurrentAIType() || "---") : undefined,
       hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : [],
       amountHealed: healthComponent !== null ? healthComponent.amountHealedSinceLastPacketSend : 0
    };

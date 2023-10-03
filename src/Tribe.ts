@@ -234,6 +234,10 @@ class Tribe {
       return this.area.hasOwnProperty(tileIndex);
    }
 
+   public numTiles(): number {
+      return Object.keys(this.area).length;
+   }
+
    /** Updates which barrels belong to the tribe */
    private updateBarrels(): void {
       for (const barrel of this.barrels) {

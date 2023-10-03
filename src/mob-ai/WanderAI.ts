@@ -2,6 +2,7 @@ import { GameObjectDebugData, Point, SETTINGS, TileType, randInt, randItem } fro
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import Board from "../Board";
+import { getPositionRadialTiles } from "../ai-shared";
 
 interface WanderAIParams extends BaseAIParams<"wander"> {
    /** The average number of times that an entity will wander in a second */
@@ -48,68 +49,43 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
    private wander(): void {
       let targetPosition: Point | undefined;
 
-      const wanderPositions = this.getTileWanderPositions();
+      const wanderTiles = getPositionRadialTiles(this.mob.position, this.mob.visionRange);
+      if (wanderTiles.length === 0) return;
 
-      const indexes = wanderPositions.map((_, i) => i);
+      // Look randomly through the array for 
+      const indexes = wanderTiles.map((_, i) => i);
       while (indexes.length > 0) {
          const tempIdx = randInt(0, indexes.length - 1);
          const idx = indexes[tempIdx];
          indexes.splice(tempIdx, 1);
 
-         const position = wanderPositions[idx];
+         const tile = wanderTiles[idx];
 
          // Make sure the mob only moves to valid tile targets
          if (typeof this.validTileTargets !== "undefined") {
-            const tile = Board.getTile(Math.floor(position.x / SETTINGS.TILE_SIZE), Math.floor(position.y / SETTINGS.TILE_SIZE));
             if (!this.validTileTargets.has(tile.type)) {
                continue;
             }
          }
 
-         if (typeof this.shouldWander !== "undefined" && !this.shouldWander(position)) {
+         const wanderPosition = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE)
+
+         if (typeof this.shouldWander !== "undefined" && !this.shouldWander(wanderPosition)) {
             continue;
          }
 
-         targetPosition = position;
+         targetPosition = wanderPosition;
          break;
       }
 
       if (typeof targetPosition !== "undefined") {
          super.moveToPosition(targetPosition, this.acceleration, this.terminalVelocity);
       } else {
-         // If there are no possible positions, don't wander
-         if (wanderPositions.length === 0) return;
-         
          // If no valid positions can be found then move to a random position
-         const position = randItem(wanderPositions);
+         const tile = randItem(wanderTiles);
+         const position = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE)
          super.moveToPosition(position, this.acceleration, this.terminalVelocity);
       }
-   }
-
-   private getTileWanderPositions(): Array<Point> {
-      const wanderPositions = new Array<Point>();
-
-      const minTileX = Math.max(Math.min(Math.floor((this.mob.position.x - this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-      const maxTileX = Math.max(Math.min(Math.floor((this.mob.position.x + this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-      const minTileY = Math.max(Math.min(Math.floor((this.mob.position.y - this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-      const maxTileY = Math.max(Math.min(Math.floor((this.mob.position.y + this.mob.visionRange) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-
-      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-         for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-            const tile = Board.getTile(tileX, tileY);
-
-            // Don't try to wander to wall tiles or water
-            if (tile.isWall || tile.type === "water") continue;
-            
-            const position = new Point((tileX + Math.random()) * SETTINGS.TILE_SIZE, (tileY + Math.random()) * SETTINGS.TILE_SIZE);
-            const distance = this.mob.position.calculateDistanceBetween(position);
-            if (distance <= this.mob.visionRange) {
-               wanderPositions.push(position);
-            }
-         }
-      }
-
-      return wanderPositions;
    }
 
    protected _getWeight(): number {

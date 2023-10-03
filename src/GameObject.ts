@@ -578,7 +578,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          gameObjectID: this.id,
          lines: [],
          circles: [],
-         tileHighlights: []
+         tileHighlights: [],
+         debugEntries: []
       }
    }
 }

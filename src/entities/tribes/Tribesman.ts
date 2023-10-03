@@ -1,4 +1,4 @@
-import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, Vector, angle } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, Vector, angle, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -9,6 +9,8 @@ import Barrel from "./Barrel";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { GameObject } from "../../GameObject";
+import { getPositionRadialTiles } from "../../ai-shared";
+import Tile from "../../tiles/Tile";
 
 /*
 Priorities while in a tribe:
@@ -25,7 +27,10 @@ Priorities while in a tribe:
 enum TribesmanAIType {
    escaping,
    attacking,
+   harvestingResources,
+   pickingUpDroppedItems,
    haulingResources,
+   patrolling,
    idle
 }
 
@@ -190,7 +195,7 @@ class Tribesman extends TribeMember {
             this.rotation = this.position.calculateAngleBetween(closestDroppedItem.position);
             this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
             this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
-            this.lastAIType = TribesmanAIType.idle;
+            this.lastAIType = TribesmanAIType.pickingUpDroppedItems;
             this.currentAction = TribeMemberAction.none;
             return;
          }
@@ -243,19 +248,8 @@ class Tribesman extends TribeMember {
          }
 
          if (typeof resourceToAttack !== "undefined") {
-            this.attackResource(resourceToAttack);
+            this.harvestResource(resourceToAttack);
          }
-         return;
-      }
-
-      // If not in tribe area, move to tribe totem
-      if (this.tribe !== null && !this.tribe.tileIsInArea(this.tile.x, this.tile.y)) {
-         this.rotation = this.position.calculateAngleBetween(this.tribe.totem.position);
-         this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
-         
-         this.currentAction = TribeMemberAction.none;
-         this.lastAIType = TribesmanAIType.idle;
          return;
       }
 
@@ -269,17 +263,36 @@ class Tribesman extends TribeMember {
       // 
 
       if (this.targetPatrolPosition === null && Math.random() < 0.3 / SETTINGS.TPS) {
-         // Find a random position to patrol to
-         do {
-            // @Speed: Garbage collection
-            this.targetPatrolPosition = this.position.copy();
-            this.targetPatrolPosition.add(Point.fromVectorForm(Tribesman.VISION_RANGE * Math.random(), 2 * Math.PI * Math.random()));
-         } while (!this.tribe.tileIsInArea(Math.floor(this.targetPatrolPosition.x / SETTINGS.TILE_SIZE), Math.floor(this.targetPatrolPosition.y / SETTINGS.TILE_SIZE)));
+         const tileTargets = getPositionRadialTiles(this.position, Tribesman.VISION_RANGE);
+
+         // Filter tiles in tribe area
+         const tilesInTribeArea = new Array<Tile>();
+         for (const tile of tileTargets) {
+            if (this.tribe.tileIsInArea(tile.x, tile.y)) {
+               tilesInTribeArea.push(tile);
+            }
+         }
+
+         let targetTile: Tile;
+         if (tilesInTribeArea.length > 0) {
+            // Move to random tribe tile
+            targetTile = randItem(tilesInTribeArea);
+         } else {
+            // Move to any random tile
+            targetTile = randItem(tileTargets);
+         }
+
+         this.targetPatrolPosition = new Point((targetTile.x + Math.random()) * SETTINGS.TILE_SIZE, (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE);
+         this.rotation = this.position.calculateAngleBetween(this.targetPatrolPosition);
+         this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
+         this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+         this.lastAIType = TribesmanAIType.patrolling;
       } else if (this.targetPatrolPosition !== null) {
          if (this.hasReachedTargetPosition()) {
             this.terminalVelocity = 0;
             this.acceleration = null;
             this.lastAIType = TribesmanAIType.idle;
+            this.targetPatrolPosition = null;
             return;
          }
          
@@ -287,6 +300,8 @@ class Tribesman extends TribeMember {
          this.rotation = this.position.calculateAngleBetween(this.targetPatrolPosition);
          this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
          this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+         this.lastAIType = TribesmanAIType.patrolling;
+      } else {
          this.lastAIType = TribesmanAIType.idle;
       }
    }
@@ -380,8 +395,8 @@ class Tribesman extends TribeMember {
       this.doMeleeAttack();
    }
 
-   private attackResource(resource: Entity): void {
-      // Equip the tool for the job
+   private harvestResource(resource: Entity): void {
+      // Find the best tool for the job
       let bestToolSlot: number | null;
       const attackToolType = getEntityAttackToolType(resource);
       switch (attackToolType) {
@@ -404,6 +419,7 @@ class Tribesman extends TribeMember {
             break;
          }
       }
+
       if (bestToolSlot !== null) {
          this.selectedItemSlot = bestToolSlot;
 
@@ -447,6 +463,7 @@ class Tribesman extends TribeMember {
       }
 
       this.currentAction = TribeMemberAction.none;
+      this.lastAIType = TribesmanAIType.harvestingResources;
       
       this.doMeleeAttack();
    }
@@ -718,6 +735,9 @@ class Tribesman extends TribeMember {
    public getDebugData(): GameObjectDebugData {
       const debugData = super.getDebugData();
 
+      debugData.debugEntries.push("Tribe ID: " + (this.tribe !== null ? this.tribe.id : "N/A"));
+      debugData.debugEntries.push("AI: " + TribesmanAIType[this.lastAIType]);
+
       // Circle for vision range
       debugData.circles.push({
          radius: Tribesman.VISION_RANGE,
@@ -742,6 +762,15 @@ class Tribesman extends TribeMember {
                thickness: 2,
                colour: [1, 0, 0]
             });
+         }
+         case TribesmanAIType.patrolling: {
+            if (this.targetPatrolPosition !== null) {
+               debugData.lines.push({
+                  targetPosition: this.targetPatrolPosition.package(),
+                  thickness: 2,
+                  colour: [0, 0, 1]
+               });
+            }
          }
       }
 
