@@ -9,6 +9,8 @@ import Barrel from "./Barrel";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { GameObject } from "../../GameObject";
+import { HitboxObject } from "../../hitboxes/Hitbox";
+import Player from "./Player";
 
 /*
 Priorities while in a tribe:
@@ -65,6 +67,8 @@ class Tribesman extends TribeMember {
 
    private static readonly BARREL_DEPOSIT_DISTANCE = 80;
 
+   private static readonly testHitbox = new CircularHitbox();
+
    public readonly mass = 1;
 
    /** All game objects the tribesman can see */
@@ -103,6 +107,15 @@ class Tribesman extends TribeMember {
       // Recalculate game objects the tribesman can see
       // 
 
+      const tempHitboxObject: HitboxObject = {
+         position: this.position.copy(),
+         rotation: 0
+      };
+      Tribesman.testHitbox.setHitboxInfo(Tribesman.VISION_RANGE);
+      Tribesman.testHitbox.setHitboxObject(tempHitboxObject);
+      Tribesman.testHitbox.updatePosition();
+      Tribesman.testHitbox.updateHitboxBounds();
+
       const minChunkX = Math.max(Math.min(Math.floor((this.position.x - Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const minChunkY = Math.max(Math.min(Math.floor((this.position.y - Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
@@ -118,19 +131,21 @@ class Tribesman extends TribeMember {
             for (const gameObject of chunk.getGameObjects()) {
                if (this.gameObjectsInVisionRange.includes(gameObject)) continue;
 
-               if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= Math.pow(Tribesman.VISION_RANGE, 2)) {
-                  this.gameObjectsInVisionRange.push(gameObject);
-
-                  // If an enemy, add to enemies
-                  if (gameObject.i === "entity") {
-                     const relationship = this.getEntityRelationship(gameObject);
-                     if (relationship >= EntityRelationship.hostileMob) {
-                        this.enemiesInVisionRange.push(gameObject);
-                     } else if (relationship === EntityRelationship.resource) {
-                        this.resourcesInVisionRange.push(gameObject);
+               // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
+               for (const hitbox of gameObject.hitboxes) {
+                  if (Tribesman.testHitbox.isColliding(hitbox)) {
+                     this.gameObjectsInVisionRange.push(gameObject);
+                     if (gameObject.i === "entity") {
+                        const relationship = this.getEntityRelationship(gameObject);
+                        if (relationship >= EntityRelationship.hostileMob) {
+                           this.enemiesInVisionRange.push(gameObject);
+                        } else if (relationship === EntityRelationship.resource) {
+                           this.resourcesInVisionRange.push(gameObject);
+                        }
+                     } else if (gameObject.i === "droppedItem") {
+                        this.droppedItemsInVisionRange.push(gameObject);
                      }
-                  } else if (gameObject.i === "droppedItem") {
-                     this.droppedItemsInVisionRange.push(gameObject);
+                     break;
                   }
                }
             }
@@ -147,7 +162,25 @@ class Tribesman extends TribeMember {
          return;
       }
 
-      // Attack closest entity
+      // If the player is interacting with the tribesman, move towards the player
+      for (const gameObject of this.gameObjectsInVisionRange) {
+         if (gameObject.i === "entity" && gameObject.type === "player" && (gameObject as Player).interactingEntityID === this.id) {
+            this.rotation = this.position.calculateAngleBetween(gameObject.position);
+            if (this.willStopAtDesiredDistance(80, gameObject.position)) {
+               this.terminalVelocity = 0;
+               this.acceleration = null;
+            } else {
+               this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
+               this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+            }
+
+            this.lastAIType = TribesmanAIType.idle;
+            this.currentAction = TribeMemberAction.none;
+            return;
+         }
+      }
+
+      // Attack closest enemy
       if (this.enemiesInVisionRange.length > 0) {
          this.attackEnemy();
          this.lastAIType = TribesmanAIType.attacking;
@@ -276,7 +309,7 @@ class Tribesman extends TribeMember {
             this.targetPatrolPosition.add(Point.fromVectorForm(Tribesman.VISION_RANGE * Math.random(), 2 * Math.PI * Math.random()));
          } while (!this.tribe.tileIsInArea(Math.floor(this.targetPatrolPosition.x / SETTINGS.TILE_SIZE), Math.floor(this.targetPatrolPosition.y / SETTINGS.TILE_SIZE)));
       } else if (this.targetPatrolPosition !== null) {
-         if (this.hasReachedTargetPosition()) {
+         if (this.hasReachedPatrolPosition()) {
             this.terminalVelocity = 0;
             this.acceleration = null;
             this.lastAIType = TribesmanAIType.idle;
@@ -291,7 +324,7 @@ class Tribesman extends TribeMember {
       }
    }
 
-   private hasReachedTargetPosition(): boolean {
+   private hasReachedPatrolPosition(): boolean {
       if (this.targetPatrolPosition === null || this.velocity === null) return false;
 
       const relativeTargetPosition = this.position.copy();
@@ -302,12 +335,24 @@ class Tribesman extends TribeMember {
    }
 
    private escape(): void {
-      // Find the average position of all visible enemies
+      // Calculate the escape position based on the position of all visible enemies
       let averageEnemyX = 0;
       let averageEnemyY = 0;
       for (const enemy of this.enemiesInVisionRange) {
-         averageEnemyX += enemy.position.x;
-         averageEnemyY += enemy.position.y;
+         let distance = this.position.calculateDistanceBetween(enemy.position);
+         if (distance > Tribesman.VISION_RANGE) {
+            distance = Tribesman.VISION_RANGE;
+         }
+         const weight = Math.pow(1 - distance / Tribesman.VISION_RANGE / 1.25, 0.5);
+
+         const relativeX = (enemy.position.x - this.position.x) * weight;
+         const relativeY = (enemy.position.y - this.position.y) * weight;
+
+         averageEnemyX += relativeX + this.position.x;
+         averageEnemyY += relativeY + this.position.y;
+         if (isNaN(averageEnemyX) || isNaN(averageEnemyY)) {
+            throw new Error();
+         }
       }
       averageEnemyX /= this.enemiesInVisionRange.length;
       averageEnemyY /= this.enemiesInVisionRange.length;
