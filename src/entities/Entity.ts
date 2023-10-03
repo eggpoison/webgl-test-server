@@ -4,6 +4,7 @@ import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
+import Board from "../Board";
 
 export interface EntityComponents {
    health: HealthComponent;
@@ -76,6 +77,13 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
    /** Called after every physics update. */
    public tick(): void {
       super.tick();
+
+      if (Board.tickIntervalHasPassed(3)) {
+         const a = this.getComponent("health");
+         if (a !== null) {
+            a.damage(0, 1, Math.random() * 2 * Math.PI, null, PlayerCauseOfDeath.arrow, 0);
+         }
+      }
 
       // Tick components
       for (const component of this.tickableComponents) {

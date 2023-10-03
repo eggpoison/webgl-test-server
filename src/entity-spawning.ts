@@ -70,11 +70,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "cactus",
       spawnableTiles: ["sand"],
-      // spawnRate: 0.005,
-      // maxDensity: 0.03
-      // @Temporary
-      spawnRate: 0.2,
-      maxDensity: 0.3
+      spawnRate: 0.005,
+      maxDensity: 0.03
    },
    {
       entityType: "yeti",

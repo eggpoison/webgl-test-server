@@ -121,13 +121,6 @@ const bundleEntityDataArray = (visibleEntities: ReadonlyArray<Entity>): Readonly
    for (const entity of visibleEntities) {
       const entityData = bundleEntityData(entity);
       entityDataArray.push(entityData);
-
-      // Reset hits taken and amount healed
-      const healthComponent = entity.getComponent("health");
-      if (healthComponent !== null) {
-         healthComponent.hitsTaken = [];
-         healthComponent.amountHealedSinceLastPacketSend = 0;
-      }
    }
 
    return entityDataArray;
@@ -241,6 +234,7 @@ class GameServer {
 
       if (typeof this.tickInterval === "undefined") {
          this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         // this.tickInterval = setInterval(() => this.tick(), 5);
       }
    }
 
@@ -287,7 +281,19 @@ class GameServer {
       Board.removeFlaggedGameObjects();
 
       // Send game data packets to all players
-      this.sendGameDataPackets();
+      await this.sendGameDataPackets();
+
+      // Reset the killed entity IDs
+      Board.killedEntities = [];
+      
+      // Reset hits taken and amount healed
+      for (const entity of Object.values(Board.entities)) {
+         const healthComponent = entity.getComponent("health");
+         if (healthComponent !== null) {
+            healthComponent.hitsTaken = [];
+            healthComponent.amountHealedSinceLastPacketSend = 0;
+         }
+      }
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -330,9 +336,6 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = this.generatePlayerSpawnPosition();
 
-         setTimeout(() => {
-            new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
-         }, 7000);
          // const spawnPosition = new Point(50, 50);
 
          // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
@@ -606,9 +609,6 @@ class GameServer {
          // Send the game data to the player
          socket.emit("game_data_packet", gameDataPacket);
       }
-
-      // Reset the killed entity IDs
-      Board.killedEntities = [];
    }
 
    private bundlePlayerInventoryData(player: Player): PlayerInventoryData {

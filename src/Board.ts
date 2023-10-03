@@ -229,23 +229,21 @@ abstract class Board {
       }
    }
 
-   // @Cleanup: variable name
-   private static a: Record<number, Array<GameObject>> = {};
+   private static collisionChunkGroups: Record<number, Array<GameObject>> = {};
 
    public static updateGameObjects(): void {
-      this.a = {};
+      this.collisionChunkGroups = {};
 
       for (const gameObject of this.gameObjects) {
          gameObject.tick();
 
          gameObject.calculateBoundingVolume();
          for (const chunk of gameObject.boundingChunks) {
-            // @Cleanup: variable name
-            const n = chunk.y * SETTINGS.BOARD_SIZE + chunk.x;
-            if (!this.a.hasOwnProperty(n)) {
-               this.a[n] = new Array<GameObject>();
+            const chunkIndex = chunk.y * SETTINGS.BOARD_SIZE + chunk.x;
+            if (!this.collisionChunkGroups.hasOwnProperty(chunkIndex)) {
+               this.collisionChunkGroups[chunkIndex] = new Array<GameObject>();
             }
-            this.a[n].push(gameObject);
+            this.collisionChunkGroups[chunkIndex].push(gameObject);
          }
 
          // Flesh sword AI
@@ -265,7 +263,7 @@ abstract class Board {
          gameObject.collidingObjects = new Set();
       }
 
-      for (const gameObjectsInChunk of Object.values(this.a)) {
+      for (const gameObjectsInChunk of Object.values(this.collisionChunkGroups)) {
          for (let i = 0; i <= gameObjectsInChunk.length - 2; i++) {
             const gameObject1 = gameObjectsInChunk[i];
             for (let j = i + 1; j <= gameObjectsInChunk.length - 1; j++) {
