@@ -1,4 +1,4 @@
-import { ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
+import { ItemType, Point, SETTINGS, TileType, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -28,7 +28,7 @@ class Krumblid extends Mob {
       this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(2, 3), true);
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Krumblid.SIZE / 2);
+      hitbox.radius = Krumblid.SIZE / 2;
       this.addHitbox(hitbox);
 
       // Make the krumblid like to hide in cacti
@@ -47,7 +47,7 @@ class Krumblid extends Mob {
          acceleration: Krumblid.WALK_ACCELERATION,
          terminalVelocity: Krumblid.WALK_TERMINAL_VELOCITY,
          wanderRate: 0.25,
-         validTileTargets: new Set(["sand"])
+         validTileTargets: [TileType.sand]
       }));
 
       this.addAI(new EscapeAI(this, {

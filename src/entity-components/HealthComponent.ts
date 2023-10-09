@@ -1,4 +1,4 @@
-import { GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS } from "webgl-test-shared";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";
@@ -117,7 +117,7 @@ class HealthComponent extends Component {
 
          Board.killedEntities.push({
             id: this.entity.id,
-            boundingChunks: this.entity.boundingChunks
+            boundingChunks: this.entity.chunks
          });
       }
 
@@ -143,12 +143,9 @@ class HealthComponent extends Component {
          throw new Error("Knockback was undefined");
       }
       
-      const force = new Vector(knockback / this.entity.mass, knockbackDirection);
-      if (this.entity.velocity !== null) {
-         this.entity.velocity.add(force);
-      } else {
-         this.entity.velocity = force;
-      }
+      const knockbackForce = knockback / this.entity.mass;
+      this.entity.velocity.x += knockbackForce * Math.sin(knockbackDirection);
+      this.entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
    }
 
    public heal(healAmount: number): void {

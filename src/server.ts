@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TribeType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TribeType, TileType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -18,13 +18,7 @@ import Chunk from "./Chunk";
 import Item from "./items/Item";
 import TribeHut from "./entities/tribes/TribeHut";
 import TribeTotem from "./entities/tribes/TribeTotem";
-<<<<<<< HEAD
-=======
-import Cow from "./entities/mobs/Cow";
-import BerryBush from "./entities/resources/BerryBush";
-import TribeHut from "./entities/tribes/TribeHut";
-import TribeTotem from "./entities/tribes/TribeTotem";
->>>>>>> 27115ccd32dd4dce235ff58c27f618f88763a745
+import FrozenYeti from "./entities/mobs/FrozenYeti";
 
 /*
 
@@ -57,10 +51,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
    return {
       id: entity.id,
       position: entity.position.package(),
-      velocity: entity.velocity !== null ? entity.velocity.package() : null,
+      velocity: entity.velocity.package(),
       rotation: entity.rotation,
       mass: entity.mass,
-      hitboxes: Array.from(entity.hitboxes).map(hitbox => {
+      hitboxes: entity.hitboxes.map(hitbox => {
          return bundleHitboxData(hitbox);
       }),
       ageTicks: entity.ageTicks,
@@ -76,10 +70,10 @@ const bundleDroppedItemData = (droppedItem: DroppedItem): DroppedItemData => {
    return {
       id: droppedItem.id,
       position: droppedItem.position.package(),
-      velocity: droppedItem.velocity !== null ? droppedItem.velocity.package() : null,
+      velocity: droppedItem.velocity.package(),
       rotation: droppedItem.rotation,
       mass: droppedItem.mass,
-      hitboxes: Array.from(droppedItem.hitboxes).map(hitbox => {
+      hitboxes: droppedItem.hitboxes.map(hitbox => {
          return bundleHitboxData(hitbox);
       }),
       ageTicks: droppedItem.ageTicks,
@@ -91,10 +85,10 @@ const bundleProjectileData = (projectile: Projectile): ProjectileData => {
    return {
       id: projectile.id,
       position: projectile.position.package(),
-      velocity: projectile.velocity !== null ? projectile.velocity.package() : null,
+      velocity: projectile.velocity.package(),
       rotation: projectile.rotation,
       mass: projectile.mass,
-      hitboxes: Array.from(projectile.hitboxes).map(hitbox => {
+      hitboxes: projectile.hitboxes.map(hitbox => {
          return bundleHitboxData(hitbox);
       }),
       ageTicks: projectile.ageTicks,
@@ -109,7 +103,7 @@ const getPlayerVisibleEntities = (chunkBounds: VisibleChunkBounds): ReadonlyArra
    for (let chunkX = chunkBounds[0]; chunkX <= chunkBounds[1]; chunkX++) {
       for (let chunkY = chunkBounds[2]; chunkY <= chunkBounds[3]; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
-         for (const entity of chunk.getEntities()) {
+         for (const entity of chunk.entities) {
             if (!seenIDs.has(entity.id)) {
                entities.push(entity);
                seenIDs.add(entity.id);
@@ -139,7 +133,7 @@ const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): Rea
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
-         for (const droppedItem of chunk.getDroppedItems()) {
+         for (const droppedItem of chunk.droppedItems) {
             if (!seenIDs.has(droppedItem.id)) {
                droppedItemDataArray.push(bundleDroppedItemData(droppedItem));
                seenIDs.add(droppedItem.id);
@@ -158,7 +152,7 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
       for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
-         for (const projectile of chunk.getProjectiles()) {
+         for (const projectile of chunk.projectiles) {
             if (!seenIDs.has(projectile.id)) {
                projectileDataArray.push(bundleProjectileData(projectile));
                seenIDs.add(projectile.id);
@@ -239,8 +233,8 @@ class GameServer {
       }
 
       if (typeof this.tickInterval === "undefined") {
-         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         // this.tickInterval = setInterval(() => this.tick(), 3);
+         // this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         this.tickInterval = setInterval(() => this.tick(), 3);
       }
    }
 
@@ -261,7 +255,8 @@ class GameServer {
       Board.updateTribes();
 
       Board.updateGameObjects();
-      Board.resolveCollisions();
+      Board.resolveGameObjectCollisions();
+      Board.resolveWallCollisions();
       
       Board.pushJoinBuffer();
 
@@ -340,30 +335,24 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         const spawnPosition = this.generatePlayerSpawnPosition();
+         // const spawnPosition = this.generatePlayerSpawnPosition();
 
-         // new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
+         let spawnPosition: Point;
+         do {
+            spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
+         } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
+
+         // new FrozenYeti(new Point(spawnPosition.x + 250, spawnPosition.y));
          // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
-
-         // const spawnPosition = new Point(50, 50);
-
-         // const o = new Point(spawnPosition.x + 300, spawnPosition.y);
-         // for (let i = 0; i < 8; i++) {
-         //    const p = o.copy();
-         //    const offset = new Vector(125, i / 4 * Math.PI);
-         //    p.add(offset.convertToPoint());
-         //    const b = new BerryBush(p, false);
-         //    b.rotation = i / 4 * Math.PI;
-         // }
-         // new Cow(o.copy(), false);
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
-         const tribe = new Tribe(TribeType.frostlings, totem);
+         // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
+         // const totem = new TribeTotem(new Point(spawnPosition.x + 1, spawnPosition.y));
+         // const tribe = new Tribe(TribeType.frostlings, totem);
 
-         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), tribe);
-         tribe.registerNewHut(hut);
+         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), tribe);
+         // tribe.registerNewHut(hut);
          // const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
          // tribe.registerNewHut(hut2);
          // const hut3 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 400), tribe);
@@ -672,8 +661,8 @@ class GameServer {
 
          const packet: GameDataSyncPacket = {
             position: player.position.package(),
-            velocity: player.velocity?.package() || null,
-            acceleration: player.acceleration?.package() || null,
+            velocity: player.velocity.package(),
+            acceleration: player.acceleration.package(),
             rotation: player.rotation,
             terminalVelocity: player.terminalVelocity,
             health: player.getComponent("health")!.getHealth(),
@@ -688,8 +677,8 @@ class GameServer {
       const playerData = this.playerDataRecord[socket.id];
 
       playerData.instance.position = Point.unpackage(playerDataPacket.position);
-      playerData.instance.velocity = playerDataPacket.velocity !== null ? Vector.unpackage(playerDataPacket.velocity) : null;
-      playerData.instance.acceleration = playerDataPacket.acceleration !== null ? Vector.unpackage(playerDataPacket.acceleration) : null;
+      playerData.instance.velocity = Point.unpackage(playerDataPacket.velocity);
+      playerData.instance.acceleration = Point.unpackage(playerDataPacket.acceleration);
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;

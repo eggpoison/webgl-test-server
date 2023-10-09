@@ -17,7 +17,6 @@ class Snowball extends Entity {
 
    private age = 0;
    private readonly lifetime = randFloat(...Snowball.LIFETIME);
-   // private readonly lifetime = 0.75;
 
    private angularVelocity = randFloat(1, 2) * Math.PI * randSign();
 
@@ -39,7 +38,7 @@ class Snowball extends Entity {
       const hitboxSize = SNOWBALL_SIZES[size];
       
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(hitboxSize / 2);
+      hitbox.radius = hitboxSize / 2;
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
@@ -63,7 +62,7 @@ class Snowball extends Entity {
          this.remove();
       }
 
-      if (this.velocity !== null && this.canDamage && this.velocity.magnitude <= Snowball.CASCADE_THRESHOLD) {
+      if ((this.velocity.x !== 0 || this.velocity.y !== 0) && this.canDamage && this.velocity.length() <= Snowball.CASCADE_THRESHOLD) {
          this.canDamage = false;
       }
    }

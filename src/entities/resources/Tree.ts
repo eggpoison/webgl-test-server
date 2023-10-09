@@ -29,7 +29,7 @@ class Tree extends Entity {
       }, "tree");
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Tree.TREE_RADIUSES[size]);
+      hitbox.radius = Tree.TREE_RADIUSES[size];
       this.addHitbox(hitbox);
 
       this.isStatic = true;

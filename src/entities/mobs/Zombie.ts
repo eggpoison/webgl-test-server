@@ -1,4 +1,4 @@
-import { ArmourItemInfo, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
+import { ArmourItemInfo, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffect, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -70,7 +70,7 @@ class Zombie extends Mob {
       }));
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(32);
+      hitbox.radius = 32;
       this.addHitbox(hitbox);
       
       if (isGolden) {
@@ -145,8 +145,8 @@ class Zombie extends Mob {
       // If day time, ignite
       if (Board.time >= 6 && Board.time < 18) {
          // Ignite randomly or stay on fire if already on fire
-         if (super.hasStatusEffect("burning") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
-            super.applyStatusEffect("burning", 5);
+         if (super.hasStatusEffect(StatusEffect.burning) || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
+            super.applyStatusEffect(StatusEffect.burning, 5);
          }
       }
    }

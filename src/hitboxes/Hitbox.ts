@@ -1,40 +1,29 @@
-import { Point } from "webgl-test-shared";
+import { Point, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import RectangularHitbox from "./RectangularHitbox";
 import CircularHitbox from "./CircularHitbox";
+import { GameObject } from "../GameObject";
 
 export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: number];
 
-export type HitboxObject = { position: Point, rotation: number };
-
 abstract class Hitbox {
-   public hitboxObject!: HitboxObject;
-
-   /** The bounds of the hitbox since the last physics update */
-   public bounds!: HitboxBounds;
-
    /** The position of the hitbox, accounting for offset from its entity */
-   public position!: Point;
+   public position = new Point(0, 0);
 
    public offset?: Point;
 
-   public setHitboxObject(hitboxObject: HitboxObject): void {
-      this.hitboxObject = hitboxObject;
-   }
+   /** The bounds of the hitbox since the last physics update */
+   public bounds: HitboxBounds = [-1, -1, -1, -1];
 
-   protected abstract calculateHitboxBounds(): HitboxBounds;
-
-   public updateHitboxBounds(): void {
-      this.bounds = this.calculateHitboxBounds();
-   }
+   public abstract updateHitboxBounds(offsetRotation: number): void;
 
    /** Updates the hitboxes position to match the position of its hitbox object */
-   public updatePosition(): void {
-      this.position = this.hitboxObject.position.copy();
+   public updatePositionFromGameObject(gameObject: GameObject): void {
+      this.position.x = gameObject.position.x;
+      this.position.y = gameObject.position.y;
+
       if (typeof this.offset !== "undefined") {
-         this.position.add(this.offset);
-      }
-      if (isNaN(this.position.x)) {
-         throw new Error("Invalid position.");
+         this.position.x += rotateXAroundPoint(this.offset.x, this.offset.y, 0, 0, gameObject.rotation);
+         this.position.y += rotateYAroundPoint(this.offset.x, this.offset.y, 0, 0, gameObject.rotation);
       }
    }
 

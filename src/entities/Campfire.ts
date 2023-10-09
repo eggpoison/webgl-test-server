@@ -16,7 +16,7 @@ class Campfire extends HeatingEntity {
       }, "campfire");
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Campfire.SIZE / 2);
+      hitbox.radius = Campfire.SIZE / 2;
       this.addHitbox(hitbox);
    }
 }

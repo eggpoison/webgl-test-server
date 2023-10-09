@@ -55,7 +55,7 @@ class Tombstone extends Entity {
       // Calculate the zombie spawn positions based off the tombstone's position and rotation
       const zombieSpawnPositions = new Array<Point>();
       for (let i = 0, angleFromTombstone = this.rotation; i < 4; i++, angleFromTombstone += Math.PI / 2) {
-         const offset = new Vector(Tombstone.ZOMBIE_SPAWN_DISTANCE + (i % 2 === 0 ? 15 : 0), angleFromTombstone).convertToPoint();
+         const offset = Point.fromVectorForm(Tombstone.ZOMBIE_SPAWN_DISTANCE + (i % 2 === 0 ? 15 : 0), angleFromTombstone);
          const spawnPosition = this.position.copy();
          spawnPosition.add(offset);
 

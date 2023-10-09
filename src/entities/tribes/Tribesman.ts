@@ -11,7 +11,6 @@ import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { GameObject } from "../../GameObject";
 import { getPositionRadialTiles } from "../../ai-shared";
 import Tile from "../../tiles/Tile";
-import { HitboxObject } from "../../hitboxes/Hitbox";
 import Player from "./Player";
 
 /*
@@ -57,10 +56,6 @@ class Tribesman extends TribeMember {
    private static readonly TERMINAL_VELOCITY = 150;
    private static readonly ACCELERATION = 300;
 
-   // @Cleanup: do we need these?
-   private static readonly ENEMY_TARGETS: ReadonlyArray<EntityType> = ["slime", "yeti", "zombie", "tombstone"];
-   private static readonly RESOURCE_TARGETS: ReadonlyArray<EntityType> = ["cow", "cactus", "tree", "berry_bush", "boulder", "ice_spikes"];
-
    /** How far away from the entity the attack is done */
    private static readonly ATTACK_OFFSET = 50;
    /** Max distance from the attack position that the attack will be registered from */
@@ -91,7 +86,7 @@ class Tribesman extends TribeMember {
 
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(32);
+      hitbox.radius = 32;
       this.addHitbox(hitbox);
 
       const inventoryComponent = this.getComponent("inventory")!;
@@ -112,14 +107,10 @@ class Tribesman extends TribeMember {
       // Recalculate game objects the tribesman can see
       // 
 
-      const tempHitboxObject: HitboxObject = {
-         position: this.position.copy(),
-         rotation: 0
-      };
-      Tribesman.testHitbox.setHitboxInfo(Tribesman.VISION_RANGE);
-      Tribesman.testHitbox.setHitboxObject(tempHitboxObject);
-      Tribesman.testHitbox.updatePosition();
-      Tribesman.testHitbox.updateHitboxBounds();
+      Tribesman.testHitbox.radius = Tribesman.VISION_RANGE;
+      Tribesman.testHitbox.position.x = this.position.x;
+      Tribesman.testHitbox.position.y = this.position.y;
+      Tribesman.testHitbox.updateHitboxBounds(0);
 
       const minChunkX = Math.max(Math.min(Math.floor((this.position.x - Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
@@ -133,7 +124,7 @@ class Tribesman extends TribeMember {
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
-            for (const gameObject of chunk.getGameObjects()) {
+            for (const gameObject of chunk.gameObjects) {
                if (this.gameObjectsInVisionRange.includes(gameObject)) continue;
 
                // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
@@ -173,10 +164,12 @@ class Tribesman extends TribeMember {
             this.rotation = this.position.calculateAngleBetween(gameObject.position);
             if (this.willStopAtDesiredDistance(80, gameObject.position)) {
                this.terminalVelocity = 0;
-               this.acceleration = null;
+               this.acceleration.x = 0;
+               this.acceleration.y = 0;
             } else {
                this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-               this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+               this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+               this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
             }
 
             this.lastAIType = TribesmanAIType.idle;
@@ -206,7 +199,8 @@ class Tribesman extends TribeMember {
             }
             
             this.terminalVelocity = 0;
-            this.acceleration = null;
+            this.acceleration.x = 0;
+            this.acceleration.y = 0;
             this.currentAction = TribeMemberAction.eat;
             return;
          }
@@ -227,7 +221,8 @@ class Tribesman extends TribeMember {
          if (typeof closestDroppedItem !== "undefined") {
             this.rotation = this.position.calculateAngleBetween(closestDroppedItem.position);
             this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-            this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+            this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+            this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
             this.lastAIType = TribesmanAIType.pickingUpDroppedItems;
             this.currentAction = TribeMemberAction.none;
             return;
@@ -318,12 +313,14 @@ class Tribesman extends TribeMember {
          this.targetPatrolPosition = new Point((targetTile.x + Math.random()) * SETTINGS.TILE_SIZE, (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE);
          this.rotation = this.position.calculateAngleBetween(this.targetPatrolPosition);
          this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
          this.lastAIType = TribesmanAIType.patrolling;
       } else if (this.targetPatrolPosition !== null) {
          if (this.hasReachedPatrolPosition()) {
             this.terminalVelocity = 0;
-            this.acceleration = null;
+            this.acceleration.x = 0;
+            this.acceleration.y = 0;
             this.lastAIType = TribesmanAIType.idle;
             this.targetPatrolPosition = null;
             return;
@@ -332,7 +329,8 @@ class Tribesman extends TribeMember {
          // Move to patrol position
          this.rotation = this.position.calculateAngleBetween(this.targetPatrolPosition);
          this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
          this.lastAIType = TribesmanAIType.patrolling;
       } else {
          this.lastAIType = TribesmanAIType.idle;
@@ -345,7 +343,7 @@ class Tribesman extends TribeMember {
       const relativeTargetPosition = this.position.copy();
       relativeTargetPosition.subtract(this.targetPatrolPosition);
 
-      const dotProduct = this.velocity.convertToPoint().calculateDotProduct(relativeTargetPosition);
+      const dotProduct = this.velocity.calculateDotProduct(relativeTargetPosition);
       return dotProduct > 0;
    }
 
@@ -375,7 +373,8 @@ class Tribesman extends TribeMember {
       // Run away from that position
       const runDirection = angle(averageEnemyX - this.position.x, averageEnemyY - this.position.y) + Math.PI;
       this.rotation = runDirection;
-      this.acceleration = new Vector(Tribesman.ACCELERATION, runDirection);
+      this.acceleration.x = Tribesman.ACCELERATION * Math.sin(runDirection);
+      this.acceleration.y = Tribesman.ACCELERATION * Math.cos(runDirection);
       this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
    }
 
@@ -409,10 +408,13 @@ class Tribesman extends TribeMember {
             
             if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, closestEnemy.position)) {
                this.terminalVelocity = 0;
-               this.acceleration = null;
+               this.acceleration.x = 0;
+               this.acceleration.y = 0;
             } else {
                this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
-               this.acceleration = new Vector(Tribesman.SLOW_ACCELERATION, this.position.calculateAngleBetween(closestEnemy.position));
+               const moveAngle = this.position.calculateAngleBetween(closestEnemy.position);
+               this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(moveAngle);
+               this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(moveAngle);
             }
             this.rotation = this.position.calculateAngleBetween(closestEnemy.position);
 
@@ -426,12 +428,16 @@ class Tribesman extends TribeMember {
       }
 
       // If a melee attack is being done, update to attack at melee distance
+      // @Temporary
       if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestEnemy.position) && false) {
          this.terminalVelocity = 0;
-         this.acceleration = null;
+         this.acceleration.x = 0;
+         this.acceleration.y = 0;
       } else {
          this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration = new Vector(Tribesman.ACCELERATION, this.position.calculateAngleBetween(closestEnemy.position));
+         const moveAngle = this.position.calculateAngleBetween(closestEnemy.position);
+         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(moveAngle);
+         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(moveAngle);
       }
       this.rotation = this.position.calculateAngleBetween(closestEnemy.position);
 
@@ -482,10 +488,12 @@ class Tribesman extends TribeMember {
             this.rotation = this.position.calculateAngleBetween(resource.position);
             if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, resource.position)) {
                this.terminalVelocity = 0;
-               this.acceleration = null;
+               this.acceleration.x = 0;
+               this.acceleration.y = 0;
             } else {
                this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
-               this.acceleration = new Vector(Tribesman.SLOW_ACCELERATION, this.rotation);
+               this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(this.rotation);
+               this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(this.rotation);
             }
 
             // If the bow is fully charged, fire it
@@ -501,10 +509,12 @@ class Tribesman extends TribeMember {
       this.rotation = this.position.calculateAngleBetween(resource.position);
       if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position) && false) {
          this.terminalVelocity = 0;
-         this.acceleration = null;
+         this.acceleration.x = 0;
+         this.acceleration.y = 0;
       } else {
          this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
       }
 
       this.currentAction = TribeMemberAction.none;
@@ -512,6 +522,8 @@ class Tribesman extends TribeMember {
       
       this.doMeleeAttack();
    }
+
+   // @Cleanup: Move the following 2 functions to ai-shared
 
    private willStopAtDesiredDistance(desiredDistance: number, targetPosition: Point): boolean {
       // If the entity has a desired distance from its target, try to stop at that desired distance
@@ -527,8 +539,8 @@ class Tribesman extends TribeMember {
       }
 
       // Estimate time it will take for the entity to stop
-      const stopTime = Math.pow(this.velocity.magnitude, 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
-      const stopDistance = (Math.pow(stopTime, 2) + stopTime) * this.velocity.magnitude;
+      const stopTime = Math.pow(this.velocity.length(), 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
+      const stopDistance = (Math.pow(stopTime, 2) + stopTime) * this.velocity.length();
       return stopDistance;
    }
 
@@ -539,7 +551,8 @@ class Tribesman extends TribeMember {
    private haulToBarrel(barrel: Barrel): void {
       this.rotation = this.position.calculateAngleBetween(barrel.position);
       this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-      this.acceleration = new Vector(Tribesman.ACCELERATION, this.rotation);
+      this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+      this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
 
       if (this.position.calculateDistanceBetween(barrel.position) <= Tribesman.BARREL_DEPOSIT_DISTANCE) {
          this.depositResources(barrel);

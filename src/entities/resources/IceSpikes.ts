@@ -1,4 +1,4 @@
-import { ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, Vector, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffect, TileType, Vector, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -47,7 +47,7 @@ class IceSpikes extends Entity {
       }
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(IceSpikes.RADIUS);
+      hitbox.radius = IceSpikes.RADIUS;
       this.addHitbox(hitbox);
 
       if (Object.keys(Board.droppedItems).length < 50) {
@@ -74,7 +74,7 @@ class IceSpikes extends Entity {
             healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.ice_spikes, 0, "ice_spikes");
             healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
 
-            collidingEntity.applyStatusEffect("freezing", 5);
+            collidingEntity.applyStatusEffect(StatusEffect.freezing, 5);
          }
       });
    }
@@ -97,7 +97,9 @@ class IceSpikes extends Entity {
    private grow(): void {
       // Calculate the spawn position for the new ice spikes
       const position = this.position.copy();
-      position.add(new Vector(IceSpikes.GROWTH_OFFSET, 2 * Math.PI * Math.random()).convertToPoint());
+      const offsetDirection = 2 * Math.PI * Math.random();
+      position.x += IceSpikes.GROWTH_OFFSET * Math.sin(offsetDirection);
+      position.y += IceSpikes.GROWTH_OFFSET * Math.cos(offsetDirection);
 
       // Don't grow outside the board
       if (!Board.positionIsInBoard(position.x, position.y)) {
@@ -106,7 +108,7 @@ class IceSpikes extends Entity {
 
       // Don't grow into rivers
       const tile = Board.getTileAtPosition(position);
-      if (tile.type === "water") {
+      if (tile.type === TileType.water) {
          return;
       }
 
@@ -126,17 +128,16 @@ class IceSpikes extends Entity {
          const moveDirection = 2 * Math.PI * Math.random();
          
          const position = this.position.copy();
-         position.add(new Vector(10, moveDirection).convertToPoint());
+         position.x += 10 * Math.sin(moveDirection);
+         position.y += 10 * Math.cos(moveDirection);
 
          const lifetime = randFloat(0.1, 0.2);
          const projectile = new Projectile(position, ProjectileType.iceShards, lifetime);
 
          projectile.rotation = moveDirection;
-
-         const velocity = new Vector(IceSpikes.ICE_SHARD_EXPLODE_SPEED, moveDirection);
-         projectile.velocity = velocity;
+         projectile.velocity.x = IceSpikes.ICE_SHARD_EXPLODE_SPEED * Math.sin(moveDirection);
+         projectile.velocity.y = IceSpikes.ICE_SHARD_EXPLODE_SPEED * Math.cos(moveDirection);
          projectile.terminalVelocity = IceSpikes.ICE_SHARD_EXPLODE_SPEED;
-
 
          const hitbox = new RectangularHitbox();
          hitbox.setHitboxInfo(24, 24);
@@ -155,7 +156,7 @@ class IceSpikes extends Entity {
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
                   if (collidingEntity.type !== "yeti") {
-                     collidingEntity.applyStatusEffect("freezing", 3);
+                     collidingEntity.applyStatusEffect(StatusEffect.freezing, 3);
                   }
                }
 

@@ -5,7 +5,7 @@ import Board from "../../Board";
 import { AIType } from "../../mob-ai/ai-types";
 import DroppedItem from "../../items/DroppedItem";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HitboxObject } from "../../hitboxes/Hitbox";
+import Chunk from "../../Chunk";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
@@ -15,6 +15,7 @@ abstract class Mob extends Entity {
    
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
+   private readonly visionRangeSquared: number;
    
    private readonly ais = new Array<AI<AIType>>();
    private currentAI: AI<AIType> | null = null;
@@ -25,11 +26,14 @@ abstract class Mob extends Entity {
 
    protected readonly entitiesInVisionRange = new Set<Entity>();
    public readonly droppedItemsInVisionRange = new Set<DroppedItem>();
+
+   private chunksInVisionRange = new Array<Chunk>();
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
       super(position, components, entityType);
 
       this.visionRange = visionRange;
+      this.visionRangeSquared = Math.pow(visionRange, 2);
    }
 
    /**
@@ -43,6 +47,7 @@ abstract class Mob extends Entity {
    public tick(): void {
       super.tick();
 
+      // @Speed: This shouldn't have to run for mob types which don't need this ai param
       if (this.hasAIParam("hunger")) {
          const previousNumber = this.getAIParam("hunger")!;
          const metabolism = this.getAIParam("metabolism")!;
@@ -72,35 +77,16 @@ abstract class Mob extends Entity {
          return;
       }
       
+      // @Speed: only update chunks when the position changes
+      this.updateChunksInVisionRange();
       this.updateGameObjectsInVisionRange();
 
-      // Update the values of all AI's
-      for (const ai of this.ais) {
-         ai.updateValues(this.entitiesInVisionRange);
-      }
-
-      // The new AI is the one with the highest weight.
-      const newAI = this.findAIWithHighestWeight();
-
-      // If the AI is new, activate the AI
-      if (newAI !== this.currentAI) {
-         newAI.activate();
-         if (this.currentAI !== null) {
-            this.currentAI.deactivate();
-            if (typeof this.currentAI.onDeactivation !== "undefined") this.currentAI.onDeactivation();
-         }
-      }
-      
-      if (typeof newAI.onRefresh !== "undefined") newAI.onRefresh();
-      
-      this.currentAI = newAI;
-   }
-
-   private findAIWithHighestWeight(): AI<AIType> {
+      // Update the values of all AI's and find the one with the highest weight
       let aiWithHighestWeight!: AI<AIType>;
       let maxWeight = -1;
-
       for (const ai of this.ais) {
+         ai.updateValues(this.entitiesInVisionRange);
+
          const weight = ai.getWeight();
          if (weight > maxWeight) {
             maxWeight = weight;
@@ -108,37 +94,77 @@ abstract class Mob extends Entity {
          }
       }
 
-      return aiWithHighestWeight;
+      // If the AI is new, activate the AI
+      if (aiWithHighestWeight !== this.currentAI) {
+         aiWithHighestWeight.activate();
+         if (this.currentAI !== null) {
+            this.currentAI.deactivate();
+            if (typeof this.currentAI.onDeactivation !== "undefined") this.currentAI.onDeactivation();
+         }
+      }
+      
+      if (typeof aiWithHighestWeight.onRefresh !== "undefined") aiWithHighestWeight.onRefresh();
+      
+      this.currentAI = aiWithHighestWeight;
    }
 
+   private updateChunksInVisionRange(): void {
+      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+
+      this.chunksInVisionRange = [];
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            // 
+            // Check if the chunk is actually in the vision range
+            // 
+
+            // Find the closest vertex of the chunk to the mob
+            const x = this.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
+            const y = this.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
+
+            if (Math.pow(x - this.position.x, 2) + Math.pow(y - this.position.y, 2) <= this.visionRangeSquared) {
+               this.chunksInVisionRange.push(Board.getChunk(chunkX, chunkY));
+            }
+         }
+      }
+   }
+   
    /** Finds all entities within the range of the mob's vision */
    private updateGameObjectsInVisionRange(): void {
-      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-
-      const tempHitboxObject: HitboxObject = {
-         position: this.position.copy(),
-         rotation: 0
-      };
-      Mob.testHitbox.setHitboxInfo(this.visionRange);
-      Mob.testHitbox.setHitboxObject(tempHitboxObject);
-      Mob.testHitbox.updatePosition();
-      Mob.testHitbox.updateHitboxBounds();
+      Mob.testHitbox.radius = this.visionRange;
+      Mob.testHitbox.position.x = this.position.x;
+      Mob.testHitbox.position.y = this.position.y;
+      Mob.testHitbox.updateHitboxBounds(0);
       
       this.entitiesInVisionRange.clear();
       this.droppedItemsInVisionRange.clear();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = Board.getChunk(chunkX, chunkY);
-            for (const droppedItem of chunk.getGameObjects()) {
-               // Don't add existing game objects
-               if ((droppedItem.i === "entity" && this.entitiesInVisionRange.has(droppedItem)) || (droppedItem.i === "droppedItem" && this.droppedItemsInVisionRange.has(droppedItem)) || droppedItem === this) {
-                  continue;
-               }
+      for (const chunk of this.chunksInVisionRange) {
+         for (const droppedItem of chunk.gameObjects) {
+            // Don't add existing game objects
+            if ((droppedItem.i === "entity" && this.entitiesInVisionRange.has(droppedItem)) || (droppedItem.i === "droppedItem" && this.droppedItemsInVisionRange.has(droppedItem)) || droppedItem === this) {
+               continue;
+            }
 
-               if (Math.pow(this.position.x - droppedItem.position.x, 2) + Math.pow(this.position.y - droppedItem.position.y, 2) <= Math.pow(this.visionRange, 2)) {
+            if (Math.pow(this.position.x - droppedItem.position.x, 2) + Math.pow(this.position.y - droppedItem.position.y, 2) <= Math.pow(this.visionRange, 2)) {
+               switch (droppedItem.i) {
+                  case "entity": {
+                     this.entitiesInVisionRange.add(droppedItem);
+                     break;
+                  }
+                  case "droppedItem": {
+                     this.droppedItemsInVisionRange.add(droppedItem);
+                     break;
+                  }
+               }
+               continue;
+            }
+
+            // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
+            for (const hitbox of droppedItem.hitboxes) {
+               if (Mob.testHitbox.isColliding(hitbox)) {
                   switch (droppedItem.i) {
                      case "entity": {
                         this.entitiesInVisionRange.add(droppedItem);
@@ -149,27 +175,10 @@ abstract class Mob extends Entity {
                         break;
                      }
                   }
-                  continue;
-               }
-
-               // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
-               for (const hitbox of droppedItem.hitboxes) {
-                  if (Mob.testHitbox.isColliding(hitbox)) {
-                     switch (droppedItem.i) {
-                        case "entity": {
-                           this.entitiesInVisionRange.add(droppedItem);
-                           break;
-                        }
-                        case "droppedItem": {
-                           this.droppedItemsInVisionRange.add(droppedItem);
-                           break;
-                        }
-                     }
-                     break;
-                  }
+                  break;
                }
             }
-         }  
+         }
       }
    }
 
@@ -198,14 +207,14 @@ abstract class Mob extends Entity {
 
       // Circle for vision range
       if (this.visionRange > 0) {
-      debugData.circles.push(
-         {
+         debugData.circles.push({
             radius: this.visionRange,
             colour: [1, 0, 1],
             thickness: 2
-         }
-         );
+         });
       }
+
+      debugData.debugEntries.push("Current AI type: " + (this.currentAI !== null ? this.currentAI.type : "none"));
 
       if (typeof this.currentAI?.addDebugData !== "undefined") {
          this.currentAI.addDebugData(debugData);

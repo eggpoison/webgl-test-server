@@ -33,7 +33,8 @@ class MoveAI extends AI<"move"> implements MoveAIParams {
       } else {
          // Stop moving if there is no target position
          this.mob.terminalVelocity = 0;
-         this.mob.acceleration = null;
+         this.mob.acceleration.x = 0;
+         this.mob.acceleration.y = 0;
       }
    }
 

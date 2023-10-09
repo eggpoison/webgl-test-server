@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_TYPE_INFO_RECORD, Vector, clampToBoardDimensions } from "webgl-test-shared";
+import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, Vector, clampToBoardDimensions } from "webgl-test-shared";
 import Tile from "./tiles/Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -40,6 +40,8 @@ enum TileCollisionAxis {
 
 export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
+export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
+
 /** A generic class for any object in the world which has hitbox(es) */
 abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType extends GameObjectEvents> {
    public abstract readonly i: I;
@@ -52,9 +54,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Position of the object in the world */
    public position: Point;
    /** Velocity of the object */
-   public velocity: Vector | null = null;
+   public velocity = new Point(0, 0);
    /** Acceleration of the object */
-   public acceleration: Vector | null = null;
+   public acceleration = new Point(0, 0);
    /** Limit to the object's velocity */
    public terminalVelocity = 0;
 
@@ -64,6 +66,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Affects the force the game object experiences during collisions */
    public mass = 1;
 
+   protected moveSpeedMultiplier = 1;
+
    /** Set of all chunks the object is contained in */
    public chunks = new Set<Chunk>();
 
@@ -71,7 +75,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    public tile!: Tile;
 
    /** All hitboxes attached to the game object */
-   public hitboxes = new Set<RectangularHitbox | CircularHitbox>();
+   public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
    public previousCollidingObjects = new Set<GameObject>();
    public collidingObjects = new Set<GameObject>();
@@ -87,7 +91,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** If set to false, the game object will not experience friction from moving over tiles. */
    public isAffectedByFriction = true;
 
-   public boundingChunks = new Array<Chunk>();
+   /** Whether the game object's position has changed during the current tick or not. Use during collision detection to avoid unnecessary collision checks */
+   public positionIsDirty = true;
+   
+   private boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
    constructor(position: Point) {
       this.position = position;
@@ -106,31 +113,58 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
-      hitbox.setHitboxObject(this);
-      this.hitboxes.add(hitbox);
-   }
+      this.hitboxes.push(hitbox);
+      
+      // Calculate initial position and hitbox bounds for the hitbox as it is not guaranteed that they are updated the immediate tick after
+      hitbox.updatePositionFromGameObject(this as unknown as GameObject);
+      hitbox.updateHitboxBounds(this.rotation);
 
-   public addVelocity(vector: Vector): void {
-      if (this.velocity !== null) {
-         this.velocity.add(vector);
-      } else {
-         this.velocity = vector;
+      // Update bounding area
+      if (hitbox.bounds[0] < this.boundingArea[0]) {
+         this.boundingArea[0] = hitbox.bounds[0];
+      }
+      if (hitbox.bounds[1] > this.boundingArea[1]) {
+         this.boundingArea[1] = hitbox.bounds[1];
+      }
+      if (hitbox.bounds[2] < this.boundingArea[2]) {
+         this.boundingArea[2] = hitbox.bounds[2];
+      }
+      if (hitbox.bounds[3] > this.boundingArea[3]) {
+         this.boundingArea[3] = hitbox.bounds[3];
       }
    }
 
-   public updateHitboxes(): void {
+   public updateHitboxesAndBoundingArea(): void {
+      this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
+      this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
+      this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
+      this.boundingArea[3] = Number.MIN_SAFE_INTEGER;
+
       for (const hitbox of this.hitboxes) {
-         hitbox.updatePosition();
-         hitbox.updateHitboxBounds();
+         hitbox.updatePositionFromGameObject(this as unknown as GameObject);
+         hitbox.updateHitboxBounds(this.rotation);
+
+         // Update bounding area
+         // @Cleanup: Copy pasted from above
+         if (hitbox.bounds[0] < this.boundingArea[0]) {
+            this.boundingArea[0] = hitbox.bounds[0];
+         }
+         if (hitbox.bounds[1] > this.boundingArea[1]) {
+            this.boundingArea[1] = hitbox.bounds[1];
+         }
+         if (hitbox.bounds[2] < this.boundingArea[2]) {
+            this.boundingArea[2] = hitbox.bounds[2];
+         }
+         if (hitbox.bounds[3] > this.boundingArea[3]) {
+            this.boundingArea[3] = hitbox.bounds[3];
+         }
       }
    }
 
    public tick(): void {
       this.ageTicks++;
-      
+
       this.applyPhysics();
-      this.updateHitboxes();
-      this.updateContainingChunks();
    }
 
    /** Updates the tile the object is on. */
@@ -143,11 +177,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
    protected overrideTileMoveSpeedMultiplier?(): number | null;
 
-   /** Function optionally implemented by game object subclasses */
-   public getMoveSpeedMultiplier?(): number;
-
    protected isInRiver(): boolean {
-      if (this.tile.type !== "water") {
+      if (this.tile.type !== TileType.water) {
          return false;
       }
 
@@ -167,27 +198,25 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public applyPhysics(): void {
-      if (this.velocity !== null && (isNaN(this.velocity.magnitude) || isNaN(this.velocity.direction))) {
+      if (isNaN(this.velocity.x) || isNaN(this.velocity.y)) {
          throw new Error("Velocity was NaN.");
       }
-      if (this.acceleration !== null && (isNaN(this.acceleration.magnitude) || isNaN(this.acceleration.direction))) {
+      if (isNaN(this.acceleration.x) || isNaN(this.acceleration.y)) {
          throw new Error("Acceleration was NaN.");
       }
 
-      const tileTypeInfo = TILE_TYPE_INFO_RECORD[this.tile.type];
-
-      let moveSpeedMultiplier = tileTypeInfo.moveSpeedMultiplier || 1;
-      if (this.tile.type === "water" && !this.isInRiver()) {
-         moveSpeedMultiplier = 1;
+      let moveSpeedMultiplier: number;
+      if (this.tile.type === TileType.water && !this.isInRiver()) {
+         moveSpeedMultiplier = this.moveSpeedMultiplier;
+      } else {
+         moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
       }
+      // @Speed
       if (typeof this.overrideTileMoveSpeedMultiplier !== "undefined") {
          const speed = this.overrideTileMoveSpeedMultiplier();
          if (speed !== null) {
             moveSpeedMultiplier = speed;
          }
-      }
-      if (typeof this.getMoveSpeedMultiplier !== "undefined") {
-         moveSpeedMultiplier *= this.getMoveSpeedMultiplier();
       }
 
       const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
@@ -195,82 +224,87 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       let tileFrictionReduceAmount: number;
       
       // Friction
-      if (this.isAffectedByFriction && this.velocity !== null) {
-         const amountBefore = this.velocity.magnitude
-         this.velocity.magnitude /= 1 + 3 / SETTINGS.TPS * tileTypeInfo.friction;
-         tileFrictionReduceAmount = amountBefore - this.velocity.magnitude;
+      if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
+         const amountBefore = this.velocity.length();
+         const divideAmount = 1 + 3 / SETTINGS.TPS * TILE_FRICTIONS[this.tile.type];
+         this.velocity.x /= divideAmount;
+         this.velocity.y /= divideAmount;
+         tileFrictionReduceAmount = amountBefore - this.velocity.length();
       } else {
          tileFrictionReduceAmount = 0;
       }
       
       // Accelerate
-      if (this.acceleration !== null) {
-         const acceleration = this.acceleration.copy();
-         acceleration.magnitude *= tileTypeInfo.friction * moveSpeedMultiplier / SETTINGS.TPS;
+      if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
+         const friction = TILE_FRICTIONS[this.tile.type];
+         let accelerateAmountX = this.acceleration.x * friction * moveSpeedMultiplier / SETTINGS.TPS;
+         let accelerateAmountY = this.acceleration.y * friction * moveSpeedMultiplier / SETTINGS.TPS;
+
+         const velocityMagnitude = this.velocity.length();
 
          // Make acceleration slow as the game object reaches its terminal velocity
-         if (this.velocity !== null) {
-            const progressToTerminalVelocity = this.velocity.magnitude / terminalVelocity;
-            if (progressToTerminalVelocity < 1) {
-               acceleration.magnitude *= 1 - Math.pow(progressToTerminalVelocity * 1.1, 2);
-            }
+         if (velocityMagnitude < terminalVelocity) {
+            const progressToTerminalVelocity = velocityMagnitude / terminalVelocity;
+            accelerateAmountX *= 1 - Math.pow(progressToTerminalVelocity, 2);
+            accelerateAmountY *= 1 - Math.pow(progressToTerminalVelocity, 2);
          }
 
-         acceleration.magnitude += tileFrictionReduceAmount;
-
-         const magnitudeBeforeAdd = this.velocity?.magnitude || 0;
-
+         const accelerateAmountLength = Math.sqrt(Math.pow(accelerateAmountX, 2) + Math.pow(accelerateAmountY, 2));
+         accelerateAmountX += tileFrictionReduceAmount * accelerateAmountX / accelerateAmountLength;
+         accelerateAmountY += tileFrictionReduceAmount * accelerateAmountY / accelerateAmountLength;
+         
          // Add acceleration to velocity
-         if (this.velocity !== null) {
-            this.velocity.add(acceleration);
-         } else {
-            this.velocity = acceleration;
-         }
-
+         this.velocity.x += accelerateAmountX;
+         this.velocity.y += accelerateAmountY;
+         
          // Don't accelerate past terminal velocity
-         if (this.velocity.magnitude > terminalVelocity && this.velocity.magnitude > magnitudeBeforeAdd) {
-            if (magnitudeBeforeAdd < terminalVelocity) {
-               this.velocity.magnitude = terminalVelocity;
+         const newVelocityMagnitude = this.velocity.length();
+         if (newVelocityMagnitude > terminalVelocity && newVelocityMagnitude > velocityMagnitude) {
+            if (velocityMagnitude < terminalVelocity) {
+               this.velocity.x *= terminalVelocity / newVelocityMagnitude;
+               this.velocity.y *= terminalVelocity / newVelocityMagnitude;
             } else {
-               this.velocity.magnitude = magnitudeBeforeAdd;
+               this.velocity.x *= velocityMagnitude / newVelocityMagnitude;
+               this.velocity.y *= velocityMagnitude / newVelocityMagnitude;
             }
          }
       // Friction
-      } else if (this.isAffectedByFriction && this.velocity !== null) {
-         this.velocity.magnitude -= 3 * SETTINGS.FRICTION_CONSTANT * tileTypeInfo.friction / SETTINGS.TPS;
-         if (this.velocity.magnitude <= 0) {
-            this.velocity = null;
+      } else if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+         // 
+         // Apply friction
+         // 
+
+         const xSignBefore = Math.sign(this.velocity.x);
+         
+         const velocityLength = this.velocity.length();
+         this.velocity.x = (velocityLength - 3) * this.velocity.x / velocityLength;
+         this.velocity.y = (velocityLength - 3) * this.velocity.y / velocityLength;
+         if (Math.sign(this.velocity.x) !== xSignBefore) {
+            this.velocity.x = 0;
+            this.velocity.y = 0;
          }
       }
 
       // If the game object is in a river, push them in the flow direction of the river
       if (this.isAffectedByFriction && this.isInRiver()) {
          const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
-         const pushVector = new Vector(240 / SETTINGS.TPS, flowDirection);
-         if (this.velocity === null) {
-            this.velocity = pushVector;
-         } else {
-            this.velocity.add(pushVector);
-         }
+         this.velocity.x += 240 / SETTINGS.TPS * Math.sin(flowDirection);
+         this.velocity.y += 240 / SETTINGS.TPS * Math.cos(flowDirection);
       }
 
       // Apply velocity
-      if (this.velocity !== null) {
-         const velocity = this.velocity.copy();
-         velocity.magnitude /= SETTINGS.TPS;
-         
-         this.position.add(velocity.convertToPoint());
-      }
+      this.position.x += this.velocity.x / SETTINGS.TPS;
+      this.position.y += this.velocity.y / SETTINGS.TPS;
 
       if (isNaN(this.position.x)) {
          throw new Error("Position was NaN.");
       }
    }
 
-   /** Calculates the chunks that contain the object.  */
-   private calculateContainingChunks(): Set<Chunk> {
+   /** Called after calculating the object's hitbox bounds */
+   public updateContainingChunks(): void {
+      // Calculate containing chunks
       const containingChunks = new Set<Chunk>();
-
       for (const hitbox of this.hitboxes) {
          const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
          const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
@@ -287,34 +321,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          }
       }
 
-      return containingChunks;
-   }
-
-   public calculateBoundingVolume(): void {
-      const containingChunks = new Array<Chunk>();
-      for (const hitbox of this.hitboxes) {
-         const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const minChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-
-         for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-               const chunk = Board.getChunk(chunkX, chunkY);
-               if (!containingChunks.includes(chunk)) {
-                  containingChunks.push(chunk);
-               }
-            }
-         }
-      }
-
-      this.boundingChunks = containingChunks;
-   }
-
-   /** Called after calculating the object's hitbox bounds */
-   public updateContainingChunks(): void {
-      const containingChunks = this.calculateContainingChunks();
-
       // Find all chunks which aren't present in the new chunks and remove them
       for (const chunk of this.chunks) {
          if (!containingChunks.has(chunk)) {
@@ -329,23 +335,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
             chunk.addGameObject(this as unknown as GameObject);
             this.chunks.add(chunk);
          }
-      }
-   }
-
-   private stopXVelocity(): void {
-      if (this.velocity !== null) {
-         const pointVelocity = this.velocity.convertToPoint();
-         pointVelocity.x = 0;
-         this.velocity = pointVelocity.convertToVector();
-      }
-   }
-
-   private stopYVelocity(): void {
-      if (this.velocity !== null) {
-         // Stop y velocity
-         const pointVelocity = this.velocity.convertToPoint();
-         pointVelocity.y = 0;
-         this.velocity = pointVelocity.convertToVector();
       }
    }
 
@@ -374,16 +363,14 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
       const xDir = xDist >= 0 ? 1 : -1;
       this.position.x = tile.x * SETTINGS.TILE_SIZE + (0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + hitbox.radius * xDir;
-
-      this.stopXVelocity();
+      this.velocity.x = 0;
    }
 
    private resolveYAxisTileCollision(tile: Tile, hitbox: CircularHitbox): void {
       const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
       const yDir = yDist >= 0 ? 1 : -1;
       this.position.y = tile.y * SETTINGS.TILE_SIZE + (0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + hitbox.radius * yDir;
-
-      this.stopYVelocity();
+      this.velocity.y = 0;
    }
 
    private resolveDiagonalTileCollision(tile: Tile, hitbox: CircularHitbox): void {
@@ -396,20 +383,16 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       const xDistFromEdge = Math.abs(xDist - SETTINGS.TILE_SIZE/2);
       const yDistFromEdge = Math.abs(yDist - SETTINGS.TILE_SIZE/2);
 
-      const moveAxis: "x" | "y" = yDistFromEdge >= xDistFromEdge ? "y" : "x";
-
-      if (moveAxis === "x") {
+      if (yDistFromEdge < xDistFromEdge) {
          this.position.x = (tile.x + 0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + hitbox.radius * xDir;
-         this.stopXVelocity();
+         this.velocity.x = 0;
       } else {
          this.position.y = (tile.y + 0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + hitbox.radius * yDir;
-         this.stopYVelocity();
+         this.velocity.y = 0;
       }
    }
 
    public resolveWallTileCollisions(): void {
-      let didUpdatePosition = false;
-      
       for (const hitbox of this.hitboxes) {
          // @Incomplete: Rectangular wall tiles collisions
          
@@ -441,59 +424,51 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
                         break;
                      }
                   }
-                  didUpdatePosition = true;
                }
             }
-         }
-      }
-
-      if (didUpdatePosition) {
-         for (const hitbox of this.hitboxes) {
-            hitbox.updatePosition();
-            hitbox.updateHitboxBounds();
          }
       }
    }
    
    public resolveWallCollisions(): void {
-      const boardUnits = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
-
-      for (const hitbox of this.hitboxes) {
-         // Left wall
-         if (hitbox.bounds[0] < 0) {
-            this.position.x -= hitbox.bounds[0];
-            this.stopXVelocity();
-            // Right wall
-         } else if (hitbox.bounds[1] > boardUnits) {
-            this.position.x -= hitbox.bounds[1] - boardUnits;
-            this.stopXVelocity();
-         }
-
-         // Bottom wall
-         if (hitbox.bounds[2] < 0) {
-            this.position.y -= hitbox.bounds[2];
-            this.stopYVelocity();
-            // Top wall
-         } else if (hitbox.bounds[3] > boardUnits) {
-            this.position.y -= hitbox.bounds[3] - boardUnits;
-            this.stopYVelocity();
-         }
+      // Left wall
+      if (this.boundingArea[0] < 0) {
+         this.position.x -= this.boundingArea[0];
+         this.velocity.x = 0;
+         // Right wall
+      } else if (this.boundingArea[1] > SETTINGS.BOARD_UNITS) {
+         this.position.x -= this.boundingArea[1] - SETTINGS.BOARD_UNITS;
+         this.velocity.x = 0;
       }
 
-      if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
-         console.log(this.hitboxes);
+      // Bottom wall
+      if (this.boundingArea[2] < 0) {
+         this.position.y -= this.boundingArea[2];
+         this.velocity.y = 0;
+         // Top wall
+      } else if (this.boundingArea[3] > SETTINGS.BOARD_UNITS) {
+         this.position.y -= this.boundingArea[3] - SETTINGS.BOARD_UNITS;
+         this.velocity.y = 0;
+      }
+
+      if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_UNITS || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_UNITS) {
+         console.log(this.hitboxes.map(hitbox => hitbox.bounds));
+         console.log(this.boundingArea);
+         console.log(this.position.x, this.position.y);
          throw new Error("Unable to properly resolve wall collisions.");
-      }
-      // @Temporary
-      if (isNaN(this.position.x)) {
-         for (const hitbox of this.hitboxes) {
-            console.log(hitbox.bounds);
-         }
-         throw new Error();
       }
    }
 
    public isColliding(gameObject: GameObject): boolean {
+      // AABB bounding area check
+      if (this.boundingArea[0] > gameObject.boundingArea[1] || // minX(1) > maxX(2)
+          this.boundingArea[1] < gameObject.boundingArea[0] || // maxX(1) < minX(2)
+          this.boundingArea[2] > gameObject.boundingArea[3] || // minY(1) > maxY(2)
+          this.boundingArea[3] < gameObject.boundingArea[2]) { // maxY(1) < minY(2)
+         return false;
+      }
+      
+      // More expensive hitbox check
       for (const hitbox of this.hitboxes) {
          for (const otherHitbox of gameObject.hitboxes) {
             // If the objects are colliding, add the colliding object and this object
@@ -525,13 +500,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          
          const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * gameObject.mass / this.mass;
          const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
-         // No need to apply force to other object as they will do it themselves
-         const pushForce = new Vector(force, pushAngle);
-         if (this.velocity !== null) {
-            this.velocity.add(pushForce);
-         } else {
-            this.velocity = pushForce;
-         }
+         this.velocity.x += force * Math.sin(pushAngle);
+         this.velocity.y += force * Math.cos(pushAngle);
       }
 
       // Call collision events
@@ -541,6 +511,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       if (!this.previousCollidingObjects.has(gameObject)) {
          (this.callEvents as any)("enter_collision", gameObject);
       }
+
+      this.collidingObjects.add(gameObject);
    }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {

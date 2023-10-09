@@ -246,8 +246,7 @@ class Tribe {
       
       const barrels = new Set<Barrel>();
       for (const chunkInfluence of Object.values(this.chunkArea)) {
-         const chunk = chunkInfluence.chunk;
-         for (const entity of chunk.getEntities()) {
+         for (const entity of chunkInfluence.chunk.entities) {
             if (entity.type === "barrel") {
                (entity as Barrel).setTribe(this);
                barrels.add(entity as Barrel);

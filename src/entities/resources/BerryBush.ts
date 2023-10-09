@@ -27,7 +27,7 @@ class BerryBush extends Entity {
       }, "berry_bush");
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(BerryBush.RADIUS);
+      hitbox.radius = BerryBush.RADIUS;
       this.addHitbox(hitbox);
 
       this.createEvent("hurt", () => {
@@ -94,7 +94,8 @@ class BerryBush extends Entity {
       const droppedItem = new DroppedItem(position, berry);
       
       const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
-      droppedItem.velocity = new Vector(BerryBush.BERRY_DROP_VELOCITY, spawnDirection + velocityDirectionOffset);
+      droppedItem.velocity.x = BerryBush.BERRY_DROP_OFFSET * Math.sin(spawnDirection + velocityDirectionOffset);
+      droppedItem.velocity.y = BerryBush.BERRY_DROP_OFFSET * Math.cos(spawnDirection + velocityDirectionOffset);
    }
 }
 

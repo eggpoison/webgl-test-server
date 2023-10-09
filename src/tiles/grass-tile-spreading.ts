@@ -1,4 +1,4 @@
-import { SETTINGS } from "webgl-test-shared";
+import { SETTINGS, TileType } from "webgl-test-shared";
 import Tile from "./Tile";
 import Board from "../Board";
 
@@ -24,8 +24,8 @@ export function attemptToSpreadGrassTile(grassTile: Tile): void {
          }
 
          const tile = Board.getTile(tileX, tileY);
-         if (tile.type === "dirt") {
-            new Tile(tileX, tileY, "grass", "grasslands", false);
+         if (tile.type === TileType.dirt) {
+            new Tile(tileX, tileY, TileType.grass, "grasslands", false);
          }
       }
    }

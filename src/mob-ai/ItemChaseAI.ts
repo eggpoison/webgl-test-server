@@ -53,7 +53,8 @@ class ItemChaseAI extends AI<"item_chase"> implements ItemChaseAIParams {
       // Move to target
       const angle = this.mob.position.calculateAngleBetween(closestEntity.position);
       this.mob.rotation = angle;
-      this.mob.acceleration = new Vector(this.acceleration, this.mob.rotation);
+      this.mob.acceleration.x = this.acceleration * Math.sin(this.mob.rotation);
+      this.mob.acceleration.y = this.acceleration * Math.cos(this.mob.rotation);
       this.mob.terminalVelocity = this.terminalVelocity;
    }
 

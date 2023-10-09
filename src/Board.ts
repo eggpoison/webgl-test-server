@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, ServerTileUpdateData, Vector, WaterRockData, randInt } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, randInt } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -8,23 +8,23 @@ import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { removeEntityFromCensus } from "./census";
-import { addFleshSword, removeFleshSword, runFleshSwordAI } from "./flesh-sword-ai";
+import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
 
 interface KilledEntityInfo {
    readonly id: number;
-   readonly boundingChunks: ReadonlyArray<Chunk>;
+   readonly boundingChunks: ReadonlySet<Chunk>;
 }
 
 abstract class Board {
    /** Average number of random ticks done in a chunk a second */
-   private static readonly RANDOM_TICK_RATE = 1;
+   private static readonly NUM_TICKED_TILES = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE / SETTINGS.TPS;
 
-   public static ticks: number = 0;
+   public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time: number = 6;
+   public static time = 6;
 
    private static readonly gameObjects = new Set<GameObject>();
 
@@ -32,8 +32,10 @@ abstract class Board {
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
    public static readonly projectiles = new Set<Projectile>();
 
+   // This is undefined initially to indicate that terrain hasn't been generated yet
    private static tiles: Array<Array<Tile>>;
-   private static chunks: Array<Array<Chunk>>;
+   private static chunks1d = new Array<Chunk>();
+   private static chunks = new Array<Array<Chunk>>();
 
    private static riverFlowDirections: Record<number, Record<number, number>>;
    public static waterRocks: ReadonlyArray<WaterRockData>;
@@ -51,6 +53,8 @@ abstract class Board {
    public static killedEntities = new Array<KilledEntityInfo>();
 
    public static setup(): void {
+      this.initialiseChunks();
+
       const generationInfo = generateTerrain();
       this.tiles = generationInfo.tiles;
       this.riverFlowDirections = generationInfo.riverFlowDirections;
@@ -58,8 +62,6 @@ abstract class Board {
       this.riverSteppingStones = generationInfo.riverSteppingStones;
 
       this.tileUpdateCoordinates = new Set<[number, number]>();
-
-      this.chunks = this.initialiseChunks();
 
       // Add river stepping stones to chunks
       for (const steppingStoneData of generationInfo.riverSteppingStones) {
@@ -82,17 +84,17 @@ abstract class Board {
       return typeof this.tiles !== "undefined";
    }
 
-   private static initialiseChunks(): Array<Array<Chunk>> {
-      const chunks = new Array<Array<Chunk>>(SETTINGS.BOARD_SIZE);
-
+   private static initialiseChunks(): void {
       for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
-         chunks[x] = new Array<Chunk>(SETTINGS.BOARD_SIZE);
+         this.chunks[x] = new Array<Chunk>(SETTINGS.BOARD_SIZE);
          for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
-            chunks[x][y] = new Chunk(x, y);
+            const chunk = new Chunk(x, y);
+            
+            this.chunks[x][y] = chunk;
+            const chunkIndex = y * SETTINGS.BOARD_SIZE + x;
+            this.chunks1d[chunkIndex] = chunk;
          }
       }
-
-      return chunks;
    }
 
    public static tickIntervalHasPassed(intervalSeconds: number): boolean {
@@ -229,55 +231,71 @@ abstract class Board {
       }
    }
 
-   private static collisionChunkGroups: Record<number, Array<GameObject>> = {};
-
    public static updateGameObjects(): void {
-      this.collisionChunkGroups = {};
-
       for (const gameObject of this.gameObjects) {
+         const positionXBeforeUpdate = gameObject.position.x;
+         const positionYBeforeUpdate = gameObject.position.y;
+
          gameObject.tick();
-
-         gameObject.calculateBoundingVolume();
-         for (const chunk of gameObject.boundingChunks) {
-            const chunkIndex = chunk.y * SETTINGS.BOARD_SIZE + chunk.x;
-            if (!this.collisionChunkGroups.hasOwnProperty(chunkIndex)) {
-               this.collisionChunkGroups[chunkIndex] = new Array<GameObject>();
-            }
-            this.collisionChunkGroups[chunkIndex].push(gameObject);
-         }
-
-         // Flesh sword AI
-         if (gameObject.i === "droppedItem" && gameObject.item.type === ItemType.flesh_sword) {
-            runFleshSwordAI(gameObject);
+      
+         if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
+            gameObject.positionIsDirty = true;
          }
       }
    }
 
-   public static resolveCollisions(): void {
-      for (const gameObject of this.gameObjects) {
-         gameObject.resolveWallTileCollisions();
-         gameObject.resolveWallCollisions();
-         gameObject.updateTile();
+   // Note: the two following functions are separate for profiling purposes
 
-         gameObject.previousCollidingObjects = gameObject.collidingObjects;
-         gameObject.collidingObjects = new Set();
-      }
-
-      for (const gameObjectsInChunk of Object.values(this.collisionChunkGroups)) {
-         for (let i = 0; i <= gameObjectsInChunk.length - 2; i++) {
-            const gameObject1 = gameObjectsInChunk[i];
-            for (let j = i + 1; j <= gameObjectsInChunk.length - 1; j++) {
-               const gameObject2 = gameObjectsInChunk[j];
+   public static resolveGameObjectCollisions(): void {
+      for (const chunk of this.chunks1d) {
+         for (let i = 0; i <= chunk.gameObjects.length - 2; i++) {
+            const gameObject1 = chunk.gameObjects[i];
+            for (let j = i + 1; j <= chunk.gameObjects.length - 1; j++) {
+               const gameObject2 = chunk.gameObjects[j];
 
                if (!gameObject1.collidingObjects.has(gameObject2) && gameObject1.isColliding(gameObject2)) {
                   gameObject1.collide(gameObject2);
                   gameObject2.collide(gameObject1);
-
-                  gameObject1.collidingObjects.add(gameObject2);
-                  gameObject2.collidingObjects.add(gameObject1);
                }
             }
          }
+      }
+   }
+
+   public static resolveWallCollisions(): void {
+      for (const gameObject of this.gameObjects) {
+         if (gameObject.positionIsDirty) {
+            gameObject.updateHitboxesAndBoundingArea();
+            gameObject.updateContainingChunks();
+
+            let positionXBeforeUpdate = gameObject.position.x;
+            let positionYBeforeUpdate = gameObject.position.y;
+   
+            gameObject.resolveWallTileCollisions();
+         
+            if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
+               gameObject.updateHitboxesAndBoundingArea();
+               gameObject.updateContainingChunks();
+            }
+
+            positionXBeforeUpdate = gameObject.position.x;
+            positionYBeforeUpdate = gameObject.position.y;
+   
+            gameObject.resolveWallCollisions();
+         
+            if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
+               gameObject.updateHitboxesAndBoundingArea();
+               gameObject.updateContainingChunks();
+            }
+
+            // @Incomplete: Should this go here?
+            gameObject.updateTile();
+
+            gameObject.positionIsDirty = false;
+         }
+
+         gameObject.previousCollidingObjects = gameObject.collidingObjects;
+         gameObject.collidingObjects = new Set();
       }
    }
 
@@ -290,11 +308,11 @@ abstract class Board {
    public static popTileUpdates(): ReadonlyArray<ServerTileUpdateData> {
       // Generate the tile updates array
       const tileUpdates = new Array<ServerTileUpdateData>();
-      for (const [x, y] of this.tileUpdateCoordinates) {
-         const tile = this.getTile(x, y);
+      for (const tileCoordinates of this.tileUpdateCoordinates) {
+         const tile = this.getTile(tileCoordinates[0], tileCoordinates[1]);
          tileUpdates.push({
-            x: x,
-            y: y,
+            x: tileCoordinates[0],
+            y: tileCoordinates[1],
             type: tile.type,
             isWall: tile.isWall
          });
@@ -307,15 +325,12 @@ abstract class Board {
    }
 
    public static updateTiles(): void {
-      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            const tileX = chunkX * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
-            const tileY = chunkY * SETTINGS.CHUNK_SIZE + randInt(0, SETTINGS.CHUNK_SIZE - 1);
-
-            const tile = this.getTile(tileX, tileY);
-            if (tile.type === "grass") {
-               attemptToSpreadGrassTile(tile);
-            }
+      for (let i = 0; i < Board.NUM_TICKED_TILES; i++) {
+         const tileX = Math.floor(Math.random() * SETTINGS.BOARD_DIMENSIONS);
+         const tileY = Math.floor(Math.random() * SETTINGS.BOARD_DIMENSIONS);
+         const tile = this.getTile(tileX, tileY);
+         if (tile.type === TileType.grass) {
+            attemptToSpreadGrassTile(tile);
          }
       }
    }
@@ -344,7 +359,7 @@ abstract class Board {
    }
 
    private static addGameObjectToBoard(gameObject: GameObject): void {
-      gameObject.updateHitboxes();
+      gameObject.updateHitboxesAndBoundingArea();
       gameObject.updateContainingChunks();
 
       this.gameObjects.add(gameObject);
@@ -378,13 +393,10 @@ abstract class Board {
    }
 
    public static ageItems(): void {
-      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            const chunk = this.getChunk(chunkX, chunkY);
-            for (const droppedItem of chunk.getDroppedItems()) {
-               droppedItem.ageItem();
-            }
-         }  
+      for (const chunk of this.chunks1d) {
+         for (const droppedItem of chunk.droppedItems) {
+            droppedItem.ageItem();
+         }
       }
    }
 
@@ -411,10 +423,10 @@ abstract class Board {
             const chunk = this.getChunk(chunkX, chunkY);
 
             // Check if it is in the chunk's game objects
-            if (chunk.getGameObjects().has(gameObject)) return true;
+            if (chunk.gameObjects.indexOf(gameObject) !== -1) return true;
 
             // If the game object is an entity, check if it is in the chunk's entities
-            if (gameObject.i === "entity" && chunk.getEntities().has(gameObject)) return true;
+            if (gameObject.i === "entity" && chunk.entities.has(gameObject)) return true;
          }
       }
 
@@ -434,7 +446,7 @@ abstract class Board {
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
-            for (const entity of chunk.getEntities()) {
+            for (const entity of chunk.entities) {
                if (checkedEntities.has(entity)) continue;
                
                const distance = position.calculateDistanceBetween(entity.position);
@@ -450,23 +462,25 @@ abstract class Board {
       return minDistance;
    }
 
-   public static getEntitiesAtPosition(position: Point): Set<Entity> {
-      if (!this.isInBoard(position)) {
+   public static getEntitiesAtPosition(x: number, y: number): Set<Entity> {
+      if (!this.positionIsInBoard(x, y)) {
          throw new Error("Position isn't in the board");
       }
       
+      // @Speed: Avoid creating a new hitbox every call
       const testHitbox = new CircularHitbox();
-      testHitbox.setHitboxInfo(1);
-      testHitbox.setPosition(position);
-      testHitbox.updateHitboxBounds();
+      testHitbox.radius = 1;
+      testHitbox.position.x = x;
+      testHitbox.position.y = y;
+      testHitbox.updateHitboxBounds(0);
 
-      const chunkX = Math.floor(position.x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-      const chunkY = Math.floor(position.y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkX = Math.floor(x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkY = Math.floor(y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
 
       const entities = new Set<Entity>();
       
       const chunk = this.getChunk(chunkX, chunkY);
-      entityLoop: for (const entity of chunk.getEntities()) {
+      entityLoop: for (const entity of chunk.entities) {
          for (const hitbox of entity.hitboxes) {
             if (testHitbox.isColliding(hitbox)) {
                entities.add(entity);
@@ -524,7 +538,7 @@ abstract class Board {
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
-            for (const entity of chunk.getEntities()) {
+            for (const entity of chunk.entities) {
                if (checkedEntities.has(entity)) continue;
                
                const distance = position.calculateDistanceBetween(entity.position);

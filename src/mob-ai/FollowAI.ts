@@ -54,18 +54,21 @@ class FollowAI extends AI<"follow"> implements HerdAIParams {
 
          if (distanceFromTarget > this.minDistanceFromFollowTarget) {
             // Follow the target if far away enough
-            this.mob.acceleration = new Vector(this.acceleration, dir);
+            this.mob.acceleration.x = this.acceleration * Math.sin(dir);
+            this.mob.acceleration.y = this.acceleration * Math.cos(dir);
             this.mob.terminalVelocity = this.terminalVelocity;
          } else {
             // If too close to the target, don't move any closer
-            this.mob.acceleration = null;
+            this.mob.acceleration.x = 0;
+            this.mob.acceleration.y = 0;
          }
 
          // Always stare at the target
          this.mob.rotation = dir;
       } else {
          // If has no target, don't move
-         this.mob.acceleration = null;
+         this.mob.acceleration.x = 0;
+         this.mob.acceleration.y = 0;
       }
    }
 

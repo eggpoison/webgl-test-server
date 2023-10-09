@@ -27,7 +27,7 @@ class Barrel extends Entity {
 
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Barrel.SIZE / 2);
+      hitbox.radius = Barrel.SIZE / 2;
       this.addHitbox(hitbox);
 
       inventoryComponent.createNewInventory("inventory", Barrel.INVENTORY_WIDTH, Barrel.INVENTORY_HEIGHT, false);

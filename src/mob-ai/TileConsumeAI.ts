@@ -45,7 +45,8 @@ class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
          this.grazeTimer = this.tileTargets.get(this.mob.tile.type)!.grazeTime;
       }
 
-      this.mob.acceleration = null;
+      this.mob.acceleration.x = 0;
+      this.mob.acceleration.y = 0;
    }
 
    public tick(): void {

@@ -51,7 +51,8 @@ class EscapeAI extends AI<"escape"> implements EscapeAIParams {
 
       // Run away from the attacker
       const direction = this.mob.position.calculateAngleBetween(this.attacker.position) + Math.PI;
-      this.mob.acceleration = new Vector(this.acceleration, direction);
+      this.mob.acceleration.x = this.acceleration * Math.sin(direction);
+      this.mob.acceleration.y = this.acceleration * Math.cos(direction);
       this.mob.terminalVelocity = this.terminalVelocity;
       this.mob.rotation = direction;
    }

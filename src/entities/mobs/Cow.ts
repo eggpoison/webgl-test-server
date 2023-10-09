@@ -1,4 +1,4 @@
-import { CowSpecies, ItemType, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { CowSpecies, ItemType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -71,8 +71,8 @@ class Cow extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          tileTargets: new Map([
-            ["grass", {
-               resultingTileType: "dirt",
+            [TileType.grass, {
+               resultingTileType: TileType.dirt,
                foodUnits: 100,
                grazeTime: 5,
                healAmount: 3

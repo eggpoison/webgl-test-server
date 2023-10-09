@@ -29,7 +29,7 @@ class Player extends TribeMember {
       super(position, "player", 0, TribeType.plainspeople);
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(32);
+      hitbox.radius = 32;
       this.addHitbox(hitbox);
 
       const inventoryComponent = this.getComponent("inventory")!;
@@ -197,7 +197,8 @@ class Player extends TribeMember {
       const heldItemInventory = inventoryComponent.getInventory("heldItemSlot");
       if (heldItemInventory.itemSlots.hasOwnProperty(1)) {
          const dropPosition = this.position.copy();
-         dropPosition.add(new Vector(Player.ITEM_THROW_OFFSET, throwDirection).convertToPoint());
+         dropPosition.x += Player.ITEM_THROW_OFFSET * Math.sin(throwDirection);
+         dropPosition.y += Player.ITEM_THROW_OFFSET * Math.cos(throwDirection);
 
          // Create the dropped item
          const heldItem = heldItemInventory.itemSlots[1];
@@ -206,8 +207,9 @@ class Player extends TribeMember {
          // Add a pickup cooldown so the item isn't picked up immediately
          droppedItem.addPlayerPickupCooldown(this.id, Player.THROWN_ITEM_PICKUP_COOLDOWN);
 
-         const throwVector = new Vector(Player.ITEM_THROW_FORCE, throwDirection);
-         droppedItem.addVelocity(throwVector);
+         // Throw the dropped item away from the player
+         droppedItem.velocity.x += Player.ITEM_THROW_FORCE * Math.sin(throwDirection);
+         droppedItem.velocity.y += Player.ITEM_THROW_FORCE * Math.cos(throwDirection);
          
          inventoryComponent.removeItemFromInventory("heldItemSlot", 1);
       }

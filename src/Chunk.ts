@@ -12,11 +12,11 @@ export interface RiverSteppingStone {
 
 class Chunk {
    /** Stores all game objects inside the chunk */
-   private readonly gameObjects = new Set<GameObject>();
+   public readonly gameObjects = new Array<GameObject>();
    
-   private readonly entities = new Set<Entity>();
-   private readonly droppedItems = new Set<DroppedItem>();
-   private readonly projectiles = new Set<Projectile>();
+   public readonly entities = new Set<Entity>();
+   public readonly droppedItems = new Set<DroppedItem>();
+   public readonly projectiles = new Set<Projectile>();
 
    public readonly riverSteppingStones = new Array<RiverSteppingStone>();
 
@@ -29,7 +29,7 @@ class Chunk {
    }
 
    public addGameObject(gameObject: GameObject): void {
-      this.gameObjects.add(gameObject);
+      this.gameObjects.push(gameObject);
 
       switch (gameObject.i) {
          case "entity": {
@@ -47,7 +47,10 @@ class Chunk {
    }
 
    public removeGameObject(gameObject: GameObject): void {
-      this.gameObjects.delete(gameObject);
+      const idx = this.gameObjects.indexOf(gameObject);
+      if (idx !== -1) {
+         this.gameObjects.splice(idx, 1);
+      }
 
       switch (gameObject.i) {
          case "entity": {
@@ -62,22 +65,6 @@ class Chunk {
             this.projectiles.delete(gameObject);
          }
       }
-   }
-
-   public getGameObjects(): Set<GameObject> {
-      return this.gameObjects;
-   }
-
-   public getEntities(): Set<Entity> {
-      return this.entities;
-   }
-
-   public getDroppedItems(): Set<DroppedItem> {
-      return this.droppedItems;
-   }
-
-   public getProjectiles(): Set<Projectile> {
-      return this.projectiles;
    }
 
    public addRiverSteppingStone(steppingStoneData: RiverSteppingStoneData): void {

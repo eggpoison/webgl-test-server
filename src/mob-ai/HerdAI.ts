@@ -235,7 +235,8 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
 
    public tick(): void {
       this.mob.rotation += this.angularVelocity;
-      this.mob.acceleration = new Vector(this.acceleration, this.mob.rotation);
+      this.mob.acceleration.x = this.acceleration * Math.sin(this.mob.rotation);
+      this.mob.acceleration.y = this.acceleration * Math.cos(this.mob.rotation);
       this.mob.terminalVelocity = this.terminalVelocity;
    }
 

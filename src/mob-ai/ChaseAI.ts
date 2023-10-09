@@ -1,4 +1,4 @@
-import { GameObjectDebugData, SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -56,14 +56,16 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
          const stopDistance = this.estimateStopDistance();
          const distance = this.mob.position.calculateDistanceBetween(this.target.position);
          if (distance - stopDistance <= this.desiredDistance) {
-            this.mob.acceleration = null;
+            this.mob.acceleration.x = 0;
+            this.mob.acceleration.y = 0;
             this.mob.terminalVelocity = 0;
             return;
          }
       }
 
       // Move to target
-      this.mob.acceleration = new Vector(this.acceleration, this.mob.rotation);
+      this.mob.acceleration.x = this.acceleration * Math.sin(this.mob.rotation);
+      this.mob.acceleration.y = this.acceleration * Math.cos(this.mob.rotation);
       this.mob.terminalVelocity = this.terminalVelocity;
    }
 
@@ -74,8 +76,9 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       }
 
       // Estimate time it will take for the entity to stop
-      const stopTime = Math.pow(this.mob.velocity.magnitude, 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
-      const stopDistance = (Math.pow(stopTime, 2) + stopTime) * this.mob.velocity.magnitude;
+      const velocityMagnitude = this.mob.velocity.length();
+      const stopTime = Math.pow(velocityMagnitude, 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
+      const stopDistance = (Math.pow(stopTime, 2) + stopTime) * velocityMagnitude;
       return stopDistance;
    }
 
@@ -120,12 +123,15 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       if (typeof this.desiredDistance !== "undefined" && this.mob.velocity !== null) {
          const stopDistance = this.estimateStopDistance();
 
-         const stopPosition = this.mob.position.copy();
-         const offset = new Vector(stopDistance, this.mob.velocity.direction).convertToPoint();
-         stopPosition.add(offset);
+         const velocityLength = this.mob.velocity.length();
+         const offsetX = this.mob.velocity.x / velocityLength * stopDistance;
+         const offsetY = this.mob.velocity.y / velocityLength * stopDistance;
+
+         const stopPositionX = this.mob.position.x + offsetX;
+         const stopPositionY = this.mob.position.y + offsetY;
 
          debugData.lines.push({
-            targetPosition: stopPosition.package(),
+            targetPosition: [stopPositionX, stopPositionY],
             colour: [0, 1, 0.5],
             thickness: 4
          });

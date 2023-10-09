@@ -21,7 +21,7 @@ const getVisibleEntities = (droppedItem: DroppedItem): ReadonlyArray<Entity> => 
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
-         for (const entity of chunk.getEntities()) {
+         for (const entity of chunk.entities) {
             // Don't add existing entities
             if (entitiesInVisionRange.includes(entity)) continue;
 
@@ -85,7 +85,7 @@ const hasReachedTargetPosition = (droppedItem: DroppedItem, targetPosition: Poin
    const relativeTargetPosition = droppedItem.position.copy();
    relativeTargetPosition.subtract(targetPosition);
 
-   const dotProduct = droppedItem.velocity.convertToPoint().calculateDotProduct(relativeTargetPosition);
+   const dotProduct = droppedItem.velocity.calculateDotProduct(relativeTargetPosition);
    return dotProduct > 0;
 }
 
@@ -117,7 +117,8 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
       const angleFromTarget = droppedItem.position.calculateAngleBetween(runTarget.position);
 
       targetPosition = droppedItem.position.copy();
-      targetPosition.add(new Vector(100, angleFromTarget + Math.PI).convertToPoint());
+      // @Speed: Garbage collection
+      targetPosition.add(Point.fromVectorForm(100, angleFromTarget + Math.PI));
       
       const distance = droppedItem.position.calculateDistanceBetween(runTarget.position);
       let dist = distance / FLESH_SWORD_VISION_RANGE;
@@ -175,7 +176,8 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
 
       const moveAngle = directMoveAngle + moveAngleOffset;
       droppedItem.rotation = moveAngle - Math.PI/4;
-      droppedItem.velocity = new Vector(moveSpeed!, moveAngle);
+      droppedItem.velocity.x = moveSpeed! * Math.sin(moveAngle);
+      droppedItem.velocity.y = moveSpeed! * Math.cos(moveAngle);
    }
 }
 

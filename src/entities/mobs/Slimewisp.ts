@@ -29,9 +29,9 @@ class Slimewisp extends Mob {
          wanderRate: 99999,
          acceleration: 50,
          terminalVelocity: 25,
-         shouldWander: (position: Point): boolean => {
-            const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
-            const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
+         shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
+            const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
+            const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
             const tile = Board.getTile(tileX, tileY);
             return tile.biomeName === "swamp";
          }
@@ -47,7 +47,7 @@ class Slimewisp extends Mob {
       }));
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Slimewisp.RADIUS);
+      hitbox.radius = Slimewisp.RADIUS;
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (entity: Entity): void => {

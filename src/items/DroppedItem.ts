@@ -1,7 +1,8 @@
-import { Point, SETTINGS } from "webgl-test-shared";
+import { ItemType, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./Item";
 import _GameObject, { GameObjectEvents } from "../GameObject";
+import { runFleshSwordAI } from "../flesh-sword-ai";
 
 interface EntityPickupCooldown {
    readonly entityID: number;
@@ -52,6 +53,11 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
          if (playerPickupCooldown.secondsRemaining <= 0) {
             this.entityPickupCooldowns.delete(playerPickupCooldown);
          }
+      }
+
+      // Flesh sword AI
+      if (this.item.type === ItemType.flesh_sword) {
+         runFleshSwordAI(this);
       }
    }
 

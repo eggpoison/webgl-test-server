@@ -1,4 +1,4 @@
-import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, STATUS_EFFECT_MODIFIERS, SlimeOrbData, SlimeSize, lerp, randFloat, randInt } from "webgl-test-shared";
+import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, STATUS_EFFECT_MODIFIERS, SlimeOrbData, SlimeSize, TileType, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -118,10 +118,10 @@ class Slime extends Mob {
          acceleration: 60 * speedMultiplier,
          terminalVelocity: 30 * speedMultiplier,
          wanderRate: 0.5,
-         validTileTargets: new Set(["sludge", "slime"]),
-         shouldWander: (position: Point): boolean => {
-            const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
-            const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
+         validTileTargets: [TileType.sludge, TileType.slime],
+         shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
+            const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
+            const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
             const tile = Board.getTile(tileX, tileY);
             return tile.biomeName === "swamp";
          }
@@ -186,7 +186,7 @@ class Slime extends Mob {
       const hitboxRadius = Slime.RADIUSES[this.size];
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(hitboxRadius);
+      hitbox.radius = hitboxRadius;
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
@@ -276,7 +276,7 @@ class Slime extends Mob {
       }
 
       // Heal when standing on slime blocks
-      if (this.tile.type === "slime") {
+      if (this.tile.type === TileType.slime) {
          if (Board.tickIntervalHasPassed(Slime.HEALING_PROC_INTERVAL)) {
             this.getComponent("health")!.heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
          }
@@ -401,7 +401,7 @@ class Slime extends Mob {
 
    protected overrideTileMoveSpeedMultiplier(): number | null {
       // Slimes move at normal speed on slime blocks
-      if (this.tile.type === "slime") {
+      if (this.tile.type === TileType.slime) {
          return 1;
       }
       return null;

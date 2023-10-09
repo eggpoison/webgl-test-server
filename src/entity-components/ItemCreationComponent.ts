@@ -1,4 +1,4 @@
-import { ItemType, Vector } from "webgl-test-shared";
+import { ItemType, Point, Vector } from "webgl-test-shared";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import Entity from "../entities/Entity";
@@ -25,7 +25,8 @@ class ItemCreationComponent extends Component {
             const direction = 2 * Math.PI * Math.random();
 
             const position = this.entity.position.copy();
-            position.add(new Vector(magnitude, direction).convertToPoint());
+            position.x += magnitude * Math.sin(direction);
+            position.y += magnitude * Math.cos(direction);
 
             const item = new Item(itemType, 1);
             new DroppedItem(position, item);

@@ -32,7 +32,7 @@ export type EntitySpawnInfo = {
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "cow",
-      spawnableTiles: ["grass"],
+      spawnableTiles: [TileType.grass],
       spawnRate: 0.01,
       maxDensity: 0.01,
       packSpawningInfo: {
@@ -42,7 +42,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "berry_bush",
-      spawnableTiles: ["grass"],
+      spawnableTiles: [TileType.grass],
       // spawnRate: 0.001,
       // maxDensity: 0.0025
       spawnRate: 0.005,
@@ -50,39 +50,39 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "tree",
-      spawnableTiles: ["grass"],
+      spawnableTiles: [TileType.grass],
       spawnRate: 0.01,
       maxDensity: 0.015
    },
    {
       entityType: "tombstone",
-      spawnableTiles: ["grass"],
+      spawnableTiles: [TileType.grass],
       spawnRate: 0.01,
       maxDensity: 0.003,
       spawnTimeRanges: [[0, 3], [19, 24]] // 7pm to 3am
    },
    {
       entityType: "boulder",
-      spawnableTiles: ["rock"],
+      spawnableTiles: [TileType.rock],
       spawnRate: 0.005,
       maxDensity: 0.025
    },
    {
       entityType: "cactus",
-      spawnableTiles: ["sand"],
+      spawnableTiles: [TileType.sand],
       spawnRate: 0.005,
       maxDensity: 0.03
    },
    {
       entityType: "yeti",
-      spawnableTiles: ["snow"],
+      spawnableTiles: [TileType.snow],
       spawnRate: 0.004,
       maxDensity: 0.008,
       spawnValidationFunction: Yeti.spawnValidationFunction
    },
    {
       entityType: "ice_spikes",
-      spawnableTiles: ["ice", "permafrost"],
+      spawnableTiles: [TileType.ice, TileType.permafrost],
       spawnRate: 0.015,
       maxDensity: 0.06,
       // spawnRate: 0.015 * 50,
@@ -92,19 +92,19 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: "slimewisp",
       // @Temporary
       // spawnableTiles: ["slime"],
-      spawnableTiles: ["slime", "sludge"],
+      spawnableTiles: [TileType.slime, TileType.sludge],
       spawnRate: 0.2,
       maxDensity: 0.3
    },
    {
       entityType: "krumblid",
-      spawnableTiles: ["sand"],
+      spawnableTiles: [TileType.sand],
       spawnRate: 0.005,
       maxDensity: 0.015
    },
    {
       entityType: "frozen_yeti",
-      spawnableTiles: ["frost"],
+      spawnableTiles: [TileType.frost],
       spawnRate: 0.004,
       maxDensity: 0.008
    }
@@ -202,7 +202,7 @@ export function spawnPositionIsValid(position: Point): boolean {
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
-         for (const entity of chunk.getEntities()) {
+         for (const entity of chunk.entities) {
             if (checkedEntities.has(entity)) continue;
             
             const distance = position.calculateDistanceBetween(entity.position);
@@ -237,16 +237,21 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
 
 export function runSpawnAttempt(): void {
    // if(1+1==2)return;
-   mainLoop: for (const spawnInfo of SPAWN_INFO_RECORD) {
-      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            if (spawnConditionsAreMet(spawnInfo)) {
-               if (Math.random() < spawnInfo.spawnRate / SETTINGS.TPS) {
-                  runSpawnEvent(spawnInfo);
-               }
-            } else {
-               continue mainLoop;
-            }
+   for (const spawnInfo of SPAWN_INFO_RECORD) {
+      if (!spawnConditionsAreMet(spawnInfo)) {
+         continue;
+      }
+
+      let numSpawnEvents = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * spawnInfo.spawnRate / SETTINGS.TPS;
+      if (Math.random() < numSpawnEvents % 1) {
+         numSpawnEvents = Math.ceil(numSpawnEvents);
+      } else {
+         numSpawnEvents = Math.floor(numSpawnEvents);
+      }
+      for (let i = 0; i < numSpawnEvents; i++) {
+         runSpawnEvent(spawnInfo);
+         if (!spawnConditionsAreMet(spawnInfo)) {
+            break;
          }
       }
    }

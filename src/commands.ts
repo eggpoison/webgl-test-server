@@ -96,8 +96,11 @@ const summonEntities = (username: string, unguardedEntityType: string, amount: n
    
    for (let i = 0; i < amount; i++) {
       const spawnPosition = player.position.copy();
-      const offset = new Vector(ENTITY_SPAWN_RANGE * (Math.random() + 1) / 2, 2 * Math.PI * Math.random()).convertToPoint();
-      spawnPosition.add(offset);
+      
+      const spawnOffsetMagnitude = ENTITY_SPAWN_RANGE * (Math.random() + 1) / 2;
+      const spawnOffsetDirection = 2 * Math.PI * Math.random();
+      spawnPosition.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
+      spawnPosition.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
 
       new entityClass(spawnPosition);
    }

@@ -20,7 +20,7 @@ class Boulder extends Entity {
       }, "boulder");
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Boulder.RADIUS);
+      hitbox.radius = Boulder.RADIUS;
       this.addHitbox(hitbox);
 
       this.boulderType = Math.floor(Math.random() * 2);

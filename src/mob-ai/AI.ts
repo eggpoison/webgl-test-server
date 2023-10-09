@@ -45,7 +45,8 @@ abstract class AI<T extends AIType> implements BaseAIParams<T> {
       // If the entity has a reached its target position, stop moving
       if (this.hasReachedTargetPosition()) {
          this.targetPosition = null;
-         this.mob.acceleration = null;
+         this.mob.acceleration.x = 0;
+         this.mob.acceleration.y = 0;
       }
    }
 
@@ -86,7 +87,7 @@ abstract class AI<T extends AIType> implements BaseAIParams<T> {
       const relativeTargetPosition = this.mob.position.copy();
       relativeTargetPosition.subtract(this.targetPosition);
 
-      const dotProduct = this.mob.velocity.convertToPoint().calculateDotProduct(relativeTargetPosition);
+      const dotProduct = this.mob.velocity.calculateDotProduct(relativeTargetPosition);
       return dotProduct > 0;
    }
 
@@ -94,7 +95,8 @@ abstract class AI<T extends AIType> implements BaseAIParams<T> {
       const _direction = typeof direction === "undefined" ? this.mob.position.calculateAngleBetween(targetPosition) : direction;
       
       this.targetPosition = targetPosition;
-      this.mob.acceleration = new Vector(acceleration, _direction);
+      this.mob.acceleration.x = acceleration * Math.sin(_direction);
+      this.mob.acceleration.y = acceleration * Math.cos(_direction);
       this.mob.terminalVelocity = terminalVelocity;
       this.mob.rotation = _direction;
    }

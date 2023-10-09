@@ -46,7 +46,7 @@ class Yeti extends Mob {
    private static readonly CONTACT_DAMAGE = 3;
    private static readonly CONTACT_KNOCKBACK = 200;
 
-   private static readonly YETI_TILES: ReadonlySet<TileType> = new Set(["snow", "ice", "permafrost"]);
+   private static readonly YETI_TILES: ReadonlyArray<TileType> = [TileType.snow, TileType.ice, TileType.permafrost];
    
    /** Minimum number of tiles that can belong to a yeti */
    private static readonly MIN_TERRITORY_SIZE = 50;
@@ -93,7 +93,7 @@ class Yeti extends Mob {
       this.setAIParam("metabolism", 1);
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Yeti.SIZE / 2);
+      hitbox.radius = Yeti.SIZE / 2;
       this.addHitbox(hitbox);
 
       // Snow throw AI
@@ -148,9 +148,9 @@ class Yeti extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          validTileTargets: Yeti.YETI_TILES,
-         shouldWander: (position: Point): boolean => {
-            const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
-            const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
+         shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
+            const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
+            const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
             const tile = Board.getTile(tileX, tileY);
             return this.territory.includes(tile);
          }
@@ -266,15 +266,18 @@ class Yeti extends Mob {
       }
 
       // Kickback
-      this.addVelocity(new Vector(Yeti.SNOW_THROW_KICKBACK_AMOUNT, throwAngle + Math.PI));
+      this.velocity.x += Yeti.SNOW_THROW_KICKBACK_AMOUNT * Math.sin(throwAngle * Math.PI);
+      this.velocity.y += Yeti.SNOW_THROW_KICKBACK_AMOUNT * Math.cos(throwAngle * Math.PI);
    }
 
    private createSnowball(size: SnowballSize, throwAngle: number): void {
       const angle = throwAngle + randFloat(-Yeti.SNOW_THROW_ARC, Yeti.SNOW_THROW_ARC);
       
       const position = this.position.copy();
-      const offset = new Vector(Yeti.SNOW_THROW_OFFSET, angle).convertToPoint();
-      position.add(offset);
+      position.x += Yeti.SNOW_THROW_OFFSET * Math.sin(angle);
+      position.y += Yeti.SNOW_THROW_OFFSET * Math.cos(angle);
+
+      const snowball = new Snowball(position, size);
 
       let velocityMagnitude: number;
       if (size === SnowballSize.small) {
@@ -282,10 +285,8 @@ class Yeti extends Mob {
       } else {
          velocityMagnitude = randFloat(...Yeti.LARGE_SNOWBALL_THROW_SPEED);
       }
-      const velocity = new Vector(velocityMagnitude, angle);
-
-      const snowball = new Snowball(position, size);
-      snowball.velocity = velocity;
+      snowball.velocity.x = velocityMagnitude * Math.sin(angle);
+      snowball.velocity.y = velocityMagnitude * Math.cos(angle);
 
       // Keep track of the snowball
       this.snowballIDs.add(snowball.id);

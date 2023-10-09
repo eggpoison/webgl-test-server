@@ -112,19 +112,33 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 
    for (let dist = 1; dist <= MAX_SEARCH_DIST; dist++) {
       for (let i = 0; i <= dist; i++) {
-         const tileCoords = new Array<[number, number]>();
-
-         tileCoords.push([tileX + i, tileY - dist + i]); // Top right
-         tileCoords.push([tileX + dist - i, tileY + i]); // Bottom right
-         tileCoords.push([tileX - dist + i, tileY + i]); // Bottom left
-         tileCoords.push([tileX - i, tileY - dist + i]); // Top left
-
-         for (const [x, y] of tileCoords) {
-            if (x < 0 || x >= SETTINGS.BOARD_DIMENSIONS || y <= 0 || y >= SETTINGS.BOARD_DIMENSIONS) continue;
-
-            const tile = tileInfoArray[x][y];
-
-            if (tile.biomeName !== tileBiome) return dist - 1;
+         // Top right
+         if (tileX + i >= 0 && tileX + i < SETTINGS.BOARD_DIMENSIONS && tileY - dist + i >= 0 && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS) {
+            const tile = tileInfoArray[tileX + i][tileY - dist + i];
+            if (tile.biomeName !== tileBiome) {
+               return dist - 1;
+            }
+         }
+         // Bottom right
+         if (tileX + dist - i >= 0 && tileX + dist - i < SETTINGS.BOARD_DIMENSIONS && tileY + i >= 0 && tileY + i < SETTINGS.BOARD_DIMENSIONS) {
+            const tile = tileInfoArray[tileX + dist - i][tileY + i];
+            if (tile.biomeName !== tileBiome) {
+               return dist - 1;
+            }
+         }
+         // Bottom left
+         if (tileX - dist + i >= 0 && tileX - dist + i < SETTINGS.BOARD_DIMENSIONS && tileY + i >= 0 && tileY + i < SETTINGS.BOARD_DIMENSIONS) {
+            const tile = tileInfoArray[tileX - dist + i][tileY + i];
+            if (tile.biomeName !== tileBiome) {
+               return dist - 1;
+            }
+         }
+         // Top left
+         if (tileX - i >= 0 && tileX - i < SETTINGS.BOARD_DIMENSIONS && tileY - dist + i >= 0 && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS) {
+            const tile = tileInfoArray[tileX - i][tileY - dist + i];
+            if (tile.biomeName !== tileBiome) {
+               return dist - 1;
+            }
          }
       }
    }
@@ -168,12 +182,8 @@ const tileIsAdjacentToLand = (tileX: number, tileY: number, riverTiles: Readonly
 }
 
 const tileAtOffsetIsWater = (startTileX: number, startTileY: number, direction: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
-   const position = new Point(startTileX + 0.5, startTileY + 0.5);
-   const offset = new Vector(1, direction).convertToPoint();
-   position.add(offset);
-
-   const tileX = Math.floor(position.x);
-   const tileY = Math.floor(position.y);
+   const tileX = Math.floor(startTileX + 0.5 + Math.sin(direction));
+   const tileY = Math.floor(startTileY + 0.5 + Math.cos(direction));
    return tileIsWater(tileX, tileY, riverTiles);
 }
 
@@ -209,19 +219,13 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
          crossingDirection = startTile.flowDirection + directionOffset - Math.PI/2;
       }
 
-      let a1!: number;
-      let b1!: number;
-
       // Calculate distance of crossing
       let currentTileX = startTile.tileX + 0.5;
       let currentTileY = startTile.tileY + 0.5;
       let endTileIsValid = true;
       while (true) {
-         const offset = new Vector(1, crossingDirection).convertToPoint();
-         const newTileX = currentTileX + offset.x;
-         const newTileY = currentTileY + offset.y;
-         a1 = newTileX;
-         b1 = newTileY;
+         const newTileX = currentTileX + Math.sin(crossingDirection);
+         const newTileY = currentTileY + Math.cos(crossingDirection);
 
          if (!Board.tileIsInBoard(newTileX - 0.5, newTileY - 0.5)) {
             endTileIsValid = false;
@@ -350,10 +354,9 @@ function generateTerrain(): TerrainGenerationInfo {
          let x = lerp(minX, maxX, dist);
          let y = lerp(minY, maxY, dist);
 
-         const offset = new Vector(RIVER_CROSSING_WIDTH/2, crossing.direction + Math.PI/2).convertToPoint();
          const offsetMultiplier = randFloat(-1, 1);
-         x += offset.x * offsetMultiplier;
-         y += offset.y * offsetMultiplier;
+         x += RIVER_CROSSING_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
+         y += RIVER_CROSSING_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
          // Make sure the stepping stone would be in the board
          if (!Board.positionIsInBoard(x, y)) {
@@ -396,10 +399,9 @@ function generateTerrain(): TerrainGenerationInfo {
          let x = lerp(minX, maxX, dist);
          let y = lerp(minY, maxY, dist);
 
-         const offset = new Vector(RIVER_CROSSING_WATER_ROCK_WIDTH/2, crossing.direction + Math.PI/2).convertToPoint();
          const offsetMultiplier = randFloat(-1, 1);
-         x += offset.x * offsetMultiplier;
-         y += offset.y * offsetMultiplier;
+         x += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
+         y += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
          if (!Board.positionIsInBoard(x, y)) {
             continue;
@@ -426,11 +428,11 @@ function generateTerrain(): TerrainGenerationInfo {
    // Make an array of tiles from the tile info array
    const tiles = new Array<Array<Tile>>();
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-      tiles[x] = new Array<Tile>();
+      tiles.push(new Array<Tile>());
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          // Create the tile
          const tileInfo = tileInfoArray[x][y] as TileInfo;
-         tiles[x][y] = new Tile(x, y, tileInfo.type, tileInfo.biomeName, tileInfo.isWall);
+         tiles[x].push(new Tile(x, y, tileInfo.type, tileInfo.biomeName, tileInfo.isWall));
       }
    }
 

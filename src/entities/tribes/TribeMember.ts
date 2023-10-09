@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, SwordItemInfo, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffect, SwordItemInfo, TRIBE_INFO_RECORD, TileType, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -18,6 +18,7 @@ import Projectile from "../../Projectile";
 import Workbench from "../Workbench";
 import Campfire from "../Campfire";
 import Furnace from "../Furnace";
+import { getEntitiesInVisionRange } from "../../ai-shared";
 
 const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone", "ice_spikes"];
 const axeDamageableEntities: ReadonlyArray<EntityType> = ["tree"];
@@ -169,8 +170,11 @@ abstract class TribeMember extends Entity {
          for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
             if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
                const position = this.position.copy();
-               const offset = new Vector(TribeMember.DEATH_ITEM_DROP_RANGE * Math.random(), 2 * Math.PI * Math.random()).convertToPoint();
-               position.add(offset);
+
+               const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
+               const spawnOffsetDirection = 2 * Math.PI * Math.random();
+               position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
+               position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
                
                const item = hotbarInventory.itemSlots[itemSlot];
                new DroppedItem(position, item);
@@ -269,7 +273,7 @@ abstract class TribeMember extends Entity {
       // If snow armour is equipped, move at normal speed on snow tiles
       const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.frost_armour) {
-         if (this.tile.type === "snow") {
+         if (this.tile.type === TileType.snow) {
             return 1;
          }
       }
@@ -343,53 +347,10 @@ abstract class TribeMember extends Entity {
    }
 
    protected calculateRadialAttackTargets(attackOffset: number, attackRadius: number): ReadonlyArray<Entity> {
-      const offset = new Vector(attackOffset, this.rotation);
-      const attackPosition = this.position.copy();
-      attackPosition.add(offset.convertToPoint());
 
-      // 
-      // Prepare the test hitbox
-      // 
-
-      const tempHitboxObject = {
-         position: attackPosition,
-         rotation: 0
-      };
-
-      TribeMember.testCircularHitbox.setHitboxInfo(attackRadius);
-
-      TribeMember.testCircularHitbox.setHitboxObject(tempHitboxObject);
-      TribeMember.testCircularHitbox.updatePosition();
-      TribeMember.testCircularHitbox.updateHitboxBounds();
-
-      const minChunkX = Math.max(Math.min(Math.floor((attackPosition.x - attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((attackPosition.x + attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((attackPosition.y - attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((attackPosition.y + attackRadius) / SETTINGS.CHUNK_SIZE / SETTINGS.TILE_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-
-      // Find all attacked entities
-      const attackedEntities = new Array<Entity>();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = Board.getChunk(chunkX, chunkY);
-            for (const entity of chunk.getEntities()) {
-               // Skip entities that are already in the array
-               if (attackedEntities.includes(entity)) continue;
-
-               // Check for any hitboxes within range
-               let isColliding = false;
-               for (const hitbox of entity.hitboxes) {
-                  if (TribeMember.testCircularHitbox.isColliding(hitbox)) {
-                     isColliding = true;
-                     break;
-                  }
-               }
-               if (isColliding) {
-                  attackedEntities.push(entity);
-               }
-            }
-         }
-      }
+      const attackPositionX = this.position.x + attackOffset * Math.sin(this.rotation);
+      const attackPositionY = this.position.y + attackOffset * Math.cos(this.rotation);
+      const attackedEntities = getEntitiesInVisionRange(attackPositionX, attackPositionY, attackRadius);
       
       // Don't attack yourself
       while (true) {
@@ -426,7 +387,7 @@ abstract class TribeMember extends Entity {
       targetEntity.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
 
       if (item !== null && item.type === ItemType.flesh_sword) {
-         targetEntity.applyStatusEffect("poisoned", 3);
+         targetEntity.applyStatusEffect(StatusEffect.poisoned, 3);
       }
 
       this.lastAttackTicks = Board.ticks;
@@ -554,14 +515,13 @@ abstract class TribeMember extends Entity {
 
             const placeInfo = PLACEABLE_ITEM_HITBOX_INFO[item.type];
 
-            // Calculate the position to spawn the placeable entity at
-            // @Speed: Garbage collection
-            const spawnPosition = this.position.copy();
-            const offsetVector = new Vector(SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset, this.rotation);
-            spawnPosition.add(offsetVector.convertToPoint());
+            const spawnPositionX = this.position.x + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.sin(this.rotation);
+            const spawnPositionY = this.position.y + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.cos(this.rotation);
 
             // Make sure the placeable item can be placed
-            if (!this.canBePlaced(spawnPosition, this.rotation, item.type)) return;
+            if (!this.canBePlaced(spawnPositionX, spawnPositionY, this.rotation, item.type)) return;
+            
+            const spawnPosition = new Point(spawnPositionX, spawnPositionY);
             
             // Spawn the placeable entity
             let placedEntity: Entity;
@@ -622,7 +582,8 @@ abstract class TribeMember extends Entity {
             spawnPosition.add(offset);
             
             const arrowProjectile = new Projectile(spawnPosition, ProjectileType.woodenArrow, 1.5);
-            arrowProjectile.velocity = new Vector(itemInfo.projectileSpeed, this.rotation);
+            arrowProjectile.velocity.x = itemInfo.projectileSpeed * Math.sin(this.rotation);
+            arrowProjectile.velocity.y = itemInfo.projectileSpeed * Math.cos(this.rotation);
             arrowProjectile.rotation = this.rotation;
 
             const hitbox = new RectangularHitbox();
@@ -656,11 +617,18 @@ abstract class TribeMember extends Entity {
             // @Cleanup This is a shitty way of doing this (ideally shouldn't attach a listener), and can destroy the arrow too early
             // Also doesn't account for wall tiles
             arrowProjectile.tickCallback = (): void => {
-               if (arrowProjectile.velocity !== null) {
-                  arrowProjectile.velocity.magnitude -= itemInfo.airResistance / SETTINGS.TPS;
-                  if (arrowProjectile.velocity.magnitude <= 0) {
-                     arrowProjectile.velocity = null;
-                  }
+               // 
+               // Air resistance
+               // 
+
+               const xSignBefore = Math.sign(arrowProjectile.velocity.x);
+               
+               const velocityLength = arrowProjectile.velocity.length();
+               arrowProjectile.velocity.x = (velocityLength - 3) * arrowProjectile.velocity.x / velocityLength;
+               arrowProjectile.velocity.y = (velocityLength - 3) * arrowProjectile.velocity.y / velocityLength;
+               if (Math.sign(arrowProjectile.velocity.x) !== xSignBefore) {
+                  arrowProjectile.velocity.x = 0;
+                  arrowProjectile.velocity.y = 0;
                }
                
                // Destroy the arrow if it reaches the border
@@ -679,19 +647,14 @@ abstract class TribeMember extends Entity {
       return !this.bowCooldowns.hasOwnProperty(itemSlot);
    }
 
-   private canBePlaced(spawnPosition: Point, rotation: number, itemType: PlaceableItemType): boolean {
+   private canBePlaced(spawnPositionX: number, spawnPositionY: number, placeRotation: number, itemType: PlaceableItemType): boolean {
       // Update the place test hitbox to match the placeable item's info
       const testHitboxInfo = PLACEABLE_ITEM_HITBOX_INFO[itemType]!
-
-      const tempHitboxObject = {
-         position: spawnPosition,
-         rotation: rotation
-      };
 
       let placeTestHitbox: Hitbox;
       if (testHitboxInfo.type === PlaceableItemHitboxType.circular) {
          // Circular
-         TribeMember.testCircularHitbox.setHitboxInfo(testHitboxInfo.radius);
+         TribeMember.testCircularHitbox.radius = testHitboxInfo.radius;
          placeTestHitbox = TribeMember.testCircularHitbox;
       } else {
          // Rectangular
@@ -699,9 +662,9 @@ abstract class TribeMember extends Entity {
          placeTestHitbox = TribeMember.testRectangularHitbox;
       }
 
-      placeTestHitbox.setHitboxObject(tempHitboxObject);
-      placeTestHitbox.updatePosition();
-      placeTestHitbox.updateHitboxBounds();
+      placeTestHitbox.position.x = spawnPositionX;
+      placeTestHitbox.position.y = spawnPositionY;
+      placeTestHitbox.updateHitboxBounds(placeRotation);
 
       const minChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
@@ -713,7 +676,7 @@ abstract class TribeMember extends Entity {
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
-            for (const entity of chunk.getEntities()) {
+            for (const entity of chunk.entities) {
                if (!previouslyCheckedEntityIDs.has(entity.id)) {
                   for (const hitbox of entity.hitboxes) {   
                      if (placeTestHitbox.isColliding(hitbox)) {

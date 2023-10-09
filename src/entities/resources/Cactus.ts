@@ -86,7 +86,7 @@ class Cactus extends Entity {
       this.rotation = 2 * Math.PI * Math.random();
 
       const hitbox = new CircularHitbox();
-      hitbox.setHitboxInfo(Cactus.RADIUS - Cactus.HITBOX_PADDING);
+      hitbox.radius = Cactus.RADIUS - Cactus.HITBOX_PADDING;
       this.addHitbox(hitbox);
 
       this.flowers = generateRandomFlowers();
@@ -94,10 +94,9 @@ class Cactus extends Entity {
 
       // Create hitboxes for all the cactus limbs
       for (const limb of this.limbs) {
-         const offset = new Vector(37, limb.direction).convertToPoint();
-         
          const hitbox = new CircularHitbox();
-         hitbox.setHitboxInfo(18, offset);
+         hitbox.radius = 18;
+         hitbox.offset = Point.fromVectorForm(37, limb.direction);
          this.addHitbox(hitbox);
       }
 
