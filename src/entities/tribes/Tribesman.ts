@@ -10,7 +10,7 @@ import { serializeInventoryData } from "../../entity-components/InventoryCompone
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { GameObject } from "../../GameObject";
 import { getPositionRadialTiles } from "../../ai-shared";
-import Tile from "../../tiles/Tile";
+import Tile from "../../Tile";
 import Player from "./Player";
 
 /*

@@ -1,11 +1,11 @@
-import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType, SETTINGS } from "webgl-test-shared";
+import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
 import { GameObject } from "../GameObject";
-import Board from "../Board";
+import { MobAIType } from "../mob-ai-types";
 
-interface ItemConsumeAIParams extends BaseAIParams<"itemConsume"> {
+interface ItemConsumeAIParams extends BaseAIParams<MobAIType.itemConsume> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Amount of food units used every second */
@@ -13,8 +13,8 @@ interface ItemConsumeAIParams extends BaseAIParams<"itemConsume"> {
    readonly itemTargets: ReadonlySet<ItemType>;
 }
 
-class ItemConsumeAI extends AI<"itemConsume"> implements ItemConsumeAIParams {
-   public readonly type = "itemConsume";
+class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIParams {
+   public readonly type = MobAIType.itemConsume;
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;

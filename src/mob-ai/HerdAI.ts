@@ -2,6 +2,7 @@ import { curveWeight, EntityType, Point, SETTINGS, Vector } from "webgl-test-sha
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
+import { MobAIType } from "../mob-ai-types";
 
 type InfluenceFalloff = {
    /** Minimum number of entities to begin the falloff */
@@ -10,7 +11,7 @@ type InfluenceFalloff = {
    readonly duration: number;
 }
 
-interface HerdAIParams extends BaseAIParams<"herd"> {
+interface HerdAIParams extends BaseAIParams<MobAIType.herd> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Minimum distance from other members to try and maintain */
@@ -30,11 +31,11 @@ interface HerdAIParams extends BaseAIParams<"herd"> {
    readonly cohesionInfluence: number;
 }
 
-class HerdAI extends AI<"herd"> implements HerdAIParams {
+class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
    private static readonly WALL_AVOIDANCE_MULTIPLIER = 1.5;
    private static readonly TURN_CONSTANT = Math.PI / SETTINGS.TPS;
 
-   public readonly type = "herd";
+   public readonly type = MobAIType.herd;
    
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
@@ -47,9 +48,6 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
    public readonly alignmentInfluence: number;
    public readonly cohesionInfluence: number;
    private readonly wallAvoidanceInfluence: number;
-
-   /** Used to further distinguish between herd members */
-   public herdMemberHash?: number;
  
    /** Amount of radians to add to the mob's rotation each tick */
    private angularVelocity = 0;
@@ -84,6 +82,7 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
          let weight = 1 - distanceToClosestHerdMember / this.minSeperationDistance;
          weight = curveWeight(weight, 2, 0.2);
          
+         // @Speed: Garbage collection
          const distanceVector = closestHerdMember.position.convertToVector(this.mob.position);
 
          const clockwiseDist = (distanceVector.direction - this.mob.rotation + Math.PI * 2) % (Math.PI * 2);
@@ -253,17 +252,11 @@ class HerdAI extends AI<"herd"> implements HerdAIParams {
       return [closestEntity, minDistance];
    }
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
+   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
       const filteredEntities = new Set<Entity>();
       for (const entity of visibleEntities) {
-         if (this.validHerdMembers.has(entity.type as any)) {
-            if (typeof this.herdMemberHash !== "undefined" && entity.type === this.mob.type) {
-               const herdAI = (entity as Mob).getAI("herd")! as HerdAI;
-               if (this.herdMemberHash !== herdAI.herdMemberHash) {
-                  continue;
-               }
-            }
-
+         // Make sure the entity has a valid entity type and a valid herd member hash
+         if (this.validHerdMembers.has(entity.type) && (this.mob.herdMemberHash === -1 || (entity.type === this.mob.type && (entity as Mob).herdMemberHash === this.mob.herdMemberHash))) {
             filteredEntities.add(entity);
          }
       }

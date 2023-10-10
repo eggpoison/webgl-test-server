@@ -1,9 +1,10 @@
-import { EntityType, GameObjectDebugData, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { EntityType, GameObjectDebugData, randItem, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
+import { MobAIType } from "../mob-ai-types";
 
-interface HerdAIParams extends BaseAIParams<"follow"> {
+interface HerdAIParams extends BaseAIParams<MobAIType.follow> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Maximum distance to keep from the target */
@@ -18,8 +19,8 @@ interface HerdAIParams extends BaseAIParams<"follow"> {
    readonly followableEntityTypes: ReadonlySet<EntityType>;
 }
 
-class FollowAI extends AI<"follow"> implements HerdAIParams {
-   public readonly type = "follow";
+class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
+   public readonly type = MobAIType.follow;
    
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
@@ -88,12 +89,12 @@ class FollowAI extends AI<"follow"> implements HerdAIParams {
       }
    }
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
-      const filteredEntities = new Set<Entity>(visibleEntities);
+   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
+      const filteredEntities = new Set<Entity>();
 
-      for (const entity of filteredEntities) {
-         if (!this.followableEntityTypes.has(entity.type)) {
-            filteredEntities.delete(entity);
+      for (const entity of visibleEntities) {
+         if (this.followableEntityTypes.has(entity.type)) {
+            filteredEntities.add(entity);
          }
       }
 

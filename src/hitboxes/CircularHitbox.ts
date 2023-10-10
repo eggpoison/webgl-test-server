@@ -23,6 +23,7 @@ class CircularHitbox extends Hitbox {
    }
 
    public isColliding(otherHitbox: Hitbox): boolean {
+      // @Speed: This check is slow
       if (otherHitbox.hasOwnProperty("radius")) {
          // Circular hitbox
          return circlesDoIntersect(this.position, this.radius, otherHitbox.position, (otherHitbox as CircularHitbox).radius);

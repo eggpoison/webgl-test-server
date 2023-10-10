@@ -5,7 +5,7 @@ import { getTilesOfBiome } from "./census";
 import Board from "./Board";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Item from "./items/Item";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 
 const ENTITY_SPAWN_RANGE = 200;
 
@@ -96,7 +96,7 @@ const summonEntities = (username: string, unguardedEntityType: string, amount: n
    
    for (let i = 0; i < amount; i++) {
       const spawnPosition = player.position.copy();
-      
+
       const spawnOffsetMagnitude = ENTITY_SPAWN_RANGE * (Math.random() + 1) / 2;
       const spawnOffsetDirection = 2 * Math.PI * Math.random();
       spawnPosition.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);

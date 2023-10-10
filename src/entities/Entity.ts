@@ -76,9 +76,16 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    /** Called after every physics update. */
    public tick(): void {
+      // @Speed @Incomplete: This will not work correctly if something the entity does results in an entity being healed
+      const healthComponent = this.getComponent("health");
+      if (healthComponent !== null) {
+         healthComponent.amountHealedSinceLastPacketSend = 0;
+      }
+      
       super.tick();
 
       // Tick components
+      // @Speed: This is sorta slow, perhaps try making just one massive container storing all tickable components???
       for (const component of this.tickableComponents) {
          component.tick!();
       }
@@ -108,7 +115,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
       if (this.hasStatusEffect(StatusEffect.burning)) {
          // If the entity is in a river, clear the fire effect
-         if (this.isInRiver()) {
+         if (this.checkIsInRiver()) {
             this.clearStatusEffect(StatusEffect.burning);
          } else {
             // Fire tick
@@ -146,7 +153,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
    private bb(): void {
       if (this.hasStatusEffect(StatusEffect.burning)) {
          // If the entity is in a river, clear the fire effect
-         if (this.isInRiver()) {
+         if (this.checkIsInRiver()) {
             this.clearStatusEffect(StatusEffect.burning);
          } else {
             // Fire tick

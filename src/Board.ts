@@ -1,16 +1,26 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, randInt } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, randInt, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import generateTerrain from "./terrain-generation/terrain-generation";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import { removeEntityFromCensus } from "./census";
+import { getTilesOfType, removeEntityFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
-import { attemptToSpreadGrassTile } from "./tiles/grass-tile-spreading";
+
+const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
+   [-1, -1],
+   [0, -1],
+   [1, -1],
+   [-1, 0],
+   [1, 0],
+   [-1, 1],
+   [0, 1],
+   [1, 1],
+];
 
 interface KilledEntityInfo {
    readonly id: number;
@@ -18,9 +28,6 @@ interface KilledEntityInfo {
 }
 
 abstract class Board {
-   /** Average number of random ticks done in a chunk a second */
-   private static readonly NUM_TICKED_TILES = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE / SETTINGS.TPS;
-
    public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
@@ -41,7 +48,7 @@ abstract class Board {
    public static waterRocks: ReadonlyArray<WaterRockData>;
    public static riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
 
-   private static tileUpdateCoordinates: Set<[x: number, y: number]>;
+   private static tileUpdateCoordinates: Set<number>;
 
    private static gameObjectsToRemove = new Array<GameObject>();
 
@@ -61,7 +68,7 @@ abstract class Board {
       this.waterRocks = generationInfo.waterRocks;
       this.riverSteppingStones = generationInfo.riverSteppingStones;
 
-      this.tileUpdateCoordinates = new Set<[number, number]>();
+      this.tileUpdateCoordinates = new Set<number>();
 
       // Add river stepping stones to chunks
       for (const steppingStoneData of generationInfo.riverSteppingStones) {
@@ -247,6 +254,8 @@ abstract class Board {
    // Note: the two following functions are separate for profiling purposes
 
    public static resolveGameObjectCollisions(): void {
+      // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
+      
       for (const chunk of this.chunks1d) {
          for (let i = 0; i <= chunk.gameObjects.length - 2; i++) {
             const gameObject1 = chunk.gameObjects[i];
@@ -288,31 +297,36 @@ abstract class Board {
                gameObject.updateContainingChunks();
             }
 
-            // @Incomplete: Should this go here?
+            // Do calculations which are dependent on the position
             gameObject.updateTile();
+            gameObject.isInRiver = gameObject.checkIsInRiver();
 
             gameObject.positionIsDirty = false;
          }
 
          gameObject.previousCollidingObjects = gameObject.collidingObjects;
+         // @Speed: This is a lot of garbage collection having to be done
          gameObject.collidingObjects = new Set();
       }
    }
 
    /** Registers a tile update to be sent to the clients */
    public static registerNewTileUpdate(x: number, y: number): void {
-      this.tileUpdateCoordinates.add([x, y]);
+      const tileIndex = y * SETTINGS.BOARD_DIMENSIONS + x;
+      this.tileUpdateCoordinates.add(tileIndex);
    }
 
    /** Get all tile updates and reset them */
    public static popTileUpdates(): ReadonlyArray<ServerTileUpdateData> {
       // Generate the tile updates array
       const tileUpdates = new Array<ServerTileUpdateData>();
-      for (const tileCoordinates of this.tileUpdateCoordinates) {
-         const tile = this.getTile(tileCoordinates[0], tileCoordinates[1]);
+      for (const tileIndex of this.tileUpdateCoordinates) {
+         const tileX = tileIndex % SETTINGS.BOARD_DIMENSIONS;
+         const tileY = Math.floor(tileIndex / SETTINGS.BOARD_DIMENSIONS);
+         
+         const tile = this.getTile(tileX, tileY);
          tileUpdates.push({
-            x: tileCoordinates[0],
-            y: tileCoordinates[1],
+            tileIndex: tileIndex,
             type: tile.type,
             isWall: tile.isWall
          });
@@ -324,13 +338,28 @@ abstract class Board {
       return tileUpdates;
    }
 
-   public static updateTiles(): void {
-      for (let i = 0; i < Board.NUM_TICKED_TILES; i++) {
-         const tileX = Math.floor(Math.random() * SETTINGS.BOARD_DIMENSIONS);
-         const tileY = Math.floor(Math.random() * SETTINGS.BOARD_DIMENSIONS);
-         const tile = this.getTile(tileX, tileY);
-         if (tile.type === TileType.grass) {
-            attemptToSpreadGrassTile(tile);
+   public static spreadGrass(): void {
+      const grassTiles = getTilesOfType(TileType.grass);
+
+      let numSpreadedGrass = grassTiles.length / SETTINGS.BOARD_DIMENSIONS / SETTINGS.BOARD_DIMENSIONS / SETTINGS.TPS;
+      if (Math.random() > numSpreadedGrass % 1) {
+         numSpreadedGrass = Math.ceil(numSpreadedGrass);
+      } else {
+         numSpreadedGrass = Math.floor(numSpreadedGrass);
+      }
+      for (let i = 0; i < numSpreadedGrass; i++) {
+         const tile = randItem(grassTiles);
+         
+         const offset = randItem(OFFSETS);
+         const tileX = tile.x + offset[0];
+         const tileY = tile.y + offset[1];
+         if (!Board.tileIsInBoard(tileX, tileY)) {
+            continue;
+         }
+
+         const dirtTile = Board.getTile(tileX, tileY);
+         if (dirtTile.type === TileType.dirt) {
+            new Tile(tileX, tileY, TileType.grass, "grasslands", false);
          }
       }
    }
@@ -389,14 +418,6 @@ abstract class Board {
       if (idx !== -1) {
          this.addGameObjectToBoard(gameObject);
          this.removeGameObjectFromJoinBuffer(gameObject);
-      }
-   }
-
-   public static ageItems(): void {
-      for (const chunk of this.chunks1d) {
-         for (const droppedItem of chunk.droppedItems) {
-            droppedItem.ageItem();
-         }
       }
    }
 

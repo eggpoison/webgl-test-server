@@ -2,8 +2,9 @@ import { ALL_TILE_TYPES, GameObjectDebugData, Point, SETTINGS, TileType, randInt
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import { getAllowedPositionRadialTiles } from "../ai-shared";
+import { MobAIType } from "../mob-ai-types";
 
-interface WanderAIParams extends BaseAIParams<"wander"> {
+interface WanderAIParams extends BaseAIParams<MobAIType.wander> {
    /** The average number of times that an entity will wander in a second */
    readonly wanderRate: number;
    readonly acceleration: number;
@@ -13,8 +14,8 @@ interface WanderAIParams extends BaseAIParams<"wander"> {
    readonly shouldWander?: (wanderPositionX: number, wanderPositionY: number) => boolean;
 }
 
-class WanderAI extends AI<"wander"> implements WanderAIParams {
-   public readonly type = "wander";
+class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
+   public readonly type = MobAIType.wander;
    
    public readonly wanderRate: number;
    public readonly acceleration: number;
@@ -47,6 +48,8 @@ class WanderAI extends AI<"wander"> implements WanderAIParams {
    }
 
    private wander(): void {
+      // @Speed: This always checks a very large number of tiles
+      
       const wanderTiles = getAllowedPositionRadialTiles(this.mob.position, this.mob.visionRange, this.validTileTargets);
       if (wanderTiles.length === 0) return;
 

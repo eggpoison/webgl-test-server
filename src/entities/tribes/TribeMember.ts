@@ -197,12 +197,20 @@ abstract class TribeMember extends Entity {
    }
 
    public tick(): void {
-      super.tick();
-
       const inventoryComponent = this.getComponent("inventory")!
+      const armourInventory = inventoryComponent.getInventory("armourSlot");
+
+      // If snow armour is equipped, move at normal speed on snow tiles
+      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.frost_armour) {
+         if (this.tile.type === TileType.snow) {
+            this.overrideMoveSpeedMultiplier = true;
+         }
+      }
+      this.overrideMoveSpeedMultiplier = false;
+
+      super.tick();
       
       // Armour defence
-      const armourInventory = inventoryComponent.getInventory("armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          const itemInfo = ITEM_INFO_RECORD[armourInventory.itemSlots[1].type] as ArmourItemInfo;
          this.getComponent("health")!.addDefence(itemInfo.defence, "armour");
@@ -267,17 +275,6 @@ abstract class TribeMember extends Entity {
 
    private removeImmunity(): void {
       this.getComponent("health")!.removeDefence("deep_frost_armour_immunity");
-   }
-
-   protected overrideTileMoveSpeedMultiplier(): number | null {
-      // If snow armour is equipped, move at normal speed on snow tiles
-      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
-      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.frost_armour) {
-         if (this.tile.type === TileType.snow) {
-            return 1;
-         }
-      }
-      return null;
    }
 
    protected getEntityRelationship(entity: Entity): EntityRelationship {
@@ -347,7 +344,6 @@ abstract class TribeMember extends Entity {
    }
 
    protected calculateRadialAttackTargets(attackOffset: number, attackRadius: number): ReadonlyArray<Entity> {
-
       const attackPositionX = this.position.x + attackOffset * Math.sin(this.rotation);
       const attackPositionY = this.position.y + attackOffset * Math.cos(this.rotation);
       const attackedEntities = getEntitiesInVisionRange(attackPositionX, attackPositionY, attackRadius);

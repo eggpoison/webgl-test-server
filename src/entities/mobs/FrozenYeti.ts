@@ -44,6 +44,9 @@ class FrozenYeti extends Mob {
    private static readonly ROAR_ARC = Math.PI / 6;
    private static readonly ROAR_REACH = 450;
 
+   private static readonly TERMINAL_VELOCITY = 150;
+   private static readonly ACCELERATION = 150;
+
    public mass = 5;
 
    private readonly targets: Record<number, TargetInfo> = {};
@@ -136,6 +139,7 @@ class FrozenYeti extends Mob {
       }
 
       // Remove targets which are dead
+      // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
       for (const _targetID of Object.keys(this.targets)) {
          const targetID = Number(_targetID);
          if (!Board.entities.hasOwnProperty(targetID)) {
@@ -173,6 +177,7 @@ class FrozenYeti extends Mob {
       // Choose target based on which one has dealt the most damage to it
       let targetID!: number;
       let mostDamageDealt = -1;
+      // @Speed
       for (const [_targetID, targetInfo] of Object.entries(this.targets)) {
          if (targetInfo.damageDealtToSelf > mostDamageDealt) {
             mostDamageDealt = targetInfo.damageDealtToSelf;
@@ -280,9 +285,9 @@ class FrozenYeti extends Mob {
                }
                // Lunge
                case 1: {
-                  this.terminalVelocity = 150;
-                  this.acceleration.x = 150 * Math.sin(angleToTarget);
-                  this.acceleration.y = 150 * Math.cos(angleToTarget);
+                  this.terminalVelocity = FrozenYeti.TERMINAL_VELOCITY;
+                  this.acceleration.x = FrozenYeti.ACCELERATION * Math.sin(angleToTarget);
+                  this.acceleration.y = FrozenYeti.ACCELERATION * Math.cos(angleToTarget);
 
                   // Lunge forwards at the beginning of this stage
                   if (this.stageProgress === 0) {
@@ -301,9 +306,9 @@ class FrozenYeti extends Mob {
                }
                // Wind-down
                case 2: {
-                  this.terminalVelocity = 150;
-                  this.acceleration.x = 150 * Math.sin(angleToTarget);
-                  this.acceleration.y = 150 * Math.cos(angleToTarget);
+                  this.terminalVelocity = FrozenYeti.TERMINAL_VELOCITY;
+                  this.acceleration.x = FrozenYeti.ACCELERATION * Math.sin(angleToTarget);
+                  this.acceleration.y = FrozenYeti.ACCELERATION * Math.cos(angleToTarget);
                   this.turn(angleToTarget, 1.3);
 
                   this.stageProgress += 2.5 / SETTINGS.TPS;
@@ -316,9 +321,9 @@ class FrozenYeti extends Mob {
          case FrozenYetiAttackType.none: {
             // Move towards the target
             this.turn(angleToTarget, Math.PI);
-            this.terminalVelocity = 150;
-            this.acceleration.x = 150 * Math.sin(angleToTarget);
-            this.acceleration.y = 150 * Math.cos(angleToTarget);
+            this.terminalVelocity = FrozenYeti.TERMINAL_VELOCITY;
+            this.acceleration.x = FrozenYeti.ACCELERATION * Math.sin(angleToTarget);
+            this.acceleration.y = FrozenYeti.ACCELERATION * Math.cos(angleToTarget);
             
             break;
          }

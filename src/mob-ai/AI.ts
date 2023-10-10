@@ -1,28 +1,28 @@
-import { GameObjectDebugData, Point, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, Point } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import { AIType } from "./ai-types";
 import DroppedItem from "../items/DroppedItem";
+import { MobAIType } from "../mob-ai-types";
 
 export interface AICallbackFunctions {
-   wander: () => void,
-   follow: () => void,
-   herd: () => void,
-   tileConsume: () => void,
-   itemConsume: () => void,
-   escape: () => void,
-   chase: (targetEntity: Entity | null) => void,
-   berryBushShake: () => void,
-   move: () => void;
-   item_chase: (target: DroppedItem | null) => void;
+   [MobAIType.wander]: () => void,
+   [MobAIType.follow]: () => void,
+   [MobAIType.herd]: () => void,
+   [MobAIType.tileConsume]: () => void,
+   [MobAIType.itemConsume]: () => void,
+   [MobAIType.escape]: () => void,
+   [MobAIType.chase]: (targetEntity: Entity | null) => void,
+   [MobAIType.berryBushShake]: () => void,
+   [MobAIType.move]: () => void;
+   [MobAIType.item_chase]: (target: DroppedItem | null) => void;
 }
 
-export interface BaseAIParams<T extends AIType> {
+export interface BaseAIParams<T extends MobAIType> {
    readonly aiWeightMultiplier: number;
    readonly callback?: AICallbackFunctions[T];
 }
 
-abstract class AI<T extends AIType> implements BaseAIParams<T> {
+abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
    protected readonly mob: Mob;
    
    public readonly aiWeightMultiplier: number;
@@ -33,7 +33,7 @@ abstract class AI<T extends AIType> implements BaseAIParams<T> {
 
    protected isActive: boolean = false;
    protected targetPosition: Point | null = null;
-   protected entitiesInVisionRange!: Set<Entity>;
+   protected entitiesInVisionRange!: ReadonlySet<Entity>;
 
    constructor(mob: Mob, { aiWeightMultiplier, callback }: BaseAIParams<T>) {
       this.mob = mob;
@@ -65,14 +65,12 @@ abstract class AI<T extends AIType> implements BaseAIParams<T> {
    public onDeactivation?(): void;
    public onRefresh?(): void;
 
-   protected filterEntitiesInVisionRange?(visibleEntities: ReadonlySet<Entity>): Set<Entity>;
+   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
+      return visibleEntities;
+   }
 
    public updateValues(entitiesInVisionRange: Set<Entity>): void {
-      if (typeof this.filterEntitiesInVisionRange !== "undefined") {
-         this.entitiesInVisionRange = this.filterEntitiesInVisionRange(entitiesInVisionRange);
-      } else {
-         this.entitiesInVisionRange = entitiesInVisionRange;
-      }
+      this.entitiesInVisionRange = this.filterEntitiesInVisionRange(entitiesInVisionRange);
    }
 
    public getWeight(): number {

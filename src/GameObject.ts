@@ -1,5 +1,5 @@
 import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, Vector, clampToBoardDimensions } from "webgl-test-shared";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
@@ -93,6 +93,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
    /** Whether the game object's position has changed during the current tick or not. Use during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = true;
+
+   public isInRiver: boolean;
+
+   protected overrideMoveSpeedMultiplier = false;
    
    private boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
@@ -108,6 +112,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       if (this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) this.position.y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
 
       this.updateTile();
+      this.isInRiver = this.checkIsInRiver();
 
       Board.addGameObjectToJoinBuffer(this as unknown as GameObject);
    }
@@ -175,9 +180,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       this.tile = Board.getTile(tileX, tileY);
    }
 
-   protected overrideTileMoveSpeedMultiplier?(): number | null;
-
-   protected isInRiver(): boolean {
+   public checkIsInRiver(): boolean {
       if (this.tile.type !== TileType.water) {
          return false;
       }
@@ -198,25 +201,13 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public applyPhysics(): void {
-      if (isNaN(this.velocity.x) || isNaN(this.velocity.y)) {
-         throw new Error("Velocity was NaN.");
-      }
-      if (isNaN(this.acceleration.x) || isNaN(this.acceleration.y)) {
-         throw new Error("Acceleration was NaN.");
-      }
-
       let moveSpeedMultiplier: number;
-      if (this.tile.type === TileType.water && !this.isInRiver()) {
+      if (this.overrideMoveSpeedMultiplier) {
+         moveSpeedMultiplier = 1;
+      } else if (this.tile.type === TileType.water && !this.isInRiver) {
          moveSpeedMultiplier = this.moveSpeedMultiplier;
       } else {
          moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
-      }
-      // @Speed
-      if (typeof this.overrideTileMoveSpeedMultiplier !== "undefined") {
-         const speed = this.overrideTileMoveSpeedMultiplier();
-         if (speed !== null) {
-            moveSpeedMultiplier = speed;
-         }
       }
 
       const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
@@ -225,6 +216,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       
       // Friction
       if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
+         // @Speed: Try to remove/circumvent this check
          const amountBefore = this.velocity.length();
          const divideAmount = 1 + 3 / SETTINGS.TPS * TILE_FRICTIONS[this.tile.type];
          this.velocity.x /= divideAmount;
@@ -249,6 +241,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
             accelerateAmountY *= 1 - Math.pow(progressToTerminalVelocity, 2);
          }
 
+         // @Speed
          const accelerateAmountLength = Math.sqrt(Math.pow(accelerateAmountX, 2) + Math.pow(accelerateAmountY, 2));
          accelerateAmountX += tileFrictionReduceAmount * accelerateAmountX / accelerateAmountLength;
          accelerateAmountY += tileFrictionReduceAmount * accelerateAmountY / accelerateAmountLength;
@@ -258,6 +251,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          this.velocity.y += accelerateAmountY;
          
          // Don't accelerate past terminal velocity
+          // @Speed
          const newVelocityMagnitude = this.velocity.length();
          if (newVelocityMagnitude > terminalVelocity && newVelocityMagnitude > velocityMagnitude) {
             if (velocityMagnitude < terminalVelocity) {
@@ -276,6 +270,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
          const xSignBefore = Math.sign(this.velocity.x);
          
+         // @Speed
          const velocityLength = this.velocity.length();
          this.velocity.x = (velocityLength - 3) * this.velocity.x / velocityLength;
          this.velocity.y = (velocityLength - 3) * this.velocity.y / velocityLength;
@@ -286,7 +281,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
 
       // If the game object is in a river, push them in the flow direction of the river
-      if (this.isAffectedByFriction && this.isInRiver()) {
+      // @Speed: perhaps only do this check when position changes
+      if (this.isAffectedByFriction && this.isInRiver) {
          const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
          this.velocity.x += 240 / SETTINGS.TPS * Math.sin(flowDirection);
          this.velocity.y += 240 / SETTINGS.TPS * Math.cos(flowDirection);
@@ -295,14 +291,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       // Apply velocity
       this.position.x += this.velocity.x / SETTINGS.TPS;
       this.position.y += this.velocity.y / SETTINGS.TPS;
-
-      if (isNaN(this.position.x)) {
-         throw new Error("Position was NaN.");
-      }
    }
 
    /** Called after calculating the object's hitbox bounds */
    public updateContainingChunks(): void {
+      // @Speed: pretty damn slow
+      
       // Calculate containing chunks
       const containingChunks = new Set<Chunk>();
       for (const hitbox of this.hitboxes) {

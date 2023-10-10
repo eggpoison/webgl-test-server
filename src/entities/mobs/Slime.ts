@@ -8,6 +8,7 @@ import Board from "../../Board";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import WanderAI from "../../mob-ai/WanderAI";
 import MoveAI from "../../mob-ai/MoveAI";
+import { MobAIType } from "../../mob-ai-types";
 
 interface MovingOrbData extends Mutable<SlimeOrbData> {
    angularVelocity: number;
@@ -134,6 +135,7 @@ class Slime extends Mob {
          getMoveTargetPosition: (): Point | null => {
             const target = this.getAngerTarget();
             if (target !== null) {
+               // @Speed: Garbage collection
                return target.position.copy();
             }
             return null;
@@ -209,6 +211,9 @@ class Slime extends Mob {
    }
 
    public tick(): void {
+      // Slimes move at normal speed on slime blocks
+      this.overrideMoveSpeedMultiplier = this.tile.type === TileType.slime;
+      
       super.tick();
 
       this.mergeWant += 1 / SETTINGS.TPS;
@@ -256,9 +261,8 @@ class Slime extends Mob {
       } else {
          // If the slime is chasing an entity make its eye point towards that entity
          let isChasing = false;
-         const currentAI = this.getCurrentAI();
-         if (currentAI !== null && currentAI.type === "chase") {
-            const target = (currentAI as ChaseAI).getChaseTarget();
+         if (this.currentAI !== null && this.currentAI.type === MobAIType.chase) {
+            const target = (this.currentAI as ChaseAI).target;
             if (target !== null) {
                this.eyeRotation = this.position.calculateAngleBetween(target.position);
                isChasing = true;
@@ -267,7 +271,7 @@ class Slime extends Mob {
    
          // When the slime isn't chasing an entity, make it look at random positions
          if (!isChasing) {
-            if (this.getCurrentAIType() !== "chase") {
+            if (this.currentAI === null || this.currentAI.type !== MobAIType.chase) {
                if (Math.random() < 0.25 / SETTINGS.TPS) {
                   this.eyeRotation = 2 * Math.PI * Math.random();
                }
@@ -397,14 +401,6 @@ class Slime extends Mob {
             propagationInfo.chainLength--;
          }
       }
-   }
-
-   protected overrideTileMoveSpeedMultiplier(): number | null {
-      // Slimes move at normal speed on slime blocks
-      if (this.tile.type === TileType.slime) {
-         return 1;
-      }
-      return null;
    }
    
    public getClientArgs(): [size: SlimeSize, eyeRotation: number, orbs: ReadonlyArray<SlimeOrbData>, anger: number] {

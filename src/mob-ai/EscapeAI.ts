@@ -1,9 +1,10 @@
-import { GameObjectDebugData, SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
+import { MobAIType } from "../mob-ai-types";
 
-interface EscapeAIParams extends BaseAIParams<"escape"> {
+interface EscapeAIParams extends BaseAIParams<MobAIType.escape> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly attackSubsideTime: number;
@@ -11,8 +12,8 @@ interface EscapeAIParams extends BaseAIParams<"escape"> {
    readonly escapeHealthThreshold: number
 }
 
-class EscapeAI extends AI<"escape"> implements EscapeAIParams {
-   public readonly type = "escape";
+class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
+   public readonly type = MobAIType.escape;
    
    public readonly acceleration: number;
    public readonly terminalVelocity: number;

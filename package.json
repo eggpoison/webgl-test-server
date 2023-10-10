@@ -4,7 +4,7 @@
       "build": "tsc --build",
       "start": "nodemon",
       "test": "jest --detectOpenHandles",
-      "perf": "node -r ts-node/register --prof src/server.ts",
+      "perf": "node -r ts-node/register -r tsconfig-paths/register --inspect src/server.ts",
       "debug": "nodemon --inspect"
    },
    "dependencies": {

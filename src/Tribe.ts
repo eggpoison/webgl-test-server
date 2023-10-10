@@ -4,7 +4,7 @@ import TribeHut from "./entities/tribes/TribeHut";
 import Tribesman from "./entities/tribes/Tribesman";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import Board from "./Board";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 import Barrel from "./entities/tribes/Barrel";
 import Chunk from "./Chunk";
 

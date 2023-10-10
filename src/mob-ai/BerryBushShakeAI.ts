@@ -1,16 +1,17 @@
-import { GameObjectDebugData, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import BerryBush from "../entities/resources/BerryBush";
 import AI from "./AI";
 import Board from "../Board";
+import { MobAIType } from "../mob-ai-types";
 
-class BerryBushShakeAI extends AI<"berryBushShake"> {
+class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
    private static readonly SAMPLE_DISTANCE = 60;
 
    /** Number of ticks for the entity to shake the berry bush */
    private static readonly TICKS_TO_SHAKE = 1.5 * SETTINGS.TPS;
    
-   public readonly type = "berryBushShake";
+   public readonly type = MobAIType.berryBushShake;
 
    private target: BerryBush | null = null;
 
@@ -63,7 +64,7 @@ class BerryBushShakeAI extends AI<"berryBushShake"> {
       this.target = target;
    }
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
+   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
       // Only look for berry bushes
       const filteredEntities = new Set<Entity>();
       for (const entity of visibleEntities) {

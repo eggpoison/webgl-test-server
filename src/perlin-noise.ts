@@ -156,7 +156,6 @@ export function generatePointPerlinNoise(x: number, y: number, scale: number, na
          corner = a[name][key];
       }
 
-      // const corner = grid[coords[0]][coords[1]];
       const cornerPos = new Point(coords[1], coords[0]);
       const offsetVector = samplePoint.convertToVector(cornerPos);
 

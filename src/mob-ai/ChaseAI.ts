@@ -1,9 +1,10 @@
-import { GameObjectDebugData, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
+import { MobAIType } from "../mob-ai-types";
 
-interface ChaseAIParams extends BaseAIParams<"chase"> {
+interface ChaseAIParams extends BaseAIParams<MobAIType.chase> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly entityIsChased: (entity: Entity) => boolean;
@@ -11,15 +12,15 @@ interface ChaseAIParams extends BaseAIParams<"chase"> {
    readonly desiredDistance?: number;
 }
 
-class ChaseAI extends AI<"chase"> implements ChaseAIParams {
-   public readonly type = "chase";
+class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
+   public readonly type = MobAIType.chase;
 
    public acceleration: number;
    public terminalVelocity: number;
    public desiredDistance?: number;
    public entityIsChased: (entity: Entity) => boolean;
 
-   private target: Entity | null = null;
+   public target: Entity | null = null;
 
    constructor(mob: Mob, aiParams: ChaseAIParams) {
       super(mob, aiParams);
@@ -86,7 +87,7 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
       this.target = null;
    }
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): Set<Entity> {
+   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
       const filteredEntities = new Set<Entity>();
 
       for (const entity of visibleEntities) {
@@ -103,10 +104,6 @@ class ChaseAI extends AI<"chase"> implements ChaseAIParams {
          return 1;
       }
       return 0;
-   }
-
-   public getChaseTarget(): Entity | null {
-      return this.target;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

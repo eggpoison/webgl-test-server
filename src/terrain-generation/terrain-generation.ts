@@ -1,7 +1,7 @@
 import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/biome-generation-info";
-import Tile from "../tiles/Tile";
+import Tile from "../Tile";
 import { BiomeName, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfo, Vector, WaterRockData, lerp, randFloat, randInt, randSign } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
 import Board from "../Board";

@@ -1,7 +1,8 @@
 import { SETTINGS, TileInfo, TileType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
-import Tile from "../tiles/Tile";
+import Tile from "../Tile";
 import AI, { BaseAIParams } from "./AI";
+import { MobAIType } from "../mob-ai-types";
 
 type FoodSource = {
    /** Amount of food given by eating the source */
@@ -17,14 +18,14 @@ export interface TileFoodSource extends FoodSource {
    readonly healAmount: number;
 }
 
-interface TileConsumeAIParams extends BaseAIParams<"tileConsume"> {
+interface TileConsumeAIParams extends BaseAIParams<MobAIType.tileConsume> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly tileTargets?: ReadonlyMap<TileType, TileFoodSource>;
 }
 
-class TileConsumeAI extends AI<"tileConsume"> implements TileConsumeAIParams {
-   public readonly type = "tileConsume";
+class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIParams {
+   public readonly type = MobAIType.tileConsume;
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;

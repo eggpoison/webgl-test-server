@@ -2,10 +2,10 @@ import { EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl
 import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
-import { AIType } from "../../mob-ai/ai-types";
 import DroppedItem from "../../items/DroppedItem";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Chunk from "../../Chunk";
+import { MobAIType } from "../../mob-ai-types";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
@@ -17,8 +17,8 @@ abstract class Mob extends Entity {
    public readonly visionRange: number;
    private readonly visionRangeSquared: number;
    
-   private readonly ais = new Array<AI<AIType>>();
-   private currentAI: AI<AIType> | null = null;
+   private readonly ais = new Array<AI<MobAIType>>();
+   protected currentAI: AI<MobAIType> | null = null;
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
 
@@ -28,6 +28,9 @@ abstract class Mob extends Entity {
    public readonly droppedItemsInVisionRange = new Set<DroppedItem>();
 
    private chunksInVisionRange = new Array<Chunk>();
+
+   /** Value used by herd member hash for determining mob herds */
+   public herdMemberHash = -1;
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
       super(position, components, entityType);
@@ -36,11 +39,7 @@ abstract class Mob extends Entity {
       this.visionRangeSquared = Math.pow(visionRange, 2);
    }
 
-   /**
-    * Adds a new AI component to the mob.
-    * @param aiData AI information to use.
-    */
-   protected addAI(ai: AI<AIType>): void {
+   protected addAI(ai: AI<MobAIType>): void {
       this.ais.push(ai);
    }
 
@@ -82,7 +81,7 @@ abstract class Mob extends Entity {
       this.updateGameObjectsInVisionRange();
 
       // Update the values of all AI's and find the one with the highest weight
-      let aiWithHighestWeight!: AI<AIType>;
+      let aiWithHighestWeight!: AI<MobAIType>;
       let maxWeight = -1;
       for (const ai of this.ais) {
          ai.updateValues(this.entitiesInVisionRange);
@@ -142,20 +141,21 @@ abstract class Mob extends Entity {
       this.entitiesInVisionRange.clear();
       this.droppedItemsInVisionRange.clear();
       for (const chunk of this.chunksInVisionRange) {
-         for (const droppedItem of chunk.gameObjects) {
+         for (const gameObject of chunk.gameObjects) {
             // Don't add existing game objects
-            if ((droppedItem.i === "entity" && this.entitiesInVisionRange.has(droppedItem)) || (droppedItem.i === "droppedItem" && this.droppedItemsInVisionRange.has(droppedItem)) || droppedItem === this) {
+            // @Speed: This is a ton of checks
+            if ((gameObject.i === "entity" && this.entitiesInVisionRange.has(gameObject)) || (gameObject.i === "droppedItem" && this.droppedItemsInVisionRange.has(gameObject)) || gameObject === this) {
                continue;
             }
 
-            if (Math.pow(this.position.x - droppedItem.position.x, 2) + Math.pow(this.position.y - droppedItem.position.y, 2) <= Math.pow(this.visionRange, 2)) {
-               switch (droppedItem.i) {
+            if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= this.visionRangeSquared) {
+               switch (gameObject.i) {
                   case "entity": {
-                     this.entitiesInVisionRange.add(droppedItem);
+                     this.entitiesInVisionRange.add(gameObject);
                      break;
                   }
                   case "droppedItem": {
-                     this.droppedItemsInVisionRange.add(droppedItem);
+                     this.droppedItemsInVisionRange.add(gameObject);
                      break;
                   }
                }
@@ -163,15 +163,15 @@ abstract class Mob extends Entity {
             }
 
             // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
-            for (const hitbox of droppedItem.hitboxes) {
+            for (const hitbox of gameObject.hitboxes) {
                if (Mob.testHitbox.isColliding(hitbox)) {
-                  switch (droppedItem.i) {
+                  switch (gameObject.i) {
                      case "entity": {
-                        this.entitiesInVisionRange.add(droppedItem);
+                        this.entitiesInVisionRange.add(gameObject);
                         break;
                      }
                      case "droppedItem": {
-                        this.droppedItemsInVisionRange.add(droppedItem);
+                        this.droppedItemsInVisionRange.add(gameObject);
                         break;
                      }
                   }
@@ -180,14 +180,6 @@ abstract class Mob extends Entity {
             }
          }
       }
-   }
-
-   public getCurrentAIType(): AIType | null {
-      return this.currentAI !== null ? this.currentAI.type : null;
-   }
-
-   public getCurrentAI(): AI<AIType> | null {
-      return this.currentAI;   
    }
 
    public getAIParam(param: string): number | undefined {
@@ -223,7 +215,7 @@ abstract class Mob extends Entity {
       return debugData;
    }
 
-   public getAI<T extends AIType>(type: T): AI<T> | null {
+   public getAI<T extends MobAIType>(type: T): AI<T> | null {
       for (const ai of this.ais) {
          if (ai.type === type) {
             return ai as AI<T>;

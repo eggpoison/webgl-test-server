@@ -1,16 +1,17 @@
-import { GameObjectDebugData, Vector } from "webgl-test-shared";
+import { GameObjectDebugData } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import DroppedItem from "../items/DroppedItem";
+import { MobAIType } from "../mob-ai-types";
 
-interface ItemChaseAIParams extends BaseAIParams<"item_chase"> {
+interface ItemChaseAIParams extends BaseAIParams<MobAIType.item_chase> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly itemIsChased: (droppedItem: DroppedItem) => boolean;
 }
 
-class ItemChaseAI extends AI<"item_chase"> implements ItemChaseAIParams {
-   public readonly type = "item_chase";
+class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams {
+   public readonly type = MobAIType.item_chase;
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;

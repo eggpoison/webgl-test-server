@@ -21,11 +21,9 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
       enter_entity_collision: [],
       during_entity_collision: []
    }
-   /** ROUGHLY how long an item will take to despawn */
-   private static readonly SECONDS_TO_DESPAWN = 300;
-
-   /** How long the item has existed in seconds */
-   private age: number = 0;
+   
+   /** How long an item will take to despawn */
+   private static readonly TICKS_TO_DESPAWN = 300 * SETTINGS.TPS;
 
    public readonly item: Item;
 
@@ -59,11 +57,9 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
       if (this.item.type === ItemType.flesh_sword) {
          runFleshSwordAI(this);
       }
-   }
 
-   // IMPORTANT: Only run once every second
-   public ageItem(): void {
-      if (++this.age >= DroppedItem.SECONDS_TO_DESPAWN) {
+      // Despawn old items
+      if (this.ageTicks >= DroppedItem.TICKS_TO_DESPAWN) {
          this.remove();
       }
    }

@@ -15,7 +15,8 @@ class HealthComponent extends Component {
    private defence = 0;
    private readonly defenceFactors: Record<string, number> = {};
 
-   private readonly localInvulnerabilityHashes: { [immunityHash: string]: number } = {};
+   private readonly localIframeHashes = new Array<string>();
+   private readonly localIframeDurations = new Array<number>();
 
    private readonly hasGlobalInvulnerability: boolean;
    private globalInvulnerabilityTimer = 0;
@@ -68,16 +69,26 @@ class HealthComponent extends Component {
       }
 
       // Update local invulnerability hashes
-      for (const hash of Object.keys(this.localInvulnerabilityHashes)) {
-         this.localInvulnerabilityHashes[hash] -= 1 / SETTINGS.TPS;
-         if (this.localInvulnerabilityHashes[hash] <= 0) {
-            delete this.localInvulnerabilityHashes[hash];
+      for (let i = 0; i < this.localIframeHashes.length; i++) {
+         this.localIframeDurations[i] -= 1 / SETTINGS.TPS;
+         if (this.localIframeDurations[i] <= 0) {
+            this.localIframeHashes.splice(i, 1);
+            this.localIframeDurations.splice(i, 1);
+            i--;
          }
       }
 
       // Update global invulnerability
       if (this.globalInvulnerabilityTimer > 0) {
          this.globalInvulnerabilityTimer -= 1 / SETTINGS.TPS;
+      }
+
+      // Remove old hit data
+      for (let i = 0; i < this.hitsTaken.length; i++) {
+         if (this.hitsTaken[i].tick !== Board.ticks) {
+            this.hitsTaken.splice(i, 1);
+            i--;
+         }
       }
    }
    
@@ -124,7 +135,8 @@ class HealthComponent extends Component {
       this.hitsTaken.push({
          knockback: knockback,
          angleFromAttacker: hitDirection,
-         flags: hitFlags
+         flags: hitFlags,
+         tick: Board.ticks
       });
       
       if (this.hasGlobalInvulnerability) {
@@ -162,9 +174,12 @@ class HealthComponent extends Component {
       this.amountHealedSinceLastPacketSend += amountHealed;
    }
 
-   public addLocalInvulnerabilityHash(hash: string, invulnerabiityDurationSeconds: number): void {
-      if (!this.localInvulnerabilityHashes.hasOwnProperty(hash)) {
-         this.localInvulnerabilityHashes[hash] = invulnerabiityDurationSeconds;
+   public addLocalInvulnerabilityHash(hash: string, invulnerabilityDurationSeconds: number): void {
+      const idx = this.localIframeHashes.indexOf(hash);
+      if (idx === -1) {
+         // Add new entry
+         this.localIframeHashes.push(hash);
+         this.localIframeDurations.push(invulnerabilityDurationSeconds);
       }
    }
 
@@ -175,7 +190,7 @@ class HealthComponent extends Component {
       }
 
       // Local invulnerability
-      if (typeof attackHash !== "undefined" && this.localInvulnerabilityHashes.hasOwnProperty(attackHash)) {
+      if (typeof attackHash !== "undefined" && this.localIframeHashes.indexOf(attackHash) !== -1) {
          return true;
       }
 

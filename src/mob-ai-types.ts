@@ -1,4 +1,5 @@
-export enum MobAIs {
+// This is in its own file to prevent circular dependency shenanigans
+export enum MobAIType {
    wander = 0,
    follow = 1,
    herd = 2,
@@ -10,5 +11,3 @@ export enum MobAIs {
    move = 8,
    item_chase = 9
 };
-
-export type AIType = keyof typeof MobAIs;

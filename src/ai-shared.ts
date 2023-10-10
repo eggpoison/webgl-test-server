@@ -1,6 +1,6 @@
 import { Point, SETTINGS, TileType } from "webgl-test-shared";
 import Board from "./Board";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity from "./entities/Entity";
    

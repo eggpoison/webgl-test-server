@@ -1,6 +1,6 @@
 import { BiomeName, EntityType, TileType } from "webgl-test-shared";
 import Entity from "./entities/Entity";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 
 const entityTypeCounts: Partial<Record<EntityType, number>> = {};
 
@@ -97,4 +97,12 @@ export function getTilesOfBiome(biomeName: BiomeName): ReadonlyArray<Tile> {
    }
    
    return tileCensus.biomes[biomeName]!;
+}
+
+export function getTilesOfType(type: TileType): ReadonlyArray<Tile> {
+   if (!tileCensus.types.hasOwnProperty(type)) {
+      return [];
+   }
+   
+   return tileCensus.types[type]!;
 }

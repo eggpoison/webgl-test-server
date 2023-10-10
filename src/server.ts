@@ -245,10 +245,6 @@ class GameServer {
    }
 
    private async tick(): Promise<void> {
-      // Update server ticks and time
-      Board.ticks++;
-      Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
-
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
 
@@ -260,14 +256,9 @@ class GameServer {
       
       Board.pushJoinBuffer();
 
-      // Age items
-      if (Board.ticks % SETTINGS.TPS === 0) {
-         Board.ageItems();
-      }
-
       runSpawnAttempt();
 
-      Board.updateTiles();
+      Board.spreadGrass();
 
       // Push tribes from buffer
       while (TribeBuffer.hasTribes()) {
@@ -286,15 +277,11 @@ class GameServer {
 
       // Reset the killed entity IDs
       Board.killedEntities = [];
-      
-      // Reset hits taken and amount healed
-      for (const entity of Object.values(Board.entities)) {
-         const healthComponent = entity.getComponent("health");
-         if (healthComponent !== null) {
-            healthComponent.hitsTaken = [];
-            healthComponent.amountHealedSinceLastPacketSend = 0;
-         }
-      }
+
+      // Update server ticks and time
+      // This is done at the end of the tick so that information sent by players is associated with the next tick to run
+      Board.ticks++;
+      Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -558,6 +545,7 @@ class GameServer {
          gameObjectDebugData = gameObject.getDebugData();
       }
 
+      // @Speed: This has to block execution every time this is called. Maybe just maintain a list on my own?
       const sockets = await this.io.fetchSockets();
       for (const socket of sockets) {
          // Skip clients which haven't been properly loaded yet

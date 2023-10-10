@@ -1,5 +1,5 @@
 import { Point, SETTINGS, clampToBoardDimensions } from "webgl-test-shared";
-import { TileCoordinates } from "../tiles/Tile";
+import { TileCoordinates } from "../Tile";
 import { generateOctavePerlinNoise } from "../perlin-noise";
 import Board from "../Board";
 

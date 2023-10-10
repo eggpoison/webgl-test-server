@@ -1,6 +1,6 @@
 import { TileType, BiomeName, TileInfo } from "webgl-test-shared";
-import Board from "../Board";
-import { addTileToCensus, removeTileFromCensus } from "../census";
+import Board from "./Board";
+import { addTileToCensus, removeTileFromCensus } from "./census";
 
 export interface TileCoordinates {
    readonly x: number;

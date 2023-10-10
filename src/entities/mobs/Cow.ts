@@ -10,6 +10,7 @@ import HerdAI from "../../mob-ai/HerdAI";
 import FollowAI from "../../mob-ai/FollowAI";
 import WanderAI from "../../mob-ai/WanderAI";
 import BerryBushShakeAI from "../../mob-ai/BerryBushShakeAI";
+import { MobAIType } from "../../mob-ai-types";
 
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
@@ -25,6 +26,7 @@ class Cow extends Mob {
       }, "cow", SETTINGS.TILE_SIZE * 4);
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
+      this.herdMemberHash = this.species;
 
       this.setAIParam("hunger", randInt(0, 50));
       this.setAIParam("metabolism", 2.5);
@@ -63,7 +65,6 @@ class Cow extends Mob {
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.3
       });
-      herdAI.herdMemberHash = this.species;
       this.addAI(herdAI);
 
       this.addAI(new TileConsumeAI(this, {
@@ -113,11 +114,9 @@ class Cow extends Mob {
    }
 
    public getClientArgs(): [species: CowSpecies, grazeProgress: number] {
-      const currentAI = this.getCurrentAI();
-      
       let grazeProgress;
-      if (currentAI !== null && currentAI.type === "tileConsume") {
-         grazeProgress = (currentAI as TileConsumeAI).getGrazeProgress();
+      if (this.currentAI !== null && this.currentAI.type === MobAIType.tileConsume) {
+         grazeProgress = (this.currentAI as TileConsumeAI).getGrazeProgress();
       } else {
          grazeProgress = -1;
       }

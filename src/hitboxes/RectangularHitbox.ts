@@ -88,6 +88,7 @@ class RectangularHitbox extends Hitbox {
    }
 
    public isColliding(otherHitbox: RectangularHitbox | CircularHitbox): boolean {
+      // @Speed: This check is slow
       if (otherHitbox.hasOwnProperty("radius")) {
          // Circular hitbox
          return circleAndRectangleDoIntersect(otherHitbox.position, (otherHitbox as CircularHitbox).radius, this.position, this.width, this.height, this.rotation);

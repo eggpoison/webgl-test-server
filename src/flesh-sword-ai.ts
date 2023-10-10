@@ -2,7 +2,7 @@ import { Point, SETTINGS, Vector, lerp, randItem } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
-import Tile from "./tiles/Tile";
+import Tile from "./Tile";
 
 const FLESH_SWORD_VISION_RANGE = 250;
 
