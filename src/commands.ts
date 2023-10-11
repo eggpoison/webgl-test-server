@@ -14,7 +14,7 @@ const killPlayer = (username: string): void => {
    if (player === null) return;
 
    // Kill the player
-   player.getComponent("health")!.damage(999999, 0, null, null, PlayerCauseOfDeath.god, 0);
+   player.forceGetComponent("health").damage(999999, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const damagePlayer = (username: string, damage: number): void => {
@@ -22,7 +22,7 @@ const damagePlayer = (username: string, damage: number): void => {
    if (player === null) return;
 
    // Damage the player
-   player.getComponent("health")!.damage(damage, 0, null, null, PlayerCauseOfDeath.god, 0);
+   player.forceGetComponent("health").damage(damage, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const healPlayer = (username: string, healing: number): void => {
@@ -30,7 +30,7 @@ const healPlayer = (username: string, healing: number): void => {
    if (player === null) return;
 
    // Damage the player
-   player.getComponent("health")!.heal(healing);
+   player.forceGetComponent("health").heal(healing);
 }
 
 const setTime = (time: number): void => {
@@ -46,7 +46,7 @@ const giveItem = (username: string, itemType: ItemType, amount: number): void =>
    }
 
    const item = new Item(itemType, amount);
-   player.getComponent("inventory")!.addItem(item);
+   player.forceGetComponent("inventory").addItem(item);
 }
 
 const tp = (username: string, x: number, y: number): void => {

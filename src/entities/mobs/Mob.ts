@@ -9,7 +9,7 @@ import { MobAIType } from "../../mob-ai-types";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
-   public static readonly AI_REFRESH_TIME = 4;
+   public static readonly AI_REFRESH_INTERVAL = 4;
 
    private static readonly testHitbox = new CircularHitbox();
    
@@ -20,9 +20,7 @@ abstract class Mob extends Entity {
    private readonly ais = new Array<AI<MobAIType>>();
    protected currentAI: AI<MobAIType> | null = null;
 
-   private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_TIME - 1);
-
-   private aiParams: Record<string, number> = {};
+   private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_INTERVAL - 1);
 
    protected readonly entitiesInVisionRange = new Set<Entity>();
    public readonly droppedItemsInVisionRange = new Set<DroppedItem>();
@@ -46,20 +44,8 @@ abstract class Mob extends Entity {
    public tick(): void {
       super.tick();
 
-      // @Speed: This shouldn't have to run for mob types which don't need this ai param
-      if (this.hasAIParam("hunger")) {
-         const previousNumber = this.getAIParam("hunger")!;
-         const metabolism = this.getAIParam("metabolism")!;
-
-         let newHunger = previousNumber + metabolism / SETTINGS.TPS;
-         if (newHunger > 100) {
-            newHunger = 100;
-         }
-         this.setAIParam("hunger", newHunger);
-      }
-
       // Refresh AI
-      if (++this.aiRefreshTicker === Mob.AI_REFRESH_TIME) {
+      if (++this.aiRefreshTicker === Mob.AI_REFRESH_INTERVAL) {
          this.refreshAI();
          this.aiRefreshTicker = 0;
       }
@@ -83,7 +69,9 @@ abstract class Mob extends Entity {
       // Update the values of all AI's and find the one with the highest weight
       let aiWithHighestWeight!: AI<MobAIType>;
       let maxWeight = -1;
-      for (const ai of this.ais) {
+      const numAIs = this.ais.length;
+      for (let i = 0; i < numAIs; i++) {
+         const ai = this.ais[i];
          ai.updateValues(this.entitiesInVisionRange);
 
          const weight = ai.getWeight();
@@ -114,6 +102,7 @@ abstract class Mob extends Entity {
       const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
 
       this.chunksInVisionRange = [];
+      // @Speed: very slow double nested loop!!
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             // 
@@ -182,18 +171,6 @@ abstract class Mob extends Entity {
       }
    }
 
-   public getAIParam(param: string): number | undefined {
-      return this.aiParams[param];
-   }
-
-   public setAIParam(param: string, value: number): void {
-      this.aiParams[param] = value;
-   }
-
-   public hasAIParam(param: string): boolean {
-      return this.aiParams.hasOwnProperty(param);
-   }
-
    public getDebugData(): GameObjectDebugData {
       const debugData = super.getDebugData();
 
@@ -206,7 +183,7 @@ abstract class Mob extends Entity {
          });
       }
 
-      debugData.debugEntries.push("Current AI type: " + (this.currentAI !== null ? this.currentAI.type : "none"));
+      debugData.debugEntries.push("Current AI type: " + (this.currentAI !== null ? MobAIType[this.currentAI.type] : "none"));
 
       if (typeof this.currentAI?.addDebugData !== "undefined") {
          this.currentAI.addDebugData(debugData);

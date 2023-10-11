@@ -89,9 +89,6 @@ class Yeti extends Mob {
          item_creation: new ItemCreationComponent(Yeti.SIZE / 2)
       }, "yeti", Yeti.VISION_RANGE);
 
-      this.setAIParam("hunger", randInt(0, 50));
-      this.setAIParam("metabolism", 1);
-
       const hitbox = new CircularHitbox();
       hitbox.radius = Yeti.SIZE / 2;
       this.addHitbox(hitbox);
@@ -138,7 +135,7 @@ class Yeti extends Mob {
          aiWeightMultiplier: 0.8,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 1,
+         metabolism: randFloat(1, 1.2),
          itemTargets: new Set([ItemType.raw_beef, ItemType.leather])
       }));
 
@@ -181,8 +178,8 @@ class Yeti extends Mob {
 
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(4, 7), false);
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.yeti_hide, randInt(2, 3), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(4, 7), false);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(2, 3), true);
 
       this.territory = Yeti.generateYetiTerritoryTiles(this.tile.x, this.tile.y);
       registerYetiTerritory(this.territory, this);
@@ -197,6 +194,7 @@ class Yeti extends Mob {
    public tick(): void {
       super.tick();
 
+      // @Speed: Remove Object.keys()
       for (const id of Object.keys(this.attackingEntities) as unknown as ReadonlyArray<number>) {
          this.attackingEntities[id] -= 1 / SETTINGS.TPS;
          if (this.attackingEntities[id] <= 0) {

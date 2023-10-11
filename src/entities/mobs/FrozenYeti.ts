@@ -66,9 +66,9 @@ class FrozenYeti extends Mob {
          item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2)
       }, "frozen_yeti", FrozenYeti.VISION_RANGE);
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.deep_frost_heart, randInt(2, 3), true);
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.yeti_hide, randInt(5, 7), true);
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(13, 18), false);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.deep_frost_heart, randInt(2, 3), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(5, 7), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(13, 18), false);
 
       const bodyHitbox = new CircularHitbox();
       bodyHitbox.radius = FrozenYeti.SIZE / 2;
@@ -334,20 +334,26 @@ class FrozenYeti extends Mob {
       if (this.globalAttackCooldownTimer > 0) {
          return FrozenYetiAttackType.none;
       }
+
+      const angleDifference = getAngleDifference(angleToTarget, this.rotation);
       
       // Bite if target is in range and the yeti's mouth is close enough
       if (this.biteCooldownTimer === 0 && entityIsInVisionRange(this.position, FrozenYeti.BITE_RANGE, target)) {
-         const angleDifference = getAngleDifference(angleToTarget, this.rotation);
          if (Math.abs(angleDifference) <= 0.7) {
             return FrozenYetiAttackType.bite;
          }
       }
       
-      if (this.roarCooldownTimer === 0) {
+      // Roar attack
+      if (this.roarCooldownTimer === 0 && Math.abs(angleDifference) <= 0.5) {
          return FrozenYetiAttackType.roar;
-      } else if (this.snowballThrowCooldownTimer === 0) {
+      }
+
+      // Snow throw attack
+      if (this.snowballThrowCooldownTimer === 0 && Math.abs(angleDifference) <= 0.5) {
          return FrozenYetiAttackType.snowThrow;
       }
+
       return FrozenYetiAttackType.none;
    }
 

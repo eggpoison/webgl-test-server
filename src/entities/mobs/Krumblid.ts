@@ -25,7 +25,7 @@ class Krumblid extends Mob {
          item_creation: new ItemCreationComponent(48)
       }, "krumblid", SETTINGS.TILE_SIZE * 3.5);
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(2, 3), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.leather, randInt(2, 3), true);
 
       const hitbox = new CircularHitbox();
       hitbox.radius = Krumblid.SIZE / 2;

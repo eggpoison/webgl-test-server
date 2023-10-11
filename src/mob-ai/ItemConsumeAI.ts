@@ -1,4 +1,4 @@
-import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
+import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType, SETTINGS, randFloat } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
@@ -21,6 +21,8 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
    public readonly metabolism: number;
    public readonly itemTargets: ReadonlySet<ItemType>;
 
+   public hunger = randFloat(0, 25);
+   
    /** The food source to move towards */
    private target: DroppedItem | null = null;
 
@@ -43,7 +45,7 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
    }
 
    public onRefresh(): void {
-      // Move to the closest food sourcee
+      // Find the closest food source
       let target: DroppedItem | undefined;
       let minDistance: number = Number.MAX_SAFE_INTEGER;
       for (const droppedItem of this.mob.droppedItemsInVisionRange) {
@@ -94,14 +96,19 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       
       droppedItem.remove();
 
-      this.mob.setAIParam("hunger", 0);
+      this.hunger = 0;
    }
 
    protected _getWeight(): number {
+      // Hackily udpate hunger
+      this.hunger += this.metabolism / SETTINGS.TPS * Mob.AI_REFRESH_INTERVAL;
+      if (this.hunger > 100) {
+         this.hunger = 100;
+      }
+      
       if (this.isActive && this.target === null) return 0;
 
-      const hunger = this.mob.getAIParam("hunger")!;
-      if (hunger < 50) {
+      if (this.hunger < 100) {
          return 0;
       }
 
@@ -118,13 +125,11 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
    public addDebugData(debugData: GameObjectDebugData): void {
       if (this.target === null) return;
 
-      debugData.lines.push(
-         {
-            targetPosition: this.target.position.package(),
-            colour: [0, 0, 1],
-            thickness: 2
-         }
-      );
+      debugData.lines.push({
+         targetPosition: this.target.position.package(),
+         colour: [0, 0, 1],
+         thickness: 2
+      });
    }
 
    protected _callCallback(callback: () => void): void {

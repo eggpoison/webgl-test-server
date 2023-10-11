@@ -32,7 +32,7 @@ class Player extends TribeMember {
       hitbox.radius = 32;
       this.addHitbox(hitbox);
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       inventoryComponent.createNewInventory("hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
       inventoryComponent.createNewInventory("craftingOutputSlot", 1, 1, false);
       inventoryComponent.createNewInventory("heldItemSlot", 1, 1, false);
@@ -43,7 +43,7 @@ class Player extends TribeMember {
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, displayName: string] {
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       
       return [
          this.tribe !== null ? this.tribe.id : null,
@@ -90,7 +90,7 @@ class Player extends TribeMember {
          return;
       }
       
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       const craftingRecipe = CRAFTING_RECIPES[recipeIndex];
       
       // Don't craft past items' stack size
@@ -122,7 +122,7 @@ class Player extends TribeMember {
    }
 
    public processItemPickupPacket(entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
-      const playerInventoryComponent = this.getComponent("inventory")!;
+      const playerInventoryComponent = this.forceGetComponent("inventory");
       
       // Don't pick up the item if there is already a held item
       if (playerInventoryComponent.getInventory("heldItemSlot").itemSlots.hasOwnProperty(1)) {
@@ -149,7 +149,7 @@ class Player extends TribeMember {
    }
 
    public processItemReleasePacket(entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
-      const playerInventoryComponent = this.getComponent("inventory")!;
+      const playerInventoryComponent = this.forceGetComponent("inventory");
       const heldItemInventory = playerInventoryComponent.getInventory("heldItemSlot");
       // Don't release an item if there is no held item
       if (!heldItemInventory.itemSlots.hasOwnProperty(1)) return;
@@ -184,7 +184,7 @@ class Player extends TribeMember {
    }
 
    public processItemUsePacket(itemSlot: number): void {
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
 
       const item = inventoryComponent.getItem("hotbar", itemSlot);
       if (item !== null)  {
@@ -193,7 +193,7 @@ class Player extends TribeMember {
    }
 
    public throwHeldItem(throwDirection: number): void {
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       const heldItemInventory = inventoryComponent.getInventory("heldItemSlot");
       if (heldItemInventory.itemSlots.hasOwnProperty(1)) {
          const dropPosition = this.position.copy();
@@ -227,7 +227,7 @@ class Player extends TribeMember {
 
    public startEating(): void {
       // Reset the food timer so that the food isn't immediately eaten
-      const foodItem = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot);
+      const foodItem = this.forceGetComponent("inventory").getItem("hotbar", this.selectedItemSlot);
       if (foodItem !== null) {
          const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
          this.foodEatingTimer = itemInfo.eatTime;
@@ -238,7 +238,7 @@ class Player extends TribeMember {
 
    public startChargingBow(): void {
       // Reset the cooldown so the bow doesn't fire immediately
-      const bow = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot);
+      const bow = this.forceGetComponent("inventory").getItem("hotbar", this.selectedItemSlot);
       if (bow !== null) {
          const itemInfo = ITEM_INFO_RECORD[bow.type] as BowItemInfo;
          this.bowCooldowns[this.selectedItemSlot] = itemInfo.shotCooldown;

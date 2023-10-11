@@ -104,14 +104,14 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
    // The more the entity wants to stare, the more weight it has
    protected _getWeight(): number {
       if (this.isActive && this.followTarget !== null) {
-         this.weight -= Mob.AI_REFRESH_TIME / this.interestDuration / SETTINGS.TPS;
+         this.weight -= Mob.AI_REFRESH_INTERVAL / this.interestDuration / SETTINGS.TPS;
          if (this.weight <= 0) {
             return 0;
          }
          return 1;
       }
 
-      this.weight += Mob.AI_REFRESH_TIME / this.weightBuildupTime / SETTINGS.TPS;
+      this.weight += Mob.AI_REFRESH_INTERVAL / this.weightBuildupTime / SETTINGS.TPS;
       if (this.weight > 1) {
          this.weight = 1;
       }
@@ -120,7 +120,7 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
          return 0;
       }
 
-      if (typeof this.chanceToGainInterest !== "undefined" && Math.random() >= this.chanceToGainInterest / SETTINGS.TPS * Mob.AI_REFRESH_TIME) {
+      if (typeof this.chanceToGainInterest !== "undefined" && Math.random() >= this.chanceToGainInterest / SETTINGS.TPS * Mob.AI_REFRESH_INTERVAL) {
          return 0;
       }
       return this.weight;

@@ -1,4 +1,4 @@
-import { SETTINGS, TileInfo, TileType } from "webgl-test-shared";
+import { SETTINGS, TileInfo, TileType, randFloat } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import Tile from "../Tile";
 import AI, { BaseAIParams } from "./AI";
@@ -25,6 +25,9 @@ interface TileConsumeAIParams extends BaseAIParams<MobAIType.tileConsume> {
 }
 
 class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIParams {
+   /** Cooldown in seconds between grazes that the mob can't graze */
+   private static readonly GRAZE_COOLDOWN_RANGE = [20, 30] as const;
+   
    public readonly type = MobAIType.tileConsume;
 
    public readonly acceleration: number;
@@ -32,6 +35,7 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
    public readonly tileTargets: ReadonlyMap<TileType, TileFoodSource>;
 
    private grazeTimer: number = 0;
+   private grazeCooldown = randFloat(TileConsumeAI.GRAZE_COOLDOWN_RANGE[0], TileConsumeAI.GRAZE_COOLDOWN_RANGE[1]);
 
    constructor(mob: Mob, aiParams: TileConsumeAIParams) {
       super(mob, aiParams);
@@ -42,7 +46,7 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
    }
 
    protected onActivation(): void {
-      if (this.canGraze()) {
+      if (this.isOnGrazeableTile()) {
          this.grazeTimer = this.tileTargets.get(this.mob.tile.type)!.grazeTime;
       }
 
@@ -53,7 +57,7 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
    public tick(): void {
       super.tick();
 
-      if (this.canGraze()) {
+      if (this.isOnGrazeableTile()) {
          this.grazeTimer -= 1 / SETTINGS.TPS;
          if (this.grazeTimer <= 0) {
             const foodInfo = this.tileTargets.get(this.mob.tile.type)!;
@@ -62,12 +66,12 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
       }
    }
    
-   private canGraze(): boolean {
+   private isOnGrazeableTile(): boolean {
       return this.tileTargets.has(this.mob.tile.type);
    }
 
    private graze(foodInfo: TileFoodSource): void {
-      const healthComponent = this.mob.getComponent("health")!;
+      const healthComponent = this.mob.forceGetComponent("health");
       healthComponent.heal(foodInfo.healAmount);
       
       const previousTile = this.mob.tile;
@@ -78,7 +82,7 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
       };
       new Tile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall);
 
-      this.mob.setAIParam("hunger", 0);
+      this.grazeCooldown = randFloat(TileConsumeAI.GRAZE_COOLDOWN_RANGE[0], TileConsumeAI.GRAZE_COOLDOWN_RANGE[1]);
    }
 
    public getGrazeProgress(): number {
@@ -90,13 +94,7 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
    }
 
    protected _getWeight(): number {
-      const hunger = this.mob.getAIParam("hunger")!;
-
-      // Try to activate the AI if the entity is on a tile it can eat
-      if (this.canGraze() && hunger >= 95) {
-         return 1;
-      }
-      return 0;
+      return this.isOnGrazeableTile() && this.grazeCooldown === 0 ? 1 : 0;
    }
 
    protected _callCallback(callback: () => void): void {

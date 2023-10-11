@@ -11,7 +11,10 @@ abstract class Hitbox {
 
    public offset?: Point;
 
-   /** The bounds of the hitbox since the last physics update */
+   /** Bounds of the hitbox at the beginning of the current tick */
+   public previousBounds: HitboxBounds = [-1, -1, -1, -1];
+
+   /** Up-to-date bounds of the hitbox */
    public bounds: HitboxBounds = [-1, -1, -1, -1];
 
    public abstract updateHitboxBounds(offsetRotation: number): void;

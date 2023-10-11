@@ -169,7 +169,7 @@ class Slime extends Mob {
          callback: (targetEntity: Entity | null): void => {
             if (targetEntity === null) return;
             
-            if (this.collidingObjects.has(targetEntity)) {
+            if (this.collidingObjects.indexOf(targetEntity) !== -1) {
                this.mergeTimer -= 1 / SETTINGS.TPS;
                if (this.mergeTimer <= 0) {
                   this.merge(targetEntity as Slime);
@@ -282,7 +282,7 @@ class Slime extends Mob {
       // Heal when standing on slime blocks
       if (this.tile.type === TileType.slime) {
          if (Board.tickIntervalHasPassed(Slime.HEALING_PROC_INTERVAL)) {
-            this.getComponent("health")!.heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
+            this.forceGetComponent("health").heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
          }
       }
    }
@@ -319,8 +319,8 @@ class Slime extends Mob {
          this.remove();
       } else {
          // Add the other slime's health
-         const otherSlimeHealth = otherSlime.getComponent("health")!.getHealth();
-         this.getComponent("health")!.heal(otherSlimeHealth);
+         const otherSlimeHealth = otherSlime.forceGetComponent("health").getHealth();
+         this.forceGetComponent("health").heal(otherSlimeHealth);
 
          this.createNewOrb(otherSlime.size);
 

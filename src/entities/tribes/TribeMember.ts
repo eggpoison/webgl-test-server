@@ -166,7 +166,7 @@ abstract class TribeMember extends Entity {
 
       // Drop inventory on death
       this.createEvent("death", () => {
-         const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+         const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
          for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
             if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
                const position = this.position.copy();
@@ -197,7 +197,7 @@ abstract class TribeMember extends Entity {
    }
 
    public tick(): void {
-      const inventoryComponent = this.getComponent("inventory")!
+      const inventoryComponent = this.forceGetComponent("inventory");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
 
       // If snow armour is equipped, move at normal speed on snow tiles
@@ -213,9 +213,9 @@ abstract class TribeMember extends Entity {
       // Armour defence
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          const itemInfo = ITEM_INFO_RECORD[armourInventory.itemSlots[1].type] as ArmourItemInfo;
-         this.getComponent("health")!.addDefence(itemInfo.defence, "armour");
+         this.forceGetComponent("health").addDefence(itemInfo.defence, "armour");
       } else {
-         this.getComponent("health")!.removeDefence("armour");
+         this.forceGetComponent("health").removeDefence("armour");
       }
 
       for (const itemSlot of Object.keys(this.bowCooldowns) as unknown as ReadonlyArray<number>) {
@@ -263,18 +263,18 @@ abstract class TribeMember extends Entity {
    }
 
    private attemptToBecomeImmune(): void {
-      const armour = this.getComponent("inventory")!.getItem("armourSlot", 1);
+      const armour = this.forceGetComponent("inventory").getItem("armourSlot", 1);
       if (armour !== null && armour.type === ItemType.deep_frost_armour) {
          this.addImmunity();
       }
    }
 
    private addImmunity(): void {
-      this.getComponent("health")!.addDefence(99999, "deep_frost_armour_immunity");
+      this.forceGetComponent("health").addDefence(99999, "deep_frost_armour_immunity");
    }
 
    private removeImmunity(): void {
-      this.getComponent("health")!.removeDefence("deep_frost_armour_immunity");
+      this.forceGetComponent("health").removeDefence("deep_frost_armour_immunity");
    }
 
    protected getEntityRelationship(entity: Entity): EntityRelationship {
@@ -367,7 +367,7 @@ abstract class TribeMember extends Entity {
     */
    protected attackEntity(targetEntity: Entity, itemSlot: number): void {
       // Find the selected item
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       const item = inventoryComponent.getItem("hotbar", itemSlot);
 
       const attackDamage = this.calculateItemDamage(item, targetEntity);
@@ -377,10 +377,10 @@ abstract class TribeMember extends Entity {
 
       // Register the hit
       const attackHash = this.id.toString();
-      const healthComponent = targetEntity.getComponent("health")!; // Attack targets always have a health component
+      const healthComponent = targetEntity.forceGetComponent("health"); // Attack targets always have a health component
       const hitFlags = item !== null && item.type === ItemType.flesh_sword ? HitFlags.HIT_BY_FLESH_SWORD : 0
       healthComponent.damage(attackDamage, attackKnockback, hitDirection, this, PlayerCauseOfDeath.tribe_member, hitFlags, attackHash);
-      targetEntity.getComponent("health")!.addLocalInvulnerabilityHash(attackHash, 0.3);
+      targetEntity.forceGetComponent("health").addLocalInvulnerabilityHash(attackHash, 0.3);
 
       if (item !== null && item.type === ItemType.flesh_sword) {
          targetEntity.applyStatusEffect(StatusEffect.poisoned, 3);
@@ -439,7 +439,7 @@ abstract class TribeMember extends Entity {
    }
 
    public getArmourItemType(): ItemType | null {
-      const armourInventory = this.getComponent("inventory")!.getInventory("armourSlot");
+      const armourInventory = this.forceGetComponent("inventory").getInventory("armourSlot");
 
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          const armourItem = armourInventory.itemSlots[1];
@@ -449,7 +449,7 @@ abstract class TribeMember extends Entity {
    }
 
    protected getActiveItemType(): ItemType | null {
-      const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+      const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
       if (hotbarInventory.itemSlots.hasOwnProperty(this.selectedItemSlot)) {
          const item = hotbarInventory.itemSlots[this.selectedItemSlot];
@@ -471,7 +471,7 @@ abstract class TribeMember extends Entity {
    protected useItem(item: Item, itemSlot: number): void {
       const itemCategory = ITEM_TYPE_RECORD[item.type];
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
 
       switch (itemCategory) {
          case "armour": {
@@ -491,7 +491,7 @@ abstract class TribeMember extends Entity {
             break;
          }
          case "food": {
-            const healthComponent = this.getComponent("health")!;
+            const healthComponent = this.forceGetComponent("health");
 
             // Don't use food if already at maximum health
             if (healthComponent.getHealth() >= healthComponent.maxHealth) return;

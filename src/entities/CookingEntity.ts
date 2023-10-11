@@ -73,7 +73,7 @@ abstract class HeatingEntity extends Entity {
    public tick(): void {
       super.tick();
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       const fuelInventory = inventoryComponent.getInventory("fuelInventory");
       const ingredientInventory = inventoryComponent.getInventory("ingredientInventory");
 
@@ -114,7 +114,7 @@ abstract class HeatingEntity extends Entity {
    }
 
    public getClientArgs(): [fuelInventory: InventoryData, ingredientInveotry: InventoryData, outputInventory: InventoryData, heatingProgress: number] {
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       return [
          serializeInventoryData(inventoryComponent.getInventory("fuelInventory"), "fuelInventory"),
          serializeInventoryData(inventoryComponent.getInventory("ingredientInventory"), "ingredientInventory"),

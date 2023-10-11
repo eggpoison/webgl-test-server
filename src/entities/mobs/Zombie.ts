@@ -85,7 +85,7 @@ class Zombie extends Mob {
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          if (collidingEntity.type === "player" || this.shouldAttackEntity(collidingEntity)) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
-            const playerHealthComponent = collidingEntity.getComponent("health")!;
+            const playerHealthComponent = collidingEntity.forceGetComponent("health");
 
             const healthBeforeAttack = playerHealthComponent.getHealth();
 
@@ -95,7 +95,7 @@ class Zombie extends Mob {
 
             // Push the zombie away from the entity
             if (playerHealthComponent.getHealth() < healthBeforeAttack) {
-               this.getComponent("health")!.applyKnockback(Zombie.ATTACK_SELF_KNOCKBACK, hitDirection + Math.PI);
+               this.forceGetComponent("health").applyKnockback(Zombie.ATTACK_SELF_KNOCKBACK, hitDirection + Math.PI);
             }
          }
       });
@@ -119,7 +119,7 @@ class Zombie extends Mob {
 
       // Attack tribe members, but only if they aren't wearing a meat suit
       if (entity.type === "player" || entity.type === "tribesman") {
-         const armourInventory = (entity as TribeMember).getComponent("inventory")!.getInventory("armourSlot");
+         const armourInventory = (entity as TribeMember).forceGetComponent("inventory").getInventory("armourSlot");
          if (armourInventory.itemSlots.hasOwnProperty(1)) {
             if (armourInventory.itemSlots[1].type === ItemType.meat_suit) {
                return false;

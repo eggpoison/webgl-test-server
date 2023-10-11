@@ -1,4 +1,4 @@
-import { CowSpecies, ItemType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
+import { CowSpecies, ItemType, Point, randFloat, randInt, SETTINGS, TileType } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -27,9 +27,6 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
-
-      this.setAIParam("hunger", randInt(0, 50));
-      this.setAIParam("metabolism", 2.5);
 
       this.addAI(new WanderAI(this, {
          aiWeightMultiplier: 0.5,
@@ -85,7 +82,7 @@ class Cow extends Mob {
          aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 20,
+         metabolism: randFloat(2.5, 3),
          itemTargets: new Set([ItemType.berry])
       }));
 
@@ -109,8 +106,8 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.leather, randInt(0, 2), true);
    }
 
    public getClientArgs(): [species: CowSpecies, grazeProgress: number] {

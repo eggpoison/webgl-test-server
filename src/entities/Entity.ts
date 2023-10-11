@@ -86,8 +86,9 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
       // Tick components
       // @Speed: This is sorta slow, perhaps try making just one massive container storing all tickable components???
-      for (const component of this.tickableComponents) {
-         component.tick!();
+      const numTickableComponents = this.tickableComponents.length;
+      for (let i = 0; i < numTickableComponents; i++) {
+         this.tickableComponents[i].tick!();
       }
       
       // this.tickStatusEffects();
@@ -100,6 +101,10 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          return this.components[name] as EntityComponents[C];
       }
       return null;
+   }
+
+   public forceGetComponent<C extends keyof EntityComponents>(name: C): EntityComponents[C] {
+      return this.components[name] as EntityComponents[C];
    }
 
    private tickStatusEffects(): void {
@@ -120,20 +125,20 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          } else {
             // Fire tick
             if (this.statusEffectInfo[StatusEffect.burning]!.ticksElapsed % 15 === 0) {
-               this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
+               this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
             }
          }
       }
 
       if (this.hasStatusEffect(StatusEffect.poisoned)) {
          if (this.statusEffectInfo[StatusEffect.poisoned]!.ticksElapsed % 10 === 0) {
-            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
+            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
          }
       }
 
       if (this.hasStatusEffect(StatusEffect.bleeding)) {
          if (this.statusEffectInfo[StatusEffect.bleeding]!.ticksElapsed % 20 === 0) {
-            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
+            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
          }
       }
    }
@@ -158,20 +163,20 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          } else {
             // Fire tick
             if (this.statusEffectInfo[StatusEffect.burning]!.ticksElapsed % 15 === 0) {
-               this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
+               this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
             }
          }
       }
 
       if (this.hasStatusEffect(StatusEffect.poisoned)) {
          if (this.statusEffectInfo[StatusEffect.poisoned]!.ticksElapsed % 10 === 0) {
-            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
+            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
          }
       }
 
       if (this.hasStatusEffect(StatusEffect.bleeding)) {
          if (this.statusEffectInfo[StatusEffect.bleeding]!.ticksElapsed % 20 === 0) {
-            this.getComponent("health")!.damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
+            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
          }
       }
    }
