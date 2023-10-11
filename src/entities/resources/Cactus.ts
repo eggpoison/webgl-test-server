@@ -30,7 +30,7 @@ const generateRandomLimbs = (): ReadonlyArray<CactusLimbData> => {
    // Low chance for 0 limbs
    // High chance for 1 limb
    // Less chance for 2 limbs
-   // Less chance for 3 limbs, etc.
+   // Less chance for 3 limbs
    let numLimbs = 0;
    while (Math.random() < 4/5 - numLimbs/5 && numLimbs < 3) {
       numLimbs++;
@@ -83,7 +83,8 @@ class Cactus extends Entity {
          item_creation: itemCreationComponent
       }, "cactus");
 
-      this.rotation = 2 * Math.PI * Math.random();
+      // this.rotation = 2 * Math.PI * Math.random();
+      this.rotation = Math.random() < 0.5 ? 0 : Math.PI;
 
       const hitbox = new CircularHitbox();
       hitbox.radius = Cactus.RADIUS - Cactus.HITBOX_PADDING;

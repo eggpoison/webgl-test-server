@@ -16,9 +16,6 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
-import TribeHut from "./entities/tribes/TribeHut";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import FrozenYeti from "./entities/mobs/FrozenYeti";
 
 /*
 

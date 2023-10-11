@@ -6,7 +6,7 @@ import { GameObject } from "../GameObject";
 export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: number];
 
 abstract class Hitbox {
-   /** The position of the hitbox, accounting for offset from its entity */
+   /** The position of the hitbox, accounting for its offset and offset rotation */
    public position = new Point(0, 0);
 
    public offset?: Point;
@@ -24,13 +24,6 @@ abstract class Hitbox {
       if (typeof this.offset !== "undefined") {
          this.position.x += rotateXAroundPoint(this.offset.x, this.offset.y, 0, 0, gameObject.rotation);
          this.position.y += rotateYAroundPoint(this.offset.x, this.offset.y, 0, 0, gameObject.rotation);
-      }
-   }
-
-   public setPosition(position: Point): void {
-      this.position = position;
-      if (isNaN(this.position.x)) {
-         throw new Error("Invalid position.");
       }
    }
 
