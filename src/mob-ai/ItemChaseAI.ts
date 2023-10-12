@@ -59,7 +59,9 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
       this.mob.terminalVelocity = this.terminalVelocity;
    }
 
-   public onDeactivation(): void {
+   public deactivate(): void {
+      super.deactivate();
+
       this.target = null;
    }
    
@@ -79,13 +81,11 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
    public addDebugData(debugData: GameObjectDebugData): void {
       if (this.target === null) return;
 
-      debugData.lines.push(
-         {
-            targetPosition: this.target.position.package(),
-            colour: [0, 0, 1],
-            thickness: 2
-         }
-      );
+      debugData.lines.push({
+         targetPosition: this.target.position.package(),
+         colour: [0, 0, 1],
+         thickness: 2
+      });
    }
 
    protected _callCallback(callback: (targetEntity: DroppedItem | null) => void): void {

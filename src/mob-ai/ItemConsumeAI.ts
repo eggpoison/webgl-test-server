@@ -64,7 +64,9 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       super.moveToPosition(this.target.position, this.acceleration, this.terminalVelocity);
    }
 
-   public onDeactivation(): void {
+   public deactivate(): void {
+      super.deactivate();
+      
       this.target = null;
    }
 

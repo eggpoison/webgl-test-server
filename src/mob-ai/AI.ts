@@ -58,7 +58,6 @@ abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
    }
 
    protected onActivation?(): void;
-   public onDeactivation?(): void;
    public onRefresh?(): void;
 
    protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {

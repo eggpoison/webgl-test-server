@@ -42,7 +42,9 @@ export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
 export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
 
-// @Cleanup: To reduce the use of "this as unknown as GameObject", make this not have type parameters.
+/*
+* @Cleanup: To reduce the use of "this as unknown as GameObject", make this not have type parameters.
+*/
 
 /** A generic class for any object in the world which has hitbox(es) */
 abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType extends GameObjectEvents> {

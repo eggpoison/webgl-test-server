@@ -460,9 +460,6 @@ abstract class Board {
 
             // Check if it is in the chunk's game objects
             if (chunk.gameObjects.indexOf(gameObject) !== -1) return true;
-
-            // If the game object is an entity, check if it is in the chunk's entities
-            if (gameObject.i === "entity" && chunk.entities.has(gameObject)) return true;
          }
       }
 

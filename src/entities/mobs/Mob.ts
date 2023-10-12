@@ -90,7 +90,6 @@ abstract class Mob extends Entity {
          ai.activate();
          if (this.currentAI !== null) {
             this.currentAI.deactivate();
-            if (typeof this.currentAI.onDeactivation !== "undefined") this.currentAI.onDeactivation();
          }
       }
       

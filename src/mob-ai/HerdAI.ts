@@ -1,15 +1,8 @@
-import { curveWeight, EntityType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { curveWeight, EntityType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import { MobAIType } from "../mob-ai-types";
-
-type InfluenceFalloff = {
-   /** Minimum number of entities to begin the falloff */
-   readonly start: number;
-   /** How many entities until the falloff fully occurs */
-   readonly duration: number;
-}
 
 interface HerdAIParams extends BaseAIParams<MobAIType.herd> {
    readonly acceleration: number;
