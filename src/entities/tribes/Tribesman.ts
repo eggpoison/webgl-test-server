@@ -84,7 +84,6 @@ class Tribesman extends TribeMember {
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
 
-
       const hitbox = new CircularHitbox();
       hitbox.radius = 32;
       this.addHitbox(hitbox);
@@ -428,8 +427,7 @@ class Tribesman extends TribeMember {
       }
 
       // If a melee attack is being done, update to attack at melee distance
-      // @Temporary
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestEnemy.position) && false) {
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestEnemy.position)) {
          this.terminalVelocity = 0;
          this.acceleration.x = 0;
          this.acceleration.y = 0;
@@ -507,7 +505,7 @@ class Tribesman extends TribeMember {
 
       // If a melee attack is being done, update to attack at melee distance
       this.rotation = this.position.calculateAngleBetween(resource.position);
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position) && false) {
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position)) {
          this.terminalVelocity = 0;
          this.acceleration.x = 0;
          this.acceleration.y = 0;

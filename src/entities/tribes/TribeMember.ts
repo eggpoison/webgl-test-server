@@ -154,7 +154,8 @@ abstract class TribeMember extends Entity {
       const inventoryComponent = new InventoryComponent();
       
       super(position, {
-         health: new HealthComponent(tribeInfo.maxHealth, true),
+         // @Temporary
+         health: new HealthComponent(entityType === "tribesman" ? 10 : tribeInfo.maxHealth, true),
          inventory: inventoryComponent
       }, entityType);
 

@@ -79,7 +79,9 @@ class Cactus extends Entity {
       const itemCreationComponent = new ItemCreationComponent(48);
 
       super(position, {
-         health: new HealthComponent(Cactus.MAX_HEALTH, false),
+         // @Temporary
+         // health: new HealthComponent(Cactus.MAX_HEALTH, false),
+         health: new HealthComponent(500, false),
          item_creation: itemCreationComponent
       }, "cactus");
 
