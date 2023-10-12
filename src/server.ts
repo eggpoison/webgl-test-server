@@ -232,8 +232,8 @@ class GameServer {
       }
 
       if (typeof this.tickInterval === "undefined") {
-         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         // this.tickInterval = setInterval(() => this.tick(), 3);
+         // this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         this.tickInterval = setInterval(() => this.tick(), 3);
       }
    }
 

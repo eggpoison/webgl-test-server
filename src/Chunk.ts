@@ -3,6 +3,7 @@ import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
+import Mob from "./entities/mobs/Mob";
 
 export interface RiverSteppingStone {
    readonly position: Point;
@@ -17,6 +18,9 @@ class Chunk {
    public readonly entities = new Set<Entity>();
    public readonly droppedItems = new Set<DroppedItem>();
    public readonly projectiles = new Set<Projectile>();
+
+   /** Stores all mobs which have the chunk in their vision range */
+   public readonly viewingMobs = new Array<Mob>();
 
    public readonly riverSteppingStones = new Array<RiverSteppingStone>();
 
@@ -44,6 +48,18 @@ class Chunk {
             this.projectiles.add(gameObject);
          }
       }
+
+      const numViewingMobs = this.viewingMobs.length;
+      for (let i = 0; i < numViewingMobs; i++) {
+         const mob = this.viewingMobs[i];
+         const idx = mob.potentialVisibleGameObjects.indexOf(gameObject);
+         if (idx === -1) {
+            mob.potentialVisibleGameObjects.push(gameObject);
+            mob.potentialVisibleGameObjectAppearances.push(1);
+         } else {
+            mob.potentialVisibleGameObjectAppearances[idx]++;
+         }
+      }
    }
 
    public removeGameObject(gameObject: GameObject): void {
@@ -63,6 +79,20 @@ class Chunk {
          }
          case "projectile": {
             this.projectiles.delete(gameObject);
+         }
+      }
+
+      const numViewingMobs = this.viewingMobs.length;
+      for (let i = 0; i < numViewingMobs; i++) {
+         const mob = this.viewingMobs[i];
+         const idx = mob.potentialVisibleGameObjects.indexOf(gameObject);
+         if (idx === -1) {
+            throw new Error();
+         }
+         mob.potentialVisibleGameObjectAppearances[idx]--;
+         if (mob.potentialVisibleGameObjectAppearances[idx] === 0) {
+            mob.potentialVisibleGameObjects.splice(idx, 1);
+            mob.potentialVisibleGameObjectAppearances.splice(idx, 1);
          }
       }
    }

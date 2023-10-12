@@ -181,7 +181,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
    }
 
-   public cleanHitboxes(a: number): void {
+   public cleanHitboxes(): void {
       this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
       this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
       this.boundingArea[2] = Number.MAX_SAFE_INTEGER;

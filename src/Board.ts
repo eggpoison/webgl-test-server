@@ -258,7 +258,7 @@ abstract class Board {
 
          // Clean the game object's bounding area, hitbox bounds and chunks
          if (gameObject.hitboxesAreDirty) {
-            gameObject.cleanHitboxes(1);
+            gameObject.cleanHitboxes();
          }
       }
    }
@@ -316,7 +316,7 @@ abstract class Board {
          }
 
          if (gameObject.hitboxesAreDirty) {
-            gameObject.cleanHitboxes(2);
+            gameObject.cleanHitboxes();
          }
 
          gameObject.previousCollidingObjects = gameObject.collidingObjects;

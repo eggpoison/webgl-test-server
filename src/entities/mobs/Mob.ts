@@ -1,4 +1,4 @@
-import { EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
@@ -6,12 +6,13 @@ import DroppedItem from "../../items/DroppedItem";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Chunk from "../../Chunk";
 import { MobAIType } from "../../mob-ai-types";
+import { GameObject } from "src/GameObject";
+import Hitbox from "src/hitboxes/Hitbox";
+import RectangularHitbox from "src/hitboxes/RectangularHitbox";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
    public static readonly AI_REFRESH_INTERVAL = 4;
-
-   private static readonly testHitbox = new CircularHitbox();
    
    /** Number of units that the mob can see for */
    public readonly visionRange: number;
@@ -22,10 +23,14 @@ abstract class Mob extends Entity {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_INTERVAL - 1);
 
+   private gameObjectsInVisionRange = new Array<GameObject>();
    protected readonly entitiesInVisionRange = new Set<Entity>();
    public readonly droppedItemsInVisionRange = new Set<DroppedItem>();
 
-   private chunksInVisionRange = new Array<Chunk>();
+   private visibleChunks = new Array<Chunk>();
+
+   public readonly potentialVisibleGameObjects = new Array<GameObject>();
+   public readonly potentialVisibleGameObjectAppearances = new Array<number>();
 
    /** Value used by herd member hash for determining mob herds */
    public herdMemberHash = -1;
@@ -50,7 +55,7 @@ abstract class Mob extends Entity {
       super.tick();
 
       // Refresh AI
-      if (++this.aiRefreshTicker === Mob.AI_REFRESH_INTERVAL) {
+      if (++this.aiRefreshTicker === Mob.AI_REFRESH_INTERVAL && this.ais.length > 0) {
          this.refreshAI();
          this.aiRefreshTicker = 0;
       }
@@ -62,13 +67,8 @@ abstract class Mob extends Entity {
    }
 
    public refreshAI(): void {
-      // If the mob has no AI's, don't try to change the current AI
-      if (this.ais.length === 0) {
-         return;
-      }
-      
-      this.updateChunksInVisionRange();
-      this.updateGameObjectsInVisionRange();
+      this.updateVisibleChunks();
+      this.updateVisibleGameObjects();
 
       // Find the AI to switch to
       let ai: AI<MobAIType> | undefined;
@@ -99,26 +99,66 @@ abstract class Mob extends Entity {
       this.currentAI = ai;
    }
 
-   private updateChunksInVisionRange(): void {
+   private updateVisibleChunks(): void {
       const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
 
       if (minChunkX !== this.lastMinVisibleChunkX || maxChunkX !== this.lastMaxVisibleChunkX || minChunkY !== this.lastMinVisibleChunkY || maxChunkY !== this.lastMaxVisibleChunkY) {
-         this.chunksInVisionRange = [];
+         const newVisibleChunks = new Array<Chunk>();
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-               // 
                // Check if the chunk is actually in the vision range
-               // 
-   
                // Find the closest vertex of the chunk to the mob
                const x = this.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
                const y = this.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
    
                if (Math.pow(x - this.position.x, 2) + Math.pow(y - this.position.y, 2) <= this.visionRangeSquared) {
-                  this.chunksInVisionRange.push(Board.getChunk(chunkX, chunkY));
+                  newVisibleChunks.push(Board.getChunk(chunkX, chunkY));
+               }
+            }
+         }
+
+         // Find all chunks which aren't present in the new chunks and remove them
+         for (const chunk of this.visibleChunks) {
+            if (newVisibleChunks.indexOf(chunk) === -1) {
+               // Remove previously visible chunk
+               chunk.viewingMobs.splice(chunk.viewingMobs.indexOf(this), 1);
+               this.visibleChunks.splice(this.visibleChunks.indexOf(chunk), 1);
+
+               // Remove game objects in the chunk from the potentially visible list
+               const numGameObjects = chunk.gameObjects.length;
+               for (let i = 0; i < numGameObjects; i++) {
+                  const gameObject = chunk.gameObjects[i];
+                  const idx = this.potentialVisibleGameObjects.indexOf(gameObject);
+                  this.potentialVisibleGameObjectAppearances[idx]--;
+                  if (this.potentialVisibleGameObjectAppearances[idx] === 0) {
+                     this.potentialVisibleGameObjects.splice(idx, 1);
+                     this.potentialVisibleGameObjectAppearances.splice(idx, 1);
+                  }
+               }
+            }
+         }
+   
+         // Add all new chunks
+         for (const chunk of newVisibleChunks) {
+            if (this.visibleChunks.indexOf(chunk) === -1) {
+               // Add new visible chunk
+               chunk.viewingMobs.push(this);
+               this.visibleChunks.push(chunk);
+
+               // Add existing game objects to the potentially visible list
+               const numGameObjects = chunk.gameObjects.length;
+               for (let i = 0; i < numGameObjects; i++) {
+                  const gameObject = chunk.gameObjects[i];
+                  const idx = this.potentialVisibleGameObjects.indexOf(gameObject);
+                  if (idx === -1) {
+                     this.potentialVisibleGameObjects.push(gameObject);
+                     this.potentialVisibleGameObjectAppearances.push(1);
+                  } else {
+                     this.potentialVisibleGameObjectAppearances[idx]++;
+                  }
                }
             }
          }
@@ -131,27 +171,40 @@ abstract class Mob extends Entity {
    }
    
    /** Finds all entities within the range of the mob's vision */
-   private updateGameObjectsInVisionRange(): void {
-      Mob.testHitbox.radius = this.visionRange;
-      Mob.testHitbox.position.x = this.position.x;
-      Mob.testHitbox.position.y = this.position.y;
-      Mob.testHitbox.updateHitboxBounds(0);
-      
+   private updateVisibleGameObjects(): void {
+      this.gameObjectsInVisionRange = [this];
       this.entitiesInVisionRange.clear();
       this.droppedItemsInVisionRange.clear();
 
-      const numChunksInVisionRange = this.chunksInVisionRange.length;
-      for (let i = 0; i < numChunksInVisionRange; i++) {
-         const chunk = this.chunksInVisionRange[i];
+      const numPotentialGameObjects = this.potentialVisibleGameObjects.length;
+      for (let i = 0; i < numPotentialGameObjects; i++) {
+         const gameObject = this.potentialVisibleGameObjects[i];
+         // Don't add existing game objects
+         if (this.gameObjectsInVisionRange.indexOf(gameObject) !== -1) {
+            continue;
+         }
 
-         for (const gameObject of chunk.gameObjects) {
-            // Don't add existing game objects
-            // @Speed: This is a ton of checks
-            if ((gameObject.i === "entity" && this.entitiesInVisionRange.has(gameObject)) || (gameObject.i === "droppedItem" && this.droppedItemsInVisionRange.has(gameObject)) || gameObject === this) {
-               continue;
+         if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= this.visionRangeSquared) {
+            this.gameObjectsInVisionRange.push(gameObject);
+            switch (gameObject.i) {
+               case "entity": {
+                  this.entitiesInVisionRange.add(gameObject);
+                  break;
+               }
+               case "droppedItem": {
+                  this.droppedItemsInVisionRange.add(gameObject);
+                  break;
+               }
             }
+            continue;
+         }
 
-            if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= this.visionRangeSquared) {
+         // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
+         const numHitboxes = gameObject.hitboxes.length;
+         for (let j = 0; j < numHitboxes; j++) {
+            const hitbox = gameObject.hitboxes[j];
+            if (this.hitboxIsVisible(hitbox)) {
+               this.gameObjectsInVisionRange.push(gameObject);
                switch (gameObject.i) {
                   case "entity": {
                      this.entitiesInVisionRange.add(gameObject);
@@ -162,28 +215,22 @@ abstract class Mob extends Entity {
                      break;
                   }
                }
-               continue;
-            }
-
-            // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
-            const numHitboxes = gameObject.hitboxes.length;
-            for (let j = 0; j < numHitboxes; j++) {
-               const hitbox = gameObject.hitboxes[j];
-               if (Mob.testHitbox.isColliding(hitbox)) {
-                  switch (gameObject.i) {
-                     case "entity": {
-                        this.entitiesInVisionRange.add(gameObject);
-                        break;
-                     }
-                     case "droppedItem": {
-                        this.droppedItemsInVisionRange.add(gameObject);
-                        break;
-                     }
-                  }
-                  break;
-               }
+               break;
             }
          }
+      }
+
+      this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this));
+   }
+
+   private hitboxIsVisible(hitbox: Hitbox): boolean {
+      // @Speed: This check is slow
+      if (hitbox.hasOwnProperty("radius")) {
+         // Circular hitbox
+         return circlesDoIntersect(this.position, this.visionRange, hitbox.position, (hitbox as CircularHitbox).radius);
+      } else {
+         // Rectangular hitbox
+         return circleAndRectangleDoIntersect(this.position, this.visionRange, hitbox.position, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
       }
    }
 
