@@ -37,7 +37,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
       this.mob.createEvent("hurt", (_: unknown, attackingEntity: Entity | null): void => {
          if (attackingEntity === null) return;
 
-         const healthComponent = this.mob.getComponent("health")!;
+         const healthComponent = this.mob.forceGetComponent("health");
          if (healthComponent.getHealth() <= this.escapeHealthThreshold) {
             this.attacker = attackingEntity;
             this.attackSubsideTimer = this.attackSubsideTime;
@@ -58,8 +58,8 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
       this.mob.rotation = direction;
    }
 
-   protected _getWeight(): number {
-      this.attackSubsideTimer -= Mob.AI_REFRESH_TIME / SETTINGS.TPS;
+   public canSwitch(): boolean {
+      this.attackSubsideTimer -= Mob.AI_REFRESH_INTERVAL / SETTINGS.TPS;
       if (this.attackSubsideTimer <= 0) {
          this.attacker = null;
       }
@@ -69,7 +69,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
          this.attacker = null;
       }
 
-      return this.attacker !== null ? 1 : 0;
+      return this.attacker !== null;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

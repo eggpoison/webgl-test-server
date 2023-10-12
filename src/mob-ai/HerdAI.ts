@@ -18,9 +18,10 @@ interface HerdAIParams extends BaseAIParams<MobAIType.herd> {
    readonly minSeperationDistance: number;
    /** Rate at which the mob turns */
    readonly turnRate: number;
-   /** Maximum number of entities that can have an influence on the AI's weight */
-   readonly maxWeightInflenceCount: number;
-   readonly weightInfluenceFalloff?: InfluenceFalloff;
+   /** Minimum number of entities that can activate the AI */
+   readonly minActivateAmount: number;
+   /** Maximum number of entities that can activate the AI */
+   readonly maxActivateAmount: number;
    /** Mobs which can be classified as herd members */
    readonly validHerdMembers: ReadonlySet<EntityType>;
    /** How much the mob will try and avoid being too close to nearby herd members */
@@ -42,8 +43,8 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
    public readonly minSeperationDistance: number;
    public readonly turnRate: number;
    public readonly validHerdMembers: ReadonlySet<EntityType>;
-   public readonly maxWeightInflenceCount: number;
-   public readonly weightInfluenceFalloff?: InfluenceFalloff;
+   readonly minActivateAmount: number;
+   readonly maxActivateAmount: number;
    public readonly seperationInfluence: number;
    public readonly alignmentInfluence: number;
    public readonly cohesionInfluence: number;
@@ -60,8 +61,8 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
       this.minSeperationDistance = aiParams.minSeperationDistance;
       this.turnRate = aiParams.turnRate;
       this.validHerdMembers = aiParams.validHerdMembers;
-      this.maxWeightInflenceCount = aiParams.maxWeightInflenceCount;
-      this.weightInfluenceFalloff = aiParams.weightInfluenceFalloff;
+      this.minActivateAmount = aiParams.minActivateAmount;
+      this.maxActivateAmount = aiParams.maxActivateAmount;
       this.seperationInfluence = aiParams.seperationInfluence;
       this.alignmentInfluence = aiParams.alignmentInfluence;
       this.cohesionInfluence = aiParams.cohesionInfluence;
@@ -264,16 +265,8 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
       return filteredEntities;
    }
 
-   protected _getWeight(): number {
-      // Weight unaffected by falloff
-      let weight = Math.min(this.entitiesInVisionRange.size / this.maxWeightInflenceCount, 1)
-
-      // Clamp the weight to match falloff
-      if (typeof this.weightInfluenceFalloff !== "undefined" && this.entitiesInVisionRange.size >= this.weightInfluenceFalloff.start) {
-         weight = Math.min(weight, 1 - Math.min((this.entitiesInVisionRange.size - this.weightInfluenceFalloff.start + 1) / this.weightInfluenceFalloff.duration, 1));
-      }
-
-      return weight;
+   public canSwitch(): boolean {
+      return this.entitiesInVisionRange.size >= this.minActivateAmount && this.entitiesInVisionRange.size <= this.maxActivateAmount;
    }
 
    protected _callCallback(callback: () => void): void {

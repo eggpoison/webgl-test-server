@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, Vector, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TribeType, TileType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TileType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -241,13 +241,14 @@ class GameServer {
       }
    }
 
-   private async tick(): Promise<void> {
+   private tick(): void {
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
 
       Board.updateTribes();
 
       Board.updateGameObjects();
+      // Done before wall collisions so that game objects don't clip into walls for a tick
       Board.resolveGameObjectCollisions();
       Board.resolveWallCollisions();
       
@@ -269,8 +270,7 @@ class GameServer {
 
       Board.removeFlaggedGameObjects();
 
-      // Send game data packets to all players
-      await this.sendGameDataPackets();
+      this.sendGameDataPackets();
 
       // Reset the killed entity IDs
       Board.killedEntities = [];
@@ -529,7 +529,7 @@ class GameServer {
    }
 
    /** Send data about the server to all players */
-   public async sendGameDataPackets(): Promise<void> {
+   public sendGameDataPackets(): void {
       if (this.io === null) return;
 
       if (this.trackedGameObjectID !== null && !Board.hasGameObject(this.trackedGameObjectID)) {
@@ -542,16 +542,11 @@ class GameServer {
          gameObjectDebugData = gameObject.getDebugData();
       }
 
-      // @Speed: This has to block execution every time this is called. Maybe just maintain a list on my own?
-      const sockets = await this.io.fetchSockets();
-      for (const socket of sockets) {
-         // Skip clients which haven't been properly loaded yet
-         if (!this.playerDataRecord.hasOwnProperty(socket.id)) continue;
+      for (const playerData of Object.values(this.playerDataRecord)) {
+         if (!playerData.clientIsActive) {
+            continue;
+         }
          
-         if (!this.playerDataRecord[socket.id].clientIsActive) continue;
-         
-         // Get the player data for the current client
-         const playerData = this.playerDataRecord[socket.id];
          const player = playerData.instance;
 
          const tileUpdates = Board.popTileUpdates();
@@ -575,7 +570,7 @@ class GameServer {
 
          const killedEntityIDs = calculateKilledEntityIDs(extendedVisibleChunkBounds);
 
-         const playerArmour = player.getComponent("inventory")!.getItem("armourSlot", 1);
+         const playerArmour = player.forceGetComponent("inventory").getItem("armourSlot", 1);
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
@@ -586,7 +581,7 @@ class GameServer {
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
-            playerHealth: player.getComponent("health")!.getHealth(),
+            playerHealth: player.forceGetComponent("health").getHealth(),
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
             killedEntityIDs: killedEntityIDs,
@@ -594,7 +589,7 @@ class GameServer {
          };
 
          // Send the game data to the player
-         socket.emit("game_data_packet", gameDataPacket);
+         playerData.socket.emit("game_data_packet", gameDataPacket);
       }
    }
 
@@ -612,7 +607,7 @@ class GameServer {
    }
 
    private bundleInventory(player: Player, inventoryName: string): InventoryData {
-      const inventory = player.getComponent("inventory")!.getInventory(inventoryName);
+      const inventory = player.forceGetComponent("inventory").getInventory(inventoryName);
 
       const inventoryData: InventoryData = {
          itemSlots: {},
@@ -650,7 +645,7 @@ class GameServer {
             acceleration: player.acceleration.package(),
             rotation: player.rotation,
             terminalVelocity: player.terminalVelocity,
-            health: player.getComponent("health")!.getHealth(),
+            health: player.forceGetComponent("health").getHealth(),
             inventory: this.bundlePlayerInventoryData(player)
          };
 

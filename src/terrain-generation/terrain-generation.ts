@@ -2,9 +2,10 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/biome-generation-info";
 import Tile from "../Tile";
-import { BiomeName, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfo, Vector, WaterRockData, lerp, randFloat, randInt, randSign } from "webgl-test-shared";
+import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfo, WaterRockData, lerp } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
 import Board from "../Board";
+import SRandom from "../SRandom";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
@@ -203,7 +204,8 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
          continue;
       }
 
-      const directionOffset = randFloat(0, Math.PI/10) * randSign();
+      const sign = SRandom.next() < 0.5 ? 1 : -1;
+      const directionOffset = SRandom.randFloat(0, Math.PI/10) * sign;
 
       let crossingDirection: number | undefined;
       const clockwiseIsWater = tileAtOffsetIsWater(startTile.tileX, startTile.tileY, startTile.flowDirection + directionOffset + Math.PI/2, riverTiles);
@@ -270,6 +272,9 @@ export interface TerrainGenerationInfo {
 }
 
 function generateTerrain(): TerrainGenerationInfo {
+   // Seed the random number generator
+   SRandom.seed(123456789);
+   
    // Initialise the tile info array
    const tileInfoArray = new Array<Array<Partial<TileInfo>>>();
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
@@ -302,14 +307,14 @@ function generateTerrain(): TerrainGenerationInfo {
    const waterRocks = new Array<WaterRockData>();
 
    for (const tile of riverTiles) {
-      if (Math.random() < 0.075) {
-         const x = (tile.tileX + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (tile.tileY + Math.random()) * SETTINGS.TILE_SIZE;
+      if (SRandom.next() < 0.075) {
+         const x = (tile.tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
+         const y = (tile.tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
          waterRocks.push({
             position: [x, y],
-            rotation: 2 * Math.PI * Math.random(),
-            size: randInt(0, 1),
-            opacity: Math.random()
+            rotation: 2 * Math.PI * SRandom.next(),
+            size: SRandom.randInt(0, 1),
+            opacity: SRandom.next()
          });
       }
    }
@@ -320,7 +325,7 @@ function generateTerrain(): TerrainGenerationInfo {
    const riverCrossings = new Array<RiverCrossingInfo>();
    mainLoop:
    for (const crossingInfo of potentialRiverCrossings) {
-      if (Math.random() >= 0.15) {
+      if (SRandom.next() >= 0.15) {
          continue;
       }
       
@@ -354,7 +359,7 @@ function generateTerrain(): TerrainGenerationInfo {
          let x = lerp(minX, maxX, dist);
          let y = lerp(minY, maxY, dist);
 
-         const offsetMultiplier = randFloat(-1, 1);
+         const offsetMultiplier = SRandom.randFloat(-1, 1);
          x += RIVER_CROSSING_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
          y += RIVER_CROSSING_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
@@ -370,7 +375,7 @@ function generateTerrain(): TerrainGenerationInfo {
             continue;
          }
 
-         const stoneSize: RiverSteppingStoneSize = randInt(0, 2);
+         const stoneSize: RiverSteppingStoneSize = SRandom.randInt(0, 2);
          const radius = RIVER_STEPPING_STONE_SIZES[stoneSize]/2;
 
          // Don't overlap with existing stones in the crossing
@@ -384,7 +389,7 @@ function generateTerrain(): TerrainGenerationInfo {
          const data: RiverSteppingStoneData = {
             position: [x, y],
             size: stoneSize,
-            rotation: 2 * Math.PI * Math.random()
+            rotation: 2 * Math.PI * SRandom.next()
          };
          localCrossingStones.push(data);
          riverSteppingStones.push(data);
@@ -394,12 +399,12 @@ function generateTerrain(): TerrainGenerationInfo {
       const crossingDist = Math.sqrt(Math.pow(minX - maxX, 2) + Math.pow(minY - maxY, 2));
       const numWaterRocks = Math.floor(crossingDist / 6);
       for (let i = 0; i < numWaterRocks; i++) {
-         const dist = Math.random();
+         const dist = SRandom.next();
          
          let x = lerp(minX, maxX, dist);
          let y = lerp(minY, maxY, dist);
 
-         const offsetMultiplier = randFloat(-1, 1);
+         const offsetMultiplier = SRandom.randFloat(-1, 1);
          x += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
          y += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
@@ -416,9 +421,9 @@ function generateTerrain(): TerrainGenerationInfo {
 
          waterRocks.push({
             position: [x, y],
-            size: randInt(0, 1),
-            rotation: 2 * Math.PI * Math.random(),
-            opacity: Math.random()
+            size: SRandom.randInt(0, 1),
+            rotation: 2 * Math.PI * SRandom.next(),
+            opacity: SRandom.next()
          });
       }
    }

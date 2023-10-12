@@ -25,15 +25,21 @@ class Krumblid extends Mob {
          item_creation: new ItemCreationComponent(48)
       }, "krumblid", SETTINGS.TILE_SIZE * 3.5);
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(2, 3), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.leather, randInt(2, 3), true);
 
       const hitbox = new CircularHitbox();
       hitbox.radius = Krumblid.SIZE / 2;
       this.addHitbox(hitbox);
 
+      this.addAI(new EscapeAI(this, {
+         acceleration: Krumblid.RUN_ACCELERATION,
+         terminalVelocity: Krumblid.RUN_TERMINAL_VELOCITY,
+         attackSubsideTime: 3,
+         escapeHealthThreshold: Krumblid.MAX_HEALTH
+      }));
+
       // Make the krumblid like to hide in cacti
       this.addAI(new FollowAI(this, {
-         aiWeightMultiplier: 1,
          acceleration: Krumblid.WALK_ACCELERATION,
          terminalVelocity: Krumblid.WALK_TERMINAL_VELOCITY,
          followableEntityTypes: new Set(["cactus"]),
@@ -43,19 +49,10 @@ class Krumblid extends Mob {
       }));
 
       this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
          acceleration: Krumblid.WALK_ACCELERATION,
          terminalVelocity: Krumblid.WALK_TERMINAL_VELOCITY,
          wanderRate: 0.25,
          validTileTargets: [TileType.sand]
-      }));
-
-      this.addAI(new EscapeAI(this, {
-         aiWeightMultiplier: 1.5,
-         acceleration: Krumblid.RUN_ACCELERATION,
-         terminalVelocity: Krumblid.RUN_TERMINAL_VELOCITY,
-         attackSubsideTime: 3,
-         escapeHealthThreshold: Krumblid.MAX_HEALTH
       }));
 
       this.rotation = 2 * Math.PI * Math.random();

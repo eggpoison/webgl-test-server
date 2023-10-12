@@ -33,7 +33,8 @@ abstract class Board {
    /** The time of day the server is currently in (from 0 to 23) */
    public static time = 6;
 
-   private static readonly gameObjects = new Set<GameObject>();
+   /** This is an array as game objects get created/removed fairly slowly */
+   private static readonly gameObjects = new Array<GameObject>();
 
    public static readonly entities: { [id: number]: Entity } = {};
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
@@ -189,13 +190,17 @@ abstract class Board {
    }
 
    private static removeGameObject(gameObject: GameObject): void {
-      if (!this.gameObjects.has(gameObject)) {
+      const idx = this.gameObjects.indexOf(gameObject);
+      
+      if (idx === -1) {
          console.log("Game object i: " + gameObject.i);
          if (gameObject.i === "entity") {
             console.log("Entity type: " + gameObject.type);
          }
          throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
+
+      this.gameObjects.splice(idx, 1);
       
       switch (gameObject.i) {
          case "entity": {
@@ -219,8 +224,6 @@ abstract class Board {
       for (const chunk of gameObject.chunks) {
          chunk.removeGameObject(gameObject);
       }
-
-      this.gameObjects.delete(gameObject);
    }
 
    public static forceRemoveGameObject(gameObject: GameObject): void {
@@ -239,7 +242,10 @@ abstract class Board {
    }
 
    public static updateGameObjects(): void {
-      for (const gameObject of this.gameObjects) {
+      const length = this.gameObjects.length;
+      for (let i = 0; i < length; i++) {
+         const gameObject = this.gameObjects[i];
+
          const positionXBeforeUpdate = gameObject.position.x;
          const positionYBeforeUpdate = gameObject.position.y;
 
@@ -247,6 +253,12 @@ abstract class Board {
       
          if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
             gameObject.positionIsDirty = true;
+            gameObject.hitboxesAreDirty = true;
+         }
+
+         // Clean the game object's bounding area, hitbox bounds and chunks
+         if (gameObject.hitboxesAreDirty) {
+            gameObject.cleanHitboxes();
          }
       }
    }
@@ -256,13 +268,15 @@ abstract class Board {
    public static resolveGameObjectCollisions(): void {
       // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
       
-      for (const chunk of this.chunks1d) {
-         for (let i = 0; i <= chunk.gameObjects.length - 2; i++) {
-            const gameObject1 = chunk.gameObjects[i];
-            for (let j = i + 1; j <= chunk.gameObjects.length - 1; j++) {
-               const gameObject2 = chunk.gameObjects[j];
+      const numChunks = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
+      for (let i = 0; i < numChunks; i++) {
+         const chunk = this.chunks1d[i];
+         for (let j = 0; j <= chunk.gameObjects.length - 2; j++) {
+            const gameObject1 = chunk.gameObjects[j];
+            for (let k = j + 1; k <= chunk.gameObjects.length - 1; k++) {
+               const gameObject2 = chunk.gameObjects[k];
 
-               if (!gameObject1.collidingObjects.has(gameObject2) && gameObject1.isColliding(gameObject2)) {
+               if (gameObject1.collidingObjects.indexOf(gameObject2) === -1 && gameObject1.isColliding(gameObject2)) {
                   gameObject1.collide(gameObject2);
                   gameObject2.collide(gameObject1);
                }
@@ -272,19 +286,19 @@ abstract class Board {
    }
 
    public static resolveWallCollisions(): void {
-      for (const gameObject of this.gameObjects) {
-         if (gameObject.positionIsDirty) {
-            gameObject.updateHitboxesAndBoundingArea();
-            gameObject.updateContainingChunks();
+      const numGameObjects = this.gameObjects.length;
+      for (let i = 0; i < numGameObjects; i++) {
+         const gameObject = this.gameObjects[i];
 
+         if (gameObject.positionIsDirty) {
             let positionXBeforeUpdate = gameObject.position.x;
             let positionYBeforeUpdate = gameObject.position.y;
    
             gameObject.resolveWallTileCollisions();
          
+            // If the object moved due to resolving wall tile collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
                gameObject.updateHitboxesAndBoundingArea();
-               gameObject.updateContainingChunks();
             }
 
             positionXBeforeUpdate = gameObject.position.x;
@@ -292,21 +306,23 @@ abstract class Board {
    
             gameObject.resolveWallCollisions();
          
+            // If the object moved due to resolving wall collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
                gameObject.updateHitboxesAndBoundingArea();
-               gameObject.updateContainingChunks();
             }
 
             // Do calculations which are dependent on the position
             gameObject.updateTile();
             gameObject.isInRiver = gameObject.checkIsInRiver();
+         }
 
-            gameObject.positionIsDirty = false;
+         if (gameObject.hitboxesAreDirty) {
+            gameObject.cleanHitboxes();
          }
 
          gameObject.previousCollidingObjects = gameObject.collidingObjects;
          // @Speed: This is a lot of garbage collection having to be done
-         gameObject.collidingObjects = new Set();
+         gameObject.collidingObjects = [];
       }
    }
 
@@ -391,7 +407,7 @@ abstract class Board {
       gameObject.updateHitboxesAndBoundingArea();
       gameObject.updateContainingChunks();
 
-      this.gameObjects.add(gameObject);
+      this.gameObjects.push(gameObject);
 
       switch (gameObject.i) {
          case "entity": {
@@ -427,7 +443,7 @@ abstract class Board {
 
    public static gameObjectIsInBoard(gameObject: GameObject): boolean {
       // Check the join buffer and game objects set
-      if (this.gameObjects.has(gameObject) || this.joinBuffer.includes(gameObject)) return true;
+      if (this.gameObjects.indexOf(gameObject) !== -1 || this.joinBuffer.includes(gameObject)) return true;
 
       // Check in the entities
       if (gameObject.i === "entity" && Object.values(this.entities).includes(gameObject)) return true;

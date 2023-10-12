@@ -78,8 +78,8 @@ class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
       super.moveToPosition(position, this.acceleration, this.terminalVelocity);
    }
 
-   protected _getWeight(): number {
-      return 1;
+   public canSwitch(): boolean {
+      return true;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

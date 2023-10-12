@@ -1,6 +1,7 @@
-import { CowSpecies, ItemType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
+import { CowSpecies, ItemType, Point, randFloat, randInt, SETTINGS, TileType } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import HungerComponent from "../../entity-components/HungerComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Mob from "./Mob";
 import EscapeAI from "../../mob-ai/EscapeAI";
@@ -22,53 +23,21 @@ class Cow extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent(48)
+         item_creation: new ItemCreationComponent(48),
+         hunger: new HungerComponent(randFloat(0, 25), randFloat(2.5, 3))
       }, "cow", SETTINGS.TILE_SIZE * 4);
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
 
-      this.setAIParam("hunger", randInt(0, 50));
-      this.setAIParam("metabolism", 2.5);
-
-      this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
-         wanderRate: 0.6,
-         acceleration: 100,
-         terminalVelocity: 50
+      this.addAI(new EscapeAI(this, {
+         acceleration: 200,
+         terminalVelocity: 200,
+         attackSubsideTime: 5,
+         escapeHealthThreshold: Cow.MAX_HEALTH
       }));
-
-      this.addAI(new FollowAI(this, {
-         aiWeightMultiplier: 0.75,
-         acceleration: 50,
-         terminalVelocity: 25,
-         minDistanceFromFollowTarget: 100,
-         weightBuildupTime: 10,
-         interestDuration: 7,
-         chanceToGainInterest: 0.2,
-         followableEntityTypes: new Set(["player", "tribesman", "zombie"])
-      }));
-
-      const herdAI = new HerdAI(this, {
-         aiWeightMultiplier: 1,
-         acceleration: 100,
-         terminalVelocity: 50,
-         minSeperationDistance: 150,
-         turnRate: 0.2,
-         maxWeightInflenceCount: 3,
-         weightInfluenceFalloff: {
-            start: 5,
-            duration: 2
-         },
-         validHerdMembers: new Set(["cow"]),
-         seperationInfluence: 0.7,
-         alignmentInfluence: 0.5,
-         cohesionInfluence: 0.3
-      });
-      this.addAI(herdAI);
 
       this.addAI(new TileConsumeAI(this, {
-         aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
          tileTargets: new Map([
@@ -82,23 +51,41 @@ class Cow extends Mob {
       }));
 
       this.addAI(new ItemConsumeAI(this, {
-         aiWeightMultiplier: 1.25,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 20,
          itemTargets: new Set([ItemType.berry])
       }));
 
-      this.addAI(new BerryBushShakeAI(this, {
-         aiWeightMultiplier: 1.1
+      this.addAI(new BerryBushShakeAI(this, {}));
+
+      const herdAI = new HerdAI(this, {
+         acceleration: 100,
+         terminalVelocity: 50,
+         minSeperationDistance: 150,
+         turnRate: 0.2,
+         minActivateAmount: 3,
+         maxActivateAmount: 6,
+         validHerdMembers: new Set(["cow"]),
+         seperationInfluence: 0.7,
+         alignmentInfluence: 0.5,
+         cohesionInfluence: 0.3
+      });
+      this.addAI(herdAI);
+
+      this.addAI(new FollowAI(this, {
+         acceleration: 50,
+         terminalVelocity: 25,
+         minDistanceFromFollowTarget: 100,
+         weightBuildupTime: 10,
+         interestDuration: 7,
+         chanceToGainInterest: 0.2,
+         followableEntityTypes: new Set(["player", "tribesman", "zombie"])
       }));
 
-      this.addAI(new EscapeAI(this, {
-         aiWeightMultiplier: 1.5,
-         acceleration: 200,
-         terminalVelocity: 200,
-         attackSubsideTime: 5,
-         escapeHealthThreshold: Cow.MAX_HEALTH
+      this.addAI(new WanderAI(this, {
+         wanderRate: 0.6,
+         acceleration: 100,
+         terminalVelocity: 50
       }));
 
       const hitbox = new RectangularHitbox();
@@ -109,8 +96,8 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.leather, randInt(0, 2), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(1, 2), false);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.leather, randInt(0, 2), true);
    }
 
    public getClientArgs(): [species: CowSpecies, grazeProgress: number] {

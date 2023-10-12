@@ -8,8 +8,6 @@ import { MobAIType } from "../mob-ai-types";
 interface ItemConsumeAIParams extends BaseAIParams<MobAIType.itemConsume> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
-   /** Amount of food units used every second */
-   readonly metabolism: number;
    readonly itemTargets: ReadonlySet<ItemType>;
 }
 
@@ -18,7 +16,6 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly metabolism: number;
    public readonly itemTargets: ReadonlySet<ItemType>;
 
    /** The food source to move towards */
@@ -26,8 +23,6 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
 
    constructor(mob: Mob, aiParams: ItemConsumeAIParams) {
       super(mob, aiParams);
-      
-      this.metabolism = aiParams.metabolism;
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
@@ -43,7 +38,7 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
    }
 
    public onRefresh(): void {
-      // Move to the closest food sourcee
+      // Find the closest food source
       let target: DroppedItem | undefined;
       let minDistance: number = Number.MAX_SAFE_INTEGER;
       for (const droppedItem of this.mob.droppedItemsInVisionRange) {
@@ -94,37 +89,34 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       
       droppedItem.remove();
 
-      this.mob.setAIParam("hunger", 0);
+      this.mob.forceGetComponent("hunger").hunger = 0;
    }
 
-   protected _getWeight(): number {
-      if (this.isActive && this.target === null) return 0;
+   public canSwitch(): boolean {
+      if (this.isActive && this.target === null) return false;
 
-      const hunger = this.mob.getAIParam("hunger")!;
-      if (hunger < 50) {
-         return 0;
+      if (this.mob.forceGetComponent("hunger").hunger < 100) {
+         return false;
       }
 
       // Try to activate the AI if the entity can see something to eat
       for (const droppedItem of this.mob.droppedItemsInVisionRange) {
          if (this.itemTargets.has(droppedItem.item.type)) {
-            return 1;
+            return true;
          }
       }
       
-      return 0;
+      return false;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {
       if (this.target === null) return;
 
-      debugData.lines.push(
-         {
-            targetPosition: this.target.position.package(),
-            colour: [0, 0, 1],
-            thickness: 2
-         }
-      );
+      debugData.lines.push({
+         targetPosition: this.target.position.package(),
+         colour: [0, 0, 1],
+         thickness: 2
+      });
    }
 
    protected _callCallback(callback: () => void): void {

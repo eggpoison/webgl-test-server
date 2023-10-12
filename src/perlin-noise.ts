@@ -1,4 +1,5 @@
 import { Point, Vector } from "webgl-test-shared";
+import SRandom from "./SRandom";
 
 const lerp = (start: number, end: number, amount: number): number => {
    return start * (1 - amount) + end * amount;
@@ -43,7 +44,7 @@ export function generatePerlinNoise(width: number, height: number, scale: number
       const xCoordinates = new Array<number>();
       const yCoordinates = new Array<number>();
       for (let j = 0; j <= width / scale + 1; j++) {
-         const degrees = Math.floor(360 * Math.random());
+         const degrees = Math.floor(360 * SRandom.next());
          const x = cosAngles[degrees];
          const y = sinAngles[degrees];
          xCoordinates.push(x);
@@ -150,7 +151,7 @@ export function generatePointPerlinNoise(x: number, y: number, scale: number, na
       let corner: Vector;
       const key = coords[0] + "-" + coords[1];
       if (!a[name].hasOwnProperty(key)) {
-         corner = new Vector(1, 2 * Math.PI * Math.random());
+         corner = new Vector(1, 2 * Math.PI * SRandom.next());
          a[name][key] = corner;
       } else {
          corner = a[name][key];

@@ -76,11 +76,10 @@ class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
       return filteredEntities;
    }
 
-   protected _getWeight(): number {
-      const hunger = this.mob.getAIParam("hunger")!;
-      if (hunger < 80) return 0;
+   public canSwitch(): boolean {
+      if (this.mob.forceGetComponent("hunger").hunger < 80) return false;
       
-      return this.entitiesInVisionRange.size > 0 ? 1 : 0;
+      return this.entitiesInVisionRange.size > 0;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

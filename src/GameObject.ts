@@ -42,6 +42,8 @@ export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
 export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
 
+// @Cleanup: To reduce the use of "this as unknown as GameObject", make this not have type parameters.
+
 /** A generic class for any object in the world which has hitbox(es) */
 abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType extends GameObjectEvents> {
    public abstract readonly i: I;
@@ -77,8 +79,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** All hitboxes attached to the game object */
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
-   public previousCollidingObjects = new Set<GameObject>();
-   public collidingObjects = new Set<GameObject>();
+   public previousCollidingObjects = new Array<GameObject>();
+   public collidingObjects = new Array<GameObject>();
    
    protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
 
@@ -89,10 +91,19 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    public isStatic = false;
 
    /** If set to false, the game object will not experience friction from moving over tiles. */
+
+   // @Incomplete: Make the following two flags false by default and make sure the hitboxes and other stuff is correct when spawning in
+
    public isAffectedByFriction = true;
 
-   /** Whether the game object's position has changed during the current tick or not. Use during collision detection to avoid unnecessary collision checks */
+   /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = true;
+
+   /**
+    * Whether the game object's hitboxes' bounds have changed during the current tick or not.
+    * If true, marks the game object to have its hitboxes and containing chunks updated
+   */
+   public hitboxesAreDirty = true;
 
    public isInRiver: boolean;
 
@@ -137,6 +148,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       if (hitbox.bounds[3] > this.boundingArea[3]) {
          this.boundingArea[3] = hitbox.bounds[3];
       }
+
+      this.hitboxesAreDirty = true;
    }
 
    public updateHitboxesAndBoundingArea(): void {
@@ -145,12 +158,14 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
       this.boundingArea[3] = Number.MIN_SAFE_INTEGER;
 
-      for (const hitbox of this.hitboxes) {
+      const numHitboxes = this.hitboxes.length;
+      for (let i = 0; i < numHitboxes; i++) {
+         const hitbox = this.hitboxes[i];
+
          hitbox.updatePositionFromGameObject(this as unknown as GameObject);
          hitbox.updateHitboxBounds(this.rotation);
 
          // Update bounding area
-         // @Cleanup: Copy pasted from above
          if (hitbox.bounds[0] < this.boundingArea[0]) {
             this.boundingArea[0] = hitbox.bounds[0];
          }
@@ -164,6 +179,59 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
             this.boundingArea[3] = hitbox.bounds[3];
          }
       }
+   }
+
+   public cleanHitboxes(): void {
+      this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
+      this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
+      this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
+      this.boundingArea[3] = Number.MIN_SAFE_INTEGER;
+
+      // An object only changes their chunks if a hitboxes' bounds change chunks.
+      let hitboxChunkBoundsHaveChanged = false;
+      const numHitboxes = this.hitboxes.length;
+      for (let i = 0; i < numHitboxes; i++) {
+         const hitbox = this.hitboxes[i];
+
+         // Find new hitbox bounds
+         if (this.positionIsDirty) {
+            hitbox.updatePositionFromGameObject(this as unknown as GameObject);
+         }
+         hitbox.updateHitboxBounds(this.rotation);
+
+         // Update bounding area
+         if (hitbox.bounds[0] < this.boundingArea[0]) {
+            this.boundingArea[0] = hitbox.bounds[0];
+         }
+         if (hitbox.bounds[1] > this.boundingArea[1]) {
+            this.boundingArea[1] = hitbox.bounds[1];
+         }
+         if (hitbox.bounds[2] < this.boundingArea[2]) {
+            this.boundingArea[2] = hitbox.bounds[2];
+         }
+         if (hitbox.bounds[3] > this.boundingArea[3]) {
+            this.boundingArea[3] = hitbox.bounds[3];
+         }
+
+         // Check if the hitboxes' chunk bounds have changed
+         if (Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
+             Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
+             Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
+             Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS)) {
+            hitboxChunkBoundsHaveChanged = true;
+         }
+         
+         hitbox.previousBounds[0] = hitbox.bounds[0];
+         hitbox.previousBounds[1] = hitbox.bounds[1];
+         hitbox.previousBounds[2] = hitbox.bounds[2];
+         hitbox.previousBounds[3] = hitbox.bounds[3];
+      }
+
+      if (hitboxChunkBoundsHaveChanged) {
+         this.updateContainingChunks();
+      }
+
+      this.hitboxesAreDirty = false;
    }
 
    public tick(): void {
@@ -216,12 +284,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       
       // Friction
       if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
-         // @Speed: Try to remove/circumvent this check
-         const amountBefore = this.velocity.length();
+         // @Speed
+         const amountBefore = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
          const divideAmount = 1 + 3 / SETTINGS.TPS * TILE_FRICTIONS[this.tile.type];
          this.velocity.x /= divideAmount;
          this.velocity.y /= divideAmount;
-         tileFrictionReduceAmount = amountBefore - this.velocity.length();
+         tileFrictionReduceAmount = amountBefore - Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
       } else {
          tileFrictionReduceAmount = 0;
       }
@@ -232,7 +300,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          let accelerateAmountX = this.acceleration.x * friction * moveSpeedMultiplier / SETTINGS.TPS;
          let accelerateAmountY = this.acceleration.y * friction * moveSpeedMultiplier / SETTINGS.TPS;
 
-         const velocityMagnitude = this.velocity.length();
+         const velocityMagnitude = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
          // Make acceleration slow as the game object reaches its terminal velocity
          if (velocityMagnitude < terminalVelocity) {
@@ -252,7 +320,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          
          // Don't accelerate past terminal velocity
           // @Speed
-         const newVelocityMagnitude = this.velocity.length();
+         const newVelocityMagnitude = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
          if (newVelocityMagnitude > terminalVelocity && newVelocityMagnitude > velocityMagnitude) {
             if (velocityMagnitude < terminalVelocity) {
                this.velocity.x *= terminalVelocity / newVelocityMagnitude;
@@ -271,7 +339,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          const xSignBefore = Math.sign(this.velocity.x);
          
          // @Speed
-         const velocityLength = this.velocity.length();
+         const velocityLength = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
          this.velocity.x = (velocityLength - 3) * this.velocity.x / velocityLength;
          this.velocity.y = (velocityLength - 3) * this.velocity.y / velocityLength;
          if (Math.sign(this.velocity.x) !== xSignBefore) {
@@ -295,15 +363,13 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
    /** Called after calculating the object's hitbox bounds */
    public updateContainingChunks(): void {
-      // @Speed: pretty damn slow
-      
       // Calculate containing chunks
       const containingChunks = new Set<Chunk>();
       for (const hitbox of this.hitboxes) {
-         const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const minChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[2] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[3] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
 
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
@@ -463,8 +529,13 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
       
       // More expensive hitbox check
-      for (const hitbox of this.hitboxes) {
-         for (const otherHitbox of gameObject.hitboxes) {
+      const numHitboxes = this.hitboxes.length;
+      for (let i = 0; i < numHitboxes; i++) {
+         const hitbox = this.hitboxes[i];
+
+         const numOtherHitboxes = gameObject.hitboxes.length;
+         for (let i = 0; i < numOtherHitboxes; i++) {
+            const otherHitbox = gameObject.hitboxes[i];
             // If the objects are colliding, add the colliding object and this object
             if (hitbox.isColliding(otherHitbox)) {
                return true;
@@ -502,11 +573,11 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       (this.callEvents as any)("during_collision", gameObject);
       if (gameObject.i === "entity") (this.callEvents as any)("during_entity_collision", gameObject);
       
-      if (!this.previousCollidingObjects.has(gameObject)) {
+      if (this.previousCollidingObjects.indexOf(gameObject) === -1) {
          (this.callEvents as any)("enter_collision", gameObject);
       }
 
-      this.collidingObjects.add(gameObject);
+      this.collidingObjects.push(gameObject);
    }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {

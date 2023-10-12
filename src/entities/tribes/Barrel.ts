@@ -38,7 +38,7 @@ class Barrel extends Entity {
    }
    
    public getClientArgs(): [tribeID: number | null, inventoryData: InventoryData] {
-      const inventory = this.getComponent("inventory")!.getInventory("inventory");
+      const inventory = this.forceGetComponent("inventory").getInventory("inventory");
       
       const itemSlots: ItemSlotsData = {};
       for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {

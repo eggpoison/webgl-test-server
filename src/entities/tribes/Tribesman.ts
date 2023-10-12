@@ -88,7 +88,7 @@ class Tribesman extends TribeMember {
       hitbox.radius = 32;
       this.addHitbox(hitbox);
 
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       inventoryComponent.createNewInventory("hotbar", Tribesman.INVENTORY_SIZE, 1, true);
 
       // If the tribesman is a frostling, spawn with a bow
@@ -150,7 +150,7 @@ class Tribesman extends TribeMember {
       this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this, 1));
 
       // Escape from enemies when low on health
-      if (this.getComponent("health")!.getHealth() <= 7.5 && this.enemiesInVisionRange.length > 0) {
+      if (this.forceGetComponent("health").getHealth() <= 7.5 && this.enemiesInVisionRange.length > 0) {
          this.escape();
          this.lastAIType = TribesmanAIType.escaping;
          this.currentAction = TribeMemberAction.none;
@@ -185,14 +185,14 @@ class Tribesman extends TribeMember {
       }
 
       // Heal when missing health
-      if (this.getComponent("health")!.getHealth() < this.getComponent("health")!.maxHealth) {
+      if (this.forceGetComponent("health").getHealth() < this.forceGetComponent("health").maxHealth) {
          const foodItemSlot = this.getFoodItemSlot();
          if (foodItemSlot !== null) {
             this.selectedItemSlot = foodItemSlot;
 
             // If the food is only just being eaten, reset the food timer so that the food isn't immediately eaten
             if (this.currentAction !== TribeMemberAction.eat) {
-               const foodItem = this.getComponent("inventory")!.getItem("hotbar", foodItemSlot)!;
+               const foodItem = this.forceGetComponent("inventory").getItem("hotbar", foodItemSlot)!;
                const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
                this.foodEatingTimer = itemInfo.eatTime;
             }
@@ -395,7 +395,7 @@ class Tribesman extends TribeMember {
          this.selectedItemSlot = bestWeaponSlot;
 
          // Don't do a melee attack if using a bow, instead charge the bow
-         const selectedItem = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot)!;
+         const selectedItem = this.forceGetComponent("inventory").getItem("hotbar", this.selectedItemSlot)!;
          const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
          if (weaponCategory === "bow") {
             // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
@@ -473,7 +473,7 @@ class Tribesman extends TribeMember {
          this.selectedItemSlot = bestToolSlot;
 
          // Don't do a melee attack if using a bow, instead charge the bow
-         const selectedItem = this.getComponent("inventory")!.getItem("hotbar", this.selectedItemSlot)!;
+         const selectedItem = this.forceGetComponent("inventory").getItem("hotbar", this.selectedItemSlot)!;
          const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
          if (weaponCategory === "bow") {
             // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
@@ -543,7 +543,7 @@ class Tribesman extends TribeMember {
    }
 
    private inventoryIsFull(): boolean {
-      return this.getComponent("inventory")!.inventoryIsFull("hotbar");
+      return this.forceGetComponent("inventory").inventoryIsFull("hotbar");
    }
 
    private haulToBarrel(barrel: Barrel): void {
@@ -558,7 +558,7 @@ class Tribesman extends TribeMember {
    }
 
    private canPickUpItem(itemType: ItemType): boolean {
-      const inventoryComponent = this.getComponent("inventory")!;
+      const inventoryComponent = this.forceGetComponent("inventory");
       const inventory = inventoryComponent.getInventory("hotbar");
       
       for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
@@ -593,8 +593,8 @@ class Tribesman extends TribeMember {
 
    /** Deposit all resources from the tribesman's inventory into a barrel */
    private depositResources(barrel: Barrel): void {
-      const tribesmanInventoryComponent = this.getComponent("inventory")!;
-      const barrelInventoryComponent = barrel.getComponent("inventory")!;
+      const tribesmanInventoryComponent = this.forceGetComponent("inventory");
+      const barrelInventoryComponent = barrel.forceGetComponent("inventory");
       const tribesmanInventory = tribesmanInventoryComponent.getInventory("hotbar");
 
       // 
@@ -664,7 +664,7 @@ class Tribesman extends TribeMember {
    // @Cleanup: Copy and paste
 
    private getBestWeaponSlot(): number | null {
-      const tribesmanInventory = this.getComponent("inventory")!.getInventory("hotbar");
+      const tribesmanInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
       let bestWeaponLevel = -1;
       let bestWeaponItemSlot = -1;
@@ -692,7 +692,7 @@ class Tribesman extends TribeMember {
    }
 
    private getBestPickaxeSlot(): number | null {
-      const tribesmanInventory = this.getComponent("inventory")!.getInventory("hotbar");
+      const tribesmanInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
       let bestPickaxeLevel = -1;
       let bestPickaxeItemSlot = -1;
@@ -720,7 +720,7 @@ class Tribesman extends TribeMember {
    }
 
    private getBestAxeSlot(): number | null {
-      const tribesmanInventory = this.getComponent("inventory")!.getInventory("hotbar");
+      const tribesmanInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
       let bestAxeLevel = -1;
       let bestAxeItemSlot = -1;
@@ -759,7 +759,7 @@ class Tribesman extends TribeMember {
    }
 
    private getFoodItemSlot(): number | null {
-      const hotbar = this.getComponent("inventory")!.getInventory("hotbar");
+      const hotbar = this.forceGetComponent("inventory").getInventory("hotbar");
       for (const [_itemSlot, item] of Object.entries(hotbar.itemSlots)) {
          const itemCategory = ITEM_TYPE_RECORD[item.type];
          if (itemCategory === "food") {
@@ -770,8 +770,8 @@ class Tribesman extends TribeMember {
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number] {
-      const inventoryComponent = this.getComponent("inventory")!;
-      const hotbarInventory = this.getComponent("inventory")!.getInventory("hotbar");
+      const inventoryComponent = this.forceGetComponent("inventory");
+      const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
       return [
          this.tribe !== null ? this.tribe.id : null,

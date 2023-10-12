@@ -1,6 +1,7 @@
 import { GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import HungerComponent from "../../entity-components/HungerComponent";
 import Mob from "./Mob";
 import Entity from "../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -86,11 +87,9 @@ class Yeti extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Yeti.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent(Yeti.SIZE / 2)
+         item_creation: new ItemCreationComponent(Yeti.SIZE / 2),
+         hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 1.2))
       }, "yeti", Yeti.VISION_RANGE);
-
-      this.setAIParam("hunger", randInt(0, 50));
-      this.setAIParam("metabolism", 1);
 
       const hitbox = new CircularHitbox();
       hitbox.radius = Yeti.SIZE / 2;
@@ -98,7 +97,6 @@ class Yeti extends Mob {
 
       // Snow throw AI
       this.addAI(new ChaseAI(this, {
-         aiWeightMultiplier: 1.5,
          acceleration: 0,
          terminalVelocity: 0,
          entityIsChased: (entity: Entity) => {
@@ -108,7 +106,6 @@ class Yeti extends Mob {
 
       // Regular chase AI
       this.addAI(new ChaseAI(this, {
-         aiWeightMultiplier: 1,
          acceleration: 200,
          terminalVelocity: 100,
          entityIsChased: (entity: Entity) => {
@@ -135,15 +132,12 @@ class Yeti extends Mob {
       }));
 
       this.addAI(new ItemConsumeAI(this, {
-         aiWeightMultiplier: 0.8,
          acceleration: 100,
          terminalVelocity: 50,
-         metabolism: 1,
          itemTargets: new Set([ItemType.raw_beef, ItemType.leather])
       }));
 
       this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
          wanderRate: 0.6,
          acceleration: 100,
          terminalVelocity: 50,
@@ -181,8 +175,8 @@ class Yeti extends Mob {
 
       this.rotation = 2 * Math.PI * Math.random();
 
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.raw_beef, randInt(4, 7), false);
-      this.getComponent("item_creation")!.createItemOnDeath(ItemType.yeti_hide, randInt(2, 3), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(4, 7), false);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(2, 3), true);
 
       this.territory = Yeti.generateYetiTerritoryTiles(this.tile.x, this.tile.y);
       registerYetiTerritory(this.territory, this);
@@ -197,6 +191,7 @@ class Yeti extends Mob {
    public tick(): void {
       super.tick();
 
+      // @Speed: Remove Object.keys()
       for (const id of Object.keys(this.attackingEntities) as unknown as ReadonlyArray<number>) {
          this.attackingEntities[id] -= 1 / SETTINGS.TPS;
          if (this.attackingEntities[id] <= 0) {
