@@ -5,11 +5,13 @@ import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { cleanAngle } from "../ai-shared";
+import HungerComponent from "src/entity-components/HungerComponent";
 
 export interface EntityComponents {
    health: HealthComponent;
    inventory: InventoryComponent;
    item_creation: ItemCreationComponent;
+   hunger: HungerComponent;
 }
 
 const filterTickableComponents = (components: Partial<EntityComponents>): ReadonlyArray<Component> => {

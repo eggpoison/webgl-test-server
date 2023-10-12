@@ -4,7 +4,6 @@ import BerryBush from "../entities/resources/BerryBush";
 import AI from "./AI";
 import Board from "../Board";
 import { MobAIType } from "../mob-ai-types";
-import ItemConsumeAI from "./ItemConsumeAI";
 
 class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
    private static readonly SAMPLE_DISTANCE = 60;
@@ -77,14 +76,10 @@ class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
       return filteredEntities;
    }
 
-   protected _getWeight(): number {
-      const itemConsumeAI = this.mob.getAI(MobAIType.itemConsume);
-      if (itemConsumeAI === null) {
-         throw new Error("The berry bush shake AI needs an item consume AI to function.");
-      }
-      if ((itemConsumeAI as ItemConsumeAI).hunger < 80) return 0;
+   public canSwitch(): boolean {
+      if (this.mob.forceGetComponent("hunger").hunger < 80) return false;
       
-      return this.entitiesInVisionRange.size > 0 ? 1 : 0;
+      return this.entitiesInVisionRange.size > 0;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

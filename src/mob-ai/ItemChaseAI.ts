@@ -63,19 +63,17 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
       this.target = null;
    }
    
-   protected _getWeight(): number {
+   public canSwitch(): boolean {
       if (typeof this.itemIsChased !== "undefined") {
          for (const droppedItem of this.mob.droppedItemsInVisionRange) {
             if (this.itemIsChased(droppedItem)) {
-               return 1;
+               return true;
             }
          }
-      } else {
-         if (this.mob.droppedItemsInVisionRange.size > 0) {
-            return 1;
-         }
+      } else if (this.mob.droppedItemsInVisionRange.size > 0) {
+         return true;
       }
-      return 0;
+      return false;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

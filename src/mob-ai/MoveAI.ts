@@ -39,8 +39,8 @@ class MoveAI extends AI<MobAIType.move> implements MoveAIParams {
       }
    }
 
-   protected _getWeight(): number {
-      return this.getMoveTargetPosition() !== null ? 1 : 0;
+   public canSwitch(): boolean {
+      return this.getMoveTargetPosition() !== null;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

@@ -24,8 +24,16 @@ class Slimewisp extends Mob {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)
       }, "slimewisp", SETTINGS.TILE_SIZE * 1.5);
 
+      // Merge AI
+      this.addAI(new ChaseAI(this, {
+         acceleration: 50,
+         terminalVelocity: 25,
+         entityIsChased: (entity: Entity): boolean => {
+            return entity.type === "slimewisp";
+         }
+      }));
+
       this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
          wanderRate: 99999,
          acceleration: 50,
          terminalVelocity: 25,
@@ -34,15 +42,6 @@ class Slimewisp extends Mob {
             const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
             const tile = Board.getTile(tileX, tileY);
             return tile.biomeName === "swamp";
-         }
-      }));
-
-      this.addAI(new ChaseAI(this, {
-         aiWeightMultiplier: 1,
-         acceleration: 50,
-         terminalVelocity: 25,
-         entityIsChased: (entity: Entity): boolean => {
-            return entity.type === "slimewisp";
          }
       }));
 

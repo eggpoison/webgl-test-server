@@ -93,8 +93,8 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
       return 1 - this.grazeTimer / this.tileTargets.get(this.mob.tile.type)!.grazeTime;
    }
 
-   protected _getWeight(): number {
-      return this.isOnGrazeableTile() && this.grazeCooldown === 0 ? 1 : 0;
+   public canSwitch(): boolean {
+      return this.isOnGrazeableTile() && this.grazeCooldown === 0;
    }
 
    protected _callCallback(callback: () => void): void {

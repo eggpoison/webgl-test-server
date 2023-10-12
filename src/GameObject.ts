@@ -91,6 +91,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    public isStatic = false;
 
    /** If set to false, the game object will not experience friction from moving over tiles. */
+
+   // @Incomplete: Make the following two flags false by default and make sure the hitboxes and other stuff is correct when spawning in
+
    public isAffectedByFriction = true;
 
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
@@ -281,12 +284,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       
       // Friction
       if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
-         // @Speed: Try to remove/circumvent this check
-         const amountBefore = this.velocity.length();
+         // @Speed
+         const amountBefore = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
          const divideAmount = 1 + 3 / SETTINGS.TPS * TILE_FRICTIONS[this.tile.type];
          this.velocity.x /= divideAmount;
          this.velocity.y /= divideAmount;
-         tileFrictionReduceAmount = amountBefore - this.velocity.length();
+         tileFrictionReduceAmount = amountBefore - Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
       } else {
          tileFrictionReduceAmount = 0;
       }
@@ -297,7 +300,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          let accelerateAmountX = this.acceleration.x * friction * moveSpeedMultiplier / SETTINGS.TPS;
          let accelerateAmountY = this.acceleration.y * friction * moveSpeedMultiplier / SETTINGS.TPS;
 
-         const velocityMagnitude = this.velocity.length();
+         const velocityMagnitude = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
          // Make acceleration slow as the game object reaches its terminal velocity
          if (velocityMagnitude < terminalVelocity) {
@@ -317,7 +320,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          
          // Don't accelerate past terminal velocity
           // @Speed
-         const newVelocityMagnitude = this.velocity.length();
+         const newVelocityMagnitude = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
          if (newVelocityMagnitude > terminalVelocity && newVelocityMagnitude > velocityMagnitude) {
             if (velocityMagnitude < terminalVelocity) {
                this.velocity.x *= terminalVelocity / newVelocityMagnitude;
@@ -336,7 +339,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          const xSignBefore = Math.sign(this.velocity.x);
          
          // @Speed
-         const velocityLength = this.velocity.length();
+         const velocityLength = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
          this.velocity.x = (velocityLength - 3) * this.velocity.x / velocityLength;
          this.velocity.y = (velocityLength - 3) * this.velocity.y / velocityLength;
          if (Math.sign(this.velocity.x) !== xSignBefore) {

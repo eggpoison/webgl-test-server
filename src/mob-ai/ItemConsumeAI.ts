@@ -1,4 +1,4 @@
-import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType, SETTINGS, randFloat } from "webgl-test-shared";
+import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI, { BaseAIParams } from "./AI";
@@ -8,8 +8,6 @@ import { MobAIType } from "../mob-ai-types";
 interface ItemConsumeAIParams extends BaseAIParams<MobAIType.itemConsume> {
    readonly acceleration: number;
    readonly terminalVelocity: number;
-   /** Amount of food units used every second */
-   readonly metabolism: number;
    readonly itemTargets: ReadonlySet<ItemType>;
 }
 
@@ -18,18 +16,13 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly metabolism: number;
    public readonly itemTargets: ReadonlySet<ItemType>;
 
-   public hunger = randFloat(0, 25);
-   
    /** The food source to move towards */
    private target: DroppedItem | null = null;
 
    constructor(mob: Mob, aiParams: ItemConsumeAIParams) {
       super(mob, aiParams);
-      
-      this.metabolism = aiParams.metabolism;
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
@@ -96,30 +89,24 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       
       droppedItem.remove();
 
-      this.hunger = 0;
+      this.mob.forceGetComponent("hunger").hunger = 0;
    }
 
-   protected _getWeight(): number {
-      // Hackily udpate hunger
-      this.hunger += this.metabolism / SETTINGS.TPS * Mob.AI_REFRESH_INTERVAL;
-      if (this.hunger > 100) {
-         this.hunger = 100;
-      }
-      
-      if (this.isActive && this.target === null) return 0;
+   public canSwitch(): boolean {
+      if (this.isActive && this.target === null) return false;
 
-      if (this.hunger < 100) {
-         return 0;
+      if (this.mob.forceGetComponent("hunger").hunger < 100) {
+         return false;
       }
 
       // Try to activate the AI if the entity can see something to eat
       for (const droppedItem of this.mob.droppedItemsInVisionRange) {
          if (this.itemTargets.has(droppedItem.item.type)) {
-            return 1;
+            return true;
          }
       }
       
-      return 0;
+      return false;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

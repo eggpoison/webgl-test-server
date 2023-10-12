@@ -58,7 +58,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
       this.mob.rotation = direction;
    }
 
-   protected _getWeight(): number {
+   public canSwitch(): boolean {
       this.attackSubsideTimer -= Mob.AI_REFRESH_INTERVAL / SETTINGS.TPS;
       if (this.attackSubsideTimer <= 0) {
          this.attacker = null;
@@ -69,7 +69,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
          this.attacker = null;
       }
 
-      return this.attacker !== null ? 1 : 0;
+      return this.attacker !== null;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

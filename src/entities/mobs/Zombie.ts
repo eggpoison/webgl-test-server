@@ -37,36 +37,32 @@ class Zombie extends Mob {
       }, "zombie", 270);
 
       const speedMultiplier = randFloat(0.9, 1.1);
-
-      this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
-         wanderRate: 0.4,
-         acceleration: 100 * speedMultiplier,
-         terminalVelocity: 50
-      }));
-      this.addAI(new HerdAI(this, {
-         aiWeightMultiplier: 0.8,
-         acceleration: 100,
-         terminalVelocity: 50 * speedMultiplier,
-         minSeperationDistance: 50,
-         turnRate: 0.2,
-         maxWeightInflenceCount: 3,
-         weightInfluenceFalloff: {
-            start: 6,
-            duration: 3
-         },
-         validHerdMembers: new Set(["zombie"]),
-         seperationInfluence: 0.4,
-         alignmentInfluence: 0.5,
-         cohesionInfluence: 0.8
-      }));
+      
       this.addAI(new ChaseAI(this, {
-         aiWeightMultiplier: 1,
          acceleration: 200,
          terminalVelocity: 100 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             return this.shouldAttackEntity(entity);
          }
+      }));
+
+      this.addAI(new HerdAI(this, {
+         acceleration: 100,
+         terminalVelocity: 50 * speedMultiplier,
+         minSeperationDistance: 50,
+         turnRate: 0.2,
+         minActivateAmount: 3,
+         maxActivateAmount: 8,
+         validHerdMembers: new Set(["zombie"]),
+         seperationInfluence: 0.4,
+         alignmentInfluence: 0.5,
+         cohesionInfluence: 0.8
+      }));
+      
+      this.addAI(new WanderAI(this, {
+         wanderRate: 0.4,
+         acceleration: 100 * speedMultiplier,
+         terminalVelocity: 50
       }));
 
       const hitbox = new CircularHitbox();

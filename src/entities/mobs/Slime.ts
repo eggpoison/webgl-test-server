@@ -114,22 +114,8 @@ class Slime extends Mob {
       this.mergeWeight = Slime.SLIME_MERGE_WEIGHTS[size];
       this.mass = Slime.SLIME_MASSES[size];
 
-      this.addAI(new WanderAI(this, {
-         aiWeightMultiplier: 0.5,
-         acceleration: 60 * speedMultiplier,
-         terminalVelocity: 30 * speedMultiplier,
-         wanderRate: 0.5,
-         validTileTargets: [TileType.sludge, TileType.slime],
-         shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
-            const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
-            const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
-            const tile = Board.getTile(tileX, tileY);
-            return tile.biomeName === "swamp";
-         }
-      }));
       // Anger AI
       this.addAI(new MoveAI(this, {
-         aiWeightMultiplier: 1.5,
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          getMoveTargetPosition: (): Point | null => {
@@ -141,18 +127,18 @@ class Slime extends Mob {
             return null;
          }
       }));
+      
       // Regular chase AI
       this.addAI(new ChaseAI(this, {
-         aiWeightMultiplier: 1.25,
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type) && entity.getComponent("health") !== null;
          }
       }));
+
       // Merge AI
       this.addAI(new ChaseAI(this, {
-         aiWeightMultiplier: 1,
          acceleration: 60 * speedMultiplier,
          terminalVelocity: 30 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
@@ -177,6 +163,19 @@ class Slime extends Mob {
             } else {
                this.mergeTimer = Slime.MERGE_TIME;
             }
+         }
+      }));
+
+      this.addAI(new WanderAI(this, {
+         acceleration: 60 * speedMultiplier,
+         terminalVelocity: 30 * speedMultiplier,
+         wanderRate: 0.5,
+         validTileTargets: [TileType.sludge, TileType.slime],
+         shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
+            const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
+            const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
+            const tile = Board.getTile(tileX, tileY);
+            return tile.biomeName === "swamp";
          }
       }));
 

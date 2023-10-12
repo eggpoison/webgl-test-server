@@ -3,6 +3,7 @@ import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
 import { MobAIType } from "../mob-ai-types";
+import Board from "../Board";
 
 interface HerdAIParams extends BaseAIParams<MobAIType.follow> {
    readonly acceleration: number;
@@ -32,7 +33,10 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
 
    private followTarget: Entity | null = null;
 
-   private weight = 0;
+   /** Keeps track of how long the mob has been interested in its target */
+   private interestTimer = 0;
+
+   private lastFollowTicks = Board.ticks;
 
    constructor(mob: Mob, aiParams: HerdAIParams) {
       super(mob, aiParams);
@@ -48,6 +52,8 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
 
    public tick(): void {
       super.tick();
+
+      this.lastFollowTicks = Board.ticks;
 
       if (this.followTarget !== null) {
          const distanceFromTarget = this.mob.position.calculateDistanceBetween(this.followTarget.position);
@@ -66,6 +72,11 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
 
          // Always stare at the target
          this.mob.rotation = dir;
+
+         this.interestTimer += 1 / SETTINGS.TPS;
+         if (this.interestTimer >= this.interestDuration) {
+            this.followTarget = null;
+         }
       } else {
          // If has no target, don't move
          this.mob.acceleration.x = 0;
@@ -77,6 +88,7 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
    public onActivation(): void {
       if (this.entitiesInVisionRange.size === 0) throw new Error("Entities in vision range is empty for some reason :/");
 
+      this.interestTimer = 0;
       this.followTarget = randItem(Array.from(this.entitiesInVisionRange));
    }
 
@@ -101,29 +113,24 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
       return filteredEntities;
    }
 
-   // The more the entity wants to stare, the more weight it has
-   protected _getWeight(): number {
-      if (this.isActive && this.followTarget !== null) {
-         this.weight -= Mob.AI_REFRESH_INTERVAL / this.interestDuration / SETTINGS.TPS;
-         if (this.weight <= 0) {
-            return 0;
-         }
-         return 1;
+   public canSwitch(): boolean {
+      // Don't follow if have followed too recently
+      const timeSinceLastFollow = (Board.ticks - this.lastFollowTicks) / SETTINGS.TPS;
+      if (timeSinceLastFollow < this.weightBuildupTime) {
+         return false;
+      }
+      
+      // Don't follow if no longer wanting to follow the current target, or there are no targets to follow
+      if ((this.isActive && this.followTarget !== null) || this.entitiesInVisionRange.size === 0) {
+         return false;
       }
 
-      this.weight += Mob.AI_REFRESH_INTERVAL / this.weightBuildupTime / SETTINGS.TPS;
-      if (this.weight > 1) {
-         this.weight = 1;
-      }
-
-      if (this.entitiesInVisionRange.size === 0 || (this.isActive && this.followTarget === null)) {
-         return 0;
-      }
-
+      // If the mob has a chance to gain interest, only want to follow randomly
       if (typeof this.chanceToGainInterest !== "undefined" && Math.random() >= this.chanceToGainInterest / SETTINGS.TPS * Mob.AI_REFRESH_INTERVAL) {
-         return 0;
+         return false;
       }
-      return this.weight;
+
+      return true;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

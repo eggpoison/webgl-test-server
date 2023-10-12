@@ -29,6 +29,11 @@ abstract class Mob extends Entity {
 
    /** Value used by herd member hash for determining mob herds */
    public herdMemberHash = -1;
+
+   private lastMinVisibleChunkX = -1;
+   private lastMaxVisibleChunkX = -1;
+   private lastMinVisibleChunkY = -1;
+   private lastMaxVisibleChunkY = -1;
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
       super(position, components, entityType);
@@ -62,37 +67,36 @@ abstract class Mob extends Entity {
          return;
       }
       
-      // @Speed: only update chunks when the position changes
       this.updateChunksInVisionRange();
       this.updateGameObjectsInVisionRange();
 
-      // Update the values of all AI's and find the one with the highest weight
-      let aiWithHighestWeight!: AI<MobAIType>;
-      let maxWeight = -1;
+      // Find the AI to switch to
+      let ai: AI<MobAIType> | undefined;
       const numAIs = this.ais.length;
       for (let i = 0; i < numAIs; i++) {
-         const ai = this.ais[i];
+         ai = this.ais[i];
          ai.updateValues(this.entitiesInVisionRange);
-
-         const weight = ai.getWeight();
-         if (weight > maxWeight) {
-            maxWeight = weight;
-            aiWithHighestWeight = ai;
+         if (ai.canSwitch()) {
+            break;
          }
+      }
+      if (typeof ai === "undefined") {
+         this.currentAI = null;
+         return;
       }
 
       // If the AI is new, activate the AI
-      if (aiWithHighestWeight !== this.currentAI) {
-         aiWithHighestWeight.activate();
+      if (ai !== this.currentAI) {
+         ai.activate();
          if (this.currentAI !== null) {
             this.currentAI.deactivate();
             if (typeof this.currentAI.onDeactivation !== "undefined") this.currentAI.onDeactivation();
          }
       }
       
-      if (typeof aiWithHighestWeight.onRefresh !== "undefined") aiWithHighestWeight.onRefresh();
+      if (typeof ai.onRefresh !== "undefined") ai.onRefresh();
       
-      this.currentAI = aiWithHighestWeight;
+      this.currentAI = ai;
    }
 
    private updateChunksInVisionRange(): void {
@@ -101,22 +105,28 @@ abstract class Mob extends Entity {
       const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
 
-      this.chunksInVisionRange = [];
-      // @Speed: very slow double nested loop!!
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            // 
-            // Check if the chunk is actually in the vision range
-            // 
-
-            // Find the closest vertex of the chunk to the mob
-            const x = this.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
-            const y = this.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
-
-            if (Math.pow(x - this.position.x, 2) + Math.pow(y - this.position.y, 2) <= this.visionRangeSquared) {
-               this.chunksInVisionRange.push(Board.getChunk(chunkX, chunkY));
+      if (minChunkX !== this.lastMinVisibleChunkX || maxChunkX !== this.lastMaxVisibleChunkX || minChunkY !== this.lastMinVisibleChunkY || maxChunkY !== this.lastMaxVisibleChunkY) {
+         this.chunksInVisionRange = [];
+         for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+               // 
+               // Check if the chunk is actually in the vision range
+               // 
+   
+               // Find the closest vertex of the chunk to the mob
+               const x = this.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
+               const y = this.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
+   
+               if (Math.pow(x - this.position.x, 2) + Math.pow(y - this.position.y, 2) <= this.visionRangeSquared) {
+                  this.chunksInVisionRange.push(Board.getChunk(chunkX, chunkY));
+               }
             }
          }
+
+         this.lastMinVisibleChunkX = minChunkX;
+         this.lastMaxVisibleChunkX = maxChunkX;
+         this.lastMinVisibleChunkY = minChunkY;
+         this.lastMaxVisibleChunkY = maxChunkY;
       }
    }
    
@@ -129,7 +139,11 @@ abstract class Mob extends Entity {
       
       this.entitiesInVisionRange.clear();
       this.droppedItemsInVisionRange.clear();
-      for (const chunk of this.chunksInVisionRange) {
+
+      const numChunksInVisionRange = this.chunksInVisionRange.length;
+      for (let i = 0; i < numChunksInVisionRange; i++) {
+         const chunk = this.chunksInVisionRange[i];
+
          for (const gameObject of chunk.gameObjects) {
             // Don't add existing game objects
             // @Speed: This is a ton of checks
@@ -152,7 +166,9 @@ abstract class Mob extends Entity {
             }
 
             // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
-            for (const hitbox of gameObject.hitboxes) {
+            const numHitboxes = gameObject.hitboxes.length;
+            for (let j = 0; j < numHitboxes; j++) {
+               const hitbox = gameObject.hitboxes[j];
                if (Mob.testHitbox.isColliding(hitbox)) {
                   switch (gameObject.i) {
                      case "entity": {

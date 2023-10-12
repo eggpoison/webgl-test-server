@@ -98,12 +98,9 @@ class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
 
       return filteredEntities;
    }
-   
-   protected _getWeight(): number {
-      if (this.entitiesInVisionRange.size > 0) {
-         return 1;
-      }
-      return 0;
+
+   public canSwitch(): boolean {
+      return this.entitiesInVisionRange.size > 0;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {

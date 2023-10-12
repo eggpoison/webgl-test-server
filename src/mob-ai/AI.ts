@@ -18,27 +18,23 @@ export interface AICallbackFunctions {
 }
 
 export interface BaseAIParams<T extends MobAIType> {
-   readonly aiWeightMultiplier: number;
    readonly callback?: AICallbackFunctions[T];
 }
 
 abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
    protected readonly mob: Mob;
    
-   public readonly aiWeightMultiplier: number;
    public readonly callback?: AICallbackFunctions[T];
 
    public abstract readonly type: T;
-   protected abstract _getWeight(): number;
 
    protected isActive: boolean = false;
    protected targetPosition: Point | null = null;
    protected entitiesInVisionRange!: ReadonlySet<Entity>;
 
-   constructor(mob: Mob, { aiWeightMultiplier, callback }: BaseAIParams<T>) {
+   constructor(mob: Mob, baseAIParams: BaseAIParams<T>) {
       this.mob = mob;
-      this.aiWeightMultiplier = aiWeightMultiplier;
-      this.callback = callback;
+      this.callback = baseAIParams.callback;
    }
 
    public tick(): void {
@@ -73,11 +69,7 @@ abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
       this.entitiesInVisionRange = this.filterEntitiesInVisionRange(entitiesInVisionRange);
    }
 
-   public getWeight(): number {
-      const baseWeight = this._getWeight();
-      if (baseWeight > 1) throw new Error(`$'{this.type}' type AI returned a weight above 1!`);
-      return baseWeight * this.aiWeightMultiplier;
-   }
+   public abstract canSwitch(): boolean;
 
    private hasReachedTargetPosition(): boolean {
       if (this.targetPosition === null || this.mob.velocity === null) return false;
