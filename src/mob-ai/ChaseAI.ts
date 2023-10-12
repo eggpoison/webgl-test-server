@@ -1,4 +1,4 @@
-import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
+import { GameObjectDebugData, HitFlags, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -32,24 +32,12 @@ class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
    }
 
    public tick(): void {
-      if (this.entitiesInVisionRange.size === 0) return;
-
-      const entitiesInVisionRangeIterator = this.entitiesInVisionRange.values();
-
-      // Find closest target
-      let closestEntity = entitiesInVisionRangeIterator.next().value as Entity;
-      let minDistance = this.mob.position.calculateDistanceBetween(closestEntity.position);
-      for (let currentEntity: Entity; currentEntity = entitiesInVisionRangeIterator.next().value;) {
-         const distance = this.mob.position.calculateDistanceBetween(currentEntity.position);
-         if (distance < minDistance) {
-            closestEntity = currentEntity;
-            minDistance = distance;
-         }
+      if (this.target === null) {
+         return;
       }
-      this.target = closestEntity;
 
       // Rotate towards target
-      const angle = this.mob.position.calculateAngleBetween(closestEntity.position);
+      const angle = this.mob.position.calculateAngleBetween(this.target.position);
       this.mob.rotation = angle;
 
       // If the entity has a desired distance from its target, try to stop at that desired distance
@@ -70,6 +58,21 @@ class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
       this.mob.terminalVelocity = this.terminalVelocity;
    }
 
+   public onRefresh(): void {
+      // Calculate target
+      let minDistance = Number.MAX_SAFE_INTEGER
+      for (const entity of this.mob.visibleEntities) {
+         const distance = this.mob.position.calculateDistanceBetween(entity.position);
+         if (distance < minDistance && this.entityIsChased(entity)) {
+            minDistance = distance;
+            this.target = entity;
+         }
+      }
+      if (minDistance === Number.MAX_SAFE_INTEGER) {
+         this.target = null;
+      }
+   }
+
    /** Estimates the distance it will take for the entity to stop */
    private estimateStopDistance(): number {
       if (this.mob.velocity === null) {
@@ -87,20 +90,13 @@ class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
       this.target = null;
    }
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
-      const filteredEntities = new Set<Entity>();
-
-      for (const entity of visibleEntities) {
+   public canSwitch(): boolean {
+      for (const entity of this.mob.visibleEntities) {
          if (this.entityIsChased(entity)) {
-            filteredEntities.add(entity);
+            return true;
          }
       }
-
-      return filteredEntities;
-   }
-
-   public canSwitch(): boolean {
-      return this.entitiesInVisionRange.size > 0;
+      return false;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {
@@ -130,10 +126,6 @@ class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
             thickness: 4
          });
       }
-   }
-
-   protected _callCallback(callback: (targetEntity: Entity | null) => void): void {
-      callback(this.target);
    }
 }
 

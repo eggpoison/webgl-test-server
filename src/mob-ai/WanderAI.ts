@@ -93,10 +93,6 @@ class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
          }
       );
    }
-
-   protected _callCallback(callback: () => void): void {
-      callback();
-   }
 }
 
 export default WanderAI;

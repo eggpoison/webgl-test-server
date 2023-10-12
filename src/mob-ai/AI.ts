@@ -30,7 +30,6 @@ abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
 
    protected isActive: boolean = false;
    protected targetPosition: Point | null = null;
-   protected entitiesInVisionRange!: ReadonlySet<Entity>;
 
    constructor(mob: Mob, baseAIParams: BaseAIParams<T>) {
       this.mob = mob;
@@ -60,14 +59,6 @@ abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
    protected onActivation?(): void;
    public onRefresh?(): void;
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
-      return visibleEntities;
-   }
-
-   public updateValues(entitiesInVisionRange: Set<Entity>): void {
-      this.entitiesInVisionRange = this.filterEntitiesInVisionRange(entitiesInVisionRange);
-   }
-
    public abstract canSwitch(): boolean;
 
    private hasReachedTargetPosition(): boolean {
@@ -91,14 +82,6 @@ abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
    }
 
    public addDebugData?(debugData: GameObjectDebugData): void;
-
-   public callCallback(): void {
-      if (typeof this.callback !== "undefined") {
-         this._callCallback(this.callback);
-      }
-   }
-
-   protected abstract _callCallback(callback: AICallbackFunctions[T]): void;
 }
 
 export default AI;

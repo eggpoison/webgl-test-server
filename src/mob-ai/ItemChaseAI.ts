@@ -28,7 +28,7 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
    }
 
    public tick(): void {
-      const droppedItemsInVisionRangeIterator = this.mob.droppedItemsInVisionRange.values();
+      const droppedItemsInVisionRangeIterator = this.mob.visibleDroppedItems.values();
 
       // Find closest target
       let closestEntity = droppedItemsInVisionRangeIterator.next().value as DroppedItem;
@@ -67,12 +67,12 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
    
    public canSwitch(): boolean {
       if (typeof this.itemIsChased !== "undefined") {
-         for (const droppedItem of this.mob.droppedItemsInVisionRange) {
+         for (const droppedItem of this.mob.visibleDroppedItems) {
             if (this.itemIsChased(droppedItem)) {
                return true;
             }
          }
-      } else if (this.mob.droppedItemsInVisionRange.size > 0) {
+      } else if (this.mob.visibleDroppedItems.size > 0) {
          return true;
       }
       return false;
@@ -86,10 +86,6 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
          colour: [0, 0, 1],
          thickness: 2
       });
-   }
-
-   protected _callCallback(callback: (targetEntity: DroppedItem | null) => void): void {
-      callback(this.target);
    }
 }
 

@@ -23,13 +23,14 @@ abstract class Mob extends Entity {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_INTERVAL - 1);
 
-   private gameObjectsInVisionRange = new Array<GameObject>();
-   protected readonly entitiesInVisionRange = new Set<Entity>();
-   public readonly droppedItemsInVisionRange = new Set<DroppedItem>();
+   private visibleGameObjects = new Array<GameObject>();
+   public readonly visibleEntities = new Set<Entity>();
+   public readonly visibleDroppedItems = new Set<DroppedItem>();
 
    private visibleChunks = new Array<Chunk>();
 
    public readonly potentialVisibleGameObjects = new Array<GameObject>();
+   /** The number of times each potential visible game object appears in the mob's visible chunks */
    public readonly potentialVisibleGameObjectAppearances = new Array<number>();
 
    /** Value used by herd member hash for determining mob herds */
@@ -56,26 +57,23 @@ abstract class Mob extends Entity {
 
       // Refresh AI
       if (++this.aiRefreshTicker === Mob.AI_REFRESH_INTERVAL && this.ais.length > 0) {
+         this.updateVisibleChunks();
+         this.updateVisibleGameObjects();
          this.refreshAI();
          this.aiRefreshTicker = 0;
       }
 
       if (this.currentAI !== null) {
          this.currentAI.tick();
-         this.currentAI.callCallback();
       }
    }
 
    public refreshAI(): void {
-      this.updateVisibleChunks();
-      this.updateVisibleGameObjects();
-
       // Find the AI to switch to
       let ai: AI<MobAIType> | undefined;
       const numAIs = this.ais.length;
       for (let i = 0; i < numAIs; i++) {
          ai = this.ais[i];
-         ai.updateValues(this.entitiesInVisionRange);
          if (ai.canSwitch()) {
             break;
          }
@@ -171,27 +169,27 @@ abstract class Mob extends Entity {
    
    /** Finds all entities within the range of the mob's vision */
    private updateVisibleGameObjects(): void {
-      this.gameObjectsInVisionRange = [this];
-      this.entitiesInVisionRange.clear();
-      this.droppedItemsInVisionRange.clear();
+      this.visibleGameObjects = [this];
+      this.visibleEntities.clear();
+      this.visibleDroppedItems.clear();
 
       const numPotentialGameObjects = this.potentialVisibleGameObjects.length;
       for (let i = 0; i < numPotentialGameObjects; i++) {
          const gameObject = this.potentialVisibleGameObjects[i];
          // Don't add existing game objects
-         if (this.gameObjectsInVisionRange.indexOf(gameObject) !== -1) {
+         if (this.visibleGameObjects.indexOf(gameObject) !== -1) {
             continue;
          }
 
          if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= this.visionRangeSquared) {
-            this.gameObjectsInVisionRange.push(gameObject);
+            this.visibleGameObjects.push(gameObject);
             switch (gameObject.i) {
                case "entity": {
-                  this.entitiesInVisionRange.add(gameObject);
+                  this.visibleEntities.add(gameObject);
                   break;
                }
                case "droppedItem": {
-                  this.droppedItemsInVisionRange.add(gameObject);
+                  this.visibleDroppedItems.add(gameObject);
                   break;
                }
             }
@@ -203,14 +201,14 @@ abstract class Mob extends Entity {
          for (let j = 0; j < numHitboxes; j++) {
             const hitbox = gameObject.hitboxes[j];
             if (this.hitboxIsVisible(hitbox)) {
-               this.gameObjectsInVisionRange.push(gameObject);
+               this.visibleGameObjects.push(gameObject);
                switch (gameObject.i) {
                   case "entity": {
-                     this.entitiesInVisionRange.add(gameObject);
+                     this.visibleEntities.add(gameObject);
                      break;
                   }
                   case "droppedItem": {
-                     this.droppedItemsInVisionRange.add(gameObject);
+                     this.visibleDroppedItems.add(gameObject);
                      break;
                   }
                }
@@ -219,7 +217,7 @@ abstract class Mob extends Entity {
          }
       }
 
-      this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this));
+      this.visibleGameObjects.splice(this.visibleGameObjects.indexOf(this), 1);
    }
 
    private hitboxIsVisible(hitbox: Hitbox): boolean {

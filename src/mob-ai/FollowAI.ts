@@ -84,20 +84,23 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
       }
    }
 
-   // On activation, pick a random nearby entity and stare at it
-   public onActivation(): void {
-      if (this.entitiesInVisionRange.size === 0) throw new Error("Entities in vision range is empty for some reason :/");
-
-      this.interestTimer = 0;
-      this.followTarget = randItem(Array.from(this.entitiesInVisionRange));
-   }
-
    public onRefresh(): void {
-      if (this.followTarget === null) return;
-      
-      // If the target has gone out of range, stop following it
-      if (!this.entitiesInVisionRange.has(this.followTarget)) {
-         this.followTarget = null;
+      // If don't have a follow target, pick one randomly
+      if (this.followTarget === null) {
+         const followableEntities = new Array<Entity>();
+         for (const entity of this.mob.visibleEntities) {
+            if (this.followableEntityTypes.has(entity.type)) {
+               followableEntities.push(entity);
+            }
+         }
+         if (followableEntities.length > 0) {
+            this.followTarget = randItem(followableEntities);
+         }
+      } else {
+         // If the target has gone out of range, stop following it
+         if (!this.mob.visibleEntities.has(this.followTarget)) {
+            this.followTarget = null;
+         }
       }
    }
 
@@ -114,7 +117,7 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
    }
 
    public canSwitch(): boolean {
-      // Follow if active and has a follow target
+      // Always follow if active and has a follow target
       if (this.isActive && this.followTarget !== null) {
          return true;
       }
@@ -124,9 +127,16 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
       if (timeSinceLastFollow < this.weightBuildupTime) {
          return false;
       }
-      
-      // Don't follow if there are no targets to follow
-      if (this.entitiesInVisionRange.size === 0) {
+
+      // Make sure there is a followable entity
+      let isFollowableEntity = false;
+      for (const entity of this.mob.visibleEntities) {
+         if (this.followableEntityTypes.has(entity.type)) {
+            isFollowableEntity = true;
+            break;
+         }
+      }
+      if (!isFollowableEntity) {
          return false;
       }
 
@@ -148,10 +158,6 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
             thickness: 2
          }
       );
-   }
-
-   protected _callCallback(callback: () => void): void {
-      callback();
    }
 }
 

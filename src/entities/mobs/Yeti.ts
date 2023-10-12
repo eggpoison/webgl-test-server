@@ -12,6 +12,7 @@ import ChaseAI from "../../mob-ai/ChaseAI";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Board from "../../Board";
 import Snowball from "../Snowball";
+import { MobAIType } from "../../mob-ai-types";
 
 enum SnowThrowStage {
    windup,
@@ -116,18 +117,6 @@ class Yeti extends Mob {
             
             // Chase the entity if they are in the yeti's territory or have recently attacked the yeti
             return this.territory.includes(entity.tile) || this.attackingEntities.hasOwnProperty(entity.id);
-         },
-         callback: (targetEntity: Entity | null) => {
-            if (targetEntity === null) {
-               return;
-            }
-
-            if (this.shouldThrowSnow()) {
-               this.isThrowingSnow = true;
-               this.attackTarget = targetEntity;
-               this.snowThrowAttackProgress = 1;
-               this.snowThrowStage = SnowThrowStage.windup;
-            }
          }
       }));
 
@@ -234,6 +223,13 @@ class Yeti extends Mob {
                   }
                }
             }
+         }
+      } else if (this.currentAI !== null && this.currentAI.type === MobAIType.chase) {
+         if (this.shouldThrowSnow()) {
+            this.isThrowingSnow = true;
+            this.attackTarget = (this.currentAI as ChaseAI).target;
+            this.snowThrowAttackProgress = 1;
+            this.snowThrowStage = SnowThrowStage.windup;
          }
       }
 

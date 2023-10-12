@@ -143,7 +143,7 @@ class Slime extends Mob {
          terminalVelocity: 30 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             // If there are more slimes in the vision range than is allowed, don't merge
-            if (this.entitiesInVisionRange.size > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
+            if (this.visibleEntities.size > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
                return false;
             }
             
@@ -151,18 +151,6 @@ class Slime extends Mob {
                return this.wantsToMerge(entity as Slime);
             }
             return false;
-         },
-         callback: (targetEntity: Entity | null): void => {
-            if (targetEntity === null) return;
-            
-            if (this.collidingObjects.indexOf(targetEntity) !== -1) {
-               this.mergeTimer -= 1 / SETTINGS.TPS;
-               if (this.mergeTimer <= 0) {
-                  this.merge(targetEntity as Slime);
-               }
-            } else {
-               this.mergeTimer = Slime.MERGE_TIME;
-            }
          }
       }));
 
@@ -284,6 +272,20 @@ class Slime extends Mob {
             this.forceGetComponent("health").heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
          }
       }
+      
+      // Merge with other colliding slimewisps
+      let isMerging = false;
+      for (const gameObject of this.collidingObjects) {
+         if (gameObject.i === "entity" && gameObject.type === "slimewisp") {
+            this.mergeTimer -= 1 / SETTINGS.TPS;
+            if (this.mergeTimer <= 0) {
+               this.merge(gameObject as Slime);
+            }
+         }
+      }
+      if (!isMerging) {
+         this.mergeTimer = Slime.MERGE_TIME;
+      }
    }
 
    /**
@@ -383,7 +385,7 @@ class Slime extends Mob {
 
    private propagateAnger(angeredEntity: Entity, amount: number, propagationInfo: AngerPropagationInfo = { chainLength: 0, propagatedEntityIDs: new Set() }): void {
       // Propagate the anger
-      for (const entity of this.entitiesInVisionRange) {
+      for (const entity of this.visibleEntities) {
          if (entity.type === "slime" && !propagationInfo.propagatedEntityIDs.has(entity.id)) {
             const distance = this.position.calculateDistanceBetween(entity.position);
             const distanceFactor = distance / this.visionRange;

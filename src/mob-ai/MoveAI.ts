@@ -54,10 +54,6 @@ class MoveAI extends AI<MobAIType.move> implements MoveAIParams {
          }
       );
    }
-
-   protected _callCallback(callback: () => void): void {
-      callback();
-   }
 }
 
 export default MoveAI;

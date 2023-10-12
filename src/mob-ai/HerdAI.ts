@@ -1,4 +1,4 @@
-import { curveWeight, EntityType, Point, SETTINGS } from "webgl-test-shared";
+import { angle, curveWeight, EntityType, HitFlags, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI, { BaseAIParams } from "./AI";
@@ -64,16 +64,52 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
    }
 
    public onRefresh(): void {
+      // 
+      // Find the closest herd member and calculate other data
+      // 
+
+      // Average angle of nearby entities
+      let totalXVal: number = 0;
+      let totalYVal: number = 0;
+
+      let centerX = 0;
+      let centerY = 0;
+
+      let closestHerdMember: Entity | undefined;
+      let minDist = Number.MAX_SAFE_INTEGER;
+      let numHerdMembers = 0;
+      for (const entity of this.mob.visibleEntities) {
+         if (this.entityIsInHerd(entity)) {
+            const distance = this.mob.position.calculateDistanceBetween(entity.position);
+            if (distance < minDist) {
+               closestHerdMember = entity;
+               minDist = distance;
+            }
+
+            totalXVal += Math.sin(entity.rotation);
+            totalYVal += Math.cos(entity.rotation);
+
+            centerX += entity.position.x;
+            centerY += entity.position.y;
+            numHerdMembers++;
+         }
+      }
+      if (typeof closestHerdMember === "undefined") {
+         return;
+      }
+
+      centerX /= numHerdMembers;
+      centerY /= numHerdMembers;
+
       this.angularVelocity = 0;
       
       const headingPrincipalValue = ((this.mob.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-
+      
       // SEPARATION
       // Steer away from herd members who are too close
-      const [closestHerdMember, distanceToClosestHerdMember] = this.findClosestEntity();
-      if (distanceToClosestHerdMember < this.minSeperationDistance) {
+      if (minDist < this.minSeperationDistance) {
          // Calculate the weight of the separation
-         let weight = 1 - distanceToClosestHerdMember / this.minSeperationDistance;
+         let weight = 1 - minDist / this.minSeperationDistance;
          weight = curveWeight(weight, 2, 0.2);
          
          // @Speed: Garbage collection
@@ -95,15 +131,7 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
       // Orientate to nearby herd members' headings
 
       {
-         // Calculate the average angle of nearby entities
-         let totalXVal: number = 0;
-         let totalYVal: number = 0;
-         for (const entity of this.entitiesInVisionRange) {
-            totalXVal += Math.sin(entity.rotation);
-            totalYVal += Math.cos(entity.rotation);
-         }
-         let averageHeading = Math.atan2(totalYVal, totalXVal);
-         averageHeading = Math.PI/2 - averageHeading;
+         let averageHeading = angle(totalXVal, totalYVal);
          if (averageHeading < 0) {
             averageHeading += Math.PI * 2;
          }
@@ -135,15 +163,9 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
       // Steer to move towards the local center of mass
       
       {
+         // @Speed: Garbage collection
+         
          // Calculate average position
-         let centerX = 0;
-         let centerY = 0;
-         for (const entity of this.entitiesInVisionRange) {
-            centerX += entity.position.x;
-            centerY += entity.position.y;
-         }
-         centerX /= this.entitiesInVisionRange.size;
-         centerY /= this.entitiesInVisionRange.size;
          const centerOfMass = new Point(centerX, centerY);
          
          const toCenter = centerOfMass.convertToVector(this.mob.position);
@@ -233,37 +255,19 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
       this.mob.terminalVelocity = this.terminalVelocity;
    }
 
-   private findClosestEntity(): [closestEntity: Entity, minDistance: number] {
-      let minDistance = Number.MAX_SAFE_INTEGER;
-      let closestEntity!: Entity;
-      for (const entity of this.entitiesInVisionRange) {
-         const distance = this.mob.position.calculateDistanceBetween(entity.position);
-         if (distance < minDistance) {
-            closestEntity = entity;
-            minDistance = distance;
-         }
-      }
-      return [closestEntity, minDistance];
-   }
-
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
-      const filteredEntities = new Set<Entity>();
-      for (const entity of visibleEntities) {
-         // Make sure the entity has a valid entity type and a valid herd member hash
-         if (this.validHerdMembers.has(entity.type) && (this.mob.herdMemberHash === -1 || (entity.type === this.mob.type && (entity as Mob).herdMemberHash === this.mob.herdMemberHash))) {
-            filteredEntities.add(entity);
-         }
-      }
-
-      return filteredEntities;
+   private entityIsInHerd(entity: Entity): boolean {
+      return this.validHerdMembers.has(entity.type) && (this.mob.herdMemberHash === -1 || (entity.type === this.mob.type && (entity as Mob).herdMemberHash === this.mob.herdMemberHash));
    }
 
    public canSwitch(): boolean {
-      return this.entitiesInVisionRange.size >= this.minActivateAmount && this.entitiesInVisionRange.size <= this.maxActivateAmount;
-   }
-
-   protected _callCallback(callback: () => void): void {
-      callback();
+      let numHerdMembers = 0;
+      for (const entity of this.mob.visibleEntities) {
+         // Make sure the entity has a valid entity type and a valid herd member hash
+         if (this.entityIsInHerd(entity)) {
+            numHerdMembers++;
+         }
+      }
+      return numHerdMembers >= this.minActivateAmount && numHerdMembers <= this.maxActivateAmount;
    }
 }
 

@@ -1,5 +1,4 @@
 import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
-import Entity from "../entities/Entity";
 import BerryBush from "../entities/resources/BerryBush";
 import AI from "./AI";
 import Board from "../Board";
@@ -53,33 +52,29 @@ class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
    public onRefresh(): void {
       let target: BerryBush | null = null;
       let minDistance = Number.MAX_SAFE_INTEGER;
-      for (const entity of this.entitiesInVisionRange) {
-         const distance = this.mob.position.calculateDistanceBetween(entity.position);
-         if (distance < minDistance) {
-            target = entity as BerryBush;
-            minDistance = distance;
+      for (const entity of this.mob.visibleEntities) {
+         if (entity.type === "berry_bush" && (entity as BerryBush).getNumBerries() > 0) {
+            const distance = this.mob.position.calculateDistanceBetween(entity.position);
+            if (distance < minDistance) {
+               target = entity as BerryBush;
+               minDistance = distance;
+            }
          }
       }
 
       this.target = target;
    }
 
-   protected filterEntitiesInVisionRange(visibleEntities: ReadonlySet<Entity>): ReadonlySet<Entity> {
-      // Only look for berry bushes
-      const filteredEntities = new Set<Entity>();
-      for (const entity of visibleEntities) {
-         // Only try to shake berry bushes with berries on them
-         if (entity.type === "berry_bush" && (entity as BerryBush).getNumBerries() > 0) {
-            filteredEntities.add(entity);
-         }
-      }
-      return filteredEntities;
-   }
-
    public canSwitch(): boolean {
       if (this.mob.forceGetComponent("hunger").hunger < 80) return false;
+
+      for (const entity of this.mob.visibleEntities) {
+         if (entity.type === "berry_bush" && (entity as BerryBush).getNumBerries() > 0) {
+            return true;
+         }
+      }
       
-      return this.entitiesInVisionRange.size > 0;
+      return false;
    }
 
    public addDebugData(debugData: GameObjectDebugData): void {
@@ -92,10 +87,6 @@ class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
             thickness: 2
          }
       );
-   }
-
-   public _callCallback(callback: () => void): void {
-      callback();
    }
 }
 

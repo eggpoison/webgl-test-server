@@ -41,7 +41,7 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       // Find the closest food source
       let target: DroppedItem | undefined;
       let minDistance: number = Number.MAX_SAFE_INTEGER;
-      for (const droppedItem of this.mob.droppedItemsInVisionRange) {
+      for (const droppedItem of this.mob.visibleDroppedItems) {
          if (!this.itemTargets.has(droppedItem.item.type)) {
             continue;
          }
@@ -102,7 +102,7 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       }
 
       // Try to activate the AI if the entity can see something to eat
-      for (const droppedItem of this.mob.droppedItemsInVisionRange) {
+      for (const droppedItem of this.mob.visibleDroppedItems) {
          if (this.itemTargets.has(droppedItem.item.type)) {
             return true;
          }
@@ -119,10 +119,6 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
          colour: [0, 0, 1],
          thickness: 2
       });
-   }
-
-   protected _callCallback(callback: () => void): void {
-      callback();
    }
 }
 

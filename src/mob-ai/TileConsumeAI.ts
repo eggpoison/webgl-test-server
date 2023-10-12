@@ -96,10 +96,6 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
    public canSwitch(): boolean {
       return this.isOnGrazeableTile() && this.grazeCooldown === 0;
    }
-
-   protected _callCallback(callback: () => void): void {
-      callback();
-   }
 }
 
 export default TileConsumeAI;
