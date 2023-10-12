@@ -76,7 +76,7 @@ class Cow extends Mob {
          acceleration: 50,
          terminalVelocity: 25,
          minDistanceFromFollowTarget: 100,
-         weightBuildupTime: 10,
+         weightBuildupTime: randFloat(15, 20),
          interestDuration: 7,
          chanceToGainInterest: 0.2,
          followableEntityTypes: new Set(["player", "tribesman", "zombie"])

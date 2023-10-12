@@ -258,7 +258,7 @@ abstract class Board {
 
          // Clean the game object's bounding area, hitbox bounds and chunks
          if (gameObject.hitboxesAreDirty) {
-            gameObject.cleanHitboxes();
+            gameObject.cleanHitboxes(1);
          }
       }
    }
@@ -275,7 +275,6 @@ abstract class Board {
             const gameObject1 = chunk.gameObjects[j];
             for (let k = j + 1; k <= chunk.gameObjects.length - 1; k++) {
                const gameObject2 = chunk.gameObjects[k];
-
                if (gameObject1.collidingObjects.indexOf(gameObject2) === -1 && gameObject1.isColliding(gameObject2)) {
                   gameObject1.collide(gameObject2);
                   gameObject2.collide(gameObject1);
@@ -317,7 +316,7 @@ abstract class Board {
          }
 
          if (gameObject.hitboxesAreDirty) {
-            gameObject.cleanHitboxes();
+            gameObject.cleanHitboxes(2);
          }
 
          gameObject.previousCollidingObjects = gameObject.collidingObjects;

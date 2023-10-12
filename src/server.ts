@@ -16,6 +16,8 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
+import Cow from "./entities/mobs/Cow";
+import BerryBush from "./entities/resources/BerryBush";
 
 /*
 
@@ -319,13 +321,15 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         // const spawnPosition = this.generatePlayerSpawnPosition();
+         const spawnPosition = this.generatePlayerSpawnPosition();
 
-         let spawnPosition: Point;
-         do {
-            spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
-         } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
+         // let spawnPosition: Point;
+         // do {
+         //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
+         // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
 
+         new Cow(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
+         
          // new FrozenYeti(new Point(spawnPosition.x + 250, spawnPosition.y));
          // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
 

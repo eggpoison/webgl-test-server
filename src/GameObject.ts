@@ -181,7 +181,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
    }
 
-   public cleanHitboxes(): void {
+   public cleanHitboxes(a: number): void {
       this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
       this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
       this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
@@ -214,11 +214,13 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          }
 
          // Check if the hitboxes' chunk bounds have changed
-         if (Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
-             Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
-             Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
-             Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS)) {
-            hitboxChunkBoundsHaveChanged = true;
+         if (!hitboxChunkBoundsHaveChanged) {
+            if (Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
+                Math.floor(hitbox.previousBounds[1] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[1] / SETTINGS.CHUNK_UNITS) ||
+                Math.floor(hitbox.previousBounds[2] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[2] / SETTINGS.CHUNK_UNITS) ||
+                Math.floor(hitbox.previousBounds[3] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[3] / SETTINGS.CHUNK_UNITS)) {
+               hitboxChunkBoundsHaveChanged = true;
+            }
          }
          
          hitbox.previousBounds[0] = hitbox.bounds[0];
@@ -361,7 +363,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       this.position.y += this.velocity.y / SETTINGS.TPS;
    }
 
-   /** Called after calculating the object's hitbox bounds */
    public updateContainingChunks(): void {
       // Calculate containing chunks
       const containingChunks = new Set<Chunk>();

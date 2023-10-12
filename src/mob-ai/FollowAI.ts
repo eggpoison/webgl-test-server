@@ -114,14 +114,19 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
    }
 
    public canSwitch(): boolean {
+      // Follow if active and has a follow target
+      if (this.isActive && this.followTarget !== null) {
+         return true;
+      }
+      
       // Don't follow if have followed too recently
       const timeSinceLastFollow = (Board.ticks - this.lastFollowTicks) / SETTINGS.TPS;
       if (timeSinceLastFollow < this.weightBuildupTime) {
          return false;
       }
       
-      // Don't follow if no longer wanting to follow the current target, or there are no targets to follow
-      if ((this.isActive && this.followTarget !== null) || this.entitiesInVisionRange.size === 0) {
+      // Don't follow if there are no targets to follow
+      if (this.entitiesInVisionRange.size === 0) {
          return false;
       }
 
