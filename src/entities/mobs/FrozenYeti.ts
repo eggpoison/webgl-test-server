@@ -225,7 +225,7 @@ class FrozenYeti extends Mob {
                // Windup
                case 0: {
                   if (this.stageProgress === 0) {
-                     this.rockSpikeInfoArray = this.generateRockSpikePositions(targets);
+                     this.rockSpikeInfoArray = this.generateRockSpikeAttackInfo(targets);
                   }
                   
                   this.stageProgress += 0.75 / SETTINGS.TPS;
@@ -545,12 +545,14 @@ class FrozenYeti extends Mob {
     * Stomp
     * @param targets Whomst to stomp
     */
-   private generateRockSpikePositions(targets: ReadonlyArray<Entity>): Array<RockSpikeInfo> {
+   private generateRockSpikeAttackInfo(targets: ReadonlyArray<Entity>): Array<RockSpikeInfo> {
       // @Speed: Garbage collection
 
       const rockSpikeInfoArray = new Array<RockSpikeInfo>();
       
       const angles = new Array<number>();
+
+      // @Incomplete: generate at max 3 sequences
       
       for (const target of targets) {
          const direction = this.position.calculateAngleBetween(target.position);
@@ -558,7 +560,7 @@ class FrozenYeti extends Mob {
          // Don't do sequence if too close to existing sequence
          let isValid = true;
          for (const angle of angles) {
-            if (Math.abs(getAngleDifference(angle, direction)) <= 0.4) {
+            if (Math.abs(getAngleDifference(angle, direction)) <= Math.PI / 5) {
                isValid = false;
                break;
             }
@@ -607,7 +609,7 @@ class FrozenYeti extends Mob {
          }
 
          // Create non-main-sequence spikes
-         for (let i = 0; i < 10; i++) {
+         for (let i = 0; i < 15; i++) {
             const size = 0;
             
             const dist = Math.random();
