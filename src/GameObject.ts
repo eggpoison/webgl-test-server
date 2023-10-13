@@ -493,22 +493,22 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
    }
    
-   public resolveWallCollisions(): void {
-      // Left wall
+   public resolveBorderCollisions(): void {
+      // Left border
       if (this.boundingArea[0] < 0) {
          this.position.x -= this.boundingArea[0];
          this.velocity.x = 0;
-         // Right wall
+         // Right border
       } else if (this.boundingArea[1] > SETTINGS.BOARD_UNITS) {
          this.position.x -= this.boundingArea[1] - SETTINGS.BOARD_UNITS;
          this.velocity.x = 0;
       }
 
-      // Bottom wall
+      // Bottom border
       if (this.boundingArea[2] < 0) {
          this.position.y -= this.boundingArea[2];
          this.velocity.y = 0;
-         // Top wall
+         // Top border
       } else if (this.boundingArea[3] > SETTINGS.BOARD_UNITS) {
          this.position.y -= this.boundingArea[3] - SETTINGS.BOARD_UNITS;
          this.velocity.y = 0;

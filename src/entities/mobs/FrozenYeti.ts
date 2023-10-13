@@ -14,6 +14,12 @@ interface TargetInfo {
    timeSinceLastAggro: number;
 }
 
+interface RockSpikeInfo {
+   readonly positionX: number;
+   readonly positionY: number;
+   readonly size: number;
+}
+
 class FrozenYeti extends Mob {
    private static readonly VISION_RANGE = 350;
    private static readonly BITE_RANGE = 150;
@@ -40,7 +46,8 @@ class FrozenYeti extends Mob {
    private static readonly STOMP_COOLDOWN = 0;
 
    private static readonly STOMP_START_OFFSET = 40;
-   private static readonly STOMP_SPIKE_HITBOX_SIZES = [12 * 4, 16 * 4, 24 * 4];
+   private static readonly ROCK_SPIKE_HITBOX_SIZES = [12 * 2, 16 * 2, 20 * 2];
+   private static readonly ROCK_SPIKE_MASSES = [1, 1.75, 2.5];
 
    private static readonly SNOWBALL_THROW_OFFSET = 150;
    private static readonly BITE_ATTACK_OFFSET = 140;
@@ -52,9 +59,11 @@ class FrozenYeti extends Mob {
    private static readonly TERMINAL_VELOCITY = 150;
    private static readonly ACCELERATION = 150;
 
+   private static readonly TARGET_ENTITY_FORGET_TIME = 7.5;
+
    public mass = 5;
 
-   private readonly targets: Record<number, TargetInfo> = {};
+   private readonly attackingEntities: Record<number, TargetInfo> = {};
 
    private attackType = FrozenYetiAttackType.none;
    private attackStage = 0;
@@ -64,7 +73,9 @@ class FrozenYeti extends Mob {
    private snowballThrowCooldownTimer = FrozenYeti.SNOWBALL_THROW_COOLDOWN;
    private roarCooldownTimer = FrozenYeti.ROAR_COOLDOWN;
    private biteCooldownTimer = FrozenYeti.BITE_COOLDOWN;
-   private stompCooldownTimer = FrozenYeti.BITE_COOLDOWN;
+   private stompCooldownTimer = FrozenYeti.STOMP_COOLDOWN;
+
+   private rockSpikeInfoArray = new Array<RockSpikeInfo>();
 
    constructor(position: Point) {
       super(position, {
@@ -112,11 +123,11 @@ class FrozenYeti extends Mob {
          }
 
          // Update/create the entity's targetInfo record
-         if (this.targets.hasOwnProperty(attackingEntity.id)) {
-            this.targets[attackingEntity.id].damageDealtToSelf += damage;
-            this.targets[attackingEntity.id].timeSinceLastAggro += 0;
+         if (this.attackingEntities.hasOwnProperty(attackingEntity.id)) {
+            this.attackingEntities[attackingEntity.id].damageDealtToSelf += damage;
+            this.attackingEntities[attackingEntity.id].timeSinceLastAggro += 0;
          } else {
-            this.targets[attackingEntity.id] = {
+            this.attackingEntities[attackingEntity.id] = {
                damageDealtToSelf: damage,
                timeSinceLastAggro: 0
             };
@@ -148,63 +159,53 @@ class FrozenYeti extends Mob {
          this.stompCooldownTimer = 0;
       }
 
-      // Remove targets which are dead
+      // Remove targets which are dead or have been out of aggro long enough
       // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
-      for (const _targetID of Object.keys(this.targets)) {
+      for (const _targetID of Object.keys(this.attackingEntities)) {
          const targetID = Number(_targetID);
+
          if (!Board.entities.hasOwnProperty(targetID)) {
-            delete this.targets[targetID];
+            delete this.attackingEntities[targetID];
+            continue;
          }
-      }
-      
-      const visibleEntities = getEntitiesInVisionRange(this.position.x, this.position.y, FrozenYeti.VISION_RANGE);
 
-      // Remove self from entities in vision range
-      const idx = visibleEntities.indexOf(this);
-      if (idx !== -1) {
-         visibleEntities.splice(idx, 1);
-      }
-
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
-         // Don't attack entities which aren't in the tundra or the entity is native to the tundra
-         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "yeti" || entity.type === "ice_spikes") {
-            visibleEntities.splice(i, 1);
-            i--;
+         this.attackingEntities[targetID].timeSinceLastAggro += 1 / SETTINGS.TPS;
+         if (this.attackingEntities[targetID].timeSinceLastAggro >= FrozenYeti.TARGET_ENTITY_FORGET_TIME) {
+            delete this.attackingEntities[targetID];
          }
       }
 
-      // Add entities in vision range to targets
-      for (const entity of visibleEntities) {
-         if (!this.targets.hasOwnProperty(entity.id)) {
-            this.targets[entity.id] = {
-               damageDealtToSelf: 0,
-               timeSinceLastAggro: 0
-            };
-         } else {
-            this.targets[entity.id].timeSinceLastAggro = 0;
-         }
-      }
-
-      if (Object.keys(this.targets).length === 0) {
+      const targets = this.findTargets();
+      if (targets.length === 0) {
          this.attackType = FrozenYetiAttackType.none;
          return;
       }
 
-      // Choose target based on which one has dealt the most damage to it
-      let targetID!: number;
-      let mostDamageDealt = -1;
-      // @Speed
-      for (const [_targetID, targetInfo] of Object.entries(this.targets)) {
-         if (targetInfo.damageDealtToSelf > mostDamageDealt) {
-            mostDamageDealt = targetInfo.damageDealtToSelf;
-            targetID = Number(_targetID);
+      // If any target has dealt damage to the yeti, choose the target based on which one has dealt the most damage to it
+      // Otherwise attack the closest target
+      let target!: Entity;
+      if (Object.keys(this.attackingEntities).length === 0) {
+         // Choose based on distance
+         let minDist = Number.MAX_SAFE_INTEGER;
+         for (const currentTarget of targets) {
+            const distance = this.position.calculateDistanceBetween(currentTarget.position);
+            if (distance < minDist) {
+               minDist = distance;
+               target = currentTarget;
+            }
+         }
+      } else {
+         let mostDamageDealt = -1;
+         for (const currentTarget of targets) {
+            if (this.attackingEntities.hasOwnProperty(currentTarget.id)) {
+               const targetInfo = this.attackingEntities[currentTarget.id];
+               if (targetInfo.damageDealtToSelf > mostDamageDealt) {
+                  mostDamageDealt = targetInfo.damageDealtToSelf;
+                  target = currentTarget;
+               }
+            }
          }
       }
-      if (!Board.entities.hasOwnProperty(targetID)) {
-         throw new Error("Couldn't find target");
-      }
-      const target = Board.entities[targetID];
 
       let angleToTarget = this.position.calculateAngleBetween(target.position);
       if (angleToTarget < 0) {
@@ -212,9 +213,7 @@ class FrozenYeti extends Mob {
       }
 
       if (this.attackType === FrozenYetiAttackType.none) {
-         // @Incomplete
-         this.attackType = this.getAttackType(target, angleToTarget, Object.keys(this.targets).length);
-         console.log(FrozenYetiAttackType[this.attackType]);
+         this.attackType = this.getAttackType(target, angleToTarget, targets.length);
       }
       switch (this.attackType) {
          case FrozenYetiAttackType.stomp: {
@@ -225,24 +224,28 @@ class FrozenYeti extends Mob {
             switch (this.attackStage) {
                // Windup
                case 0: {
-                  this.stageProgress += 0.5 / SETTINGS.TPS;
+                  if (this.stageProgress === 0) {
+                     this.rockSpikeInfoArray = this.generateRockSpikePositions(targets);
+                  }
+                  
+                  this.stageProgress += 0.75 / SETTINGS.TPS;
                   this.attemptToAdvanceStage();
+                  if (this.stageProgress === 0) {
+                     this.createRockSpikes();
+                  }
                   break;
                }
                // Stomp
                case 1: {
-                  if (this.stageProgress === 0) {
-                     this.stomp(visibleEntities);
-                  }
                   this.stageProgress += 2 / SETTINGS.TPS;
                   this.attemptToAdvanceStage();
                }
                // Daze
                case 2: {
-                  this.stageProgress += 0.5 / SETTINGS.TPS;
+                  this.stageProgress += 2 / SETTINGS.TPS;
                   this.clearAttack();
                   if (this.stageProgress === 0) {
-                     this.stompCooldownTimer = 0;
+                     this.stompCooldownTimer = FrozenYeti.STOMP_COOLDOWN;
                      this.globalAttackCooldownTimer = FrozenYeti.GLOBAL_ATTACK_COOLDOWN;
                   }
                }
@@ -307,7 +310,7 @@ class FrozenYeti extends Mob {
                   // Track target
                   this.turn(angleToTarget, 0.35);
 
-                  this.duringRoar(visibleEntities);
+                  this.duringRoar(targets);
                   
                   this.stageProgress += 0.5 / SETTINGS.TPS;
                   this.clearAttack();
@@ -382,6 +385,35 @@ class FrozenYeti extends Mob {
       }
    }
 
+   private findTargets(): ReadonlyArray<Entity> {
+      const targets = getEntitiesInVisionRange(this.position.x, this.position.y, FrozenYeti.VISION_RANGE);
+
+      // Don't attack yourself
+      const idx = targets.indexOf(this);
+      if (idx !== -1) {
+         targets.splice(idx, 1);
+      }
+
+      for (let i = 0; i < targets.length; i++) {
+         const entity = targets[i];
+         // Don't attack entities which aren't in the tundra or the entity is native to the tundra
+         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "yeti" || entity.type === "ice_spikes") {
+            targets.splice(i, 1);
+            i--;
+         }
+      }
+
+      // Add attacking entities to targets
+      for (const _targetID of Object.keys(this.attackingEntities)) {
+         const entity = Board.entities[Number(_targetID)];
+         if (targets.indexOf(entity) === -1) {
+            targets.push(entity);
+         }
+      }
+
+      return targets;
+   }
+
    private getAttackType(target: Entity, angleToTarget: number, numTargets: number): FrozenYetiAttackType {
       if (this.globalAttackCooldownTimer > 0) {
          return FrozenYetiAttackType.none;
@@ -395,7 +427,6 @@ class FrozenYeti extends Mob {
       }
 
       // Stomp if two or more targets in range
-      console.log(numTargets);
       if (this.stompCooldownTimer === 0 && numTargets >= 2) {
          return FrozenYetiAttackType.stomp;
       }
@@ -514,56 +545,155 @@ class FrozenYeti extends Mob {
     * Stomp
     * @param targets Whomst to stomp
     */
-   private stomp(targets: ReadonlyArray<Entity>): void {
+   private generateRockSpikePositions(targets: ReadonlyArray<Entity>): Array<RockSpikeInfo> {
+      // @Speed: Garbage collection
+
+      const rockSpikeInfoArray = new Array<RockSpikeInfo>();
+      
+      const angles = new Array<number>();
+      
       for (const target of targets) {
          const direction = this.position.calculateAngleBetween(target.position);
-         const distance = this.position.calculateDistanceBetween(target.position);
+         
+         // Don't do sequence if too close to existing sequence
+         let isValid = true;
+         for (const angle of angles) {
+            if (Math.abs(getAngleDifference(angle, direction)) <= 0.4) {
+               isValid = false;
+               break;
+            }
+         }
+         if (!isValid) {
+            continue;
+         }
+         
+         const perpendicularDirection = direction + Math.PI / 2;
+         angles.push(direction);
 
          // 
          // Main sequence
          // 
          
          const numMainSequenceNodes = randInt(4, 5);
-         const mainSequenceLength = numMainSequenceNodes * 40;
          
-         const startPositionX = this.position.x + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET) * Math.sin(direction);
-         const startPositionY = this.position.y + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET) * Math.cos(direction);
-         
-         const endPositionX = this.position.x + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET + mainSequenceLength) * Math.sin(direction);
-         const endPositionY = this.position.y + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET + mainSequenceLength) * Math.cos(direction);
+         const startPositionX = this.position.x + (FrozenYeti.SIZE / 2 + FrozenYeti.STOMP_START_OFFSET) * Math.sin(direction);
+         const startPositionY = this.position.y + (FrozenYeti.SIZE / 2 + FrozenYeti.STOMP_START_OFFSET) * Math.cos(direction);
 
-         // Construct nodes
-         const nodes = new Array<Point>();
+         const spikePositions = new Array<Point>();
+         const spikeSizes = new Array<number>();
+         
+         // Create main sequence spikes
+         let totalOffset = 0;
          for (let i = 0; i < numMainSequenceNodes; i++) {
-            let positionX = lerp(startPositionX, endPositionX, i / (numMainSequenceNodes - 1));
-            let positionY = lerp(startPositionY, endPositionY, i / (numMainSequenceNodes - 1));
+            let positionX = startPositionX + totalOffset * Math.sin(direction);
+            let positionY = startPositionY + totalOffset * Math.cos(direction);
+            totalOffset += randFloat(75, 110);
 
-            // Add offset
-            const offsetMagnitude = randFloat(-40, 40) * Math.sqrt(i + 1);
-            const offsetDirection = direction + Math.PI / 2;
-            positionX += offsetMagnitude * Math.sin(offsetDirection);
-            positionY += offsetMagnitude * Math.cos(offsetDirection);
+            // Add perpendicular offset
+            const offsetMagnitude = randFloat(-25, 25) * Math.pow(i + 1, 0.75);
+            positionX += offsetMagnitude * Math.sin(perpendicularDirection);
+            positionY += offsetMagnitude * Math.cos(perpendicularDirection);
 
-            nodes.push(new Point(positionX, positionY));
+            const spawnPosition = new Point(positionX, positionY);
+            const size = i <= numMainSequenceNodes / 2 ? 2 : 1;
+
+            spikePositions.push(spawnPosition);
+            spikeSizes.push(size);
+            rockSpikeInfoArray.push({
+               positionX: positionX,
+               positionY: positionY,
+               size: size
+            });
          }
 
-         // Create spikes
-         for (const node of nodes) {
-            const size = randInt(1, 2);
+         // Create non-main-sequence spikes
+         for (let i = 0; i < 10; i++) {
+            const size = 0;
             
-            const projectile = new Projectile(node, ProjectileType.rockSpike, 5, size);
-            
-            projectile.rotation = 2 * Math.PI * Math.random();
+            const dist = Math.random();
+            const offset = totalOffset * 1.5 * dist;
 
-            const hitbox = new CircularHitbox();
-            hitbox.radius = FrozenYeti.STOMP_SPIKE_HITBOX_SIZES[size];
-            projectile.addHitbox(hitbox);
+            let positionX = startPositionX + offset * Math.sin(direction);
+            let positionY = startPositionY + offset * Math.cos(direction);
+
+            // Perpendicular offset
+            const offsetMagnitude = randFloat(-40, 40) * Math.pow(i + 1, 0.75);
+            positionX += offsetMagnitude * Math.sin(perpendicularDirection);
+            positionY += offsetMagnitude * Math.cos(perpendicularDirection);
+
+            const position = new Point(positionX, positionY);
+
+            // Make sure the position wouldn't collide with any other spikes
+            let positionIsValid = true;
+            let minDist = Number.MAX_SAFE_INTEGER;
+            for (let i = 0; i < spikePositions.length; i++) {
+               const otherPosition = spikePositions[i];
+               const otherSize = spikeSizes[i];
+
+               const distance = position.calculateDistanceBetween(otherPosition);
+               if (distance <= FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[size] / 2 + FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[otherSize] / 2) {
+                  positionIsValid = false;
+                  break;
+               }
+               if (otherSize > 0 && distance < minDist) {
+                  minDist = distance;
+               }
+            }
+            // Don't create spike if would collide with existing spike or too far away from main sequence spike
+            if (!positionIsValid || minDist > 100) {
+               continue;
+            }
+
+            spikePositions.push(position);
+            spikeSizes.push(size);
+            rockSpikeInfoArray.push({
+               positionX: positionX,
+               positionY: positionY,
+               size: size
+            });
          }
       }
+
+      return rockSpikeInfoArray;
    }
 
-   public getClientArgs(): [attackType: FrozenYetiAttackType, attackStage: number, stageProgress: number] {
-      return [this.attackType, this.attackStage, this.stageProgress];
+   private createRockSpikes(): void {
+      for (const info of this.rockSpikeInfoArray) {
+         const position = new Point(info.positionX, info.positionY);
+         this.createSpikeProjectile(position, info.size);
+      }
+      this.rockSpikeInfoArray = [];
+   }
+
+   private createSpikeProjectile(spawnPosition: Point, size: number): void {
+      const lifetime = randFloat(3.5, 4.5);
+      const projectile = new Projectile(spawnPosition, ProjectileType.rockSpike, lifetime, [size, lifetime]);
+      projectile.isStatic = true;
+      projectile.rotation = 2 * Math.PI * Math.random();
+      projectile.mass = FrozenYeti.ROCK_SPIKE_MASSES[size];
+
+      const hitbox = new CircularHitbox();
+      hitbox.radius = FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[size];
+      projectile.addHitbox(hitbox);
+
+      projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
+         // Don't hurt the yeti which created the spike
+         if (collidingEntity === this) {
+            return;
+         }
+         
+         // Damage the entity
+         const healthComponent = collidingEntity.getComponent("health");
+         if (healthComponent !== null) {
+            const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
+            healthComponent.damage(5, 200, hitDirection, null, PlayerCauseOfDeath.rock_spike, 0, "rock_spike");
+            healthComponent.addLocalInvulnerabilityHash("rock_spike", 0.3);
+         }
+      });
+   }
+
+   public getClientArgs(): [attackType: FrozenYetiAttackType, attackStage: number, stageProgress: number, rockSpikePositions: Array<[number, number]>] {
+      return [this.attackType, this.attackStage, this.stageProgress, this.rockSpikeInfoArray.map(info => [info.positionX, info.positionY])];
    }
 
    public getDebugData(): GameObjectDebugData {

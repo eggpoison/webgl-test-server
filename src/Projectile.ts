@@ -14,19 +14,17 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
       during_entity_collision: []
    };
 
-   public readonly mass = 1;
-
    public readonly type: ProjectileType;
 
    /** How many seconds the projectile can exist before automatically being removed */
    private lifetime: number;
    private age = 0;
 
-   public readonly data: number;
+   public readonly data: any;
 
    public tickCallback?: () => void;
 
-   constructor(position: Point, type: ProjectileType, lifetime: number, data: number) {
+   constructor(position: Point, type: ProjectileType, lifetime: number, data: any) {
       super(position);
 
       this.type = type;

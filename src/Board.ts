@@ -303,7 +303,7 @@ abstract class Board {
             positionXBeforeUpdate = gameObject.position.x;
             positionYBeforeUpdate = gameObject.position.y;
    
-            gameObject.resolveWallCollisions();
+            gameObject.resolveBorderCollisions();
          
             // If the object moved due to resolving wall collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
