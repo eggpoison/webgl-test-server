@@ -1,4 +1,4 @@
-import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffect, Vector, angle, randFloat, randInt } from "webgl-test-shared";
+import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, Vector, angle, lerp, randFloat, randInt } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -7,6 +7,7 @@ import Entity from "../Entity";
 import Board from "../../Board";
 import Snowball from "../Snowball";
 import { entityIsInVisionRange, getAngleDifference, getEntitiesInVisionRange } from "../../ai-shared";
+import Projectile from "../../Projectile";
 
 interface TargetInfo {
    damageDealtToSelf: number;
@@ -33,9 +34,13 @@ class FrozenYeti extends Mob {
    private static readonly SNOWBALL_THROW_SPEED = [550, 650] as const;
 
    private static readonly GLOBAL_ATTACK_COOLDOWN = 2;
-   private static readonly SNOWBALL_THROW_COOLDOWN = 1;
+   private static readonly SNOWBALL_THROW_COOLDOWN = 10;
    private static readonly ROAR_COOLDOWN = 10;
    private static readonly BITE_COOLDOWN = 3;
+   private static readonly STOMP_COOLDOWN = 0;
+
+   private static readonly STOMP_START_OFFSET = 40;
+   private static readonly STOMP_SPIKE_HITBOX_SIZES = [12 * 4, 16 * 4, 24 * 4];
 
    private static readonly SNOWBALL_THROW_OFFSET = 150;
    private static readonly BITE_ATTACK_OFFSET = 140;
@@ -59,6 +64,7 @@ class FrozenYeti extends Mob {
    private snowballThrowCooldownTimer = FrozenYeti.SNOWBALL_THROW_COOLDOWN;
    private roarCooldownTimer = FrozenYeti.ROAR_COOLDOWN;
    private biteCooldownTimer = FrozenYeti.BITE_COOLDOWN;
+   private stompCooldownTimer = FrozenYeti.BITE_COOLDOWN;
 
    constructor(position: Point) {
       super(position, {
@@ -137,6 +143,10 @@ class FrozenYeti extends Mob {
       if (this.biteCooldownTimer < 0) {
          this.biteCooldownTimer = 0;
       }
+      this.stompCooldownTimer -= 1 / SETTINGS.TPS;
+      if (this.stompCooldownTimer < 0) {
+         this.stompCooldownTimer = 0;
+      }
 
       // Remove targets which are dead
       // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
@@ -147,18 +157,25 @@ class FrozenYeti extends Mob {
          }
       }
       
-      const entitiesInVisionRange = getEntitiesInVisionRange(this.position.x, this.position.y, FrozenYeti.VISION_RANGE);
+      const visibleEntities = getEntitiesInVisionRange(this.position.x, this.position.y, FrozenYeti.VISION_RANGE);
 
       // Remove self from entities in vision range
-      for (let i = 0; i < entitiesInVisionRange.length; i++) {
-         if (entitiesInVisionRange[i] === this) {
-            entitiesInVisionRange.splice(i, 1);
-            break;
+      const idx = visibleEntities.indexOf(this);
+      if (idx !== -1) {
+         visibleEntities.splice(idx, 1);
+      }
+
+      for (let i = 0; i < visibleEntities.length; i++) {
+         const entity = visibleEntities[i];
+         // Don't attack entities which aren't in the tundra or the entity is native to the tundra
+         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "yeti" || entity.type === "ice_spikes") {
+            visibleEntities.splice(i, 1);
+            i--;
          }
       }
 
       // Add entities in vision range to targets
-      for (const entity of entitiesInVisionRange) {
+      for (const entity of visibleEntities) {
          if (!this.targets.hasOwnProperty(entity.id)) {
             this.targets[entity.id] = {
                damageDealtToSelf: 0,
@@ -195,9 +212,44 @@ class FrozenYeti extends Mob {
       }
 
       if (this.attackType === FrozenYetiAttackType.none) {
-         this.attackType = this.getAttackType(target, angleToTarget);
+         // @Incomplete
+         this.attackType = this.getAttackType(target, angleToTarget, Object.keys(this.targets).length);
+         console.log(FrozenYetiAttackType[this.attackType]);
       }
       switch (this.attackType) {
+         case FrozenYetiAttackType.stomp: {
+            this.terminalVelocity = 0;
+            this.acceleration.x = 0;
+            this.acceleration.y = 0;
+
+            switch (this.attackStage) {
+               // Windup
+               case 0: {
+                  this.stageProgress += 0.5 / SETTINGS.TPS;
+                  this.attemptToAdvanceStage();
+                  break;
+               }
+               // Stomp
+               case 1: {
+                  if (this.stageProgress === 0) {
+                     this.stomp(visibleEntities);
+                  }
+                  this.stageProgress += 2 / SETTINGS.TPS;
+                  this.attemptToAdvanceStage();
+               }
+               // Daze
+               case 2: {
+                  this.stageProgress += 0.5 / SETTINGS.TPS;
+                  this.clearAttack();
+                  if (this.stageProgress === 0) {
+                     this.stompCooldownTimer = 0;
+                     this.globalAttackCooldownTimer = FrozenYeti.GLOBAL_ATTACK_COOLDOWN;
+                  }
+               }
+            }
+            
+            break;
+         }
          case FrozenYetiAttackType.snowThrow: {
             this.terminalVelocity = 0;
             this.acceleration.x = 0;
@@ -255,7 +307,7 @@ class FrozenYeti extends Mob {
                   // Track target
                   this.turn(angleToTarget, 0.35);
 
-                  this.duringRoar(entitiesInVisionRange);
+                  this.duringRoar(visibleEntities);
                   
                   this.stageProgress += 0.5 / SETTINGS.TPS;
                   this.clearAttack();
@@ -330,7 +382,7 @@ class FrozenYeti extends Mob {
       }
    }
 
-   private getAttackType(target: Entity, angleToTarget: number): FrozenYetiAttackType {
+   private getAttackType(target: Entity, angleToTarget: number, numTargets: number): FrozenYetiAttackType {
       if (this.globalAttackCooldownTimer > 0) {
          return FrozenYetiAttackType.none;
       }
@@ -338,18 +390,22 @@ class FrozenYeti extends Mob {
       const angleDifference = getAngleDifference(angleToTarget, this.rotation);
       
       // Bite if target is in range and the yeti's mouth is close enough
-      if (this.biteCooldownTimer === 0 && entityIsInVisionRange(this.position, FrozenYeti.BITE_RANGE, target)) {
-         if (Math.abs(angleDifference) <= 0.7) {
-            return FrozenYetiAttackType.bite;
-         }
+      if (this.biteCooldownTimer === 0 && Math.abs(angleDifference) <= 0.7 && entityIsInVisionRange(this.position, FrozenYeti.BITE_RANGE, target)) {
+         return FrozenYetiAttackType.bite;
+      }
+
+      // Stomp if two or more targets in range
+      console.log(numTargets);
+      if (this.stompCooldownTimer === 0 && numTargets >= 2) {
+         return FrozenYetiAttackType.stomp;
       }
       
-      // Roar attack
+      // Roar attack if mouth is close enough
       if (this.roarCooldownTimer === 0 && Math.abs(angleDifference) <= 0.5) {
          return FrozenYetiAttackType.roar;
       }
 
-      // Snow throw attack
+      // Snow throw attack if mouth is close enough
       if (this.snowballThrowCooldownTimer === 0 && Math.abs(angleDifference) <= 0.5) {
          return FrozenYetiAttackType.snowThrow;
       }
@@ -452,6 +508,58 @@ class FrozenYeti extends Mob {
             healthComponent.addLocalInvulnerabilityHash("snowball", 0.3);
          }
       });
+   }
+
+   /**
+    * Stomp
+    * @param targets Whomst to stomp
+    */
+   private stomp(targets: ReadonlyArray<Entity>): void {
+      for (const target of targets) {
+         const direction = this.position.calculateAngleBetween(target.position);
+         const distance = this.position.calculateDistanceBetween(target.position);
+
+         // 
+         // Main sequence
+         // 
+         
+         const numMainSequenceNodes = randInt(4, 5);
+         const mainSequenceLength = numMainSequenceNodes * 40;
+         
+         const startPositionX = this.position.x + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET) * Math.sin(direction);
+         const startPositionY = this.position.y + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET) * Math.cos(direction);
+         
+         const endPositionX = this.position.x + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET + mainSequenceLength) * Math.sin(direction);
+         const endPositionY = this.position.y + (FrozenYeti.SIZE + FrozenYeti.STOMP_START_OFFSET + mainSequenceLength) * Math.cos(direction);
+
+         // Construct nodes
+         const nodes = new Array<Point>();
+         for (let i = 0; i < numMainSequenceNodes; i++) {
+            let positionX = lerp(startPositionX, endPositionX, i / (numMainSequenceNodes - 1));
+            let positionY = lerp(startPositionY, endPositionY, i / (numMainSequenceNodes - 1));
+
+            // Add offset
+            const offsetMagnitude = randFloat(-40, 40) * Math.sqrt(i + 1);
+            const offsetDirection = direction + Math.PI / 2;
+            positionX += offsetMagnitude * Math.sin(offsetDirection);
+            positionY += offsetMagnitude * Math.cos(offsetDirection);
+
+            nodes.push(new Point(positionX, positionY));
+         }
+
+         // Create spikes
+         for (const node of nodes) {
+            const size = randInt(1, 2);
+            
+            const projectile = new Projectile(node, ProjectileType.rockSpike, 5, size);
+            
+            projectile.rotation = 2 * Math.PI * Math.random();
+
+            const hitbox = new CircularHitbox();
+            hitbox.radius = FrozenYeti.STOMP_SPIKE_HITBOX_SIZES[size];
+            projectile.addHitbox(hitbox);
+         }
+      }
    }
 
    public getClientArgs(): [attackType: FrozenYetiAttackType, attackStage: number, stageProgress: number] {

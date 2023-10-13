@@ -132,7 +132,7 @@ class IceSpikes extends Entity {
          position.y += 10 * Math.cos(moveDirection);
 
          const lifetime = randFloat(0.1, 0.2);
-         const projectile = new Projectile(position, ProjectileType.iceShards, lifetime);
+         const projectile = new Projectile(position, ProjectileType.iceShards, lifetime, 0);
 
          projectile.rotation = moveDirection;
          projectile.velocity.x = IceSpikes.ICE_SHARD_EXPLODE_SPEED * Math.sin(moveDirection);

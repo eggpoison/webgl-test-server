@@ -54,7 +54,7 @@ class Yeti extends Mob {
    private static readonly MIN_TERRITORY_SIZE = 50;
    private static readonly MAX_TERRITORY_SIZE = 100;
 
-   private static readonly VISION_RANGE = SETTINGS.TILE_SIZE * 7;
+   private static readonly VISION_RANGE = 400;
 
    private static readonly ATTACK_PURSUE_TIME = 5;
 
@@ -110,8 +110,8 @@ class Yeti extends Mob {
          acceleration: 200,
          terminalVelocity: 100,
          entityIsChased: (entity: Entity) => {
-            // Don't chase ice spikes or snowballs
-            if (entity.type === "ice_spikes" || entity.type === "snowball") {
+            // Don't chase ice spikes or snowballs or frozen yetis who aren't attacking the yeti
+            if (entity.type === "ice_spikes" || entity.type === "snowball" || (entity.type === "frozen_yeti" && !this.attackingEntities.hasOwnProperty(entity.id))) {
                return false;
             }
             

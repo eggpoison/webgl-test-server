@@ -22,9 +22,11 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
    private lifetime: number;
    private age = 0;
 
+   public readonly data: number;
+
    public tickCallback?: () => void;
 
-   constructor(position: Point, type: ProjectileType, lifetime: number) {
+   constructor(position: Point, type: ProjectileType, lifetime: number, data: number) {
       super(position);
 
       this.type = type;
@@ -32,6 +34,8 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
 
       // By default, projectiles aren't affected by friction
       this.isAffectedByFriction = false;
+
+      this.data = data;
    }
 
    public tick(): void {

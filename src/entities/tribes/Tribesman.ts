@@ -9,7 +9,7 @@ import Barrel from "./Barrel";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { GameObject } from "../../GameObject";
-import { getPositionRadialTiles } from "../../ai-shared";
+import { getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Tile from "../../Tile";
 import Player from "./Player";
 
@@ -55,6 +55,8 @@ class Tribesman extends TribeMember {
 
    private static readonly TERMINAL_VELOCITY = 150;
    private static readonly ACCELERATION = 300;
+   
+   private static readonly ESCAPE_HEALTH_THRESHOLD = 7.5;
 
    /** How far away from the entity the attack is done */
    private static readonly ATTACK_OFFSET = 50;
@@ -95,6 +97,9 @@ class Tribesman extends TribeMember {
       if (tribeType === TribeType.frostlings) {
          inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
+
+      // @Temporary
+      // this.forceGetComponent("health").damage(3, 0, 0, null, 0, 0);
 
       this.tribe = tribe;
    }
@@ -147,10 +152,10 @@ class Tribesman extends TribeMember {
          }  
       }
 
-      this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this, 1));
+      this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this), 1);
 
       // Escape from enemies when low on health
-      if (this.forceGetComponent("health").getHealth() <= 7.5 && this.enemiesInVisionRange.length > 0) {
+      if (this.forceGetComponent("health").getHealth() <= Tribesman.ESCAPE_HEALTH_THRESHOLD && this.enemiesInVisionRange.length > 0) {
          this.escape();
          this.lastAIType = TribesmanAIType.escaping;
          this.currentAction = TribeMemberAction.none;
@@ -207,9 +212,16 @@ class Tribesman extends TribeMember {
 
       // Pick up dropped items
       if (this.droppedItemsInVisionRange.length > 0) {
+         const health = this.forceGetComponent("health").getHealth();
+         
          let closestDroppedItem: DroppedItem | undefined;
          let minDistance = Number.MAX_SAFE_INTEGER;
          for (const droppedItem of this.droppedItemsInVisionRange) {
+            // If the tribesman is within the escape health threshold, make sure there wouldn't be any enemies visible while picking up the dropped item
+            if (health <= Tribesman.ESCAPE_HEALTH_THRESHOLD && !this.positionIsSafe(droppedItem.position.x, droppedItem.position.y)) {
+               continue;
+            }
+
             const distance = this.position.calculateDistanceBetween(droppedItem.position);
             if (distance < minDistance && this.canPickUpItem(droppedItem.item.type)) {
                closestDroppedItem = droppedItem;
@@ -241,11 +253,18 @@ class Tribesman extends TribeMember {
 
       // Attack closest resource
       if (this.resourcesInVisionRange.length > 0) {
+         const health = this.forceGetComponent("health").getHealth();
+
          // If the inventory is full, the resource should only be attacked if killing it produces an item that can be picked up
          let minDistance = Number.MAX_SAFE_INTEGER;
          let resourceToAttack: Entity | undefined;
          if (this.inventoryIsFull()) {
             for (const resource of this.resourcesInVisionRange) {
+               // If the tribesman is within the escape health threshold, make sure there wouldn't be any enemies visible while picking up the dropped item
+               if (health <= Tribesman.ESCAPE_HEALTH_THRESHOLD && !this.positionIsSafe(resource.position.x, resource.position.y)) {
+                  continue;
+               }
+
                // Check if the resource produces an item type that can be picked up
                let producesPickupableItemType = false;
                if (RESOURCE_PRODUCTS.hasOwnProperty(resource.type)) {
@@ -266,6 +285,11 @@ class Tribesman extends TribeMember {
             }
          } else {
             for (const resource of this.resourcesInVisionRange) {
+               // If the tribesman is within the escape health threshold, make sure there wouldn't be any enemies visible while picking up the dropped item
+               if (health <= Tribesman.ESCAPE_HEALTH_THRESHOLD && !this.positionIsSafe(resource.position.x, resource.position.y)) {
+                  continue;
+               }
+
                const dist = this.position.calculateDistanceBetween(resource.position);
                if (dist < minDistance) {
                   resourceToAttack = resource;
@@ -332,6 +356,9 @@ class Tribesman extends TribeMember {
          this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
          this.lastAIType = TribesmanAIType.patrolling;
       } else {
+         this.terminalVelocity = 0;
+         this.acceleration.x = 0;
+         this.acceleration.y = 0;
          this.lastAIType = TribesmanAIType.idle;
       }
    }
@@ -767,6 +794,17 @@ class Tribesman extends TribeMember {
          }
       }
       return null;
+   }
+
+   private positionIsSafe(x: number, y: number): boolean {
+      const visibleEntitiesFromItem = getEntitiesInVisionRange(x, y, Tribesman.VISION_RANGE);
+      for (const entity of visibleEntitiesFromItem) {
+         const relationship = this.getEntityRelationship(entity);
+         if (relationship >= EntityRelationship.hostileMob) {
+            return false;
+         }
+      }
+      return true;
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number] {

@@ -155,7 +155,8 @@ abstract class TribeMember extends Entity {
       
       super(position, {
          // @Temporary
-         health: new HealthComponent(entityType === "tribesman" ? 10 : tribeInfo.maxHealth, true),
+         // health: new HealthComponent(entityType === "tribesman" ? 10 : tribeInfo.maxHealth, true),
+         health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
       }, entityType);
 
@@ -578,7 +579,7 @@ abstract class TribeMember extends Entity {
             const offset = new Vector(35, this.rotation).convertToPoint();
             spawnPosition.add(offset);
             
-            const arrowProjectile = new Projectile(spawnPosition, ProjectileType.woodenArrow, 1.5);
+            const arrowProjectile = new Projectile(spawnPosition, ProjectileType.woodenArrow, 1.5, 0);
             arrowProjectile.velocity.x = itemInfo.projectileSpeed * Math.sin(this.rotation);
             arrowProjectile.velocity.y = itemInfo.projectileSpeed * Math.cos(this.rotation);
             arrowProjectile.rotation = this.rotation;

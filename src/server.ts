@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TileType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TileType, TribeType } from "webgl-test-shared";
 import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
@@ -18,6 +18,9 @@ import Chunk from "./Chunk";
 import Item from "./items/Item";
 import Cow from "./entities/mobs/Cow";
 import BerryBush from "./entities/resources/BerryBush";
+import TribeHut from "./entities/tribes/TribeHut";
+import TribeTotem from "./entities/tribes/TribeTotem";
+import FrozenYeti from "./entities/mobs/FrozenYeti";
 
 /*
 
@@ -91,7 +94,8 @@ const bundleProjectileData = (projectile: Projectile): ProjectileData => {
          return bundleHitboxData(hitbox);
       }),
       ageTicks: projectile.ageTicks,
-      type: projectile.type
+      type: projectile.type,
+      data: projectile.data
    };
 }
 
@@ -232,8 +236,8 @@ class GameServer {
       }
 
       if (typeof this.tickInterval === "undefined") {
-         // this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         this.tickInterval = setInterval(() => this.tick(), 3);
+         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         // this.tickInterval = setInterval(() => this.tick(), 3);
       }
    }
 
@@ -328,23 +332,29 @@ class GameServer {
          //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
          // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
 
-         new Cow(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
+         // new Cow(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
          
-         // new FrozenYeti(new Point(spawnPosition.x + 250, spawnPosition.y));
+         new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
+         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
          // const totem = new TribeTotem(new Point(spawnPosition.x + 1, spawnPosition.y));
-         // const tribe = new Tribe(TribeType.frostlings, totem);
+         const tribe = new Tribe(TribeType.plainspeople, totem);
 
-         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 200), tribe);
-         // tribe.registerNewHut(hut);
-         // const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
-         // tribe.registerNewHut(hut2);
-         // const hut3 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 400), tribe);
-         // tribe.registerNewHut(hut3);
+         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
+         hut.rotation = Math.PI * 3/2;
+         tribe.registerNewHut(hut);
+         const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
+         hut2.rotation = Math.PI * 3/2;
+         tribe.registerNewHut(hut2);
+         const hut3 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 400), tribe);
+         hut3.rotation = Math.PI * 3/2;
+         tribe.registerNewHut(hut3);
+
+         // const item = new Item(ItemType.berry, 1);
+         // new DroppedItem(new Point(spawnPosition.x, spawnPosition.y + 200), item);
 
          // new Tree(new Point(spawnPosition.x + 200, spawnPosition.y), false);
 
@@ -364,6 +374,9 @@ class GameServer {
             // Spawn the player entity
             const player = new Player(spawnPosition, playerData.username, null);
             playerData.instance = player;
+
+            // @Temporary
+            tribe.addTribeMember(player);
 
             const tiles = Board.getTiles();
             const serverTileData = new Array<Array<ServerTileData>>();
