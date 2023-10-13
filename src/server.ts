@@ -342,10 +342,9 @@ class GameServer {
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
          // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
-         // const tribe = new Tribe(TribeType.plainspeople, totem);
+         // const tribe = new Tribe(TribeType.frostlings, totem);
 
          // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
-         // hut.rotation = Math.PI * 3/2;
          // tribe.registerNewHut(hut);
          // const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
          // hut2.rotation = Math.PI * 3/2;

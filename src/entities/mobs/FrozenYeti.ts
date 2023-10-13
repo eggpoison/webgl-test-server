@@ -1,4 +1,4 @@
-import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, Vector, angle, lerp, randFloat, randInt } from "webgl-test-shared";
+import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, TileType, Vector, angle, lerp, randFloat, randInt, randItem } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -6,7 +6,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Board from "../../Board";
 import Snowball from "../Snowball";
-import { entityIsInVisionRange, getAngleDifference, getEntitiesInVisionRange } from "../../ai-shared";
+import { entityIsInVisionRange, getAllowedPositionRadialTiles, getAngleDifference, getEntitiesInVisionRange } from "../../ai-shared";
 import Projectile from "../../Projectile";
 
 interface TargetInfo {
@@ -56,6 +56,9 @@ class FrozenYeti extends Mob {
    private static readonly ROAR_ARC = Math.PI / 6;
    private static readonly ROAR_REACH = 450;
 
+   private static readonly SLOW_TERMINAL_VELOCITY = 100;
+   private static readonly SLOW_ACCELERATION = 100;
+
    private static readonly TERMINAL_VELOCITY = 150;
    private static readonly ACCELERATION = 150;
 
@@ -78,6 +81,8 @@ class FrozenYeti extends Mob {
    private rockSpikeInfoArray = new Array<RockSpikeInfo>();
 
    private lastTargetPosition: Point | null = null;
+
+   protected targetPosition: Point | null = null;
 
    constructor(position: Point) {
       super(position, {
@@ -168,7 +173,64 @@ class FrozenYeti extends Mob {
          this.roarCooldownTimer = FrozenYeti.ROAR_COOLDOWN;
          this.stompCooldownTimer = FrozenYeti.STOMP_COOLDOWN;
 
-         this.lastTargetPosition = null;
+         // @Cleanup: Copy and pasted from Wander AI
+         if (this.targetPosition !== null) {
+            // Check if reached target position
+            if (this.hasReachedTargetPosition()) {
+               this.targetPosition = null;
+               this.acceleration.x = 0;
+               this.acceleration.y = 0;
+            }
+         } else {
+            // No target position
+
+            // Look for new target position
+            if (this.velocity.x === 0 && this.velocity.y === 0 && Math.random() < 0.4 / SETTINGS.TPS) {
+               const wanderTiles = getAllowedPositionRadialTiles(this.position, this.visionRange, [TileType.frost]);
+               if (wanderTiles.length === 0) return;
+      
+               // Look randomly through the array for a target position
+               const indexes = wanderTiles.map((_, i) => i);
+               while (indexes.length > 0) {
+                  const tempIdx = randInt(0, indexes.length - 1);
+                  const idx = indexes[tempIdx];
+                  indexes.splice(tempIdx, 1);
+      
+                  const tile = wanderTiles[idx];
+      
+                  const wanderPositionX = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
+                  const wanderPositionY = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+                  this.targetPosition = new Point(wanderPositionX, wanderPositionY);
+                  
+                  const direction = angle(wanderPositionX - this.position.x, wanderPositionY - this.position.y);
+                  this.acceleration.x = FrozenYeti.SLOW_ACCELERATION * Math.sin(direction);
+                  this.acceleration.y = FrozenYeti.SLOW_ACCELERATION * Math.cos(direction);
+                  this.terminalVelocity = FrozenYeti.SLOW_TERMINAL_VELOCITY;
+                  this.rotation = direction;
+                  return;
+               }
+      
+               // 
+               // If no valid positions can be found then move to a random position
+               // 
+      
+               const tile = randItem(wanderTiles);
+               const position = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE);
+               this.targetPosition = position;
+      
+               const direction = angle(position.x - this.position.x, position.y - this.position.y);
+               this.acceleration.x = FrozenYeti.SLOW_ACCELERATION * Math.sin(direction);
+               this.acceleration.y = FrozenYeti.SLOW_ACCELERATION * Math.cos(direction);
+               this.terminalVelocity = FrozenYeti.SLOW_TERMINAL_VELOCITY;
+               this.rotation = direction;
+      
+               this.lastTargetPosition = null;
+            } else {
+               this.acceleration.x = 0;
+               this.acceleration.y = 0;
+            }
+         }
+
          return;
       }
 
@@ -404,6 +466,16 @@ class FrozenYeti extends Mob {
             break;
          }
       }
+   }
+
+   private hasReachedTargetPosition(): boolean {
+      if (this.targetPosition === null || this.velocity === null) return false;
+
+      const relativeTargetPosition = this.position.copy();
+      relativeTargetPosition.subtract(this.targetPosition);
+
+      const dotProduct = this.velocity.calculateDotProduct(relativeTargetPosition);
+      return dotProduct > 0;
    }
 
    private findTargets(): ReadonlyArray<Entity> {
