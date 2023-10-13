@@ -7,7 +7,7 @@ import Entity from "../Entity";
 import DroppedItem from "../../items/DroppedItem";
 import Barrel from "./Barrel";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
-import { getItemStackSize, itemIsStackable } from "../../items/Item";
+import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { GameObject } from "../../GameObject";
 import { getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Tile from "../../Tile";
@@ -31,6 +31,7 @@ enum TribesmanAIType {
    harvestingResources,
    pickingUpDroppedItems,
    haulingResources,
+   grabbingFood,
    patrolling,
    idle
 }
@@ -43,6 +44,21 @@ const RESOURCE_PRODUCTS: Partial<Record<EntityType, ReadonlyArray<ItemType>>> = 
    cactus: [ItemType.cactus_spine],
    boulder: [ItemType.rock],
    krumblid: [ItemType.leather]
+}
+
+const barrelHasFood = (barrel: Barrel): boolean => {
+   const inventory = barrel.forceGetComponent("inventory").getInventory("inventory");
+
+   for (let slotNum = 1; slotNum <= inventory.width * inventory.height; slotNum++) {
+      if (inventory.itemSlots.hasOwnProperty(slotNum)) {
+         const item = inventory.itemSlots[slotNum];
+         if (ITEM_TYPE_RECORD[item.type] === "food") {
+            return true;
+         }
+      }
+   }
+
+   return false;
 }
 
 class Tribesman extends TribeMember {
@@ -67,7 +83,7 @@ class Tribesman extends TribeMember {
    private static readonly DESIRED_MELEE_ATTACK_DISTANCE = 120;
    private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 500;
 
-   private static readonly BARREL_DEPOSIT_DISTANCE = 80;
+   private static readonly BARREL_INTERACT_DISTANCE = 80;
 
    private static readonly testHitbox = new CircularHitbox();
 
@@ -299,6 +315,39 @@ class Tribesman extends TribeMember {
             this.harvestResource(resourceToAttack);
          }
          return;
+      }
+
+      // Grab food from barrel
+      if (!this.hasFood() && this.hasAvailableHotbarSlot()) {
+         let closestBarrelWithFood: Barrel | undefined;
+         let minDist = Number.MAX_SAFE_INTEGER;
+         for (const gameObject of this.gameObjectsInVisionRange) {
+            if (gameObject.i === "entity" && gameObject.type === "barrel") {
+               const distance = this.position.calculateDistanceBetween(gameObject.position);
+               if (distance < minDist && barrelHasFood(gameObject as Barrel)) {
+                  minDist = distance;
+                  closestBarrelWithFood = gameObject as Barrel;
+               }
+            }
+         }
+         if (typeof closestBarrelWithFood !== "undefined") {
+            if (this.position.calculateDistanceBetween(closestBarrelWithFood.position) > Tribesman.BARREL_INTERACT_DISTANCE) {
+               // Move to barrel
+               const direction = this.position.calculateAngleBetween(closestBarrelWithFood.position);
+               this.acceleration.x = Tribesman.ACCELERATION * Math.sin(direction);
+               this.acceleration.y = Tribesman.ACCELERATION * Math.cos(direction);
+               this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
+               this.rotation = direction;
+            } else {
+               console.log("GRAB");
+               this.grabBarrelFood(closestBarrelWithFood);
+               this.acceleration.x = 0;
+               this.acceleration.y = 0;
+               this.terminalVelocity = 0;
+            }
+            this.lastAIType = TribesmanAIType.grabbingFood;
+            return;
+         }
       }
 
       if (this.tribe === null) {
@@ -576,7 +625,7 @@ class Tribesman extends TribeMember {
       this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
       this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
 
-      if (this.position.calculateDistanceBetween(barrel.position) <= Tribesman.BARREL_DEPOSIT_DISTANCE) {
+      if (this.position.calculateDistanceBetween(barrel.position) <= Tribesman.BARREL_INTERACT_DISTANCE) {
          this.depositResources(barrel);
       }
    }
@@ -802,6 +851,70 @@ class Tribesman extends TribeMember {
          }
       }
       return true;
+   }
+
+   private hasAvailableHotbarSlot(): boolean {
+      const inventory = this.forceGetComponent("inventory").getInventory("hotbar");
+
+      for (let slotNum = 1; slotNum <= inventory.width * inventory.height; slotNum++) {
+         if (!inventory.itemSlots.hasOwnProperty(slotNum)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private hasFood(): boolean {
+      const inventory = this.forceGetComponent("inventory").getInventory("hotbar");
+
+      for (let slotNum = 1; slotNum <= inventory.width * inventory.height; slotNum++) {
+         if (inventory.itemSlots.hasOwnProperty(slotNum)) {
+            const item = inventory.itemSlots[slotNum];
+
+            if (ITEM_TYPE_RECORD[item.type] === "food") {
+               return true;
+            }
+         }
+      }
+
+      return false;
+   }
+
+   private grabBarrelFood(barrel: Barrel): void {
+      // 
+      // Grab the food stack with the highest total heal amount
+      // 
+
+      const barrelInventoryComponent = barrel.forceGetComponent("inventory");
+      const barrelInventory = barrelInventoryComponent.getInventory("inventory");
+
+      let foodItemSlot = -1;
+      let food: Item | undefined;
+      let maxFoodValue = 0;
+      for (let slotNum = 1; slotNum <= barrelInventory.width * barrelInventory.height; slotNum++) {
+         if (barrelInventory.itemSlots.hasOwnProperty(slotNum)) {
+            const item = barrelInventory.itemSlots[slotNum];
+
+            // Skip non-food
+            if (ITEM_TYPE_RECORD[item.type] !== "food") {
+               continue;
+            }
+
+            const foodValue = (ITEM_INFO_RECORD[item.type] as FoodItemInfo).healAmount * item.count;
+            if (foodValue > maxFoodValue) {
+               food = item;
+               foodItemSlot = slotNum;
+               maxFoodValue = foodValue;
+            }
+         }
+      }
+      if (typeof food === "undefined") {
+         throw new Error("Couldn't find a food item to grab.");
+      }
+
+      this.forceGetComponent("inventory").addItemToInventory("hotbar", food);
+      barrelInventoryComponent.consumeItem("inventory", foodItemSlot, 999);
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number] {
