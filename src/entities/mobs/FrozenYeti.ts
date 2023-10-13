@@ -40,10 +40,10 @@ class FrozenYeti extends Mob {
    private static readonly SNOWBALL_THROW_SPEED = [550, 650] as const;
 
    private static readonly GLOBAL_ATTACK_COOLDOWN = 2;
-   private static readonly SNOWBALL_THROW_COOLDOWN = 10;
-   private static readonly ROAR_COOLDOWN = 10;
    private static readonly BITE_COOLDOWN = 3;
-   private static readonly STOMP_COOLDOWN = 0;
+   private static readonly SNOWBALL_THROW_COOLDOWN = 10;
+   private static readonly ROAR_COOLDOWN = 5;
+   private static readonly STOMP_COOLDOWN = 10;
 
    private static readonly STOMP_START_OFFSET = 40;
    private static readonly ROCK_SPIKE_HITBOX_SIZES = [12 * 2, 16 * 2, 20 * 2];
@@ -59,7 +59,7 @@ class FrozenYeti extends Mob {
    private static readonly TERMINAL_VELOCITY = 150;
    private static readonly ACCELERATION = 150;
 
-   private static readonly TARGET_ENTITY_FORGET_TIME = 7.5;
+   private static readonly TARGET_ENTITY_FORGET_TIME = 10;
 
    public mass = 5;
 
@@ -76,6 +76,8 @@ class FrozenYeti extends Mob {
    private stompCooldownTimer = FrozenYeti.STOMP_COOLDOWN;
 
    private rockSpikeInfoArray = new Array<RockSpikeInfo>();
+
+   private lastTargetPosition: Point | null = null;
 
    constructor(position: Point) {
       super(position, {
@@ -138,6 +140,38 @@ class FrozenYeti extends Mob {
    public tick(): void {
       super.tick();
 
+      // Remove targets which are dead or have been out of aggro long enough
+      // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
+      for (const _targetID of Object.keys(this.attackingEntities)) {
+         const targetID = Number(_targetID);
+
+         if (!Board.entities.hasOwnProperty(targetID)) {
+            delete this.attackingEntities[targetID];
+            continue;
+         }
+
+         this.attackingEntities[targetID].timeSinceLastAggro += 1 / SETTINGS.TPS;
+         if (this.attackingEntities[targetID].timeSinceLastAggro >= FrozenYeti.TARGET_ENTITY_FORGET_TIME) {
+            delete this.attackingEntities[targetID];
+         }
+      }
+
+      const targets = this.findTargets();
+      if (targets.length === 0 && this.attackType === FrozenYetiAttackType.none) {
+         this.attackType = FrozenYetiAttackType.none;
+         this.attackStage = 0;
+         this.stageProgress = 0;
+
+         this.globalAttackCooldownTimer = FrozenYeti.GLOBAL_ATTACK_COOLDOWN;
+         this.biteCooldownTimer = FrozenYeti.BITE_COOLDOWN;
+         this.snowballThrowCooldownTimer = FrozenYeti.SNOWBALL_THROW_COOLDOWN;
+         this.roarCooldownTimer = FrozenYeti.ROAR_COOLDOWN;
+         this.stompCooldownTimer = FrozenYeti.STOMP_COOLDOWN;
+
+         this.lastTargetPosition = null;
+         return;
+      }
+
       this.globalAttackCooldownTimer -= 1 / SETTINGS.TPS;
       if (this.globalAttackCooldownTimer < 0) {
          this.globalAttackCooldownTimer = 0;
@@ -159,31 +193,9 @@ class FrozenYeti extends Mob {
          this.stompCooldownTimer = 0;
       }
 
-      // Remove targets which are dead or have been out of aggro long enough
-      // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
-      for (const _targetID of Object.keys(this.attackingEntities)) {
-         const targetID = Number(_targetID);
-
-         if (!Board.entities.hasOwnProperty(targetID)) {
-            delete this.attackingEntities[targetID];
-            continue;
-         }
-
-         this.attackingEntities[targetID].timeSinceLastAggro += 1 / SETTINGS.TPS;
-         if (this.attackingEntities[targetID].timeSinceLastAggro >= FrozenYeti.TARGET_ENTITY_FORGET_TIME) {
-            delete this.attackingEntities[targetID];
-         }
-      }
-
-      const targets = this.findTargets();
-      if (targets.length === 0) {
-         this.attackType = FrozenYetiAttackType.none;
-         return;
-      }
-
       // If any target has dealt damage to the yeti, choose the target based on which one has dealt the most damage to it
       // Otherwise attack the closest target
-      let target!: Entity;
+      let target: Entity | null = null;
       if (Object.keys(this.attackingEntities).length === 0) {
          // Choose based on distance
          let minDist = Number.MAX_SAFE_INTEGER;
@@ -206,13 +218,22 @@ class FrozenYeti extends Mob {
             }
          }
       }
-
-      let angleToTarget = this.position.calculateAngleBetween(target.position);
-      if (angleToTarget < 0) {
-         angleToTarget += Math.PI * 2;
+      if (target !== null) {
+         // @Speed: Garbage collection
+         this.lastTargetPosition = target.position.copy();
       }
 
-      if (this.attackType === FrozenYetiAttackType.none) {
+      let angleToTarget: number;
+      if (target !== null) {
+         angleToTarget = this.position.calculateAngleBetween(target.position);
+      } else {
+         angleToTarget = this.position.calculateAngleBetween(this.lastTargetPosition!);
+      }
+      if (angleToTarget < 0) {
+         angleToTarget += 2 * Math.PI;
+      }
+
+      if (this.attackType === FrozenYetiAttackType.none && target !== null) {
          this.attackType = this.getAttackType(target, angleToTarget, targets.length);
       }
       switch (this.attackType) {

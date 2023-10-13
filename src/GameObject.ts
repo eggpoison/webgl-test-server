@@ -93,25 +93,24 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    public isStatic = false;
 
    /** If set to false, the game object will not experience friction from moving over tiles. */
-
-   // @Incomplete: Make the following two flags false by default and make sure the hitboxes and other stuff is correct when spawning in
-
    public isAffectedByFriction = true;
+
+   // @Incomplete: Make the following flags false by default and make sure the hitboxes and other stuff is correct when spawning in
 
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = true;
 
-   /**
-    * Whether the game object's hitboxes' bounds have changed during the current tick or not.
-    * If true, marks the game object to have its hitboxes and containing chunks updated
-   */
+   /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
    public hitboxesAreDirty = true;
+   
+   /** Indicates whether the game object could potentially collide with a wall tile */
+   public hasPotentialWallTileCollisions = false;
 
    public isInRiver: boolean;
 
    protected overrideMoveSpeedMultiplier = false;
    
-   private boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
+   public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
    constructor(position: Point) {
       this.position = position;
@@ -126,6 +125,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
       this.updateTile();
       this.isInRiver = this.checkIsInRiver();
+
 
       Board.addGameObjectToJoinBuffer(this as unknown as GameObject);
    }
@@ -152,6 +152,24 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
 
       this.hitboxesAreDirty = true;
+
+      // 
+      // Flag if the hitbox could be in a wall
+      // 
+
+      const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
+      const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
+      const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
+      const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
+      
+      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+         for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+            const tile = Board.getTile(tileX, tileY);
+            if (tile.isWall) {
+               this.hasPotentialWallTileCollisions = true;
+            }
+         }
+      }
    }
 
    public updateHitboxesAndBoundingArea(): void {
@@ -401,7 +419,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
    }
 
-   private checkForTileCollision(tile: Tile, hitbox: CircularHitbox): TileCollisionAxis {
+   private checkForCircularTileCollision(tile: Tile, hitbox: CircularHitbox): TileCollisionAxis {
       // Get the distance between the player's position and the center of the tile
       const xDist = Math.abs(this.position.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE);
       const yDist = Math.abs(this.position.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE);
@@ -422,21 +440,25 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       return TileCollisionAxis.none;
    }
 
-   private resolveXAxisTileCollision(tile: Tile, hitbox: CircularHitbox): void {
+   private resolveXAxisCircularTileCollision(tile: Tile, hitbox: CircularHitbox): void {
       const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
       const xDir = xDist >= 0 ? 1 : -1;
-      this.position.x = tile.x * SETTINGS.TILE_SIZE + (0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + hitbox.radius * xDir;
+      // The 0.0001 epsilon value is used so that the game object isn't put exactly on the border between tiles
+      // We don't use Number.EPSILON because it doesn't work in some cases
+      this.position.x = tile.x * SETTINGS.TILE_SIZE + (0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * xDir;
       this.velocity.x = 0;
    }
 
-   private resolveYAxisTileCollision(tile: Tile, hitbox: CircularHitbox): void {
+   private resolveYAxisCircularTileCollision(tile: Tile, hitbox: CircularHitbox): void {
       const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
       const yDir = yDist >= 0 ? 1 : -1;
-      this.position.y = tile.y * SETTINGS.TILE_SIZE + (0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + hitbox.radius * yDir;
+      // The 0.0001 epsilon value is used so that the game object isn't put exactly on the border between tiles
+      // We don't use Number.EPSILON because it doesn't work in some cases
+      this.position.y = tile.y * SETTINGS.TILE_SIZE + (0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * yDir;
       this.velocity.y = 0;
    }
 
-   private resolveDiagonalTileCollision(tile: Tile, hitbox: CircularHitbox): void {
+   private resolveDiagonalCircularTileCollision(tile: Tile, hitbox: CircularHitbox): void {
       const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
       const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
 
@@ -446,45 +468,164 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       const xDistFromEdge = Math.abs(xDist - SETTINGS.TILE_SIZE/2);
       const yDistFromEdge = Math.abs(yDist - SETTINGS.TILE_SIZE/2);
 
+      // The 0.0001 epsilon value is used so that the game object isn't put exactly on the border between tiles
+      // We don't use Number.EPSILON because it doesn't work in some cases
       if (yDistFromEdge < xDistFromEdge) {
-         this.position.x = (tile.x + 0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + hitbox.radius * xDir;
+         this.position.x = (tile.x + 0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * xDir;
          this.velocity.x = 0;
       } else {
-         this.position.y = (tile.y + 0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + hitbox.radius * yDir;
+         this.position.y = (tile.y + 0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * yDir;
          this.velocity.y = 0;
+      }
+   }
+
+   private checkForRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): TileCollisionAxis {
+      // 
+      // Check if any of the hitboxes' vertices are inside the tile
+      // 
+
+      const tileMinX = tile.x * SETTINGS.TILE_SIZE;
+      const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
+      const tileMinY = tile.y * SETTINGS.TILE_SIZE;
+      const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
+
+      for (let i = 0; i < 4; i++) {
+         const vertex = hitbox.vertexPositions[i];
+         if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
+            const distX = Math.abs(this.position.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE);
+            const distY = Math.abs(this.position.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE);
+
+            if (distX >= distY) {
+               return TileCollisionAxis.x;
+            } else {
+               return TileCollisionAxis.y;
+            }
+         }
+      }
+
+      // @Incomplete: check for diagonal collisions
+
+      return TileCollisionAxis.none;
+   }
+
+   private resolveXAxisRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
+      // 
+      // @Speed: don't recalculate, instead pass in
+      // 
+
+      const tileMinX = tile.x * SETTINGS.TILE_SIZE;
+      const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
+      const tileMinY = tile.y * SETTINGS.TILE_SIZE;
+      const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
+
+      let vertexPosition: Point | undefined;
+      for (let i = 0; i < 4; i++) {
+         const vertex = hitbox.vertexPositions[i];
+         if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
+            vertexPosition = vertex;
+            break;
+         }
+      }
+      if (typeof vertexPosition === "undefined") {
+         throw new Error();
+      }
+
+      const startXDist = vertexPosition.x - tile.x * SETTINGS.TILE_SIZE;
+      const xDist = vertexPosition.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE;
+
+      // Push left
+      if (xDist < 0) {
+         this.position.x -= startXDist;
+      } else {
+         // Push right
+         this.position.x += SETTINGS.TILE_SIZE - startXDist;
+      }
+   }
+
+   private resolveYAxisRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
+      // 
+      // @Speed: don't recalculate, instead pass in
+      // 
+
+      const tileMinX = tile.x * SETTINGS.TILE_SIZE;
+      const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
+      const tileMinY = tile.y * SETTINGS.TILE_SIZE;
+      const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
+
+      let vertexPosition: Point | undefined;
+      for (let i = 0; i < 4; i++) {
+         const vertex = hitbox.vertexPositions[i];
+         if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
+            vertexPosition = vertex;
+            break;
+         }
+      }
+      if (typeof vertexPosition === "undefined") {
+         throw new Error();
+      }
+
+      const startYDist = vertexPosition.y - tile.y * SETTINGS.TILE_SIZE;
+      const yDist = vertexPosition.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE;
+
+      // Push left
+      if (yDist < 0) {
+         this.position.y -= startYDist;
+      } else {
+         // Push right
+         this.position.y += SETTINGS.TILE_SIZE - startYDist;
       }
    }
 
    public resolveWallTileCollisions(): void {
       for (const hitbox of this.hitboxes) {
-         // @Incomplete: Rectangular wall tiles collisions
-         
-         if (!(hitbox instanceof CircularHitbox)) {
-            continue;
-         }
-         
          const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
          const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
          const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
          const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
-   
-         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-            for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-               const tile = Board.getTile(tileX, tileY);
-               if (tile.isWall) {
-                  const collisionAxis = this.checkForTileCollision(tile, hitbox);
-                  switch (collisionAxis) {
-                     case TileCollisionAxis.x: {
-                        this.resolveXAxisTileCollision(tile, hitbox);
-                        break;
+
+         // @Cleanup: bad, and a slow check
+         if (hitbox.hasOwnProperty("radius")) {
+            for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+               for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+                  const tile = Board.getTile(tileX, tileY);
+                  if (tile.isWall) {
+                     const collisionAxis = this.checkForCircularTileCollision(tile, hitbox as CircularHitbox);
+                     switch (collisionAxis) {
+                        case TileCollisionAxis.x: {
+                           this.resolveXAxisCircularTileCollision(tile, hitbox as CircularHitbox);
+                           break;
+                        }
+                        case TileCollisionAxis.y: {
+                           this.resolveYAxisCircularTileCollision(tile, hitbox as CircularHitbox);
+                           break;
+                        }
+                        case TileCollisionAxis.diagonal: {
+                           this.resolveDiagonalCircularTileCollision(tile, hitbox as CircularHitbox);
+                           break;
+                        }
                      }
-                     case TileCollisionAxis.y: {
-                        this.resolveYAxisTileCollision(tile, hitbox);
-                        break;
-                     }
-                     case TileCollisionAxis.diagonal: {
-                        this.resolveDiagonalTileCollision(tile, hitbox);
-                        break;
+                  }
+               }
+            }
+         } else {
+            for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+               for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+                  const tile = Board.getTile(tileX, tileY);
+                  if (tile.isWall) {
+                     const collisionAxis = this.checkForRectangularTileCollision(tile, hitbox as RectangularHitbox);
+                     switch (collisionAxis) {
+                        case TileCollisionAxis.x: {
+                           this.resolveXAxisRectangularTileCollision(tile, hitbox as RectangularHitbox);
+                           break;
+                        }
+                        case TileCollisionAxis.y: {
+                           this.resolveYAxisRectangularTileCollision(tile, hitbox as RectangularHitbox);
+                           break;
+                        }
+                        // case TileCollisionAxis.diagonal: {
+                        //    this.resolveDiagonalTileCollision(tile, hitbox as RectangularHitbox);
+                        //    break;
+                        // }
                      }
                   }
                }

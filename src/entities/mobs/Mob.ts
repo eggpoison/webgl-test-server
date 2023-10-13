@@ -218,6 +218,7 @@ abstract class Mob extends Entity {
       }
 
       this.visibleGameObjects.splice(this.visibleGameObjects.indexOf(this), 1);
+      this.visibleEntities.delete(this);
    }
 
    private hitboxIsVisible(hitbox: Hitbox): boolean {

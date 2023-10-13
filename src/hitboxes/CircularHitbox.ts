@@ -32,10 +32,6 @@ class CircularHitbox extends Hitbox {
          return circleAndRectangleDoIntersect(this.position, this.radius, otherHitbox.position, (otherHitbox as RectangularHitbox).width, (otherHitbox as RectangularHitbox).height, (otherHitbox as RectangularHitbox).rotation);
       }
    }
-   
-   public resolveTileCollision(tileX: number, tileY: number): void {
-      throw new Error("Method not implemented.");
-   }
 }
 
 export default CircularHitbox;

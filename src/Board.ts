@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, randInt, randItem } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, clampToBoardDimensions, randInt, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -258,7 +258,33 @@ abstract class Board {
 
          // Clean the game object's bounding area, hitbox bounds and chunks
          if (gameObject.hitboxesAreDirty) {
+            const previousMinTileX = Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE);
+            const previousMaxTileX = Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE);
+            const previousMinTileY = Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE);
+            const previousMaxTileY = Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE);
+            
             gameObject.cleanHitboxes();
+            
+            // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
+            if (previousMinTileX !== Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE) ||
+            previousMaxTileX !== Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE) ||
+            previousMinTileY !== Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE) ||
+            previousMaxTileY !== Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE)) {
+               const minTileX = clampToBoardDimensions(Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE));
+               const maxTileX = clampToBoardDimensions(Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE));
+               const minTileY = clampToBoardDimensions(Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE));
+               const maxTileY = clampToBoardDimensions(Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE));
+               
+               gameObject.hasPotentialWallTileCollisions = false;
+               for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+                  for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+                     const tile = this.getTile(tileX, tileY);
+                     if (tile.isWall) {
+                        gameObject.hasPotentialWallTileCollisions = true;
+                     }
+                  }
+               }
+            }
          }
       }
    }
@@ -284,7 +310,7 @@ abstract class Board {
       }
    }
 
-   public static resolveWallCollisions(): void {
+   public static resolveOtherCollisions(): void {
       const numGameObjects = this.gameObjects.length;
       for (let i = 0; i < numGameObjects; i++) {
          const gameObject = this.gameObjects[i];
@@ -293,7 +319,9 @@ abstract class Board {
             let positionXBeforeUpdate = gameObject.position.x;
             let positionYBeforeUpdate = gameObject.position.y;
    
-            gameObject.resolveWallTileCollisions();
+            if (gameObject.hasPotentialWallTileCollisions) {
+               gameObject.resolveWallTileCollisions();
+            }
          
             // If the object moved due to resolving wall tile collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {

@@ -31,8 +31,6 @@ abstract class Hitbox {
    }
 
    public abstract isColliding(otherHitbox: RectangularHitbox | CircularHitbox): boolean;
-
-   public abstract resolveTileCollision(tileX: number, tileY: number): void;
 }
 
 export default Hitbox;

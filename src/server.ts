@@ -21,6 +21,7 @@ import BerryBush from "./entities/resources/BerryBush";
 import TribeHut from "./entities/tribes/TribeHut";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import FrozenYeti from "./entities/mobs/FrozenYeti";
+import Krumblid from "./entities/mobs/Krumblid";
 
 /*
 
@@ -256,7 +257,7 @@ class GameServer {
       Board.updateGameObjects();
       // Done before wall collisions so that game objects don't clip into walls for a tick
       Board.resolveGameObjectCollisions();
-      Board.resolveWallCollisions();
+      Board.resolveOtherCollisions();
       
       Board.pushJoinBuffer();
 
@@ -334,24 +335,24 @@ class GameServer {
 
          // new Cow(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
          
-         new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
+         // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
+         // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
-         // const totem = new TribeTotem(new Point(spawnPosition.x + 1, spawnPosition.y));
-         const tribe = new Tribe(TribeType.plainspeople, totem);
+         // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
+         // const tribe = new Tribe(TribeType.plainspeople, totem);
 
-         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
-         hut.rotation = Math.PI * 3/2;
-         tribe.registerNewHut(hut);
-         const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
-         hut2.rotation = Math.PI * 3/2;
-         tribe.registerNewHut(hut2);
-         const hut3 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 400), tribe);
-         hut3.rotation = Math.PI * 3/2;
-         tribe.registerNewHut(hut3);
+         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
+         // hut.rotation = Math.PI * 3/2;
+         // tribe.registerNewHut(hut);
+         // const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
+         // hut2.rotation = Math.PI * 3/2;
+         // tribe.registerNewHut(hut2);
+         // const hut3 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 400), tribe);
+         // hut3.rotation = Math.PI * 3/2;
+         // tribe.registerNewHut(hut3);
 
          // const item = new Item(ItemType.berry, 1);
          // new DroppedItem(new Point(spawnPosition.x, spawnPosition.y + 200), item);
@@ -374,9 +375,6 @@ class GameServer {
             // Spawn the player entity
             const player = new Player(spawnPosition, playerData.username, null);
             playerData.instance = player;
-
-            // @Temporary
-            tribe.addTribeMember(player);
 
             const tiles = Board.getTiles();
             const serverTileData = new Array<Array<ServerTileData>>();

@@ -98,9 +98,6 @@ class Tribesman extends TribeMember {
          inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
 
-      // @Temporary
-      // this.forceGetComponent("health").damage(3, 0, 0, null, 0, 0);
-
       this.tribe = tribe;
    }
 
