@@ -8,7 +8,9 @@ import Board from "../../Board";
 import Snowball from "../Snowball";
 import { entityIsInVisionRange, getAllowedPositionRadialTiles, getAngleDifference, getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Projectile from "../../Projectile";
-import Tile from "src/Tile";
+import Tile from "../../Tile";
+import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
+import HungerComponent from "../../entity-components/HungerComponent";
 
 interface TargetInfo {
    damageDealtToSelf: number;
@@ -88,7 +90,8 @@ class FrozenYeti extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(FrozenYeti.MAX_HEALTH, false),
-         item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2)
+         item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2),
+         hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 2))
       }, "frozen_yeti", FrozenYeti.VISION_RANGE);
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.deepfrost_heart, randInt(2, 3), true);
@@ -111,6 +114,14 @@ class FrozenYeti extends Mob {
          hitbox.offset = Point.fromVectorForm(FrozenYeti.PAW_OFFSET, FrozenYeti.PAW_RESTING_ANGLE * (i === 0 ? -1 : 1));
          this.addHitbox(hitbox);
       }
+
+      this.addAI(
+         new ItemConsumeAI(this, {
+            terminalVelocity: FrozenYeti.TERMINAL_VELOCITY,
+            acceleration: FrozenYeti.ACCELERATION,
+            itemTargets: new Set([ItemType.raw_beef])
+         })
+      );
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          if (collidingEntity === null) {
