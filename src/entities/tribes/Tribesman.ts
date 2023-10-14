@@ -339,7 +339,6 @@ class Tribesman extends TribeMember {
                this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
                this.rotation = direction;
             } else {
-               console.log("GRAB");
                this.grabBarrelFood(closestBarrelWithFood);
                this.acceleration.x = 0;
                this.acceleration.y = 0;

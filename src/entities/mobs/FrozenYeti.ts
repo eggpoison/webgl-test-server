@@ -6,8 +6,9 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Board from "../../Board";
 import Snowball from "../Snowball";
-import { entityIsInVisionRange, getAllowedPositionRadialTiles, getAngleDifference, getEntitiesInVisionRange } from "../../ai-shared";
+import { entityIsInVisionRange, getAllowedPositionRadialTiles, getAngleDifference, getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Projectile from "../../Projectile";
+import Tile from "src/Tile";
 
 interface TargetInfo {
    damageDealtToSelf: number;
@@ -90,7 +91,7 @@ class FrozenYeti extends Mob {
          item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2)
       }, "frozen_yeti", FrozenYeti.VISION_RANGE);
 
-      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.deep_frost_heart, randInt(2, 3), true);
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.deepfrost_heart, randInt(2, 3), true);
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(5, 7), true);
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(13, 18), false);
 
@@ -186,17 +187,44 @@ class FrozenYeti extends Mob {
 
             // Look for new target position
             if (this.velocity.x === 0 && this.velocity.y === 0 && Math.random() < 0.4 / SETTINGS.TPS) {
-               const wanderTiles = getAllowedPositionRadialTiles(this.position, this.visionRange, [TileType.frost]);
-               if (wanderTiles.length === 0) return;
-      
+               const wanderTiles = getPositionRadialTiles(this.position, this.visionRange);
+               if (wanderTiles.length === 0) {
+                  this.acceleration.x = 0;
+                  this.acceleration.y = 0;
+                  this.lastTargetPosition = null;
+                  return;
+               }
+
+               const validWanderTiles = new Array<Tile>();
+               for (const tile of wanderTiles) {
+                  if (tile.type === TileType.fimbultur) {
+                     validWanderTiles.push(tile);
+                  }
+               }
+         
+               // If no valid positions can be found then move to a random position
+               if (validWanderTiles.length === 0) {
+                  const tile = randItem(wanderTiles);
+                  const position = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE);
+                  this.targetPosition = position;
+         
+                  const direction = angle(position.x - this.position.x, position.y - this.position.y);
+                  this.acceleration.x = FrozenYeti.SLOW_ACCELERATION * Math.sin(direction);
+                  this.acceleration.y = FrozenYeti.SLOW_ACCELERATION * Math.cos(direction);
+                  this.terminalVelocity = FrozenYeti.SLOW_TERMINAL_VELOCITY;
+                  this.rotation = direction;
+
+                  return;
+               }
+
                // Look randomly through the array for a target position
-               const indexes = wanderTiles.map((_, i) => i);
+               const indexes = validWanderTiles.map((_, i) => i);
                while (indexes.length > 0) {
                   const tempIdx = randInt(0, indexes.length - 1);
                   const idx = indexes[tempIdx];
                   indexes.splice(tempIdx, 1);
       
-                  const tile = wanderTiles[idx];
+                  const tile = validWanderTiles[idx];
       
                   const wanderPositionX = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
                   const wanderPositionY = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
@@ -209,27 +237,13 @@ class FrozenYeti extends Mob {
                   this.rotation = direction;
                   return;
                }
-      
-               // 
-               // If no valid positions can be found then move to a random position
-               // 
-      
-               const tile = randItem(wanderTiles);
-               const position = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE);
-               this.targetPosition = position;
-      
-               const direction = angle(position.x - this.position.x, position.y - this.position.y);
-               this.acceleration.x = FrozenYeti.SLOW_ACCELERATION * Math.sin(direction);
-               this.acceleration.y = FrozenYeti.SLOW_ACCELERATION * Math.cos(direction);
-               this.terminalVelocity = FrozenYeti.SLOW_TERMINAL_VELOCITY;
-               this.rotation = direction;
-      
-               this.lastTargetPosition = null;
             } else {
                this.acceleration.x = 0;
                this.acceleration.y = 0;
             }
          }
+
+         this.lastTargetPosition = null;
 
          return;
       }

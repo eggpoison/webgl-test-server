@@ -63,7 +63,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            tileType: TileType.frost,
+            tileType: TileType.fimbultur,
             isWall: false,
             noiseRequirements: {
                scale: 8,

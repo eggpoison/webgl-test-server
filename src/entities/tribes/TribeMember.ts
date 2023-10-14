@@ -266,7 +266,7 @@ abstract class TribeMember extends Entity {
 
    private attemptToBecomeImmune(): void {
       const armour = this.forceGetComponent("inventory").getItem("armourSlot", 1);
-      if (armour !== null && armour.type === ItemType.deep_frost_armour) {
+      if (armour !== null && armour.type === ItemType.deepfrost_armour) {
          this.addImmunity();
       }
    }

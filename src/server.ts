@@ -1,6 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TileType, TribeType } from "webgl-test-shared";
-import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import _GameObject from "./GameObject";
@@ -16,12 +15,6 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
-import Cow from "./entities/mobs/Cow";
-import BerryBush from "./entities/resources/BerryBush";
-import TribeHut from "./entities/tribes/TribeHut";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import FrozenYeti from "./entities/mobs/FrozenYeti";
-import Krumblid from "./entities/mobs/Krumblid";
 
 /*
 
@@ -599,7 +592,7 @@ class GameServer {
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
             killedEntityIDs: killedEntityIDs,
-            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deep_frost_armour
+            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour
          };
 
          // Send the game data to the player

@@ -104,7 +104,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "frozen_yeti",
-      spawnableTiles: [TileType.frost],
+      spawnableTiles: [TileType.fimbultur],
       spawnRate: 0.004,
       maxDensity: 0.008
    }
@@ -236,7 +236,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
 }
 
 export function runSpawnAttempt(): void {
-   if(1+1==2)return;
+   // if(1+1==2)return;
    for (const spawnInfo of SPAWN_INFO_RECORD) {
       if (!spawnConditionsAreMet(spawnInfo)) {
          continue;
@@ -258,7 +258,7 @@ export function runSpawnAttempt(): void {
 }
 
 export function spawnInitialEntities(): void {
-   if (1+1==2)return;
+   // if (1+1==2)return;
    let numSpawnAttempts: number;
 
    // For each spawn info object, spawn entities until no more can be spawned
