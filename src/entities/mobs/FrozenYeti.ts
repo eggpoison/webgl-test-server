@@ -1,4 +1,4 @@
-import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, TileType, Vector, angle, lerp, randFloat, randInt, randItem } from "webgl-test-shared";
+import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, TileType, angle, randFloat, randInt, randItem } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -6,7 +6,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Entity from "../Entity";
 import Board from "../../Board";
 import Snowball from "../Snowball";
-import { entityIsInVisionRange, getAllowedPositionRadialTiles, getAngleDifference, getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
+import { entityIsInVisionRange, getAngleDifference, getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Projectile from "../../Projectile";
 import Tile from "../../Tile";
 import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";

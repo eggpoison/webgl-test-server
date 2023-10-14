@@ -15,6 +15,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
+import Cactus from "./entities/resources/Cactus";
 
 /*
 
@@ -326,7 +327,7 @@ class GameServer {
          //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
          // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
 
-         // new Cow(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
+         new Cactus(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
          
          // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));

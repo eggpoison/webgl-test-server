@@ -1,4 +1,4 @@
-import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, Vector, angle, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, Vector, angle, randInt, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -98,6 +98,8 @@ class Tribesman extends TribeMember {
    private lastAIType = TribesmanAIType.idle;
 
    private targetPatrolPosition: Point | null = null;
+
+   private readonly warPaintType: number;
    
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
@@ -114,11 +116,40 @@ class Tribesman extends TribeMember {
          inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
 
+      if (tribeType === TribeType.goblins) {
+         this.warPaintType = randInt(1, 5);
+      } else {
+         this.warPaintType = -1;
+      }
+
       this.tribe = tribe;
+
+      this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
+         if (this.tribe !== null && attackingEntity !== null && this.forceGetComponent("health").getHealth() <= Tribesman.ESCAPE_HEALTH_THRESHOLD) {
+            this.tribe.requestReinforcements(attackingEntity);
+         }
+      });
    }
 
    public tick(): void {
       super.tick();
+
+      // Automatically pick up armour
+      const inventoryComponent = this.forceGetComponent("inventory");
+      const hotbarInventory = inventoryComponent.getInventory("hotbar");
+      const armourInventory = inventoryComponent.getInventory("armourSlot");
+      if (!armourInventory.itemSlots.hasOwnProperty(1)) {
+         for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
+            if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
+               const item = hotbarInventory.itemSlots[itemSlot];
+               if (ITEM_TYPE_RECORD[item.type] === "armour") {
+                  inventoryComponent.addItemToSlot("armourSlot", itemSlot, item.type, 1);
+                  inventoryComponent.removeItemFromInventory("hotbar", itemSlot);
+                  break;
+               }
+            }
+         }
+      }
 
       // 
       // Recalculate game objects the tribesman can see
@@ -166,6 +197,11 @@ class Tribesman extends TribeMember {
       }
 
       this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this), 1);
+      // @Cleanup: This shouldn't be necessary - why can itself be an enemy?
+      const idx = this.enemiesInVisionRange.indexOf(this);
+      if (idx !== -1) {
+         this.enemiesInVisionRange.splice(idx, 1);
+      }
 
       // Escape from enemies when low on health
       if (this.forceGetComponent("health").getHealth() <= Tribesman.ESCAPE_HEALTH_THRESHOLD && this.enemiesInVisionRange.length > 0) {
@@ -195,6 +231,15 @@ class Tribesman extends TribeMember {
          }
       }
 
+      // If any tribe members need reinforcements, add them to the enemy list
+      if (this.tribe !== null) {
+         for (const reinforcementInfo of this.tribe.reinforcementInfoArray) {
+            if (this.enemiesInVisionRange.indexOf(reinforcementInfo.targetEntity) === -1) {
+               this.enemiesInVisionRange.push(reinforcementInfo.targetEntity);
+            }
+         }
+      }
+         
       // Attack closest enemy
       if (this.enemiesInVisionRange.length > 0) {
          this.attackEnemy();
@@ -435,7 +480,8 @@ class Tribesman extends TribeMember {
          averageEnemyX += relativeX + this.position.x;
          averageEnemyY += relativeY + this.position.y;
          if (isNaN(averageEnemyX) || isNaN(averageEnemyY)) {
-            throw new Error();
+            console.warn("NaN!");
+            return;
          }
       }
       averageEnemyX /= this.enemiesInVisionRange.length;
@@ -916,7 +962,7 @@ class Tribesman extends TribeMember {
       barrelInventoryComponent.consumeItem("inventory", foodItemSlot, 999);
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number, warPaintType: number] {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
@@ -931,7 +977,8 @@ class Tribesman extends TribeMember {
          this.getFoodEatingType(),
          this.getLastActionTicks(),
          serializeInventoryData(hotbarInventory, "hotbar"),
-         this.selectedItemSlot
+         this.selectedItemSlot,
+         this.warPaintType
       ];
    }
 

@@ -168,20 +168,9 @@ abstract class TribeMember extends Entity {
 
       // Drop inventory on death
       this.createEvent("death", () => {
-         const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
-         for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
-            if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
-               const position = this.position.copy();
-
-               const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
-               const spawnOffsetDirection = 2 * Math.PI * Math.random();
-               position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
-               position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
-               
-               const item = hotbarInventory.itemSlots[itemSlot];
-               new DroppedItem(position, item);
-            }
-         }
+         this.dropInventory("hotbar");
+         this.dropInventory("armourSlot");
+         this.dropInventory("backpackSlot");
       });
 
       // Lose immunity to damage if the tribe member is hit
@@ -189,6 +178,23 @@ abstract class TribeMember extends Entity {
          this.removeImmunity();
          this.immunityTimer = TribeMember.DEEP_FROST_ARMOUR_IMMUNITY_TIME;
       });
+   }
+
+   private dropInventory(inventoryName: string): void {
+      const inventory = this.forceGetComponent("inventory").getInventory(inventoryName);
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            const position = this.position.copy();
+
+            const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
+            const spawnOffsetDirection = 2 * Math.PI * Math.random();
+            position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
+            position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
+            
+            const item = inventory.itemSlots[itemSlot];
+            new DroppedItem(position, item);
+         }
+      }
    }
 
    public setTribe(tribe: Tribe | null): void {
@@ -202,8 +208,8 @@ abstract class TribeMember extends Entity {
       const inventoryComponent = this.forceGetComponent("inventory");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
 
-      // If snow armour is equipped, move at normal speed on snow tiles
-      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.frost_armour) {
+      // If frost/deepfrost armour is equipped, move at normal speed on snow tiles
+      if (armourInventory.itemSlots.hasOwnProperty(1) && (armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour)) {
          if (this.tile.type === TileType.snow) {
             this.overrideMoveSpeedMultiplier = true;
          }
