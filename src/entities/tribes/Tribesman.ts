@@ -962,7 +962,7 @@ class Tribesman extends TribeMember {
       barrelInventoryComponent.consumeItem("inventory", foodItemSlot, 999);
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, inventory: InventoryData, activeItemSlot: number, warPaintType: number] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, inventory: InventoryData, activeItemSlot: number, warPaintType: number] {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
@@ -976,6 +976,7 @@ class Tribesman extends TribeMember {
          this.currentAction,
          this.getFoodEatingType(),
          this.getLastActionTicks(),
+         this.hasFrostShield(),
          serializeInventoryData(hotbarInventory, "hotbar"),
          this.selectedItemSlot,
          this.warPaintType

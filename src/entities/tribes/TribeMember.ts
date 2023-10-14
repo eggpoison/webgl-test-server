@@ -128,7 +128,9 @@ abstract class TribeMember extends Entity {
    
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
-   private static readonly DEEP_FROST_ARMOUR_IMMUNITY_TIME = 20;
+   // @Temporary
+   // private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 20;
+   private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 3;
 
    private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityType> = ["yeti", "frozen_yeti", "zombie", "slime"];
 
@@ -176,7 +178,7 @@ abstract class TribeMember extends Entity {
       // Lose immunity to damage if the tribe member is hit
       this.createEvent("hurt", () => {
          this.removeImmunity();
-         this.immunityTimer = TribeMember.DEEP_FROST_ARMOUR_IMMUNITY_TIME;
+         this.immunityTimer = TribeMember.DEEPFROST_ARMOUR_IMMUNITY_TIME;
       });
    }
 
@@ -283,6 +285,17 @@ abstract class TribeMember extends Entity {
 
    private removeImmunity(): void {
       this.forceGetComponent("health").removeDefence("deep_frost_armour_immunity");
+   }
+
+   protected hasFrostShield(): boolean {
+      if (this.immunityTimer !== 0) {
+         return false;
+      }
+      const armour = this.forceGetComponent("inventory").getItem("armourSlot", 1);
+      if (armour !== null && armour.type === ItemType.deepfrost_armour) {
+         return true;
+      }
+      return false;
    }
 
    protected getEntityRelationship(entity: Entity): EntityRelationship {
