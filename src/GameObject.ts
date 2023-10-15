@@ -8,7 +8,7 @@ import Projectile from "./Projectile";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 
-// @Cleanup
+// @Cleanup: probably move to webgl-test-shared
 
 function sqr(x: number) { return x * x }
 function dist2(v: Point, w: Point) {return sqr(v.x - w.x) + sqr(v.y - w.y) }
@@ -71,6 +71,7 @@ export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: numb
 
 /*
 * @Cleanup: To reduce the use of "this as unknown as GameObject", make this not have type parameters.
+* Step 1: Limit all the uses of "i" to crucial places (e.g. GameObject and its subclasses)
 */
 
 /** A generic class for any object in the world which has hitbox(es) */
@@ -154,9 +155,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
       this.updateTile();
       this.isInRiver = this.checkIsInRiver();
-
-
-      Board.addGameObjectToJoinBuffer(this as unknown as GameObject);
    }
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
@@ -912,8 +910,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
    public remove(): void {
       this.isRemoved = true;
-      Board.addGameObjectToRemoveBuffer(this as unknown as GameObject);
-      Board.removeGameObjectFromJoinBuffer(this as unknown as GameObject);
    }
 
    public getDebugData(): GameObjectDebugData {

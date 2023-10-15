@@ -5,7 +5,9 @@ import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { cleanAngle } from "../ai-shared";
-import HungerComponent from "src/entity-components/HungerComponent";
+import HungerComponent from "../entity-components/HungerComponent";
+import Board from "../Board";
+import { removeEntityFromCensus } from "src/census";
 
 export interface EntityComponents {
    health: HealthComponent;
@@ -72,6 +74,8 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       for (const component of Object.values(components) as Array<Component>) {
          if (typeof component.onLoad !== "undefined") component.onLoad();
       }
+
+      Board.addEntityToJoinBuffer(this);
    }
 
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
@@ -268,6 +272,14 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    protected cleanRotation(): void {
       this.rotation = cleanAngle(this.rotation);
+   }
+
+   public remove(): void {
+      if (!this.isRemoved) {
+         super.remove();
+         Board.addEntityToRemoveBuffer(this);
+         Board.removeEntityFromJoinBuffer(this);
+      }
    }
 }
 

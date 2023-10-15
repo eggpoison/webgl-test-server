@@ -6,26 +6,26 @@ test("Game objects can be created", () => {
    const position = new Point(400, 400);
    const cow = new Cow(position);
 
-   Board.forcePushGameObjectFromJoinBuffer(cow);
+   Board.pushJoinBuffer();
    
    // Check if the cow is in the board
-   expect(Board.gameObjectIsInBoard(cow)).toBe(true);
+   expect(Board.entityIsInBoard(cow)).toBe(true);
 
    cow.remove();
-   Board.forceRemoveGameObject(cow);
+   Board.forceRemoveEntity(cow);
 });
 
 test("Game objects can be removed", () => {
    const position = new Point(400, 400);
    const cow = new Cow(position);
 
-   Board.forcePushGameObjectFromJoinBuffer(cow);
+   Board.pushJoinBuffer();
 
    cow.remove();
-   Board.forceRemoveGameObject(cow);
+   Board.forceRemoveEntity(cow);
    
    // Check if the cow is in the board
-   expect(Board.gameObjectIsInBoard(cow)).toBe(false);
+   expect(Board.entityIsInBoard(cow)).toBe(false);
 });
 
 test("Game objects can be removed immediately after they are created", () => {
@@ -35,7 +35,7 @@ test("Game objects can be removed immediately after they are created", () => {
    cow.remove();
    
    // Check if the cow is in the board
-   expect(Board.gameObjectIsInBoard(cow)).toBe(false);
+   expect(Board.entityIsInBoard(cow)).toBe(false);
 });
 
 test("Game objects are moved inside the world if they are outside the world border", () => {

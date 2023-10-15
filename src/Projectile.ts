@@ -1,5 +1,6 @@
 import { Point, ProjectileType, SETTINGS } from "webgl-test-shared";
 import _GameObject, { GameObjectEvents } from "./GameObject";
+import Board from "./Board";
 
 interface ProjectileEvents extends GameObjectEvents {}
 
@@ -34,6 +35,8 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
       this.isAffectedByFriction = false;
 
       this.data = data;
+
+      Board.addProjectileToJoinBuffer(this);
    }
 
    public tick(): void {
@@ -46,6 +49,14 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
 
       if (typeof this.tickCallback !== "undefined") {
          this.tickCallback();
+      }
+   }
+
+   public remove(): void {
+      if (!this.isRemoved) {
+         super.remove();
+         Board.addProjectileToRemoveBuffer(this);
+         Board.removeProjectileFromJoinBuffer(this);
       }
    }
 }

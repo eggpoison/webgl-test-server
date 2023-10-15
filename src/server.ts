@@ -637,7 +637,7 @@ class GameServer {
    private handlePlayerDisconnect(socket: ISocket): void {
       if (this.playerDataRecord.hasOwnProperty(socket.id)) {
          const playerData = this.playerDataRecord[socket.id];
-         if (Board.gameObjectIsInBoard(playerData.instance)) {
+         if (Board.entityIsInBoard(playerData.instance)) {
             playerData.instance.remove();
          }
          delete this.playerDataRecord[socket.id];

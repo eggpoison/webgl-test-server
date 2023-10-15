@@ -3,6 +3,7 @@ import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./Item";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { runFleshSwordAI } from "../flesh-sword-ai";
+import Board from "../Board";
 
 interface EntityPickupCooldown {
    readonly entityID: number;
@@ -40,6 +41,8 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
+
+      Board.addDroppedItemToJoinBuffer(this);
    } 
 
    public tick(): void {
@@ -78,6 +81,14 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
          if (playerPickupCooldown.entityID === entityID) return false;
       }
       return true;
+   }
+
+   public remove(): void {
+      if (!this.isRemoved) {
+         super.remove();
+         Board.addDroppedItemToRemoveBuffer(this);
+         Board.removeDroppedItemFromJoinBuffer(this);
+      }
    }
 }
 

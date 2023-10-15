@@ -152,7 +152,7 @@ class Tribe {
       // Attempt to respawn the tribesman when it  is killed
       tribesman.createEvent("death", () => {
          // Only respawn the tribesman if their hut is alive
-         if (Board.gameObjectIsInBoard(hut)) {
+         if (!hut.isRemoved) {
             this.createNewTribesman(hut);
          }
       });

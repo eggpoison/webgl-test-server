@@ -51,9 +51,13 @@ abstract class Board {
 
    private static tileUpdateCoordinates: Set<number>;
 
-   private static gameObjectsToRemove = new Array<GameObject>();
+   private static entityJoinBuffer = new Array<Entity>();
+   private static droppedItemJoinBuffer = new Array<DroppedItem>();
+   private static projectileJoinBuffer = new Array<Projectile>();
 
-   private static joinBuffer = new Array<GameObject>();
+   private static entityRemoveBuffer = new Array<Entity>();
+   private static droppedItemRemoveBuffer = new Array<DroppedItem>();
+   private static projectileRemoveBuffer = new Array<Projectile>();
 
    private static tribes = new Array<Tribe>();
 
@@ -182,11 +186,29 @@ abstract class Board {
 
    /** Removes game objects flagged for deletion */
    public static removeFlaggedGameObjects(): void {
-      for (const gameObject of this.gameObjectsToRemove) {
-         this.removeGameObject(gameObject);
+      for (const entity of this.entityRemoveBuffer) {
+         this.removeGameObject(entity);
+         delete this.entities[entity.id];
+         removeEntityFromCensus(entity);
       }
 
-      this.gameObjectsToRemove = new Array<GameObject>();
+      for (const droppedItem of this.droppedItemRemoveBuffer) {
+         this.removeGameObject(droppedItem);
+         delete this.droppedItems[droppedItem.id];
+         if (droppedItem.item.type === ItemType.flesh_sword) {
+            removeFleshSword(droppedItem);
+         }
+      }
+
+      for (const projectile of this.projectileRemoveBuffer) {
+         this.removeGameObject(projectile);
+         delete this.droppedItems[projectile.id];
+         this.projectiles.delete(projectile);
+      }
+
+      this.entityRemoveBuffer = new Array<Entity>();
+      this.droppedItemRemoveBuffer = new Array<DroppedItem>();
+      this.projectileRemoveBuffer = new Array<Projectile>();
    }
 
    private static removeGameObject(gameObject: GameObject): void {
@@ -201,44 +223,21 @@ abstract class Board {
       }
 
       this.gameObjects.splice(idx, 1);
-      
-      switch (gameObject.i) {
-         case "entity": {
-            delete this.entities[gameObject.id];
-            removeEntityFromCensus(gameObject);
-            break;
-         }
-         case "droppedItem": {
-            delete this.droppedItems[gameObject.id];
-            if (gameObject.item.type === ItemType.flesh_sword) {
-               removeFleshSword(gameObject);
-            }
-            break;
-         }
-         case "projectile": {
-            this.projectiles.delete(gameObject);
-            break;
-         }
-      }
 
       for (const chunk of gameObject.chunks) {
          chunk.removeGameObject(gameObject);
       }
    }
 
-   public static forceRemoveGameObject(gameObject: GameObject): void {
-      const idx = this.gameObjectsToRemove.indexOf(gameObject);
+   public static forceRemoveEntity(entity: Entity): void {
+      const idx = this.entityRemoveBuffer.indexOf(entity);
       if (idx !== -1) {
-         this.gameObjectsToRemove.splice(idx, 1);
+         this.entityRemoveBuffer.splice(idx, 1);
       }
 
-      this.removeGameObject(gameObject);
-   }
-
-   public static addGameObjectToRemoveBuffer(gameObject: GameObject): void {
-      if (this.gameObjectsToRemove.indexOf(gameObject) === -1) {
-         this.gameObjectsToRemove.push(gameObject);
-      }
+      this.removeGameObject(entity);
+      delete this.entities[entity.id];
+      removeEntityFromCensus(entity);
    }
 
    public static updateGameObjects(): void {
@@ -405,23 +404,73 @@ abstract class Board {
       }
    }
 
-   public static addGameObjectToJoinBuffer(gameObject: GameObject): void {
-      this.joinBuffer.push(gameObject);
+   public static addEntityToJoinBuffer(entity: Entity): void {
+      this.entityJoinBuffer.push(entity);
    }
 
-   public static removeGameObjectFromJoinBuffer(gameObject: GameObject): void {
-      const idx = this.joinBuffer.indexOf(gameObject);
+   public static addDroppedItemToJoinBuffer(droppedItem: DroppedItem): void {
+      this.droppedItemJoinBuffer.push(droppedItem);
+   }
+
+   public static addProjectileToJoinBuffer(projectile: Projectile): void {
+      this.projectileJoinBuffer.push(projectile);
+   }
+
+   public static removeEntityFromJoinBuffer(entity: Entity): void {
+      const idx = this.entityJoinBuffer.indexOf(entity);
       if (idx !== -1) {
-         this.joinBuffer.splice(idx, 1);
+         this.entityJoinBuffer.splice(idx, 1);
       }
+   }
+
+   public static removeDroppedItemFromJoinBuffer(droppedItem: DroppedItem): void {
+      const idx = this.droppedItemJoinBuffer.indexOf(droppedItem);
+      if (idx !== -1) {
+         this.droppedItemJoinBuffer.splice(idx, 1);
+      }
+   }
+
+   public static removeProjectileFromJoinBuffer(projectile: Projectile): void {
+      const idx = this.projectileJoinBuffer.indexOf(projectile);
+      if (idx !== -1) {
+         this.projectileJoinBuffer.splice(idx, 1);
+      }
+   }
+
+   public static addEntityToRemoveBuffer(entity: Entity): void {
+      this.entityRemoveBuffer.push(entity);
+   }
+
+   public static addDroppedItemToRemoveBuffer(droppedItem: DroppedItem): void {
+      this.droppedItemRemoveBuffer.push(droppedItem);
+   }
+
+   public static addProjectileToRemoveBuffer(projectile: Projectile): void {
+      this.projectileRemoveBuffer.push(projectile);
    }
 
    public static pushJoinBuffer(): void {
-      for (const gameObject of this.joinBuffer) {
-         this.addGameObjectToBoard(gameObject)
+      for (const entity of this.entityJoinBuffer) {
+         this.addGameObjectToBoard(entity)
+         this.entities[entity.id] = entity;
       }
 
-      this.joinBuffer = new Array<GameObject>();
+      for (const droppedItem of this.droppedItemJoinBuffer) {
+         this.addGameObjectToBoard(droppedItem);
+         this.droppedItems[droppedItem.id] = droppedItem;
+         if (droppedItem.item.type === ItemType.flesh_sword) {
+            addFleshSword(droppedItem);
+         }
+      }
+
+      for (const projectile of this.projectileJoinBuffer) {
+         this.addGameObjectToBoard(projectile);
+         this.projectiles.add(projectile);
+      }
+
+      this.entityJoinBuffer = new Array<Entity>();
+      this.droppedItemJoinBuffer = new Array<DroppedItem>();
+      this.projectileJoinBuffer = new Array<Projectile>();
    }
 
    private static addGameObjectToBoard(gameObject: GameObject): void {
@@ -429,42 +478,15 @@ abstract class Board {
       gameObject.updateContainingChunks();
 
       this.gameObjects.push(gameObject);
-
-      switch (gameObject.i) {
-         case "entity": {
-            this.entities[gameObject.id] = gameObject;
-            break;
-         }
-         case "droppedItem": {
-            this.droppedItems[gameObject.id] = gameObject;
-            if (gameObject.item.type === ItemType.flesh_sword) {
-               addFleshSword(gameObject);
-            }
-            break;
-         }
-         case "projectile": {
-            this.projectiles.add(gameObject);
-            break;
-         }
-      }
-   }
-
-   /** Forcefully adds a game object to the board from the join buffer */
-   public static forcePushGameObjectFromJoinBuffer(gameObject: GameObject): void {
-      const idx = this.joinBuffer.indexOf(gameObject);
-      if (idx !== -1) {
-         this.addGameObjectToBoard(gameObject);
-         this.removeGameObjectFromJoinBuffer(gameObject);
-      }
    }
 
    public static isInBoard(position: Point): boolean {
       return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
    }
 
-   public static gameObjectIsInBoard(gameObject: GameObject): boolean {
-      // Check the join buffer and game objects
-      if (this.gameObjects.indexOf(gameObject) !== -1 || this.joinBuffer.includes(gameObject)) return true;
+   private static gameObjectIsInBoard(gameObject: GameObject): boolean {
+      // Check the game objects
+      if (this.gameObjects.indexOf(gameObject) !== -1) return true;
 
       // Check the chunks
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
@@ -477,6 +499,11 @@ abstract class Board {
       }
 
       return false;
+   }
+
+   public static entityIsInBoard(entity: Entity): boolean {
+      if (this.gameObjectIsInBoard(entity)) return true;
+      return this.entityJoinBuffer.indexOf(entity) !== -1;
    }
 
    public static distanceToClosestEntity(position: Point): number {
