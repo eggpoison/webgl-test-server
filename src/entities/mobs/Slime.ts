@@ -315,7 +315,7 @@ class Slime extends Mob {
          this.remove();
       } else {
          // Add the other slime's health
-         const otherSlimeHealth = otherSlime.forceGetComponent("health").getHealth();
+         const otherSlimeHealth = otherSlime.forceGetComponent("health").health;
          this.forceGetComponent("health").heal(otherSlimeHealth);
 
          this.createNewOrb(otherSlime.size);

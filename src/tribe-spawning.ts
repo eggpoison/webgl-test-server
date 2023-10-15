@@ -11,15 +11,13 @@ const TRIBE_SPAWN_RATE = 0.5;
 
 const MAX_HUT_SPAWN_ATTEMPTS = 100;
 
-const MIN_DISTANCE_FROM_OTHER_TRIBE = 4000;
+const MIN_DISTANCE_FROM_OTHER_TRIBE = 3000;
 
 const NUM_STARTING_HUTS: Record<TribeType, number> = {
    [TribeType.plainspeople]: 2,
    [TribeType.frostlings]: 2,
    [TribeType.barbarians]: 1,
-   // @Temporary
-   // [TribeType.goblins]: 3
-   [TribeType.goblins]: 100
+   [TribeType.goblins]: 3
 };
 
 /** Minimum distance huts will spawn from other entities when they spawn */

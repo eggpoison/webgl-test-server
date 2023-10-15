@@ -9,7 +9,7 @@ class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
 
    public readonly maxHealth: number;
-   private health: number;
+   public health: number;
 
    /** How much that incoming damage gets reduced. 0 = none, 1 = all */
    private defence = 0;
@@ -82,10 +82,6 @@ class HealthComponent extends Component {
             i--;
          }
       }
-   }
-   
-   public getHealth(): number {
-      return this.health;
    }
 
    public isDead(): boolean {

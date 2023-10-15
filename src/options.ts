@@ -5,8 +5,8 @@ interface Options {
 }
 
 const OPTIONS: Options = {
-   spawnEntities: true,
-   warp: true,
+   spawnEntities: false,
+   warp: false,
    generateRivers: false
 };
 

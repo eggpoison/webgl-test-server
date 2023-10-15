@@ -180,6 +180,12 @@ abstract class TribeMember extends Mob {
          this.removeImmunity();
          this.immunityTimer = TribeMember.DEEPFROST_ARMOUR_IMMUNITY_TIME;
       });
+
+      this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
+         if (this.tribe !== null && attackingEntity !== null && this.forceGetComponent("health").health <= 7.5) {
+            this.tribe.requestReinforcements(attackingEntity);
+         }
+      });
    }
 
    private dropInventory(inventoryName: string): void {
@@ -515,7 +521,7 @@ abstract class TribeMember extends Mob {
             const healthComponent = this.forceGetComponent("health");
 
             // Don't use food if already at maximum health
-            if (healthComponent.getHealth() >= healthComponent.maxHealth) return;
+            if (healthComponent.health >= healthComponent.maxHealth) return;
 
             const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
 
