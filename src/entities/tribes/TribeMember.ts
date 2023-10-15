@@ -116,7 +116,7 @@ export enum EntityRelationship {
    enemy
 }
 
-abstract class TribeMember extends Entity {
+abstract class TribeMember extends Mob {
    private static readonly testRectangularHitbox = new RectangularHitbox();
    private static readonly testCircularHitbox = new CircularHitbox();
 
@@ -128,7 +128,9 @@ abstract class TribeMember extends Entity {
    
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
-   private static readonly DEEP_FROST_ARMOUR_IMMUNITY_TIME = 20;
+   // @Temporary
+   private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 20;
+   // private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 3;
 
    private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityType> = ["yeti", "frozen_yeti", "zombie", "slime"];
 
@@ -158,7 +160,7 @@ abstract class TribeMember extends Entity {
          // health: new HealthComponent(entityType === "tribesman" ? 10 : tribeInfo.maxHealth, true),
          health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
-      }, entityType);
+      }, entityType, visionRange);
 
       this.tribeType = tribeType;
 
@@ -168,27 +170,33 @@ abstract class TribeMember extends Entity {
 
       // Drop inventory on death
       this.createEvent("death", () => {
-         const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
-         for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
-            if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
-               const position = this.position.copy();
-
-               const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
-               const spawnOffsetDirection = 2 * Math.PI * Math.random();
-               position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
-               position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
-               
-               const item = hotbarInventory.itemSlots[itemSlot];
-               new DroppedItem(position, item);
-            }
-         }
+         this.dropInventory("hotbar");
+         this.dropInventory("armourSlot");
+         this.dropInventory("backpackSlot");
       });
 
       // Lose immunity to damage if the tribe member is hit
       this.createEvent("hurt", () => {
          this.removeImmunity();
-         this.immunityTimer = TribeMember.DEEP_FROST_ARMOUR_IMMUNITY_TIME;
+         this.immunityTimer = TribeMember.DEEPFROST_ARMOUR_IMMUNITY_TIME;
       });
+   }
+
+   private dropInventory(inventoryName: string): void {
+      const inventory = this.forceGetComponent("inventory").getInventory(inventoryName);
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            const position = this.position.copy();
+
+            const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
+            const spawnOffsetDirection = 2 * Math.PI * Math.random();
+            position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
+            position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
+            
+            const item = inventory.itemSlots[itemSlot];
+            new DroppedItem(position, item);
+         }
+      }
    }
 
    public setTribe(tribe: Tribe | null): void {
@@ -202,8 +210,8 @@ abstract class TribeMember extends Entity {
       const inventoryComponent = this.forceGetComponent("inventory");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
 
-      // If snow armour is equipped, move at normal speed on snow tiles
-      if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.frost_armour) {
+      // If frost/deepfrost armour is equipped, move at normal speed on snow tiles
+      if (armourInventory.itemSlots.hasOwnProperty(1) && (armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour)) {
          if (this.tile.type === TileType.snow) {
             this.overrideMoveSpeedMultiplier = true;
          }
@@ -266,7 +274,7 @@ abstract class TribeMember extends Entity {
 
    private attemptToBecomeImmune(): void {
       const armour = this.forceGetComponent("inventory").getItem("armourSlot", 1);
-      if (armour !== null && armour.type === ItemType.deep_frost_armour) {
+      if (armour !== null && armour.type === ItemType.deepfrost_armour) {
          this.addImmunity();
       }
    }
@@ -277,6 +285,17 @@ abstract class TribeMember extends Entity {
 
    private removeImmunity(): void {
       this.forceGetComponent("health").removeDefence("deep_frost_armour_immunity");
+   }
+
+   protected hasFrostShield(): boolean {
+      if (this.immunityTimer !== 0) {
+         return false;
+      }
+      const armour = this.forceGetComponent("inventory").getItem("armourSlot", 1);
+      if (armour !== null && armour.type === ItemType.deepfrost_armour) {
+         return true;
+      }
+      return false;
    }
 
    protected getEntityRelationship(entity: Entity): EntityRelationship {

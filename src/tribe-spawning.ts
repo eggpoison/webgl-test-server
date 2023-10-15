@@ -4,6 +4,7 @@ import Tribe from "./Tribe";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
 import Barrel from "./entities/tribes/Barrel";
+import OPTIONS from "./options";
 
 /** Average number of spawn attempts that are done each second */
 const TRIBE_SPAWN_RATE = 0.5;
@@ -142,7 +143,10 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 }
 
 const runSpawnAttempt = (): void => {
-   // if(1+1==2)return;
+   if (!OPTIONS.spawnEntities) {
+      return;
+   }
+   
    // @Speed: Garbage collection
    const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
    const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
@@ -157,7 +161,10 @@ const runSpawnAttempt = (): void => {
 }
 
 export function runTribeSpawnAttempt(): void {
-   // if(1+1==2)return;
+   if (!OPTIONS.spawnEntities) {
+      return;
+   }
+
    if (Math.random() < TRIBE_SPAWN_RATE) {
       runSpawnAttempt();
    }

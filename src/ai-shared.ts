@@ -70,7 +70,7 @@ export function entityIsInVisionRange(position: Point, visionRange: number, enti
    testCircularHitbox.radius = visionRange;
    testCircularHitbox.position.x = position.x;
    testCircularHitbox.position.y = position.y;
-   testCircularHitbox.updateHitboxBounds(0);
+   testCircularHitbox.updateHitboxBounds();
 
    // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
    for (const hitbox of entity.hitboxes) {
@@ -91,7 +91,7 @@ export function getEntitiesInVisionRange(x: number, y: number, visionRange: numb
    testCircularHitbox.radius = visionRange;
    testCircularHitbox.position.x = x;
    testCircularHitbox.position.y = y;
-   testCircularHitbox.updateHitboxBounds(0);
+   testCircularHitbox.updateHitboxBounds();
 
    const visionRangeSquared = Math.pow(visionRange, 2);
    

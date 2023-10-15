@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, randInt, randItem } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, clampToBoardDimensions, randInt, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -34,7 +34,7 @@ abstract class Board {
    public static time = 6;
 
    /** This is an array as game objects get created/removed fairly slowly */
-   private static readonly gameObjects = new Array<GameObject>();
+   public static readonly gameObjects = new Array<GameObject>();
 
    public static readonly entities: { [id: number]: Entity } = {};
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
@@ -51,9 +51,13 @@ abstract class Board {
 
    private static tileUpdateCoordinates: Set<number>;
 
-   private static gameObjectsToRemove = new Array<GameObject>();
+   private static entityJoinBuffer = new Array<Entity>();
+   private static droppedItemJoinBuffer = new Array<DroppedItem>();
+   private static projectileJoinBuffer = new Array<Projectile>();
 
-   private static joinBuffer = new Array<GameObject>();
+   private static entityRemoveBuffer = new Array<Entity>();
+   private static droppedItemRemoveBuffer = new Array<DroppedItem>();
+   private static projectileRemoveBuffer = new Array<Projectile>();
 
    private static tribes = new Array<Tribe>();
 
@@ -182,65 +186,54 @@ abstract class Board {
 
    /** Removes game objects flagged for deletion */
    public static removeFlaggedGameObjects(): void {
-      for (const gameObject of this.gameObjectsToRemove) {
-         this.removeGameObject(gameObject);
+      for (const entity of this.entityRemoveBuffer) {
+         this.removeGameObject(entity);
+         delete this.entities[entity.id];
+         removeEntityFromCensus(entity);
       }
 
-      this.gameObjectsToRemove = new Array<GameObject>();
+      for (const droppedItem of this.droppedItemRemoveBuffer) {
+         this.removeGameObject(droppedItem);
+         delete this.droppedItems[droppedItem.id];
+         if (droppedItem.item.type === ItemType.flesh_sword) {
+            removeFleshSword(droppedItem);
+         }
+      }
+
+      for (const projectile of this.projectileRemoveBuffer) {
+         this.removeGameObject(projectile);
+         delete this.droppedItems[projectile.id];
+         this.projectiles.delete(projectile);
+      }
+
+      this.entityRemoveBuffer = new Array<Entity>();
+      this.droppedItemRemoveBuffer = new Array<DroppedItem>();
+      this.projectileRemoveBuffer = new Array<Projectile>();
    }
 
    private static removeGameObject(gameObject: GameObject): void {
       const idx = this.gameObjects.indexOf(gameObject);
       
       if (idx === -1) {
-         // @Temporary
-         return;
-         // console.log("Game object i: " + gameObject.i);
-         // if (gameObject.i === "entity") {
-         //    console.log("Entity type: " + gameObject.type);
-         // }
-         // throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+         throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
 
       this.gameObjects.splice(idx, 1);
-      
-      switch (gameObject.i) {
-         case "entity": {
-            delete this.entities[gameObject.id];
-            removeEntityFromCensus(gameObject);
-            break;
-         }
-         case "droppedItem": {
-            delete this.droppedItems[gameObject.id];
-            if (gameObject.item.type === ItemType.flesh_sword) {
-               removeFleshSword(gameObject);
-            }
-            break;
-         }
-         case "projectile": {
-            this.projectiles.delete(gameObject);
-            break;
-         }
-      }
 
       for (const chunk of gameObject.chunks) {
-         chunk.removeGameObject(gameObject);
+         gameObject.removeFromChunk(chunk);
       }
    }
 
-   public static forceRemoveGameObject(gameObject: GameObject): void {
-      const idx = this.gameObjectsToRemove.indexOf(gameObject);
+   public static forceRemoveEntity(entity: Entity): void {
+      const idx = this.entityRemoveBuffer.indexOf(entity);
       if (idx !== -1) {
-         this.gameObjectsToRemove.splice(idx, 1);
+         this.entityRemoveBuffer.splice(idx, 1);
       }
 
-      this.removeGameObject(gameObject);
-   }
-
-   public static addGameObjectToRemoveBuffer(gameObject: GameObject): void {
-      if (this.gameObjectsToRemove.indexOf(gameObject) === -1) {
-         this.gameObjectsToRemove.push(gameObject);
-      }
+      this.removeGameObject(entity);
+      delete this.entities[entity.id];
+      removeEntityFromCensus(entity);
    }
 
    public static updateGameObjects(): void {
@@ -256,16 +249,46 @@ abstract class Board {
          if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
             gameObject.positionIsDirty = true;
             gameObject.hitboxesAreDirty = true;
+
+            // Check for dirty tile
+            if (Math.floor(positionXBeforeUpdate / SETTINGS.TILE_SIZE) !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
+                Math.floor(positionYBeforeUpdate / SETTINGS.TILE_SIZE) !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
+               gameObject.tileIsDirty = true;
+            }
          }
 
          // Clean the game object's bounding area, hitbox bounds and chunks
          if (gameObject.hitboxesAreDirty) {
+            const previousMinTileX = Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE);
+            const previousMaxTileX = Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE);
+            const previousMinTileY = Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE);
+            const previousMaxTileY = Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE);
+            
             gameObject.cleanHitboxes();
+            
+            // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
+            if (previousMinTileX !== Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE) ||
+            previousMaxTileX !== Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE) ||
+            previousMinTileY !== Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE) ||
+            previousMaxTileY !== Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE)) {
+               const minTileX = clampToBoardDimensions(Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE));
+               const maxTileX = clampToBoardDimensions(Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE));
+               const minTileY = clampToBoardDimensions(Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE));
+               const maxTileY = clampToBoardDimensions(Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE));
+               
+               gameObject.hasPotentialWallTileCollisions = false;
+               for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+                  for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+                     const tile = this.getTile(tileX, tileY);
+                     if (tile.isWall) {
+                        gameObject.hasPotentialWallTileCollisions = true;
+                     }
+                  }
+               }
+            }
          }
       }
    }
-
-   // Note: the two following functions are separate for profiling purposes
 
    public static resolveGameObjectCollisions(): void {
       // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
@@ -286,7 +309,7 @@ abstract class Board {
       }
    }
 
-   public static resolveWallCollisions(): void {
+   public static resolveOtherCollisions(): void {
       const numGameObjects = this.gameObjects.length;
       for (let i = 0; i < numGameObjects; i++) {
          const gameObject = this.gameObjects[i];
@@ -295,7 +318,9 @@ abstract class Board {
             let positionXBeforeUpdate = gameObject.position.x;
             let positionYBeforeUpdate = gameObject.position.y;
    
-            gameObject.resolveWallTileCollisions();
+            if (gameObject.hasPotentialWallTileCollisions) {
+               gameObject.resolveWallTileCollisions();
+            }
          
             // If the object moved due to resolving wall tile collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
@@ -305,24 +330,25 @@ abstract class Board {
             positionXBeforeUpdate = gameObject.position.x;
             positionYBeforeUpdate = gameObject.position.y;
    
-            gameObject.resolveWallCollisions();
+            gameObject.resolveBorderCollisions();
          
             // If the object moved due to resolving wall collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
                gameObject.updateHitboxesAndBoundingArea();
             }
 
-            // Do calculations which are dependent on the position
-            gameObject.updateTile();
-            gameObject.isInRiver = gameObject.checkIsInRiver();
+            if (gameObject.tileIsDirty) {
+               gameObject.updateTile();
+               gameObject.isInRiver = gameObject.checkIsInRiver();
+            }
          }
 
          if (gameObject.hitboxesAreDirty) {
             gameObject.cleanHitboxes();
          }
 
+         // @Speed @Cleanup: This is a lot of garbage collection having to be done, and this should really be handled just in the GameObject class
          gameObject.previousCollidingObjects = gameObject.collidingObjects;
-         // @Speed: This is a lot of garbage collection having to be done
          gameObject.collidingObjects = [];
       }
    }
@@ -381,27 +407,73 @@ abstract class Board {
       }
    }
 
-   public static addGameObjectToJoinBuffer(gameObject: GameObject): void {
-      if (Object.keys(this.droppedItems).length > 100 && gameObject.i === "droppedItem") {
-         return;
-      }
-      
-      this.joinBuffer.push(gameObject);
+   public static addEntityToJoinBuffer(entity: Entity): void {
+      this.entityJoinBuffer.push(entity);
    }
 
-   public static removeGameObjectFromJoinBuffer(gameObject: GameObject): void {
-      const idx = this.joinBuffer.indexOf(gameObject);
+   public static addDroppedItemToJoinBuffer(droppedItem: DroppedItem): void {
+      this.droppedItemJoinBuffer.push(droppedItem);
+   }
+
+   public static addProjectileToJoinBuffer(projectile: Projectile): void {
+      this.projectileJoinBuffer.push(projectile);
+   }
+
+   public static removeEntityFromJoinBuffer(entity: Entity): void {
+      const idx = this.entityJoinBuffer.indexOf(entity);
       if (idx !== -1) {
-         this.joinBuffer.splice(idx, 1);
+         this.entityJoinBuffer.splice(idx, 1);
       }
+   }
+
+   public static removeDroppedItemFromJoinBuffer(droppedItem: DroppedItem): void {
+      const idx = this.droppedItemJoinBuffer.indexOf(droppedItem);
+      if (idx !== -1) {
+         this.droppedItemJoinBuffer.splice(idx, 1);
+      }
+   }
+
+   public static removeProjectileFromJoinBuffer(projectile: Projectile): void {
+      const idx = this.projectileJoinBuffer.indexOf(projectile);
+      if (idx !== -1) {
+         this.projectileJoinBuffer.splice(idx, 1);
+      }
+   }
+
+   public static addEntityToRemoveBuffer(entity: Entity): void {
+      this.entityRemoveBuffer.push(entity);
+   }
+
+   public static addDroppedItemToRemoveBuffer(droppedItem: DroppedItem): void {
+      this.droppedItemRemoveBuffer.push(droppedItem);
+   }
+
+   public static addProjectileToRemoveBuffer(projectile: Projectile): void {
+      this.projectileRemoveBuffer.push(projectile);
    }
 
    public static pushJoinBuffer(): void {
-      for (const gameObject of this.joinBuffer) {
-         this.addGameObjectToBoard(gameObject)
+      for (const entity of this.entityJoinBuffer) {
+         this.addGameObjectToBoard(entity)
+         this.entities[entity.id] = entity;
       }
 
-      this.joinBuffer = new Array<GameObject>();
+      for (const droppedItem of this.droppedItemJoinBuffer) {
+         this.addGameObjectToBoard(droppedItem);
+         this.droppedItems[droppedItem.id] = droppedItem;
+         if (droppedItem.item.type === ItemType.flesh_sword) {
+            addFleshSword(droppedItem);
+         }
+      }
+
+      for (const projectile of this.projectileJoinBuffer) {
+         this.addGameObjectToBoard(projectile);
+         this.projectiles.add(projectile);
+      }
+
+      this.entityJoinBuffer = new Array<Entity>();
+      this.droppedItemJoinBuffer = new Array<DroppedItem>();
+      this.projectileJoinBuffer = new Array<Projectile>();
    }
 
    private static addGameObjectToBoard(gameObject: GameObject): void {
@@ -409,51 +481,15 @@ abstract class Board {
       gameObject.updateContainingChunks();
 
       this.gameObjects.push(gameObject);
-
-      switch (gameObject.i) {
-         case "entity": {
-            this.entities[gameObject.id] = gameObject;
-            break;
-         }
-         case "droppedItem": {
-            this.droppedItems[gameObject.id] = gameObject;
-            if (gameObject.item.type === ItemType.flesh_sword) {
-               addFleshSword(gameObject);
-            }
-            break;
-         }
-         case "projectile": {
-            this.projectiles.add(gameObject);
-            break;
-         }
-      }
-   }
-
-   /** Forcefully adds a game object to the board from the join buffer */
-   public static forcePushGameObjectFromJoinBuffer(gameObject: GameObject): void {
-      const idx = this.joinBuffer.indexOf(gameObject);
-      if (idx !== -1) {
-         this.addGameObjectToBoard(gameObject);
-         this.removeGameObjectFromJoinBuffer(gameObject);
-      }
    }
 
    public static isInBoard(position: Point): boolean {
       return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
    }
 
-   public static gameObjectIsInBoard(gameObject: GameObject): boolean {
-      // Check the join buffer and game objects set
-      if (this.gameObjects.indexOf(gameObject) !== -1 || this.joinBuffer.includes(gameObject)) return true;
-
-      // Check in the entities
-      if (gameObject.i === "entity" && Object.values(this.entities).includes(gameObject)) return true;
-
-      // Check in the dropped items
-      if (gameObject.i === "droppedItem" && Object.values(this.droppedItems).includes(gameObject)) return true;
-
-      // Check in the projectiles
-      if (gameObject.i === "projectile" && this.projectiles.has(gameObject)) return true;
+   private static gameObjectIsInBoard(gameObject: GameObject): boolean {
+      // Check the game objects
+      if (this.gameObjects.indexOf(gameObject) !== -1) return true;
 
       // Check the chunks
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
@@ -466,6 +502,11 @@ abstract class Board {
       }
 
       return false;
+   }
+
+   public static entityIsInBoard(entity: Entity): boolean {
+      if (this.gameObjectIsInBoard(entity)) return true;
+      return this.entityJoinBuffer.indexOf(entity) !== -1;
    }
 
    public static distanceToClosestEntity(position: Point): number {
@@ -507,7 +548,7 @@ abstract class Board {
       testHitbox.radius = 1;
       testHitbox.position.x = x;
       testHitbox.position.y = y;
-      testHitbox.updateHitboxBounds(0);
+      testHitbox.updateHitboxBounds();
 
       const chunkX = Math.floor(x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
       const chunkY = Math.floor(y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);

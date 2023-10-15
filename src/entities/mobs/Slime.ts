@@ -70,7 +70,7 @@ class Slime extends Mob {
       [6, 9] // large slime
    ];
 
-   private static readonly MERGE_TIME = 1.5;
+   private static readonly MERGE_TIME = 7.5;
 
    private static readonly MAX_MERGE_WANT: ReadonlyArray<number> = [
       15,
@@ -143,7 +143,7 @@ class Slime extends Mob {
          terminalVelocity: 30 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             // If there are more slimes in the vision range than is allowed, don't merge
-            if (this.visibleEntities.size > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
+            if (this.visibleEntities.length > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
                return false;
             }
             
@@ -179,7 +179,16 @@ class Slime extends Mob {
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type === "slime" || collidingEntity.type === "slimewisp" || RESOURCE_ENTITY_TYPES.includes(collidingEntity.type)) return;
+         // Merge with slimes
+         if (collidingEntity.type === "slime") {
+            this.mergeTimer -= 1 / SETTINGS.TPS;
+            if (this.mergeTimer <= 0) {
+               this.merge(collidingEntity as Slime);
+            }
+            return;
+         }
+         
+         if (collidingEntity.type === "slimewisp" || RESOURCE_ENTITY_TYPES.includes(collidingEntity.type)) return;
          
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
@@ -271,20 +280,6 @@ class Slime extends Mob {
          if (Board.tickIntervalHasPassed(Slime.HEALING_PROC_INTERVAL)) {
             this.forceGetComponent("health").heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
          }
-      }
-      
-      // Merge with other colliding slimewisps
-      let isMerging = false;
-      for (const gameObject of this.collidingObjects) {
-         if (gameObject.i === "entity" && gameObject.type === "slimewisp") {
-            this.mergeTimer -= 1 / SETTINGS.TPS;
-            if (this.mergeTimer <= 0) {
-               this.merge(gameObject as Slime);
-            }
-         }
-      }
-      if (!isMerging) {
-         this.mergeTimer = Slime.MERGE_TIME;
       }
    }
 

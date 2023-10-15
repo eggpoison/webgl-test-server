@@ -9,7 +9,9 @@ class HungerComponent extends Component {
       super();
 
       this.hunger = initialHunger;
-      this.metabolism = metabolism;
+      // @Temporary
+      // this.metabolism = metabolism;
+      this.metabolism = 100;
    }
 
    public tick(): void {

@@ -7,25 +7,25 @@ test("Entities can't be spawned too close to each other", () => {
    const position = new Point(200, 200);
    const cow = new Cow(position);
 
-   Board.forcePushGameObjectFromJoinBuffer(cow);
+   Board.pushJoinBuffer();
 
    expect(spawnPositionIsValid(position)).toBe(false);
 
    // Clean up
    cow.remove();
-   Board.forceRemoveGameObject(cow);
+   Board.forceRemoveEntity(cow);
 });
 
 test("Entities can be spawned far away from each other", () => {
    const position1 = new Point(200, 200);
    const cow = new Cow(position1);
 
-   Board.forcePushGameObjectFromJoinBuffer(cow);
+   Board.pushJoinBuffer();
 
    const position2 = new Point(position1.x + MIN_SPAWN_DISTANCE + 10, position1.y);
    expect(spawnPositionIsValid(position2)).toBe(true);
 
    // Clean up
    cow.remove();
-   Board.forceRemoveGameObject(cow);
+   Board.forceRemoveEntity(cow);
 })

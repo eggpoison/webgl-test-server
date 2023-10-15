@@ -1,6 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, TileType, TribeType } from "webgl-test-shared";
-import { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import _GameObject from "./GameObject";
@@ -16,11 +15,9 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
+import Cactus from "./entities/resources/Cactus";
 import Cow from "./entities/mobs/Cow";
-import BerryBush from "./entities/resources/BerryBush";
-import TribeHut from "./entities/tribes/TribeHut";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import FrozenYeti from "./entities/mobs/FrozenYeti";
+import OPTIONS from "./options";
 
 /*
 
@@ -236,8 +233,11 @@ class GameServer {
       }
 
       if (typeof this.tickInterval === "undefined") {
-         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         // this.tickInterval = setInterval(() => this.tick(), 3);
+         if (OPTIONS.warp) {
+            this.tickInterval = setInterval(() => this.tick(), 2);
+         } else {
+            this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         }
       }
    }
 
@@ -256,7 +256,7 @@ class GameServer {
       Board.updateGameObjects();
       // Done before wall collisions so that game objects don't clip into walls for a tick
       Board.resolveGameObjectCollisions();
-      Board.resolveWallCollisions();
+      Board.resolveOtherCollisions();
       
       Board.pushJoinBuffer();
 
@@ -332,19 +332,18 @@ class GameServer {
             spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
          } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
 
-         // new Cow(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
+         new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
          
          // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
+         // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
          // const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
-         // const totem = new TribeTotem(new Point(spawnPosition.x + 1, spawnPosition.y));
-         // const tribe = new Tribe(TribeType.plainspeople, totem);
+         // const tribe = new Tribe(TribeType.frostlings, totem);
 
          // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
-         // hut.rotation = Math.PI * 3/2;
          // tribe.registerNewHut(hut);
          // const hut2 = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 300), tribe);
          // hut2.rotation = Math.PI * 3/2;
@@ -374,9 +373,6 @@ class GameServer {
             // Spawn the player entity
             const player = new Player(spawnPosition, playerData.username, null);
             playerData.instance = player;
-
-            // @Temporary
-            // tribe.addTribeMember(player);
 
             const tiles = Board.getTiles();
             const serverTileData = new Array<Array<ServerTileData>>();
@@ -602,7 +598,7 @@ class GameServer {
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
             killedEntityIDs: killedEntityIDs,
-            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deep_frost_armour
+            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour
          };
 
          // Send the game data to the player
@@ -645,7 +641,7 @@ class GameServer {
    private handlePlayerDisconnect(socket: ISocket): void {
       if (this.playerDataRecord.hasOwnProperty(socket.id)) {
          const playerData = this.playerDataRecord[socket.id];
-         if (Board.gameObjectIsInBoard(playerData.instance)) {
+         if (Board.entityIsInBoard(playerData.instance)) {
             playerData.instance.remove();
          }
          delete this.playerDataRecord[socket.id];

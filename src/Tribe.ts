@@ -7,6 +7,7 @@ import Board from "./Board";
 import Tile from "./Tile";
 import Barrel from "./entities/tribes/Barrel";
 import Chunk from "./Chunk";
+import Entity from "./entities/Entity";
 
 let idCounter = 0;
 
@@ -30,7 +31,14 @@ interface ChunkInfluence {
    numInfluences: number;
 }
 
+interface ReinforcementInfo {
+   readonly targetEntity: Entity;
+   secondsSinceNotice: number;
+}
+
 class Tribe {
+   private static readonly REINFORCEMENT_NOTICE_DURATION_SECONDS = 60;
+   
    public readonly id: number;
    
    public readonly tribeType: TribeType;
@@ -49,6 +57,8 @@ class Tribe {
    private chunkArea: Record<number, ChunkInfluence> = {};
 
    public tribesmanCap = 0;
+
+   public readonly reinforcementInfoArray = new Array<ReinforcementInfo>();
    
    constructor(tribeType: TribeType, totem: TribeTotem) {
       this.id = getAvailableID();
@@ -66,6 +76,23 @@ class Tribe {
 
    public tick(): void {
       this.updateBarrels();
+
+      for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
+         const info = this.reinforcementInfoArray[i];
+
+         // Remove notices for removed entities
+         if (info.targetEntity.isRemoved) {
+            this.reinforcementInfoArray.splice(i, 1);
+            i--;
+         }
+
+         // Remove old notices
+         info.secondsSinceNotice += 1 / SETTINGS.TPS;
+         if (info.secondsSinceNotice >= Tribe.REINFORCEMENT_NOTICE_DURATION_SECONDS) {
+            this.reinforcementInfoArray.splice(i, 1);
+            i--;
+         }
+      }
    }
 
    public addTribeMember(member: TribeMember): void {
@@ -125,7 +152,7 @@ class Tribe {
       // Attempt to respawn the tribesman when it  is killed
       tribesman.createEvent("death", () => {
          // Only respawn the tribesman if their hut is alive
-         if (Board.gameObjectIsInBoard(hut)) {
+         if (!hut.isRemoved) {
             this.createNewTribesman(hut);
          }
       });
@@ -270,6 +297,25 @@ class Tribe {
          area.push(tileInfluence.tile);
       }
       return area;
+   }
+
+   public requestReinforcements(target: Entity): void {
+      let idx = -1;
+      for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
+         const reinforcementInfo = this.reinforcementInfoArray[i];
+         if (reinforcementInfo.targetEntity === target) {
+            idx = i;
+         }
+      }
+
+      if (idx === -1) {
+         this.reinforcementInfoArray.push({
+            targetEntity: target,
+            secondsSinceNotice: 0
+         });
+      } else {
+         this.reinforcementInfoArray[idx].secondsSinceNotice = 0;
+      }
    }
 }
 

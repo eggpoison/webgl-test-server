@@ -6,6 +6,7 @@ import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSte
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
 import Board from "../Board";
 import SRandom from "../SRandom";
+import OPTIONS from "../options";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
@@ -288,9 +289,13 @@ function generateTerrain(): TerrainGenerationInfo {
    generateBiomeInfo(tileInfoArray);
 
    // Generate rivers
-   // const riverTiles = generateRiverTiles();
    // @Temporary
-   const riverTiles = new Array<WaterTileGenerationInfo>();
+   let riverTiles: ReadonlyArray<WaterTileGenerationInfo>;
+   if (OPTIONS.generateRivers) {
+      riverTiles = generateRiverTiles();
+   } else {
+      riverTiles = [];
+   }
 
    const riverFlowDirections: Record<number, Record<number, number>> = {};
 

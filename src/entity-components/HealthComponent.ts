@@ -1,4 +1,4 @@
-import { GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS } from "webgl-test-shared";
+import { GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";
@@ -43,10 +43,6 @@ class HealthComponent extends Component {
       }
       
       this.defence += defence;
-      if (this.defence > 1) {
-         this.defence = 1;
-      }
-
       this.defenceFactors[name] = defence;
    }
 
@@ -56,10 +52,6 @@ class HealthComponent extends Component {
       }
       
       this.defence -= this.defenceFactors[name];
-      if (this.defence < 0) {
-         this.defence = 0;
-      }
-
       delete this.defenceFactors[name];
    }
 
@@ -110,7 +102,7 @@ class HealthComponent extends Component {
 
       this.secondsSinceLastHit = 0;
 
-      const absorbedDamage = damage * this.defence;
+      const absorbedDamage = damage * clamp(this.defence, 0, 1);
       const actualDamage = damage - absorbedDamage;
       
       this.health -= actualDamage;
