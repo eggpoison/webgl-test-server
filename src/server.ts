@@ -17,6 +17,7 @@ import Chunk from "./Chunk";
 import Item from "./items/Item";
 import Cactus from "./entities/resources/Cactus";
 import Cow from "./entities/mobs/Cow";
+import OPTIONS from "./options";
 
 /*
 
@@ -232,8 +233,11 @@ class GameServer {
       }
 
       if (typeof this.tickInterval === "undefined") {
-         // this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         this.tickInterval = setInterval(() => this.tick(), 3);
+         if (OPTIONS.warp) {
+            this.tickInterval = setInterval(() => this.tick(), 2);
+         } else {
+            this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         }
       }
    }
 

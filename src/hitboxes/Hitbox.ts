@@ -20,7 +20,7 @@ abstract class Hitbox {
    public abstract updateHitboxBounds(offsetRotation: number): void;
 
    /** Updates the hitboxes position to match the position of its hitbox object */
-   public updatePositionFromGameObject(gameObject: GameObject): void {
+   public updateFromGameObject(gameObject: GameObject): void {
       this.position.x = gameObject.position.x;
       this.position.y = gameObject.position.y;
 

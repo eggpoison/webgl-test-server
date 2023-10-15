@@ -170,10 +170,10 @@ class Tribesman extends TribeMember {
       }
 
       // If the player is interacting with the tribesman, move towards the player
-      for (const gameObject of this.visibleGameObjects) {
-         if (gameObject.i === "entity" && gameObject.type === "player" && (gameObject as Player).interactingEntityID === this.id) {
-            this.rotation = this.position.calculateAngleBetween(gameObject.position);
-            if (this.willStopAtDesiredDistance(80, gameObject.position)) {
+      for (const entity of this.visibleEntities) {
+         if (entity.type === "player" && (entity as Player).interactingEntityID === this.id) {
+            this.rotation = this.position.calculateAngleBetween(entity.position);
+            if (this.willStopAtDesiredDistance(80, entity.position)) {
                this.terminalVelocity = 0;
                this.acceleration.x = 0;
                this.acceleration.y = 0;
@@ -324,12 +324,12 @@ class Tribesman extends TribeMember {
       if (!this.hasFood() && this.hasAvailableHotbarSlot()) {
          let closestBarrelWithFood: Barrel | undefined;
          let minDist = Number.MAX_SAFE_INTEGER;
-         for (const gameObject of this.visibleGameObjects) {
-            if (gameObject.i === "entity" && gameObject.type === "barrel") {
-               const distance = this.position.calculateDistanceBetween(gameObject.position);
-               if (distance < minDist && barrelHasFood(gameObject as Barrel)) {
+         for (const entity of this.visibleEntities) {
+            if (entity.type === "barrel") {
+               const distance = this.position.calculateDistanceBetween(entity.position);
+               if (distance < minDist && barrelHasFood(entity as Barrel)) {
                   minDist = distance;
-                  closestBarrelWithFood = gameObject as Barrel;
+                  closestBarrelWithFood = entity as Barrel;
                }
             }
          }

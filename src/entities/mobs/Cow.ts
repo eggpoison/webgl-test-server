@@ -17,7 +17,7 @@ class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
    // @Temporary
-   public mass = 1.5;
+   public mass = 1.2;
    // public mass = 0.5;
 
    public species: CowSpecies;
@@ -98,7 +98,7 @@ class Cow extends Mob {
 
       this.rotation = 2 * Math.PI * Math.random();
       // @Temporary
-      this.rotation = -Math.PI * 1/4;
+      // this.rotation = -Math.PI * 1/4;
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 

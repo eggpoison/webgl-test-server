@@ -670,9 +670,13 @@ class FrozenYeti extends Mob {
       
       const angles = new Array<number>();
 
-      // @Incomplete: generate at max 3 sequences
-      
-      for (const target of targets) {
+      const numSequences = Math.min(targets.length, 3);
+      const availableTargetIndexes = targets.map((_, i) => i);
+      for (let i = 0; i < numSequences; i++) {
+         const idx = Math.floor(Math.random() * availableTargetIndexes.length);
+         const target = targets[availableTargetIndexes[idx]];
+         availableTargetIndexes.splice(idx, 1);
+         
          const direction = this.position.calculateAngleBetween(target.position);
          
          // Don't do sequence if too close to existing sequence

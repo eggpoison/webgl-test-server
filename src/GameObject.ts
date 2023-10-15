@@ -72,6 +72,7 @@ export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: numb
 /*
 * @Cleanup: To reduce the use of "this as unknown as GameObject", make this not have type parameters.
 * Step 1: Limit all the uses of "i" to crucial places (e.g. GameObject and its subclasses)
+* Step 2: Remove the use of "i"
 */
 
 /** A generic class for any object in the world which has hitbox(es) */
@@ -130,6 +131,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = true;
 
+   /** Whether the game object's tile has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
+   public tileIsDirty = false;
+
    /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
    public hitboxesAreDirty = true;
    
@@ -161,7 +165,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       this.hitboxes.push(hitbox);
       
       // Calculate initial position and hitbox bounds for the hitbox as it is not guaranteed that they are updated the immediate tick after
-      hitbox.updatePositionFromGameObject(this as unknown as GameObject);
+      hitbox.updateFromGameObject(this as unknown as GameObject);
       hitbox.updateHitboxBounds(this.rotation);
 
       // Update bounding area
@@ -209,7 +213,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
-         hitbox.updatePositionFromGameObject(this as unknown as GameObject);
+         hitbox.updateFromGameObject(this as unknown as GameObject);
          hitbox.updateHitboxBounds(this.rotation);
 
          // Update bounding area
@@ -242,7 +246,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
          // Find new hitbox bounds
          if (this.positionIsDirty) {
-            hitbox.updatePositionFromGameObject(this as unknown as GameObject);
+            hitbox.updateFromGameObject(this as unknown as GameObject);
          }
          hitbox.updateHitboxBounds(this.rotation);
 
@@ -432,7 +436,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       // Find all chunks which aren't present in the new chunks and remove them
       for (const chunk of this.chunks) {
          if (!containingChunks.has(chunk)) {
-            chunk.removeGameObject(this as unknown as GameObject);
+            this.removeFromChunk(chunk);
             this.chunks.delete(chunk);
          }
       }
@@ -440,8 +444,45 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       // Add all new chunks
       for (const chunk of containingChunks) {
          if (!this.chunks.has(chunk)) {
-            chunk.addGameObject(this as unknown as GameObject);
+            this.addToChunk(chunk);
             this.chunks.add(chunk);
+         }
+      }
+   }
+
+   protected addToChunk(chunk: Chunk): void {
+      chunk.gameObjects.push(this as unknown as GameObject);
+
+      const numViewingMobs = chunk.viewingMobs.length;
+      for (let i = 0; i < numViewingMobs; i++) {
+         const mob = chunk.viewingMobs[i];
+         const idx = mob.potentialVisibleGameObjects.indexOf(this as unknown as GameObject);
+         if (idx === -1) {
+            mob.potentialVisibleGameObjects.push(this as unknown as GameObject);
+            mob.potentialVisibleGameObjectAppearances.push(1);
+         } else {
+            mob.potentialVisibleGameObjectAppearances[idx]++;
+         }
+      }
+   }
+
+   public removeFromChunk(chunk: Chunk): void {
+      const idx = chunk.gameObjects.indexOf(this as unknown as GameObject);
+      if (idx !== -1) {
+         chunk.gameObjects.splice(idx, 1);
+      }
+
+      const numViewingMobs = chunk.viewingMobs.length;
+      for (let i = 0; i < numViewingMobs; i++) {
+         const mob = chunk.viewingMobs[i];
+         const idx = mob.potentialVisibleGameObjects.indexOf(this as unknown as GameObject);
+         if (idx === -1) {
+            throw new Error();
+         }
+         mob.potentialVisibleGameObjectAppearances[idx]--;
+         if (mob.potentialVisibleGameObjectAppearances[idx] === 0) {
+            mob.potentialVisibleGameObjects.splice(idx, 1);
+            mob.potentialVisibleGameObjectAppearances.splice(idx, 1);
          }
       }
    }

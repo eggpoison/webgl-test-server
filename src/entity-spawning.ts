@@ -4,6 +4,7 @@ import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
 import Yeti from "./entities/mobs/Yeti";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
+import OPTIONS from "./options";
 
 export type EntitySpawnInfo = {
    /** The type of entity to spawn */
@@ -236,7 +237,9 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
 }
 
 export function runSpawnAttempt(): void {
-   // if(1+1==2)return;
+   if (!OPTIONS.spawnEntities) {
+      return;
+   }
    for (const spawnInfo of SPAWN_INFO_RECORD) {
       if (!spawnConditionsAreMet(spawnInfo)) {
          continue;
@@ -258,7 +261,10 @@ export function runSpawnAttempt(): void {
 }
 
 export function spawnInitialEntities(): void {
-   // if (1+1==2)return;
+   if (!OPTIONS.spawnEntities) {
+      return;
+   }
+
    let numSpawnAttempts: number;
 
    // For each spawn info object, spawn entities until no more can be spawned

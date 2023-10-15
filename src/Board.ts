@@ -34,7 +34,7 @@ abstract class Board {
    public static time = 6;
 
    /** This is an array as game objects get created/removed fairly slowly */
-   private static readonly gameObjects = new Array<GameObject>();
+   public static readonly gameObjects = new Array<GameObject>();
 
    public static readonly entities: { [id: number]: Entity } = {};
    public static readonly droppedItems: { [id: number]: DroppedItem } = {};
@@ -215,17 +215,13 @@ abstract class Board {
       const idx = this.gameObjects.indexOf(gameObject);
       
       if (idx === -1) {
-         console.log("Game object i: " + gameObject.i);
-         if (gameObject.i === "entity") {
-            console.log("Entity type: " + gameObject.type);
-         }
          throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
 
       this.gameObjects.splice(idx, 1);
 
       for (const chunk of gameObject.chunks) {
-         chunk.removeGameObject(gameObject);
+         gameObject.removeFromChunk(chunk);
       }
    }
 
@@ -253,6 +249,12 @@ abstract class Board {
          if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
             gameObject.positionIsDirty = true;
             gameObject.hitboxesAreDirty = true;
+
+            // Check for dirty tile
+            if (Math.floor(positionXBeforeUpdate / SETTINGS.TILE_SIZE) !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
+                Math.floor(positionYBeforeUpdate / SETTINGS.TILE_SIZE) !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
+               gameObject.tileIsDirty = true;
+            }
          }
 
          // Clean the game object's bounding area, hitbox bounds and chunks
@@ -335,17 +337,18 @@ abstract class Board {
                gameObject.updateHitboxesAndBoundingArea();
             }
 
-            // Do calculations which are dependent on the position
-            gameObject.updateTile();
-            gameObject.isInRiver = gameObject.checkIsInRiver();
+            if (gameObject.tileIsDirty) {
+               gameObject.updateTile();
+               gameObject.isInRiver = gameObject.checkIsInRiver();
+            }
          }
 
          if (gameObject.hitboxesAreDirty) {
             gameObject.cleanHitboxes();
          }
 
+         // @Speed @Cleanup: This is a lot of garbage collection having to be done, and this should really be handled just in the GameObject class
          gameObject.previousCollidingObjects = gameObject.collidingObjects;
-         // @Speed: This is a lot of garbage collection having to be done
          gameObject.collidingObjects = [];
       }
    }
@@ -545,7 +548,7 @@ abstract class Board {
       testHitbox.radius = 1;
       testHitbox.position.x = x;
       testHitbox.position.y = y;
-      testHitbox.updateHitboxBounds(0);
+      testHitbox.updateHitboxBounds();
 
       const chunkX = Math.floor(x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
       const chunkY = Math.floor(y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);

@@ -8,6 +8,7 @@ import { cleanAngle } from "../ai-shared";
 import HungerComponent from "../entity-components/HungerComponent";
 import Board from "../Board";
 import { removeEntityFromCensus } from "src/census";
+import Chunk from "src/Chunk";
 
 export interface EntityComponents {
    health: HealthComponent;
@@ -272,6 +273,16 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
 
    protected cleanRotation(): void {
       this.rotation = cleanAngle(this.rotation);
+   }
+
+   protected addToChunk(chunk: Chunk): void {
+      super.addToChunk(chunk);
+      chunk.entities.add(this);
+   }
+
+   public removeFromChunk(chunk: Chunk): void {
+      super.removeFromChunk(chunk);
+      chunk.entities.delete(this);
    }
 
    public remove(): void {

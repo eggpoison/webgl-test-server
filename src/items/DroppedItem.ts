@@ -4,6 +4,7 @@ import Item from "./Item";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { runFleshSwordAI } from "../flesh-sword-ai";
 import Board from "../Board";
+import Chunk from "src/Chunk";
 
 interface EntityPickupCooldown {
    readonly entityID: number;
@@ -81,6 +82,16 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
          if (playerPickupCooldown.entityID === entityID) return false;
       }
       return true;
+   }
+
+   protected addToChunk(chunk: Chunk): void {
+      super.addToChunk(chunk);
+      chunk.droppedItems.add(this);
+   }
+
+   public removeFromChunk(chunk: Chunk): void {
+      super.removeFromChunk(chunk);
+      chunk.droppedItems.delete(this);
    }
 
    public remove(): void {

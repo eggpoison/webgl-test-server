@@ -173,7 +173,7 @@ abstract class Mob extends Entity {
    /** Finds all entities within the range of the mob's vision */
    private updateVisibleGameObjects(): void {
       this.visibleGameObjects = [this];
-      this.visibleEntities = [];
+      this.visibleEntities = [this];
       this.visibleDroppedItems = [];
 
       const numPotentialGameObjects = this.potentialVisibleGameObjects.length;

@@ -1,6 +1,7 @@
 import { Point, ProjectileType, SETTINGS } from "webgl-test-shared";
 import _GameObject, { GameObjectEvents } from "./GameObject";
 import Board from "./Board";
+import Chunk from "./Chunk";
 
 interface ProjectileEvents extends GameObjectEvents {}
 
@@ -50,6 +51,16 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
       if (typeof this.tickCallback !== "undefined") {
          this.tickCallback();
       }
+   }
+
+   protected addToChunk(chunk: Chunk): void {
+      super.addToChunk(chunk);
+      chunk.projectiles.add(this);
+   }
+
+   public removeFromChunk(chunk: Chunk): void {
+      super.removeFromChunk(chunk);
+      chunk.projectiles.delete(this);
    }
 
    public remove(): void {
