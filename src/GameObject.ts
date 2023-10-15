@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, Vector, clampToBoardDimensions } from "webgl-test-shared";
+import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, Vector, clampToBoardDimensions, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -7,6 +7,33 @@ import DroppedItem from "./items/DroppedItem";
 import Projectile from "./Projectile";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
+
+// @Cleanup
+
+function sqr(x: number) { return x * x }
+function dist2(v: Point, w: Point) {return sqr(v.x - w.x) + sqr(v.y - w.y) }
+function distToSegmentSquared(p: Point, v: Point, w: Point) {
+  var l2 = dist2(v, w);
+  if (l2 == 0) return dist2(p, v);
+  var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return dist2(p, new Point(v.x + t * (w.x - v.x),
+                    v.y + t * (w.y - v.y) ));
+}
+function distToSegment(p: Point, v: Point, w: Point) { return Math.sqrt(distToSegmentSquared(p, v, w)); }
+
+const pointIsInRectangle = (pointX: number, pointY: number, rectPos: Point, rectWidth: number, rectHeight: number, rectRotation: number): boolean => {
+   // Rotate point around rect to make the situation axis-aligned
+   const alignedPointX = rotateXAroundPoint(pointX, pointY, rectPos.x, rectPos.y, -rectRotation);
+   const alignedPointY = rotateYAroundPoint(pointX, pointY, rectPos.x, rectPos.y, -rectRotation);
+
+   const x1 = rectPos.x - rectWidth / 2;
+   const x2 = rectPos.x + rectWidth / 2;
+   const y1 = rectPos.y - rectHeight / 2;
+   const y2 = rectPos.y + rectHeight / 2;
+   
+   return alignedPointX >= x1 && alignedPointX <= x2 && alignedPointY >= y1 && alignedPointY <= y2;
+}
 
 let idCounter = 0;
 
@@ -48,6 +75,8 @@ export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: numb
 
 /** A generic class for any object in the world which has hitbox(es) */
 abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType extends GameObjectEvents> {
+   private static readonly rectangularTestHitbox = new RectangularHitbox();
+   
    public abstract readonly i: I;
    
    /** Unique identifier for each game object */
@@ -503,7 +532,17 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          }
       }
 
-      // @Incomplete: check for diagonal collisions
+      // 
+      // Check for diagonal collisions
+      // 
+      
+      _GameObject.rectangularTestHitbox.setHitboxInfo(SETTINGS.TILE_SIZE, SETTINGS.TILE_SIZE);
+      _GameObject.rectangularTestHitbox.position = new Point((tile.x + 0.5) * SETTINGS.TILE_SIZE, (tile.y + 0.5) * SETTINGS.TILE_SIZE);
+      _GameObject.rectangularTestHitbox.updateHitboxBounds(0);
+
+      if (_GameObject.rectangularTestHitbox.isColliding(hitbox)) {
+         return TileCollisionAxis.diagonal;
+      }
 
       return TileCollisionAxis.none;
    }
@@ -576,12 +615,119 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
    }
 
+   private resolveDiagonalRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
+      const pairs: ReadonlyArray<[Point, Point]> = [
+         [hitbox.vertexPositions[0], hitbox.vertexPositions[1]],
+         [hitbox.vertexPositions[1], hitbox.vertexPositions[3]],
+         [hitbox.vertexPositions[3], hitbox.vertexPositions[2]],
+         [hitbox.vertexPositions[2], hitbox.vertexPositions[0]]
+      ];
+
+      const tileX1 = tile.x * SETTINGS.TILE_SIZE;
+      const tileX2 = (tile.x + 1) * SETTINGS.TILE_SIZE;
+      const tileY1 = tile.y * SETTINGS.TILE_SIZE;
+      const tileY2 = (tile.y + 1) * SETTINGS.TILE_SIZE;
+
+      let collidingVertex1!: Point;
+      let collidingVertex2!: Point;
+      
+      for (const pair of pairs) {
+         const leftPoint =   pair[0].x < pair[1].x ? pair[0] : pair[1];
+         const rightPoint =  pair[0].x < pair[1].x ? pair[1] : pair[0];
+         const bottomPoint = pair[0].y < pair[1].y ? pair[0] : pair[1];
+         const topPoint =    pair[0].y < pair[1].y ? pair[1] : pair[0];
+
+         if (pair[0].x === pair[1].x) {
+            throw new Error();
+         }
+
+         const slope = (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x);
+
+         // Check left projection
+         if (leftPoint.x < tileX1) {
+            const leftProjectionY = leftPoint.y + slope * (tileX1 - leftPoint.x);
+            if (leftProjectionY >= tileY1 && leftProjectionY <= tileY2) {
+               collidingVertex1 = pair[0];
+               collidingVertex2 = pair[1];
+               break;
+            }
+         }
+
+         // Check right projection
+         if (rightPoint.x > tileX2) {
+            const rightProjectionY = rightPoint.y - slope * (rightPoint.x - tileX2);
+            if (rightProjectionY >= tileY1 && rightProjectionY <= tileY2) {
+               collidingVertex1 = pair[0];
+               collidingVertex2 = pair[1];
+               break;
+            }
+         }
+
+         // Check top projection
+         if (topPoint.y > tileY2) {
+            const topProjectionX = topPoint.x + (topPoint.y - tileY2) / slope;
+            if (topProjectionX >= tileX1 && topProjectionX <= tileX2) {
+               collidingVertex1 = pair[0];
+               collidingVertex2 = pair[1];
+               break;
+            }
+         }
+
+         // Check bottom projection
+         if (bottomPoint.y < tileY1) {
+            const bottomProjectionX = bottomPoint.x - (tileY2 - topPoint.y) / slope;
+            if (bottomProjectionX >= tileX1 && bottomProjectionX <= tileX2) {
+               collidingVertex1 = pair[0];
+               collidingVertex2 = pair[1];
+               break;
+            }
+         }
+      }
+
+      if (typeof collidingVertex1 === "undefined" || typeof collidingVertex2 === "undefined") {
+         // @Incomplete: Couldn't find colliding vertex pair
+         return;
+      }
+
+      const pairs2: ReadonlyArray<[number, number]> = [
+         [tileX1, tileY1],
+         [tileX2, tileY1],
+         [tileX1, tileY2],
+         [tileX2, tileY2]
+      ];
+
+      // Find point of tile in collision
+      let tileVertexX!: number;
+      let tileVertexY!: number;
+      for (const pair of pairs2) {
+         if (pointIsInRectangle(pair[0], pair[1], hitbox.position, hitbox.width, hitbox.height, this.rotation + hitbox.rotation)) {
+            tileVertexX = pair[0];
+            tileVertexY = pair[1];
+            break;
+         }
+      }
+      if (typeof tileVertexX === "undefined") {
+         // @Temporary
+         // console.warn("Couldn't find vertex");
+         return;
+      }
+
+      const distance = distToSegment(new Point(tileVertexX, tileVertexY), collidingVertex1, collidingVertex2);
+
+      const pushDirection = collidingVertex1.calculateAngleBetween(collidingVertex2) + Math.PI / 2;
+
+      this.position.x += distance * Math.sin(pushDirection);
+      this.position.y += distance * Math.cos(pushDirection);
+   }
+
    public resolveWallTileCollisions(): void {
       for (const hitbox of this.hitboxes) {
          const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
          const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
          const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
          const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
+
+         // @Cleanup: Combine the check and resolve functions into one
 
          // @Cleanup: bad, and a slow check
          if (hitbox.hasOwnProperty("radius")) {
@@ -622,10 +768,10 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
                            this.resolveYAxisRectangularTileCollision(tile, hitbox as RectangularHitbox);
                            break;
                         }
-                        // case TileCollisionAxis.diagonal: {
-                        //    this.resolveDiagonalTileCollision(tile, hitbox as RectangularHitbox);
-                        //    break;
-                        // }
+                        case TileCollisionAxis.diagonal: {
+                           this.resolveDiagonalRectangularTileCollision(tile, hitbox as RectangularHitbox);
+                           break;
+                        }
                      }
                   }
                }

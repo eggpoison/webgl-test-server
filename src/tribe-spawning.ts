@@ -17,8 +17,8 @@ const NUM_STARTING_HUTS: Record<TribeType, number> = {
    [TribeType.frostlings]: 2,
    [TribeType.barbarians]: 1,
    // @Temporary
-   // [TribeType.goblins]: 3
-   [TribeType.goblins]: 50
+   [TribeType.goblins]: 3
+   // [TribeType.goblins]: 50
 };
 
 /** Minimum distance huts will spawn from other entities when they spawn */

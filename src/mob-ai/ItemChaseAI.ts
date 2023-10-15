@@ -72,7 +72,7 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
                return true;
             }
          }
-      } else if (this.mob.visibleDroppedItems.size > 0) {
+      } else if (this.mob.visibleDroppedItems.length > 0) {
          return true;
       }
       return false;

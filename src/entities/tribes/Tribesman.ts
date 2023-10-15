@@ -85,15 +85,10 @@ class Tribesman extends TribeMember {
 
    private static readonly BARREL_INTERACT_DISTANCE = 80;
 
-   private static readonly testHitbox = new CircularHitbox();
-
    public readonly mass = 1;
 
-   /** All game objects the tribesman can see */
-   private gameObjectsInVisionRange = new Array<GameObject>();
    private enemiesInVisionRange = new Array<Entity>();
    private resourcesInVisionRange = new Array<Entity>();
-   private droppedItemsInVisionRange = new Array<DroppedItem>();
 
    private lastAIType = TribesmanAIType.idle;
 
@@ -151,56 +146,19 @@ class Tribesman extends TribeMember {
          }
       }
 
-      // 
-      // Recalculate game objects the tribesman can see
-      // 
-
-      Tribesman.testHitbox.radius = Tribesman.VISION_RANGE;
-      Tribesman.testHitbox.position.x = this.position.x;
-      Tribesman.testHitbox.position.y = this.position.y;
-      Tribesman.testHitbox.updateHitboxBounds(0);
-
-      const minChunkX = Math.max(Math.min(Math.floor((this.position.x - Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((this.position.y - Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + Tribesman.VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-
-      this.gameObjectsInVisionRange = new Array<GameObject>();
+      // Categorise visible entities
       this.enemiesInVisionRange = new Array<Entity>();
       this.resourcesInVisionRange = new Array<Entity>();
-      this.droppedItemsInVisionRange = new Array<DroppedItem>();
-      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-            const chunk = Board.getChunk(chunkX, chunkY);
-            for (const gameObject of chunk.gameObjects) {
-               if (this.gameObjectsInVisionRange.includes(gameObject)) continue;
+      const numVisibleEntities = this.visibleEntities.length;
+      for (let i = 0; i < numVisibleEntities; i++) {
+         const entity = this.visibleEntities[i];
 
-               // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
-               for (const hitbox of gameObject.hitboxes) {
-                  if (Tribesman.testHitbox.isColliding(hitbox)) {
-                     this.gameObjectsInVisionRange.push(gameObject);
-                     if (gameObject.i === "entity") {
-                        const relationship = this.getEntityRelationship(gameObject);
-                        if (relationship >= EntityRelationship.hostileMob) {
-                           this.enemiesInVisionRange.push(gameObject);
-                        } else if (relationship === EntityRelationship.resource) {
-                           this.resourcesInVisionRange.push(gameObject);
-                        }
-                     } else if (gameObject.i === "droppedItem") {
-                        this.droppedItemsInVisionRange.push(gameObject);
-                     }
-                     break;
-                  }
-               }
-            }
-         }  
-      }
-
-      this.gameObjectsInVisionRange.splice(this.gameObjectsInVisionRange.indexOf(this), 1);
-      // @Cleanup: This shouldn't be necessary - why can itself be an enemy?
-      const idx = this.enemiesInVisionRange.indexOf(this);
-      if (idx !== -1) {
-         this.enemiesInVisionRange.splice(idx, 1);
+         const relationship = this.getEntityRelationship(entity);
+         if (relationship >= EntityRelationship.hostileMob) {
+            this.enemiesInVisionRange.push(entity);
+         } else if (relationship === EntityRelationship.resource) {
+            this.resourcesInVisionRange.push(entity);
+         }
       }
 
       // Escape from enemies when low on health
@@ -212,7 +170,7 @@ class Tribesman extends TribeMember {
       }
 
       // If the player is interacting with the tribesman, move towards the player
-      for (const gameObject of this.gameObjectsInVisionRange) {
+      for (const gameObject of this.visibleGameObjects) {
          if (gameObject.i === "entity" && gameObject.type === "player" && (gameObject as Player).interactingEntityID === this.id) {
             this.rotation = this.position.calculateAngleBetween(gameObject.position);
             if (this.willStopAtDesiredDistance(80, gameObject.position)) {
@@ -269,12 +227,12 @@ class Tribesman extends TribeMember {
       }
 
       // Pick up dropped items
-      if (this.droppedItemsInVisionRange.length > 0) {
+      if (this.visibleDroppedItems.length > 0) {
          const health = this.forceGetComponent("health").getHealth();
          
          let closestDroppedItem: DroppedItem | undefined;
          let minDistance = Number.MAX_SAFE_INTEGER;
-         for (const droppedItem of this.droppedItemsInVisionRange) {
+         for (const droppedItem of this.visibleDroppedItems) {
             // If the tribesman is within the escape health threshold, make sure there wouldn't be any enemies visible while picking up the dropped item
             if (health <= Tribesman.ESCAPE_HEALTH_THRESHOLD && !this.positionIsSafe(droppedItem.position.x, droppedItem.position.y)) {
                continue;
@@ -366,7 +324,7 @@ class Tribesman extends TribeMember {
       if (!this.hasFood() && this.hasAvailableHotbarSlot()) {
          let closestBarrelWithFood: Barrel | undefined;
          let minDist = Number.MAX_SAFE_INTEGER;
-         for (const gameObject of this.gameObjectsInVisionRange) {
+         for (const gameObject of this.visibleGameObjects) {
             if (gameObject.i === "entity" && gameObject.type === "barrel") {
                const distance = this.position.calculateDistanceBetween(gameObject.position);
                if (distance < minDist && barrelHasFood(gameObject as Barrel)) {

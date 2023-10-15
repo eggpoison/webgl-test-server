@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import _GameObject from "./GameObject";
@@ -16,6 +16,7 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import Chunk from "./Chunk";
 import Item from "./items/Item";
 import Cactus from "./entities/resources/Cactus";
+import Cow from "./entities/mobs/Cow";
 
 /*
 
@@ -231,8 +232,8 @@ class GameServer {
       }
 
       if (typeof this.tickInterval === "undefined") {
-         this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
-         // this.tickInterval = setInterval(() => this.tick(), 3);
+         // this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+         this.tickInterval = setInterval(() => this.tick(), 3);
       }
    }
 
@@ -320,14 +321,14 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         const spawnPosition = this.generatePlayerSpawnPosition();
+         // const spawnPosition = this.generatePlayerSpawnPosition();
 
-         // let spawnPosition: Point;
-         // do {
-         //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
-         // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
+         let spawnPosition: Point;
+         do {
+            spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
+         } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
 
-         new Cactus(new Point(spawnPosition.x + 200, spawnPosition.y + 150));
+         new Cow(new Point(spawnPosition.x + 200, spawnPosition.y));
          
          // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));

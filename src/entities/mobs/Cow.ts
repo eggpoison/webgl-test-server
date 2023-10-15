@@ -16,7 +16,9 @@ import { MobAIType } from "../../mob-ai-types";
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
+   // @Temporary
    public mass = 1.5;
+   // public mass = 0.5;
 
    public species: CowSpecies;
 
@@ -29,6 +31,8 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
+
+      // @Temporary
 
       this.addAI(new EscapeAI(this, {
          acceleration: 200,
@@ -93,6 +97,8 @@ class Cow extends Mob {
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
+      // @Temporary
+      this.rotation = -Math.PI * 1/4;
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 

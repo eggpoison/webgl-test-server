@@ -65,7 +65,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
       }
 
       // If the attacker is out of vision range, disable
-      if (this.attacker !== null && !this.mob.visibleEntities.has(this.attacker)) {
+      if (this.attacker !== null && this.mob.visibleEntities.indexOf(this.attacker) === -1) {
          this.attacker = null;
       }
 

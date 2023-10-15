@@ -98,7 +98,7 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
          }
       } else {
          // If the target has gone out of range, stop following it
-         if (!this.mob.visibleEntities.has(this.followTarget)) {
+         if (this.mob.visibleEntities.indexOf(this.followTarget) === -1) {
             this.followTarget = null;
          }
       }

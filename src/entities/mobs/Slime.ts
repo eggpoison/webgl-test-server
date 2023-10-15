@@ -143,7 +143,7 @@ class Slime extends Mob {
          terminalVelocity: 30 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             // If there are more slimes in the vision range than is allowed, don't merge
-            if (this.visibleEntities.size > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
+            if (this.visibleEntities.length > Slime.MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
                return false;
             }
             

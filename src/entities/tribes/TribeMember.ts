@@ -116,7 +116,7 @@ export enum EntityRelationship {
    enemy
 }
 
-abstract class TribeMember extends Entity {
+abstract class TribeMember extends Mob {
    private static readonly testRectangularHitbox = new RectangularHitbox();
    private static readonly testCircularHitbox = new CircularHitbox();
 
@@ -160,7 +160,7 @@ abstract class TribeMember extends Entity {
          // health: new HealthComponent(entityType === "tribesman" ? 10 : tribeInfo.maxHealth, true),
          health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
-      }, entityType);
+      }, entityType, visionRange);
 
       this.tribeType = tribeType;
 

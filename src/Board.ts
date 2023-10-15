@@ -289,8 +289,6 @@ abstract class Board {
       }
    }
 
-   // Note: the two following functions are separate for profiling purposes
-
    public static resolveGameObjectCollisions(): void {
       // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
       
@@ -408,10 +406,6 @@ abstract class Board {
    }
 
    public static addGameObjectToJoinBuffer(gameObject: GameObject): void {
-      if (Object.keys(this.droppedItems).length > 100 && gameObject.i === "droppedItem") {
-         return;
-      }
-      
       this.joinBuffer.push(gameObject);
    }
 
@@ -469,17 +463,8 @@ abstract class Board {
    }
 
    public static gameObjectIsInBoard(gameObject: GameObject): boolean {
-      // Check the join buffer and game objects set
+      // Check the join buffer and game objects
       if (this.gameObjects.indexOf(gameObject) !== -1 || this.joinBuffer.includes(gameObject)) return true;
-
-      // Check in the entities
-      if (gameObject.i === "entity" && Object.values(this.entities).includes(gameObject)) return true;
-
-      // Check in the dropped items
-      if (gameObject.i === "droppedItem" && Object.values(this.droppedItems).includes(gameObject)) return true;
-
-      // Check in the projectiles
-      if (gameObject.i === "projectile" && this.projectiles.has(gameObject)) return true;
 
       // Check the chunks
       for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
