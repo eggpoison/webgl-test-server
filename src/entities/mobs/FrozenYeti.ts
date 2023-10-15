@@ -214,7 +214,6 @@ class FrozenYeti extends Mob {
       if (this.attackType === FrozenYetiAttackType.none) {
          // @Incomplete
          this.attackType = this.getAttackType(target, angleToTarget, Object.keys(this.targets).length);
-         console.log(FrozenYetiAttackType[this.attackType]);
       }
       switch (this.attackType) {
          case FrozenYetiAttackType.stomp: {
@@ -395,7 +394,6 @@ class FrozenYeti extends Mob {
       }
 
       // Stomp if two or more targets in range
-      console.log(numTargets);
       if (this.stompCooldownTimer === 0 && numTargets >= 2) {
          return FrozenYetiAttackType.stomp;
       }

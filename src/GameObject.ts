@@ -624,6 +624,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public remove(): void {
+      if (this.isRemoved) {
+         return;
+      }
       this.isRemoved = true;
       Board.addGameObjectToRemoveBuffer(this as unknown as GameObject);
       Board.removeGameObjectFromJoinBuffer(this as unknown as GameObject);

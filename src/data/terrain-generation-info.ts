@@ -14,7 +14,7 @@ export type TileGenerationInfo = {
    readonly maxDist?: number;
 }
 
-export type BiomeSpawnRequirements = {
+export interface BiomeSpawnRequirements {
    readonly minHeight?: number;
    readonly maxHeight?: number;
    readonly minTemperature?: number;
@@ -23,7 +23,7 @@ export type BiomeSpawnRequirements = {
    readonly maxHumidity?: number;
 }
 
-export type BiomeGenerationInfo = {
+export interface BiomeGenerationInfo {
    readonly spawnRequirements: BiomeSpawnRequirements | null;
    readonly tiles: ReadonlyArray<TileGenerationInfo>;
 }

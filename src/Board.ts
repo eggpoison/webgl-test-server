@@ -193,11 +193,13 @@ abstract class Board {
       const idx = this.gameObjects.indexOf(gameObject);
       
       if (idx === -1) {
-         console.log("Game object i: " + gameObject.i);
-         if (gameObject.i === "entity") {
-            console.log("Entity type: " + gameObject.type);
-         }
-         throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+         // @Temporary
+         return;
+         // console.log("Game object i: " + gameObject.i);
+         // if (gameObject.i === "entity") {
+         //    console.log("Entity type: " + gameObject.type);
+         // }
+         // throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
       }
 
       this.gameObjects.splice(idx, 1);
