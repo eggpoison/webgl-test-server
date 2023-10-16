@@ -327,12 +327,12 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         const spawnPosition = this.generatePlayerSpawnPosition();
+         // const spawnPosition = this.generatePlayerSpawnPosition();
 
-         // let spawnPosition: Point;
-         // do {
-         //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
-         // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).type !== TileType.sand);
+         let spawnPosition: Point;
+         do {
+            spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
+         } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).biomeName !== "tundra");
 
          // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));
@@ -340,20 +340,27 @@ class GameServer {
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         const totem = new TribeTotem(new Point(spawnPosition.x + 300, spawnPosition.y));
-         const tribe = new Tribe(TribeType.plainspeople, totem);
+         const totem = new TribeTotem(new Point(spawnPosition.x + 600, spawnPosition.y));
+         const tribe = new Tribe(TribeType.barbarians, totem);
 
          const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
          hut.rotation = 2 * Math.PI * Math.random();
          tribe.registerNewHut(hut);
          const hut2 = new TribeHut(new Point(spawnPosition.x + 390, spawnPosition.y + 300), tribe);
-         hut2.rotation = Math.PI * 3/2;
          hut2.rotation = 2 * Math.PI * Math.random();
          tribe.registerNewHut(hut2);
-         const hut3 = new TribeHut(new Point(spawnPosition.x + 530, spawnPosition.y + 200), tribe);
-         hut3.rotation = Math.PI * 3/2;
-         hut3.rotation = 2 * Math.PI * Math.random();
-         tribe.registerNewHut(hut3);
+         // const hut3 = new TribeHut(new Point(spawnPosition.x + 530, spawnPosition.y + 200), tribe);
+         // hut3.rotation = Math.PI * 3/2;
+         // hut3.rotation = 2 * Math.PI * Math.random();
+         // tribe.registerNewHut(hut3);
+         // const hut4 = new TribeHut(new Point(spawnPosition.x + 520, spawnPosition.y - 100), tribe);
+         // hut4.rotation = Math.PI * 3/2;
+         // hut4.rotation = 2 * Math.PI * Math.random();
+         // tribe.registerNewHut(hut4);
+         // const hut5 = new TribeHut(new Point(spawnPosition.x + 420, spawnPosition.y - 60), tribe);
+         // hut5.rotation = Math.PI * 3/2;
+         // hut5.rotation = 2 * Math.PI * Math.random();
+         // tribe.registerNewHut(hut5);
 
          // const item = new Item(ItemType.berry, 1);
          // new DroppedItem(new Point(spawnPosition.x, spawnPosition.y + 200), item);
@@ -702,6 +709,10 @@ class GameServer {
       let spawnPosition: Point;
       if (playerData.tribe !== null) {
          spawnPosition = playerData.tribe.totem.position.copy();
+         const offsetDirection = 2 * Math.PI * Math.random();
+         // @Cleanup: Don't hardcode
+         spawnPosition.x += 100 * Math.sin(offsetDirection);
+         spawnPosition.y += 100 * Math.cos(offsetDirection);
       } else {
          spawnPosition = this.generatePlayerSpawnPosition();
       }

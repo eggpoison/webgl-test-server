@@ -1,14 +1,12 @@
-import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, Vector, angle, randInt, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import Board from "../../Board";
 import Entity from "../Entity";
 import DroppedItem from "../../items/DroppedItem";
 import Barrel from "./Barrel";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
-import { GameObject } from "../../GameObject";
 import { getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Tile from "../../Tile";
 import Player from "./Player";
@@ -88,13 +86,13 @@ class Tribesman extends TribeMember {
    public readonly mass = 1;
 
    private enemiesInVisionRange = new Array<Entity>();
+   private enemyBuildingsInVisionRange = new Array<Entity>();
+   private hostileMobsInVisionRange = new Array<Entity>();
    private resourcesInVisionRange = new Array<Entity>();
 
    private lastAIType = TribesmanAIType.idle;
 
    private targetPatrolPosition: Point | null = null;
-
-   private readonly warPaintType: number;
    
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
@@ -113,22 +111,17 @@ class Tribesman extends TribeMember {
          inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
 
-      if (tribeType === TribeType.goblins) {
-         this.warPaintType = randInt(1, 5);
-      } else {
-         this.warPaintType = -1;
-      }
-
       this.tribe = tribe;
    }
 
    public tick(): void {
       super.tick();
 
-      // Automatically pick up armour
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
+
+      // Automatically pick up armour
       if (!armourInventory.itemSlots.hasOwnProperty(1)) {
          for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
             if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
@@ -144,16 +137,31 @@ class Tribesman extends TribeMember {
 
       // Categorise visible entities
       this.enemiesInVisionRange = new Array<Entity>();
+      this.enemyBuildingsInVisionRange = new Array<Entity>();
+      this.hostileMobsInVisionRange = new Array<Entity>();
+      this.enemiesInVisionRange = new Array<Entity>();
       this.resourcesInVisionRange = new Array<Entity>();
       const numVisibleEntities = this.visibleEntities.length;
       for (let i = 0; i < numVisibleEntities; i++) {
          const entity = this.visibleEntities[i];
 
-         const relationship = this.getEntityRelationship(entity);
-         if (relationship >= EntityRelationship.hostileMob) {
-            this.enemiesInVisionRange.push(entity);
-         } else if (relationship === EntityRelationship.resource) {
-            this.resourcesInVisionRange.push(entity);
+         switch (this.getEntityRelationship(entity)) {
+            case EntityRelationship.enemy: {
+               this.enemiesInVisionRange.push(entity);
+               break;
+            }
+            case EntityRelationship.enemyBuilding: {
+               this.enemyBuildingsInVisionRange.push(entity);
+               break;
+            }
+            case EntityRelationship.hostileMob: {
+               this.hostileMobsInVisionRange.push(entity);
+               break;
+            }
+            case EntityRelationship.resource: {
+               this.resourcesInVisionRange.push(entity);
+               break;
+            }
          }
       }
 
@@ -184,22 +192,28 @@ class Tribesman extends TribeMember {
             return;
          }
       }
-         
-      // Attack closest enemy
+      
+      // Attack enemies
       if (this.enemiesInVisionRange.length > 0) {
-         // Find the closest enemy
-         let closestEnemy!: Entity;
-         let minDistance = Number.MAX_SAFE_INTEGER;
-         for (const enemy of this.enemiesInVisionRange) {
-            const dist = this.position.calculateDistanceBetween(enemy.position);
-            if (dist < minDistance) {
-               closestEnemy = enemy;
-               minDistance = dist;
-            }
-         }
-
-         this.huntEntity(closestEnemy);
+         this.huntEntity(this.getClosestEntity(this.enemiesInVisionRange));
          this.lastAIType = TribesmanAIType.attacking;
+         this.currentAction = TribeMemberAction.none;
+         return;
+      }
+      
+      // Attack enemy buildings
+      if (this.enemyBuildingsInVisionRange.length > 0) {
+         this.huntEntity(this.getClosestEntity(this.enemyBuildingsInVisionRange));
+         this.lastAIType = TribesmanAIType.attacking;
+         this.currentAction = TribeMemberAction.none;
+         return;
+      }
+      
+      // Attack hostile mobs
+      if (this.hostileMobsInVisionRange.length > 0) {
+         this.huntEntity(this.getClosestEntity(this.hostileMobsInVisionRange));
+         this.lastAIType = TribesmanAIType.attacking;
+         this.currentAction = TribeMemberAction.none;
          return;
       }
 
@@ -868,7 +882,7 @@ class Tribesman extends TribeMember {
       barrelInventoryComponent.consumeItem("inventory", foodItemSlot, 999);
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, inventory: InventoryData, activeItemSlot: number, warPaintType: number] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, inventory: InventoryData, activeItemSlot: number] {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
@@ -883,9 +897,9 @@ class Tribesman extends TribeMember {
          this.getFoodEatingType(),
          this.getLastActionTicks(),
          this.hasFrostShield(),
+         this.warPaintType,
          serializeInventoryData(hotbarInventory, "hotbar"),
-         this.selectedItemSlot,
-         this.warPaintType
+         this.selectedItemSlot
       ];
    }
 
