@@ -9,7 +9,7 @@ const OPTIONS: Options = {
    spawnEntities: true,
    spawnTribes: true,
    warp: false,
-   generateRivers: false
+   generateRivers: true
 };
 
 export default OPTIONS;

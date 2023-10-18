@@ -15,6 +15,7 @@ export interface AICallbackFunctions {
    [MobAIType.berryBushShake]: () => void,
    [MobAIType.move]: () => void;
    [MobAIType.item_chase]: (target: DroppedItem | null) => void;
+   [MobAIType.flail]: () => void;
 }
 
 export interface BaseAIParams<T extends MobAIType> {
@@ -29,7 +30,7 @@ abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
    public abstract readonly type: T;
 
    protected isActive: boolean = false;
-   protected targetPosition: Point | null = null;
+   public targetPosition: Point | null = null;
 
    constructor(mob: Mob, baseAIParams: BaseAIParams<T>) {
       this.mob = mob;

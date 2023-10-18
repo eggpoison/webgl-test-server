@@ -108,6 +108,16 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: [TileType.fimbultur],
       spawnRate: 0.004,
       maxDensity: 0.008
+   },
+   {
+      entityType: "fish",
+      spawnableTiles: [TileType.water],
+      spawnRate: 0.015,
+      maxDensity: 0.03,
+      packSpawningInfo: {
+         size: [3, 4],
+         spawnRange: 200
+      }
    }
 ];
 
@@ -179,6 +189,11 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    for (let i = 0; i < spawnCount - 1;) {
       // Generate a spawn position near the spawn origin
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
+
+      const tile = Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE));
+      if (!spawnInfo.spawnableTiles.includes(tile.type)) {
+         continue;
+      }
 
       if (spawnPositionIsValid(spawnPosition)) {
          const entity = new entityClass(spawnPosition, true);

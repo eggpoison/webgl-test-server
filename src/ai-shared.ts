@@ -49,8 +49,8 @@ export function getAllowedPositionRadialTiles(position: Point, radius: number, v
       for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
          const tile = Board.getTile(tileX, tileY);
 
-         // Don't try to wander to wall tiles or water or isn't allowed
-         if (tile.isWall || tile.type === TileType.water || validTileTargets.indexOf(tile.type) === -1) continue;
+         // Don't try to wander to wall tiles or disallowed tiles
+         if (tile.isWall || validTileTargets.indexOf(tile.type) === -1) continue;
 
          const distanceSquared = Math.pow(position.x - tileX * SETTINGS.TILE_SIZE, 2) + Math.pow(position.y - tileY * SETTINGS.TILE_SIZE, 2);
          if (distanceSquared <= radiusSquared) {
