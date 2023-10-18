@@ -14,7 +14,7 @@ export type TileGenerationInfo = {
    readonly maxDist?: number;
 }
 
-export type BiomeSpawnRequirements = {
+export interface BiomeSpawnRequirements {
    readonly minHeight?: number;
    readonly maxHeight?: number;
    readonly minTemperature?: number;
@@ -23,7 +23,7 @@ export type BiomeSpawnRequirements = {
    readonly maxHumidity?: number;
 }
 
-export type BiomeGenerationInfo = {
+export interface BiomeGenerationInfo {
    readonly spawnRequirements: BiomeSpawnRequirements | null;
    readonly tiles: ReadonlyArray<TileGenerationInfo>;
 }
@@ -62,15 +62,15 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          maxHumidity: 0.5
       },
       tiles: [
-         {
-            tileType: TileType.fimbultur,
-            isWall: false,
-            noiseRequirements: {
-               scale: 8,
-               minWeight: 0.2
-            },
-            minDist: 8
-         },
+         // {
+         //    tileType: TileType.fimbultur,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 8,
+         //       minWeight: 0.2
+         //    },
+         //    minDist: 8
+         // },
          {
             tileType: TileType.permafrost,
             isWall: false,

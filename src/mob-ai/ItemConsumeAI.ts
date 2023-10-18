@@ -28,7 +28,7 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
       this.terminalVelocity = aiParams.terminalVelocity;
       this.itemTargets = typeof aiParams.itemTargets !== "undefined" ? aiParams.itemTargets : new Set();
 
-      this.mob.createEvent("enter_collision", (droppedItem: GameObject): void => {
+      this.mob.createEvent("during_collision", (droppedItem: GameObject): void => {
          if (droppedItem.i === "droppedItem") {
             if (!this.mob.isRemoved && this.itemTargets.has(droppedItem.item.type)) {
                this.consumeItem(droppedItem);

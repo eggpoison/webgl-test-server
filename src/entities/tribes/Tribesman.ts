@@ -1,14 +1,12 @@
-import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, Vector, angle, randInt, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import Board from "../../Board";
 import Entity from "../Entity";
 import DroppedItem from "../../items/DroppedItem";
 import Barrel from "./Barrel";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
 import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
-import { GameObject } from "../../GameObject";
 import { getEntitiesInVisionRange, getPositionRadialTiles } from "../../ai-shared";
 import Tile from "../../Tile";
 import Player from "./Player";
@@ -88,13 +86,13 @@ class Tribesman extends TribeMember {
    public readonly mass = 1;
 
    private enemiesInVisionRange = new Array<Entity>();
+   private enemyBuildingsInVisionRange = new Array<Entity>();
+   private hostileMobsInVisionRange = new Array<Entity>();
    private resourcesInVisionRange = new Array<Entity>();
 
    private lastAIType = TribesmanAIType.idle;
 
    private targetPatrolPosition: Point | null = null;
-
-   private readonly warPaintType: number;
    
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
@@ -106,33 +104,24 @@ class Tribesman extends TribeMember {
       const inventoryComponent = this.forceGetComponent("inventory");
       inventoryComponent.createNewInventory("hotbar", Tribesman.INVENTORY_SIZE, 1, true);
 
+      this.forceGetComponent("inventory").addItemToInventory("hotbar", new Item(ItemType.berry, 8));
+
       // If the tribesman is a frostling, spawn with a bow
       if (tribeType === TribeType.frostlings) {
          inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
       }
 
-      if (tribeType === TribeType.goblins) {
-         this.warPaintType = randInt(1, 5);
-      } else {
-         this.warPaintType = -1;
-      }
-
       this.tribe = tribe;
-
-      this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
-         if (this.tribe !== null && attackingEntity !== null && this.forceGetComponent("health").getHealth() <= Tribesman.ESCAPE_HEALTH_THRESHOLD) {
-            this.tribe.requestReinforcements(attackingEntity);
-         }
-      });
    }
 
    public tick(): void {
       super.tick();
 
-      // Automatically pick up armour
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
+
+      // Automatically pick up armour
       if (!armourInventory.itemSlots.hasOwnProperty(1)) {
          for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
             if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
@@ -148,21 +137,36 @@ class Tribesman extends TribeMember {
 
       // Categorise visible entities
       this.enemiesInVisionRange = new Array<Entity>();
+      this.enemyBuildingsInVisionRange = new Array<Entity>();
+      this.hostileMobsInVisionRange = new Array<Entity>();
+      this.enemiesInVisionRange = new Array<Entity>();
       this.resourcesInVisionRange = new Array<Entity>();
       const numVisibleEntities = this.visibleEntities.length;
       for (let i = 0; i < numVisibleEntities; i++) {
          const entity = this.visibleEntities[i];
 
-         const relationship = this.getEntityRelationship(entity);
-         if (relationship >= EntityRelationship.hostileMob) {
-            this.enemiesInVisionRange.push(entity);
-         } else if (relationship === EntityRelationship.resource) {
-            this.resourcesInVisionRange.push(entity);
+         switch (this.getEntityRelationship(entity)) {
+            case EntityRelationship.enemy: {
+               this.enemiesInVisionRange.push(entity);
+               break;
+            }
+            case EntityRelationship.enemyBuilding: {
+               this.enemyBuildingsInVisionRange.push(entity);
+               break;
+            }
+            case EntityRelationship.hostileMob: {
+               this.hostileMobsInVisionRange.push(entity);
+               break;
+            }
+            case EntityRelationship.resource: {
+               this.resourcesInVisionRange.push(entity);
+               break;
+            }
          }
       }
 
       // Escape from enemies when low on health
-      if (this.forceGetComponent("health").getHealth() <= Tribesman.ESCAPE_HEALTH_THRESHOLD && this.enemiesInVisionRange.length > 0) {
+      if (this.forceGetComponent("health").health <= Tribesman.ESCAPE_HEALTH_THRESHOLD && this.enemiesInVisionRange.length > 0) {
          this.escape();
          this.lastAIType = TribesmanAIType.escaping;
          this.currentAction = TribeMemberAction.none;
@@ -188,25 +192,33 @@ class Tribesman extends TribeMember {
             return;
          }
       }
-
-      // If any tribe members need reinforcements, add them to the enemy list
-      if (this.tribe !== null) {
-         for (const reinforcementInfo of this.tribe.reinforcementInfoArray) {
-            if (this.enemiesInVisionRange.indexOf(reinforcementInfo.targetEntity) === -1) {
-               this.enemiesInVisionRange.push(reinforcementInfo.targetEntity);
-            }
-         }
-      }
-         
-      // Attack closest enemy
+      
+      // Attack enemies
       if (this.enemiesInVisionRange.length > 0) {
-         this.attackEnemy();
+         this.huntEntity(this.getClosestEntity(this.enemiesInVisionRange));
          this.lastAIType = TribesmanAIType.attacking;
+         this.currentAction = TribeMemberAction.none;
+         return;
+      }
+      
+      // Attack enemy buildings
+      if (this.enemyBuildingsInVisionRange.length > 0) {
+         this.huntEntity(this.getClosestEntity(this.enemyBuildingsInVisionRange));
+         this.lastAIType = TribesmanAIType.attacking;
+         this.currentAction = TribeMemberAction.none;
+         return;
+      }
+      
+      // Attack hostile mobs
+      if (this.hostileMobsInVisionRange.length > 0) {
+         this.huntEntity(this.getClosestEntity(this.hostileMobsInVisionRange));
+         this.lastAIType = TribesmanAIType.attacking;
+         this.currentAction = TribeMemberAction.none;
          return;
       }
 
       // Heal when missing health
-      if (this.forceGetComponent("health").getHealth() < this.forceGetComponent("health").maxHealth) {
+      if (this.forceGetComponent("health").health < this.forceGetComponent("health").maxHealth) {
          const foodItemSlot = this.getFoodItemSlot();
          if (foodItemSlot !== null) {
             this.selectedItemSlot = foodItemSlot;
@@ -226,9 +238,26 @@ class Tribesman extends TribeMember {
          }
       }
 
+      // If any tribe members need reinforcements, attack the requested target
+      if (this.tribe !== null && this.tribe.reinforcementInfoArray.length > 0) {
+         let closestTarget!: Entity;
+         let minDist = Number.MAX_SAFE_INTEGER;
+         for (const reinforcementInfo of this.tribe.reinforcementInfoArray) {
+            const distance = this.position.calculateDistanceBetween(reinforcementInfo.targetEntity.position);
+            if (distance < minDist) {
+               closestTarget = reinforcementInfo.targetEntity;
+               minDist = distance;
+            }
+         }
+
+         this.huntEntity(closestTarget);
+         this.lastAIType = TribesmanAIType.attacking;
+         return;
+      }
+
       // Pick up dropped items
       if (this.visibleDroppedItems.length > 0) {
-         const health = this.forceGetComponent("health").getHealth();
+         const health = this.forceGetComponent("health").health;
          
          let closestDroppedItem: DroppedItem | undefined;
          let minDistance = Number.MAX_SAFE_INTEGER;
@@ -269,7 +298,7 @@ class Tribesman extends TribeMember {
 
       // Attack closest resource
       if (this.resourcesInVisionRange.length > 0) {
-         const health = this.forceGetComponent("health").getHealth();
+         const health = this.forceGetComponent("health").health;
 
          // If the inventory is full, the resource should only be attacked if killing it produces an item that can be picked up
          let minDistance = Number.MAX_SAFE_INTEGER;
@@ -315,7 +344,7 @@ class Tribesman extends TribeMember {
          }
 
          if (typeof resourceToAttack !== "undefined") {
-            this.harvestResource(resourceToAttack);
+            this.huntEntity(resourceToAttack);
          }
          return;
       }
@@ -453,77 +482,10 @@ class Tribesman extends TribeMember {
       this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
    }
 
-   private attackEnemy(): void {
-      // Find the closest enemy
-      let closestEnemy!: Entity;
-      let minDistance = Number.MAX_SAFE_INTEGER;
-      for (const enemy of this.enemiesInVisionRange) {
-         const dist = this.position.calculateDistanceBetween(enemy.position);
-         if (dist < minDistance) {
-            closestEnemy = enemy;
-            minDistance = dist;
-         }
-      }
-
-      // Equip the best weapon the tribesman has
-      const bestWeaponSlot = this.getBestWeaponSlot();
-      if (bestWeaponSlot !== null) {
-         this.selectedItemSlot = bestWeaponSlot;
-
-         // Don't do a melee attack if using a bow, instead charge the bow
-         const selectedItem = this.forceGetComponent("inventory").getItem("hotbar", this.selectedItemSlot)!;
-         const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
-         if (weaponCategory === "bow") {
-            // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
-            if (this.currentAction !== TribeMemberAction.charge_bow) {
-               const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
-               this.bowCooldowns[this.selectedItemSlot] = itemInfo.shotCooldown;
-            }
-            this.currentAction = TribeMemberAction.charge_bow;
-            
-            if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, closestEnemy.position)) {
-               this.terminalVelocity = 0;
-               this.acceleration.x = 0;
-               this.acceleration.y = 0;
-            } else {
-               this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
-               const moveAngle = this.position.calculateAngleBetween(closestEnemy.position);
-               this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(moveAngle);
-               this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(moveAngle);
-            }
-            this.rotation = this.position.calculateAngleBetween(closestEnemy.position);
-
-            // If the bow is fully charged, fire it
-            if (!this.bowCooldowns.hasOwnProperty(this.selectedItemSlot)) {
-               this.useItem(selectedItem, this.selectedItemSlot);
-            }
-
-            return;
-         }
-      }
-
-      // If a melee attack is being done, update to attack at melee distance
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, closestEnemy.position)) {
-         this.terminalVelocity = 0;
-         this.acceleration.x = 0;
-         this.acceleration.y = 0;
-      } else {
-         this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         const moveAngle = this.position.calculateAngleBetween(closestEnemy.position);
-         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(moveAngle);
-         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(moveAngle);
-      }
-      this.rotation = this.position.calculateAngleBetween(closestEnemy.position);
-
-      this.currentAction = TribeMemberAction.none;
-      
-      this.doMeleeAttack();
-   }
-
-   private harvestResource(resource: Entity): void {
+   private huntEntity(entity: Entity): void {
       // Find the best tool for the job
       let bestToolSlot: number | null;
-      const attackToolType = getEntityAttackToolType(resource);
+      const attackToolType = getEntityAttackToolType(entity);
       switch (attackToolType) {
          case AttackToolType.weapon: {
             bestToolSlot = this.getBestWeaponSlot();
@@ -559,16 +521,17 @@ class Tribesman extends TribeMember {
             }
             this.currentAction = TribeMemberAction.charge_bow;
             
-            this.rotation = this.position.calculateAngleBetween(resource.position);
-            if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, resource.position)) {
+            if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, entity.position)) {
                this.terminalVelocity = 0;
                this.acceleration.x = 0;
                this.acceleration.y = 0;
             } else {
                this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
-               this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(this.rotation);
-               this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(this.rotation);
+               const moveAngle = this.position.calculateAngleBetween(entity.position);
+               this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(moveAngle);
+               this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(moveAngle);
             }
+            this.rotation = this.position.calculateAngleBetween(entity.position);
 
             // If the bow is fully charged, fire it
             if (!this.bowCooldowns.hasOwnProperty(this.selectedItemSlot)) {
@@ -580,8 +543,8 @@ class Tribesman extends TribeMember {
       }
 
       // If a melee attack is being done, update to attack at melee distance
-      this.rotation = this.position.calculateAngleBetween(resource.position);
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, resource.position)) {
+      this.rotation = this.position.calculateAngleBetween(entity.position);
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, entity.position)) {
          this.terminalVelocity = 0;
          this.acceleration.x = 0;
          this.acceleration.y = 0;
@@ -592,7 +555,6 @@ class Tribesman extends TribeMember {
       }
 
       this.currentAction = TribeMemberAction.none;
-      this.lastAIType = TribesmanAIType.harvestingResources;
       
       this.doMeleeAttack();
    }
@@ -920,7 +882,7 @@ class Tribesman extends TribeMember {
       barrelInventoryComponent.consumeItem("inventory", foodItemSlot, 999);
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, inventory: InventoryData, activeItemSlot: number, warPaintType: number] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, inventory: InventoryData, activeItemSlot: number] {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
 
@@ -935,9 +897,9 @@ class Tribesman extends TribeMember {
          this.getFoodEatingType(),
          this.getLastActionTicks(),
          this.hasFrostShield(),
+         this.warPaintType,
          serializeInventoryData(hotbarInventory, "hotbar"),
-         this.selectedItemSlot,
-         this.warPaintType
+         this.selectedItemSlot
       ];
    }
 

@@ -275,6 +275,23 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       this.rotation = cleanAngle(this.rotation);
    }
 
+   protected getClosestEntity(entities: ReadonlyArray<Entity>): Entity {
+      if (entities.length === 0) {
+         throw new Error("No entities in array");
+      }
+
+      let closestEntity!: Entity;
+      let minDistance = Number.MAX_SAFE_INTEGER;
+      for (const entity of entities) {
+         const dist = this.position.calculateDistanceBetween(entity.position);
+         if (dist < minDistance) {
+            closestEntity = entity;
+            minDistance = dist;
+         }
+      }
+      return closestEntity;
+   }
+
    protected addToChunk(chunk: Chunk): void {
       super.addToChunk(chunk);
       chunk.entities.add(this);

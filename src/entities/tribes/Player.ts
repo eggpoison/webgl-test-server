@@ -42,7 +42,7 @@ class Player extends TribeMember {
       this.tribe = tribe;
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, username: string] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, username: string] {
       const inventoryComponent = this.forceGetComponent("inventory");
       
       return [
@@ -56,6 +56,7 @@ class Player extends TribeMember {
          this.getFoodEatingType(),
          this.getLastActionTicks(),
          this.hasFrostShield(),
+         this.warPaintType,
          this.username
       ];
    }

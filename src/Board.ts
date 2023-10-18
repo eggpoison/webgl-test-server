@@ -332,17 +332,20 @@ abstract class Board {
    
             gameObject.resolveBorderCollisions();
          
-            // If the object moved due to resolving wall collisions, recalculate
+            // If the object moved due to resolving border collisions, recalculate
             if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
                gameObject.updateHitboxesAndBoundingArea();
             }
 
+            // Tile is only dirt if position is dirty so we can do this check inside
             if (gameObject.tileIsDirty) {
                gameObject.updateTile();
                gameObject.isInRiver = gameObject.checkIsInRiver();
             }
          }
 
+         // @Incomplete: We may need to set hitboxesAreDirty in the resolveBorderCollisions and other places, so this actually gets called
+         
          if (gameObject.hitboxesAreDirty) {
             gameObject.cleanHitboxes();
          }

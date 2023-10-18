@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffect, SwordItemInfo, TRIBE_INFO_RECORD, TileType, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffect, SwordItemInfo, TRIBE_INFO_RECORD, TileType, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp, randInt } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -150,19 +150,27 @@ abstract class TribeMember extends Mob {
 
    public immunityTimer = 0;
 
+   protected readonly warPaintType: number;
+
+   private readonly itemAttackCooldowns: Record<number, number> = {};
+
    constructor(position: Point, entityType: EntityType, visionRange: number, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
 
       const inventoryComponent = new InventoryComponent();
       
       super(position, {
-         // @Temporary
-         // health: new HealthComponent(entityType === "tribesman" ? 10 : tribeInfo.maxHealth, true),
          health: new HealthComponent(tribeInfo.maxHealth, true),
          inventory: inventoryComponent
       }, entityType, visionRange);
 
       this.tribeType = tribeType;
+
+      if (tribeType === TribeType.goblins) {
+         this.warPaintType = randInt(1, 5);
+      } else {
+         this.warPaintType = -1;
+      }
 
       inventoryComponent.createNewInventory("armourSlot", 1, 1, false);
       inventoryComponent.createNewInventory("backpackSlot", 1, 1, false);
@@ -179,6 +187,12 @@ abstract class TribeMember extends Mob {
       this.createEvent("hurt", () => {
          this.removeImmunity();
          this.immunityTimer = TribeMember.DEEPFROST_ARMOUR_IMMUNITY_TIME;
+      });
+
+      this.createEvent("hurt", (_, attackingEntity: Entity | null) => {
+         if (this.tribe !== null && attackingEntity !== null && this.forceGetComponent("health").health <= 7.5) {
+            this.tribe.requestReinforcements(attackingEntity);
+         }
       });
    }
 
@@ -208,6 +222,7 @@ abstract class TribeMember extends Mob {
 
    public tick(): void {
       const inventoryComponent = this.forceGetComponent("inventory");
+      const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
 
       // If frost/deepfrost armour is equipped, move at normal speed on snow tiles
@@ -219,6 +234,16 @@ abstract class TribeMember extends Mob {
       this.overrideMoveSpeedMultiplier = false;
 
       super.tick();
+
+      // Update attack cooldowns
+      for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
+         if (this.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
+            this.itemAttackCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
+            if (this.itemAttackCooldowns[itemSlot] < 0) {
+               delete this.itemAttackCooldowns[itemSlot];
+            }
+         }
+      }
       
       // Armour defence
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
@@ -299,6 +324,11 @@ abstract class TribeMember extends Mob {
    }
 
    protected getEntityRelationship(entity: Entity): EntityRelationship {
+      // Necessary for when the tribe member is not in a tribe
+      if (entity === this) {
+         return EntityRelationship.friendly;
+      }
+      
       switch (entity.type) {
          case "tribe_hut": {
             if (this.tribe === null || !this.tribe.hasHut(entity as TribeHut)) {
@@ -387,9 +417,27 @@ abstract class TribeMember extends Mob {
     * @param itemSlot The item slot being used to attack the entity
     */
    protected attackEntity(targetEntity: Entity, itemSlot: number): void {
+      // Don't attack if on cooldown
+      if (this.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
+         return;
+      }
+      
       // Find the selected item
       const inventoryComponent = this.forceGetComponent("inventory");
       const item = inventoryComponent.getItem("hotbar", itemSlot);
+
+      // Reset attack cooldown
+      if (item !== null) {
+         const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
+         if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword") {
+            const itemInfo = ITEM_INFO_RECORD[item.type];
+            this.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
+         } else {
+            this.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+         }
+      } else {
+         this.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+      }
 
       const attackDamage = this.calculateItemDamage(item, targetEntity);
       const attackKnockback = this.calculateItemKnockback(item);
@@ -515,7 +563,7 @@ abstract class TribeMember extends Mob {
             const healthComponent = this.forceGetComponent("health");
 
             // Don't use food if already at maximum health
-            if (healthComponent.getHealth() >= healthComponent.maxHealth) return;
+            if (healthComponent.health >= healthComponent.maxHealth) return;
 
             const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
 

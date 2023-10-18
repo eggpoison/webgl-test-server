@@ -38,7 +38,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
          if (attackingEntity === null) return;
 
          const healthComponent = this.mob.forceGetComponent("health");
-         if (healthComponent.getHealth() <= this.escapeHealthThreshold) {
+         if (healthComponent.health <= this.escapeHealthThreshold) {
             this.attacker = attackingEntity;
             this.attackSubsideTimer = this.attackSubsideTime;
          }
