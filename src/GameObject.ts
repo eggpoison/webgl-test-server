@@ -403,7 +403,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
       // If the game object is in a river, push them in the flow direction of the river
       // @Speed: perhaps only do this check when position changes
-      if (this.isAffectedByFriction && this.isInRiver) {
+      // @Cleanup: Don't hardcode fish condition
+      if (this.isAffectedByFriction && this.isInRiver && (this.i !== "entity" || (this as unknown as Entity).type !== "fish")) {
          const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
          this.velocity.x += 240 / SETTINGS.TPS * Math.sin(flowDirection);
          this.velocity.y += 240 / SETTINGS.TPS * Math.cos(flowDirection);

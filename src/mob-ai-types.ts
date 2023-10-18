@@ -9,5 +9,6 @@ export enum MobAIType {
    chase = 6,
    berryBushShake = 7,
    move = 8,
-   item_chase = 9
+   item_chase = 9,
+   flail = 10
 };

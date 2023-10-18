@@ -6,8 +6,8 @@ interface Options {
 
 const OPTIONS: Options = {
    spawnEntities: true,
-   warp: true,
-   generateRivers: false
+   warp: false,
+   generateRivers: true
 };
 
 export default OPTIONS;

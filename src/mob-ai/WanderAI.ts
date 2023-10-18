@@ -4,6 +4,12 @@ import AI, { BaseAIParams } from "./AI";
 import { getAllowedPositionRadialTiles } from "../ai-shared";
 import { MobAIType } from "../mob-ai-types";
 
+const ALL_TILE_TYPES_EXCEPT_WATER = ALL_TILE_TYPES.slice();
+const idx = ALL_TILE_TYPES_EXCEPT_WATER.indexOf(TileType.water);
+if (idx !== -1) {
+   ALL_TILE_TYPES_EXCEPT_WATER.splice(idx, 1);
+}
+
 interface WanderAIParams extends BaseAIParams<MobAIType.wander> {
    /** The average number of times that an entity will wander in a second */
    readonly wanderRate: number;
@@ -29,7 +35,7 @@ class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
       this.wanderRate = aiParams.wanderRate;
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
-      this.validTileTargets = aiParams.validTileTargets || ALL_TILE_TYPES;
+      this.validTileTargets = aiParams.validTileTargets || ALL_TILE_TYPES_EXCEPT_WATER;
       this.shouldWander = aiParams.shouldWander;
    }
    
@@ -51,7 +57,9 @@ class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
       // @Speed: This always checks a very large number of tiles
       
       const wanderTiles = getAllowedPositionRadialTiles(this.mob.position, this.mob.visionRange, this.validTileTargets);
-      if (wanderTiles.length === 0) return;
+      if (wanderTiles.length === 0) {
+         return;
+      }
 
       // Look randomly through the array for a target position
       const indexes = wanderTiles.map((_, i) => i);
