@@ -112,7 +112,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** All hitboxes attached to the game object */
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
-   public previousCollidingObjects = new Array<GameObject>();
+   public collidingObjectTicks = new Array<number>();
    public collidingObjects = new Array<GameObject>();
    
    protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
@@ -898,15 +898,19 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          this.velocity.y += force * Math.cos(pushAngle);
       }
 
-      // Call collision events
-      (this.callEvents as any)("during_collision", gameObject);
-      if (gameObject.i === "entity") (this.callEvents as any)("during_entity_collision", gameObject);
-      
-      if (this.previousCollidingObjects.indexOf(gameObject) === -1) {
+      const idx = this.collidingObjects.indexOf(gameObject);
+      if (idx === -1) {
+         // New colliding game object
+         this.collidingObjects.push(gameObject);
+         this.collidingObjectTicks.push(Board.ticks);
          (this.callEvents as any)("enter_collision", gameObject);
+      } else {
+         // Existing colliding game object
+         this.collidingObjectTicks[idx] = Board.ticks;
       }
 
-      this.collidingObjects.push(gameObject);
+      (this.callEvents as any)("during_collision", gameObject);
+      if (gameObject.i === "entity") (this.callEvents as any)("during_entity_collision", gameObject);
    }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {

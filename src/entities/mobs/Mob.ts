@@ -73,15 +73,15 @@ abstract class Mob extends Entity {
 
    public refreshAI(): void {
       // Find the AI to switch to
-      let ai: AI<MobAIType> | undefined;
+      let ai!: AI<MobAIType>;
       const numAIs = this.ais.length;
-      for (let i = 0; i < numAIs; i++) {
+      for (var i = 0; i < numAIs; i++) {
          ai = this.ais[i];
          if (ai.canSwitch()) {
             break;
          }
       }
-      if (typeof ai === "undefined") {
+      if (i === numAIs) {
          this.currentAI = null;
          return;
       }

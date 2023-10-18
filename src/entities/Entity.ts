@@ -6,7 +6,7 @@ import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { cleanAngle } from "../ai-shared";
 import HungerComponent from "../entity-components/HungerComponent";
-import Board from "../Board";
+import Board, { customTickIntervalHasPassed } from "../Board";
 import { removeEntityFromCensus } from "src/census";
 import Chunk from "src/Chunk";
 
@@ -98,9 +98,7 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
          this.tickableComponents[i].tick!();
       }
       
-      // this.tickStatusEffects();
-      this.aa();
-      this.bb();
+      this.tickStatusEffects();
    }
 
    public getComponent<C extends keyof EntityComponents>(name: C): EntityComponents[C] | null {
@@ -131,58 +129,20 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
             this.clearStatusEffect(StatusEffect.burning);
          } else {
             // Fire tick
-            if (this.statusEffectInfo[StatusEffect.burning]!.ticksElapsed % 15 === 0) {
+            if (customTickIntervalHasPassed(this.statusEffectInfo[StatusEffect.burning]!.ticksElapsed, 0.75)) {
                this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
             }
          }
       }
 
       if (this.hasStatusEffect(StatusEffect.poisoned)) {
-         if (this.statusEffectInfo[StatusEffect.poisoned]!.ticksElapsed % 10 === 0) {
+         if (customTickIntervalHasPassed(this.statusEffectInfo[StatusEffect.poisoned]!.ticksElapsed, 0.5)) {
             this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
          }
       }
 
       if (this.hasStatusEffect(StatusEffect.bleeding)) {
-         if (this.statusEffectInfo[StatusEffect.bleeding]!.ticksElapsed % 20 === 0) {
-            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
-         }
-      }
-   }
-
-   private aa(): void {
-      for (const statusEffect of this.statusEffects) {
-         const statusEffectInfo = this.statusEffectInfo[statusEffect]!
-         statusEffectInfo.secondsRemaining -= 1 / SETTINGS.TPS;
-         statusEffectInfo.ticksElapsed++;
-         if (statusEffectInfo.secondsRemaining <= 0) {
-            // Remove the status effect
-            this.clearStatusEffect(statusEffect);
-         }    
-      }
-   }
-
-   private bb(): void {
-      if (this.hasStatusEffect(StatusEffect.burning)) {
-         // If the entity is in a river, clear the fire effect
-         if (this.checkIsInRiver()) {
-            this.clearStatusEffect(StatusEffect.burning);
-         } else {
-            // Fire tick
-            if (this.statusEffectInfo[StatusEffect.burning]!.ticksElapsed % 15 === 0) {
-               this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
-            }
-         }
-      }
-
-      if (this.hasStatusEffect(StatusEffect.poisoned)) {
-         if (this.statusEffectInfo[StatusEffect.poisoned]!.ticksElapsed % 10 === 0) {
-            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
-         }
-      }
-
-      if (this.hasStatusEffect(StatusEffect.bleeding)) {
-         if (this.statusEffectInfo[StatusEffect.bleeding]!.ticksElapsed % 20 === 0) {
+         if (customTickIntervalHasPassed(this.statusEffectInfo[StatusEffect.bleeding]!.ticksElapsed, 1)) {
             this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
          }
       }

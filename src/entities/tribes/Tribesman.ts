@@ -104,8 +104,6 @@ class Tribesman extends TribeMember {
       const inventoryComponent = this.forceGetComponent("inventory");
       inventoryComponent.createNewInventory("hotbar", Tribesman.INVENTORY_SIZE, 1, true);
 
-      this.forceGetComponent("inventory").addItemToInventory("hotbar", new Item(ItemType.berry, 8));
-
       // If the tribesman is a frostling, spawn with a bow
       if (tribeType === TribeType.frostlings) {
          inventoryComponent.addItemToSlot("hotbar", 1, ItemType.wooden_bow, 1);
@@ -127,7 +125,7 @@ class Tribesman extends TribeMember {
             if (hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
                const item = hotbarInventory.itemSlots[itemSlot];
                if (ITEM_TYPE_RECORD[item.type] === "armour") {
-                  inventoryComponent.addItemToSlot("armourSlot", itemSlot, item.type, 1);
+                  inventoryComponent.addItemToSlot("armourSlot", 1, item.type, 1);
                   inventoryComponent.removeItemFromInventory("hotbar", itemSlot);
                   break;
                }

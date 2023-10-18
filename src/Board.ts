@@ -27,6 +27,14 @@ interface KilledEntityInfo {
    readonly boundingChunks: ReadonlySet<Chunk>;
 }
 
+export function customTickIntervalHasPassed(ticks: number, intervalSeconds: number): boolean {
+   const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
+   
+   const previousCheck = (ticks - 1) / ticksPerInterval;
+   const check = ticks / ticksPerInterval;
+   return Math.floor(previousCheck) !== Math.floor(check);
+}
+
 abstract class Board {
    public static ticks = 0;
 
@@ -314,6 +322,18 @@ abstract class Board {
       for (let i = 0; i < numGameObjects; i++) {
          const gameObject = this.gameObjects[i];
 
+         // Remove old collisions
+         // @Speed
+         let numCollisions = gameObject.collidingObjects.length;
+         for (let i = 0; i < numCollisions; i++) {
+            if (gameObject.collidingObjectTicks[i] !== Board.ticks) {
+               gameObject.collidingObjects.splice(i, 1);
+               gameObject.collidingObjectTicks.splice(i, 1);
+               i--;
+               numCollisions--;
+            }
+         }
+
          if (gameObject.positionIsDirty) {
             let positionXBeforeUpdate = gameObject.position.x;
             let positionYBeforeUpdate = gameObject.position.y;
@@ -349,10 +369,6 @@ abstract class Board {
          if (gameObject.hitboxesAreDirty) {
             gameObject.cleanHitboxes();
          }
-
-         // @Speed @Cleanup: This is a lot of garbage collection having to be done, and this should really be handled just in the GameObject class
-         gameObject.previousCollidingObjects = gameObject.collidingObjects;
-         gameObject.collidingObjects = [];
       }
    }
 

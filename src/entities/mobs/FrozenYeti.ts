@@ -40,9 +40,9 @@ class FrozenYeti extends Mob {
    private static readonly CONTACT_DAMAGE = 5;
    private static readonly CONTACT_KNOCKBACK = 250;
 
-   private static readonly SNOWBALL_THROW_SPEED = [550, 650] as const;
+   private static readonly SNOWBALL_THROW_SPEED = [590, 750] as const;
 
-   private static readonly GLOBAL_ATTACK_COOLDOWN = 2;
+   private static readonly GLOBAL_ATTACK_COOLDOWN = 1.25;
    private static readonly BITE_COOLDOWN = 3;
    private static readonly SNOWBALL_THROW_COOLDOWN = 10;
    private static readonly ROAR_COOLDOWN = 5;
@@ -91,7 +91,7 @@ class FrozenYeti extends Mob {
       super(position, {
          health: new HealthComponent(FrozenYeti.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2),
-         hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 2))
+         hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 2) * 100)
       }, "frozen_yeti", FrozenYeti.VISION_RANGE);
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.deepfrost_heart, randInt(2, 3), true);
@@ -156,6 +156,10 @@ class FrozenYeti extends Mob {
 
    public tick(): void {
       super.tick();
+
+      if (this.currentAI !== null) {
+         return;
+      }
 
       // Remove targets which are dead or have been out of aggro long enough
       // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
@@ -515,7 +519,7 @@ class FrozenYeti extends Mob {
       for (let i = 0; i < targets.length; i++) {
          const entity = targets[i];
          // Don't attack entities which aren't in the tundra or the entity is native to the tundra
-         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "yeti" || entity.type === "ice_spikes") {
+         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "ice_spikes") {
             targets.splice(i, 1);
             i--;
          }
@@ -579,12 +583,12 @@ class FrozenYeti extends Mob {
 
    private throwSnow(): void {
       // Large snowballs
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
          this.createSnowball(SnowballSize.large, this.rotation);
       }
 
       // Small snowballs
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
          this.createSnowball(SnowballSize.small, this.rotation);
       }
 

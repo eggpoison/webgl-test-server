@@ -220,6 +220,10 @@ class InventoryComponent extends Component {
     */
    public addItemToSlot(inventoryName: string, itemSlot: number, itemType: ItemType, amount: number): number {
       const inventory = this.getInventory(inventoryName);
+      
+      if (itemSlot < 1 || itemSlot > inventory.width * inventory.height) {
+         console.warn("Added item to out-of-bounds slot!");
+      }
 
       let amountAdded: number;
 
