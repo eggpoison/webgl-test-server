@@ -1,10 +1,10 @@
-import { angle, curveWeight, EntityType, HitFlags, Point, SETTINGS } from "webgl-test-shared";
+import { angle, curveWeight, EntityType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 
-interface HerdAIParams extends BaseAIParams<MobAIType.herd> {
+interface HerdAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Minimum distance from other members to try and maintain */
@@ -25,7 +25,7 @@ interface HerdAIParams extends BaseAIParams<MobAIType.herd> {
    readonly cohesionInfluence: number;
 }
 
-class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
+class HerdAI extends AI implements HerdAIParams {
    private static readonly WALL_AVOIDANCE_MULTIPLIER = 1.5;
    private static readonly TURN_CONSTANT = Math.PI / SETTINGS.TPS;
 
@@ -47,7 +47,7 @@ class HerdAI extends AI<MobAIType.herd> implements HerdAIParams {
    private angularVelocity = 0;
 
    constructor(mob: Mob, aiParams: HerdAIParams) {
-      super(mob, aiParams);
+      super(mob);
       
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

@@ -1,16 +1,16 @@
 import { GameObjectDebugData } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import DroppedItem from "../items/DroppedItem";
 import { MobAIType } from "../mob-ai-types";
 
-interface ItemChaseAIParams extends BaseAIParams<MobAIType.item_chase> {
+interface ItemChaseAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly itemIsChased: (droppedItem: DroppedItem) => boolean;
 }
 
-class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams {
+class ItemChaseAI extends AI implements ItemChaseAIParams {
    public readonly type = MobAIType.item_chase;
 
    public readonly acceleration: number;
@@ -20,7 +20,7 @@ class ItemChaseAI extends AI<MobAIType.item_chase> implements ItemChaseAIParams 
    private target: DroppedItem | null = null;
 
    constructor(mob: Mob, aiParams: ItemChaseAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

@@ -18,8 +18,8 @@ abstract class Mob extends Entity {
    public readonly visionRange: number;
    private readonly visionRangeSquared: number;
    
-   private readonly ais = new Array<AI<MobAIType>>();
-   protected currentAI: AI<MobAIType> | null = null;
+   private readonly ais = new Array<AI>();
+   protected currentAI: AI | null = null;
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_INTERVAL - 1);
 
@@ -48,7 +48,7 @@ abstract class Mob extends Entity {
       this.visionRangeSquared = Math.pow(visionRange, 2);
    }
 
-   protected addAI(ai: AI<MobAIType>): void {
+   protected addAI(ai: AI): void {
       this.ais.push(ai);
    }
 
@@ -73,7 +73,7 @@ abstract class Mob extends Entity {
 
    public refreshAI(): void {
       // Find the AI to switch to
-      let ai!: AI<MobAIType>;
+      let ai!: AI;
       const numAIs = this.ais.length;
       for (var i = 0; i < numAIs; i++) {
          ai = this.ais[i];
@@ -254,15 +254,6 @@ abstract class Mob extends Entity {
       }
 
       return debugData;
-   }
-
-   public getAI<T extends MobAIType>(type: T): AI<T> | null {
-      for (const ai of this.ais) {
-         if (ai.type === type) {
-            return ai as AI<T>;
-         }
-      }
-      return null;
    }
 }
 

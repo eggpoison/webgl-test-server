@@ -16,11 +16,11 @@ import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Projectile from "../../Projectile";
 import Workbench from "../Workbench";
-import Campfire from "../Campfire";
-import Furnace from "../Furnace";
+import Campfire from "../cooking-entities/Campfire";
+import Furnace from "../cooking-entities/Furnace";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 
-const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone", "ice_spikes"];
+const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone", "ice_spikes", "furnace"];
 const axeDamageableEntities: ReadonlyArray<EntityType> = ["tree"];
 
 export enum AttackToolType {
@@ -30,6 +30,8 @@ export enum AttackToolType {
 }
 
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
+   // @Cleanup: This shouldn't be hardcoded ideally
+   
    if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush" || entity.type === "cactus" || entity.type === "snowball") {
       return AttackToolType.weapon;
    }
@@ -225,13 +227,17 @@ abstract class TribeMember extends Mob {
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
 
-      // If frost/deepfrost armour is equipped, move at normal speed on snow tiles
-      if (armourInventory.itemSlots.hasOwnProperty(1) && (armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour)) {
-         if (this.tile.type === TileType.snow) {
+      this.overrideMoveSpeedMultiplier = false;
+      if (armourInventory.itemSlots.hasOwnProperty(1)) {
+         // If snow armour is equipped, move at normal speed on snow tiles
+         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileType.snow) {
+            this.overrideMoveSpeedMultiplier = true;
+         }
+         // If fishlord suit is equipped, move at normal speed on snow tiles
+         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileType.water) {
             this.overrideMoveSpeedMultiplier = true;
          }
       }
-      this.overrideMoveSpeedMultiplier = false;
 
       super.tick();
 

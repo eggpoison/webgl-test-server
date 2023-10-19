@@ -1,10 +1,10 @@
-import { GameObjectDebugData, HitFlags, SETTINGS } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 
-interface ChaseAIParams extends BaseAIParams<MobAIType.chase> {
+interface ChaseAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly entityIsChased: (entity: Entity) => boolean;
@@ -12,7 +12,7 @@ interface ChaseAIParams extends BaseAIParams<MobAIType.chase> {
    readonly desiredDistance?: number;
 }
 
-class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
+class ChaseAI extends AI implements ChaseAIParams {
    public readonly type = MobAIType.chase;
 
    public acceleration: number;
@@ -23,7 +23,7 @@ class ChaseAI extends AI<MobAIType.chase> implements ChaseAIParams {
    public target: Entity | null = null;
 
    constructor(mob: Mob, aiParams: ChaseAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

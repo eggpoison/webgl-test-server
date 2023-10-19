@@ -1,6 +1,6 @@
 import { Point } from "webgl-test-shared";
-import HealthComponent from "../entity-components/HealthComponent";
-import RectangularHitbox from "../hitboxes/RectangularHitbox";
+import HealthComponent from "../../entity-components/HealthComponent";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import HeatingEntity from "./CookingEntity";
 
 class Furnace extends HeatingEntity {

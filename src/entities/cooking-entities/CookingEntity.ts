@@ -1,7 +1,7 @@
 import { CookingIngredientItemType, EntityType, FuelSourceItemType, InventoryData, ItemType, Point, SETTINGS } from "webgl-test-shared";
-import InventoryComponent, { serializeInventoryData } from "../entity-components/InventoryComponent";
-import Entity, { EntityComponents } from "./Entity";
-import Item from "../items/Item";
+import Entity, { EntityComponents } from "../Entity";
+import InventoryComponent, { serializeInventoryData } from "../../entity-components/InventoryComponent";
+import Item from "../../items/Item";
 
 interface HeatingRecipe {
    readonly ingredientType: CookingIngredientItemType;
@@ -27,6 +27,14 @@ const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
       ingredientAmount: 1,
       productType: ItemType.cooked_beef,
       productAmount: 5,
+      cookTime: 5,
+      usableHeatingEntityTypes: ["campfire", "furnace"]
+   },
+   {
+      ingredientType: ItemType.raw_fish,
+      ingredientAmount: 1,
+      productType: ItemType.cooked_fish,
+      productAmount: 1,
       cookTime: 5,
       usableHeatingEntityTypes: ["campfire", "furnace"]
    }
@@ -58,7 +66,8 @@ const getHeatingRecipeByIngredientType = (heatingEntityType: EntityType, ingredi
 abstract class HeatingEntity extends Entity {
    private heatingTimer = 0;
    private currentRecipe: HeatingRecipe | null = null;
-   private remainingHeat = 0;
+
+   protected remainingHeatSeconds = 0;
    
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
       components.inventory = new InventoryComponent();
@@ -83,7 +92,7 @@ abstract class HeatingEntity extends Entity {
       
       if (this.currentRecipe !== null) {
          // If the heating entity needs more heat, attempt to use a fuel item
-         if (this.remainingHeat <= 0 && fuelInventory.itemSlots.hasOwnProperty(1)) {
+         if (this.remainingHeatSeconds <= 0 && fuelInventory.itemSlots.hasOwnProperty(1)) {
             const fuel = fuelInventory.itemSlots[1];
             if (!FUEL_SOURCES.hasOwnProperty(fuel.type)) {
                console.warn(`Item type '${ItemType[fuel.type]}' is not a valid fuel type.`);
@@ -91,10 +100,10 @@ abstract class HeatingEntity extends Entity {
             }
 
             inventoryComponent.consumeItemTypeFromInventory("fuelInventory", fuelInventory.itemSlots[1].type, 1);
-            this.remainingHeat += FUEL_SOURCES[fuel.type as keyof typeof FUEL_SOURCES];
+            this.remainingHeatSeconds += FUEL_SOURCES[fuel.type as keyof typeof FUEL_SOURCES];
          }
 
-         if (this.remainingHeat > 0) {
+         if (this.remainingHeatSeconds > 0) {
             this.heatingTimer += 1 / SETTINGS.TPS;
             if (this.heatingTimer >= this.currentRecipe.cookTime) {
                // Remove from ingredient inventory
@@ -108,18 +117,19 @@ abstract class HeatingEntity extends Entity {
                this.currentRecipe = null;
             }
 
-            this.remainingHeat -= 1 / SETTINGS.TPS;
+            this.remainingHeatSeconds -= 1 / SETTINGS.TPS;
          }
       }
    }
 
-   public getClientArgs(): [fuelInventory: InventoryData, ingredientInveotry: InventoryData, outputInventory: InventoryData, heatingProgress: number] {
+   public getClientArgs(): [fuelInventory: InventoryData, ingredientInventory: InventoryData, outputInventory: InventoryData, heatingProgress: number, isCooking: boolean] {
       const inventoryComponent = this.forceGetComponent("inventory");
       return [
          serializeInventoryData(inventoryComponent.getInventory("fuelInventory"), "fuelInventory"),
          serializeInventoryData(inventoryComponent.getInventory("ingredientInventory"), "ingredientInventory"),
          serializeInventoryData(inventoryComponent.getInventory("outputInventory"), "outputInventory"),
-         this.currentRecipe !== null ? this.heatingTimer / this.currentRecipe.cookTime : -1
+         this.currentRecipe !== null ? this.heatingTimer / this.currentRecipe.cookTime : -1,
+         this.remainingHeatSeconds > 0
       ];
    }
 }

@@ -402,9 +402,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
 
       // If the game object is in a river, push them in the flow direction of the river
-      // @Speed: perhaps only do this check when position changes
-      // @Cleanup: Don't hardcode fish condition
-      if (this.isAffectedByFriction && this.isInRiver && (this.i !== "entity" || (this as unknown as Entity).type !== "fish")) {
+      if (this.isAffectedByFriction && this.isInRiver && !this.overrideMoveSpeedMultiplier) {
          const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
          this.velocity.x += 240 / SETTINGS.TPS * Math.sin(flowDirection);
          this.velocity.y += 240 / SETTINGS.TPS * Math.cos(flowDirection);
@@ -952,6 +950,15 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
    public createEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
       this.events[type].push(event);
+   }
+
+   public removeEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
+      const idx = this.events[type].indexOf(event);
+      if (idx !== -1) {
+         this.events[type].splice(idx, 1);
+      } else {
+         console.warn("cant remove");
+      }
    }
 
    public remove(): void {

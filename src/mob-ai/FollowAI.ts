@@ -1,11 +1,11 @@
 import { EntityType, GameObjectDebugData, randItem, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 import Board from "../Board";
 
-interface HerdAIParams extends BaseAIParams<MobAIType.follow> {
+interface HerdAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Maximum distance to keep from the target */
@@ -20,7 +20,7 @@ interface HerdAIParams extends BaseAIParams<MobAIType.follow> {
    readonly followableEntityTypes: ReadonlySet<EntityType>;
 }
 
-class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
+class FollowAI extends AI implements HerdAIParams {
    public readonly type = MobAIType.follow;
    
    public readonly acceleration: number;
@@ -39,7 +39,7 @@ class FollowAI extends AI<MobAIType.follow> implements HerdAIParams {
    private lastFollowTicks = Board.ticks;
 
    constructor(mob: Mob, aiParams: HerdAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

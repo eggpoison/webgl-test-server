@@ -1,15 +1,15 @@
 import { GameObjectDebugData, Point } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 
-interface MoveAIParams extends BaseAIParams<MobAIType.move> {
+interface MoveAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly getMoveTargetPosition: () => Point | null;
 }
 
-class MoveAI extends AI<MobAIType.move> implements MoveAIParams {
+class MoveAI extends AI implements MoveAIParams {
    public readonly type = MobAIType.move;
    
    public readonly acceleration: number;
@@ -17,7 +17,7 @@ class MoveAI extends AI<MobAIType.move> implements MoveAIParams {
    public readonly getMoveTargetPosition: () => Point | null;
 
    constructor(mob: Mob, aiParams: MoveAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

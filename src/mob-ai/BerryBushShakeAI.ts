@@ -4,7 +4,7 @@ import AI from "./AI";
 import Board from "../Board";
 import { MobAIType } from "../mob-ai-types";
 
-class BerryBushShakeAI extends AI<MobAIType.berryBushShake> {
+class BerryBushShakeAI extends AI {
    private static readonly SAMPLE_DISTANCE = 60;
 
    /** Number of ticks for the entity to shake the berry bush */

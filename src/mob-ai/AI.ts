@@ -1,40 +1,17 @@
 import { GameObjectDebugData, Point } from "webgl-test-shared";
-import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import DroppedItem from "../items/DroppedItem";
 import { MobAIType } from "../mob-ai-types";
 
-export interface AICallbackFunctions {
-   [MobAIType.wander]: () => void,
-   [MobAIType.follow]: () => void,
-   [MobAIType.herd]: () => void,
-   [MobAIType.tileConsume]: () => void,
-   [MobAIType.itemConsume]: () => void,
-   [MobAIType.escape]: () => void,
-   [MobAIType.chase]: (targetEntity: Entity | null) => void,
-   [MobAIType.berryBushShake]: () => void,
-   [MobAIType.move]: () => void;
-   [MobAIType.item_chase]: (target: DroppedItem | null) => void;
-   [MobAIType.flail]: () => void;
-}
-
-export interface BaseAIParams<T extends MobAIType> {
-   readonly callback?: AICallbackFunctions[T];
-}
-
-abstract class AI<T extends MobAIType> implements BaseAIParams<T> {
+abstract class AI {
    protected readonly mob: Mob;
-   
-   public readonly callback?: AICallbackFunctions[T];
 
-   public abstract readonly type: T;
+   public abstract readonly type: MobAIType;
 
    protected isActive: boolean = false;
    public targetPosition: Point | null = null;
 
-   constructor(mob: Mob, baseAIParams: BaseAIParams<T>) {
+   constructor(mob: Mob) {
       this.mob = mob;
-      this.callback = baseAIParams.callback;
    }
 
    public tick(): void {

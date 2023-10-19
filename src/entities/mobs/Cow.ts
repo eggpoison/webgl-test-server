@@ -60,7 +60,7 @@ class Cow extends Mob {
          itemTargets: new Set([ItemType.berry])
       }));
 
-      this.addAI(new BerryBushShakeAI(this, {}));
+      this.addAI(new BerryBushShakeAI(this));
 
       const herdAI = new HerdAI(this, {
          acceleration: 100,

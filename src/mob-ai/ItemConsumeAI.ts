@@ -1,17 +1,17 @@
 import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { GameObject } from "../GameObject";
 import { MobAIType } from "../mob-ai-types";
 
-interface ItemConsumeAIParams extends BaseAIParams<MobAIType.itemConsume> {
+interface ItemConsumeAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly itemTargets: ReadonlySet<ItemType>;
 }
 
-class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIParams {
+class ItemConsumeAI extends AI implements ItemConsumeAIParams {
    public readonly type = MobAIType.itemConsume;
 
    public readonly acceleration: number;
@@ -22,7 +22,7 @@ class ItemConsumeAI extends AI<MobAIType.itemConsume> implements ItemConsumeAIPa
    private target: DroppedItem | null = null;
 
    constructor(mob: Mob, aiParams: ItemConsumeAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

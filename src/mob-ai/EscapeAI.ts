@@ -1,10 +1,10 @@
 import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 
-interface EscapeAIParams extends BaseAIParams<MobAIType.escape> {
+interface EscapeAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly attackSubsideTime: number;
@@ -12,7 +12,7 @@ interface EscapeAIParams extends BaseAIParams<MobAIType.escape> {
    readonly escapeHealthThreshold: number
 }
 
-class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
+class EscapeAI extends AI implements EscapeAIParams {
    public readonly type = MobAIType.escape;
    
    public readonly acceleration: number;
@@ -25,7 +25,7 @@ class EscapeAI extends AI<MobAIType.escape> implements EscapeAIParams {
    private attackSubsideTimer: number;
 
    constructor(mob: Mob, aiParams: EscapeAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;

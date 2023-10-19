@@ -1,14 +1,14 @@
 import { SETTINGS, TileType, randFloat } from "webgl-test-shared";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 import Mob from "../entities/mobs/Mob";
 
-interface FlailAIParams extends BaseAIParams<MobAIType.flail> {
+interface FlailAIParams {
    readonly flailIntervalSeconds: number;
    readonly flailForce: number;
 }
 
-class FlailAI extends AI<MobAIType.flail> {
+class FlailAI extends AI {
    public type = MobAIType.flail as const;
 
    private readonly flailIntervalSeconds: number;
@@ -17,7 +17,7 @@ class FlailAI extends AI<MobAIType.flail> {
    private flailTimer = 0;
 
    constructor(mob: Mob, aiParams: FlailAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.flailIntervalSeconds = aiParams.flailIntervalSeconds;
       this.flailForce = aiParams.flailForce;

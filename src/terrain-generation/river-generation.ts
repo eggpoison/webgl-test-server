@@ -3,12 +3,6 @@ import { TileCoordinates } from "../Tile";
 import { generateOctavePerlinNoise } from "../perlin-noise";
 import Board from "../Board";
 
-/*
- HOW IT WORKS
---------------
-
-*/
-
 const NUM_RIVERS = 20;
 
 const NEIGHBOUR_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [

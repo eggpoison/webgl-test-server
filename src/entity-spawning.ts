@@ -164,7 +164,9 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
       return;
    }
 
-   // @Incomplete @Cleanup: Make all cows spawn with the same type
+   // @Incomplete @Cleanup: Make all cows spawn with the same type,
+   // and make fish spawn with the same colour
+   
    // const cowSpecies = randInt(0, 1);
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
@@ -255,6 +257,7 @@ export function runSpawnAttempt(): void {
    if (!OPTIONS.spawnEntities) {
       return;
    }
+
    for (const spawnInfo of SPAWN_INFO_RECORD) {
       if (!spawnConditionsAreMet(spawnInfo)) {
          continue;

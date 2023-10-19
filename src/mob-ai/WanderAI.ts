@@ -1,6 +1,6 @@
 import { ALL_TILE_TYPES, GameObjectDebugData, Point, SETTINGS, TileType, randInt, randItem } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { getAllowedPositionRadialTiles } from "../ai-shared";
 import { MobAIType } from "../mob-ai-types";
 
@@ -10,7 +10,7 @@ if (idx !== -1) {
    ALL_TILE_TYPES_EXCEPT_WATER.splice(idx, 1);
 }
 
-interface WanderAIParams extends BaseAIParams<MobAIType.wander> {
+interface WanderAIParams {
    /** The average number of times that an entity will wander in a second */
    readonly wanderRate: number;
    readonly acceleration: number;
@@ -20,7 +20,7 @@ interface WanderAIParams extends BaseAIParams<MobAIType.wander> {
    readonly shouldWander?: (wanderPositionX: number, wanderPositionY: number) => boolean;
 }
 
-class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
+class WanderAI extends AI implements WanderAIParams {
    public readonly type = MobAIType.wander;
    
    public readonly wanderRate: number;
@@ -30,7 +30,7 @@ class WanderAI extends AI<MobAIType.wander> implements WanderAIParams {
    public readonly shouldWander?: ((wanderPositionX: number, wanderPositionY: number) => boolean) | undefined;
 
    constructor(mob: Mob, aiParams: WanderAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.wanderRate = aiParams.wanderRate;
       this.acceleration = aiParams.acceleration;

@@ -1,10 +1,10 @@
 import { SETTINGS, TileInfo, TileType, randFloat } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import Tile from "../Tile";
-import AI, { BaseAIParams } from "./AI";
+import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 
-type FoodSource = {
+interface FoodSource {
    /** Amount of food given by eating the source */
    readonly foodUnits: number;
 }
@@ -18,13 +18,13 @@ export interface TileFoodSource extends FoodSource {
    readonly healAmount: number;
 }
 
-interface TileConsumeAIParams extends BaseAIParams<MobAIType.tileConsume> {
+interface TileConsumeAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    readonly tileTargets?: ReadonlyMap<TileType, TileFoodSource>;
 }
 
-class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIParams {
+class TileConsumeAI extends AI implements TileConsumeAIParams {
    /** Cooldown in seconds between grazes that the mob can't graze */
    private static readonly GRAZE_COOLDOWN_RANGE = [20, 30] as const;
    
@@ -38,7 +38,7 @@ class TileConsumeAI extends AI<MobAIType.tileConsume> implements TileConsumeAIPa
    private grazeCooldown = randFloat(TileConsumeAI.GRAZE_COOLDOWN_RANGE[0], TileConsumeAI.GRAZE_COOLDOWN_RANGE[1]);
 
    constructor(mob: Mob, aiParams: TileConsumeAIParams) {
-      super(mob, aiParams);
+      super(mob);
 
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
