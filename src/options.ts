@@ -8,8 +8,8 @@ interface Options {
 
 const OPTIONS: Options = {
    spawnEntities: true,
-   spawnTribes: true,
-   generateRivers: true,
+   spawnTribes: false,
+   generateRivers: false,
    inBenchmarkMode: false,
    warp: false
 };

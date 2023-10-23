@@ -1,4 +1,4 @@
-import { ArmourItemInfo, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffect, randFloat } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffect, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -7,7 +7,9 @@ import Mob from "./Mob";
 import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
+import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
+import HungerComponent from "../../entity-components/HungerComponent";
 import TribeMember from "../tribes/TribeMember";
 
 class Zombie extends Mob {
@@ -22,6 +24,12 @@ class Zombie extends Mob {
    private static readonly ATTACK_KNOCKBACK = 150;
    private static readonly ATTACK_SELF_KNOCKBACK = 100;
 
+   private static readonly ACCELERATION = 200;
+   private static readonly TERMINAL_VELOCITY = 100;
+
+   private static readonly ACCELERATION_SLOW = 100;
+   private static readonly TERMINAL_VELOCITY_SLOW = 50;
+
    /** The type of the zombie, 0-3 */
    private readonly zombieType: number;
 
@@ -33,22 +41,29 @@ class Zombie extends Mob {
       
       super(position, {
          health: new HealthComponent(Zombie.MAX_HEALTH, false),
-         item_creation: itemCreationComponent
+         item_creation: itemCreationComponent,
+         hunger: new HungerComponent(randFloat(0, 25), randFloat(3, 5))
       }, "zombie", 270);
 
       const speedMultiplier = randFloat(0.9, 1.1);
       
       this.addAI(new ChaseAI(this, {
-         acceleration: 200,
-         terminalVelocity: 100 * speedMultiplier,
+         acceleration: Zombie.ACCELERATION * speedMultiplier,
+         terminalVelocity: Zombie.TERMINAL_VELOCITY * speedMultiplier,
          entityIsChased: (entity: Entity) => {
             return this.shouldAttackEntity(entity);
          }
       }));
 
+      this.addAI(new ItemConsumeAI(this, {
+         acceleration: Zombie.ACCELERATION_SLOW * speedMultiplier,
+         terminalVelocity: Zombie.TERMINAL_VELOCITY_SLOW * speedMultiplier,
+         itemTargets: new Set([ItemType.raw_beef, ItemType.raw_fish])
+      }));
+
       this.addAI(new HerdAI(this, {
-         acceleration: 100,
-         terminalVelocity: 50 * speedMultiplier,
+         acceleration: Zombie.ACCELERATION_SLOW * speedMultiplier,
+         terminalVelocity: Zombie.TERMINAL_VELOCITY_SLOW * speedMultiplier,
          minSeperationDistance: 50,
          turnRate: 0.2,
          minActivateAmount: 3,
@@ -61,8 +76,8 @@ class Zombie extends Mob {
       
       this.addAI(new WanderAI(this, {
          wanderRate: 0.4,
-         acceleration: 100 * speedMultiplier,
-         terminalVelocity: 50
+         acceleration: Zombie.ACCELERATION_SLOW * speedMultiplier,
+         terminalVelocity: Zombie.TERMINAL_VELOCITY_SLOW * speedMultiplier
       }));
 
       const hitbox = new CircularHitbox();

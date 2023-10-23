@@ -979,9 +979,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public remove(): void {
-      if (this.isRemoved) {
-         return;
-      }
       this.isRemoved = true;
    }
 
@@ -992,7 +989,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          circles: [],
          tileHighlights: [],
          debugEntries: []
-      }
+      };
    }
 }
 
