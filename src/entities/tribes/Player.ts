@@ -88,7 +88,9 @@ class Player extends TribeMember {
    }
 
    public processCraftingPacket(recipeIndex: number): void {
+      console.log("craft");
       if (recipeIndex < 0 || recipeIndex >= CRAFTING_RECIPES.length) {
+         console.log("a");
          return;
       }
       
@@ -100,6 +102,7 @@ class Player extends TribeMember {
       if (craftingOutputInventory.itemSlots.hasOwnProperty(1)) {
          const craftingOutputItem = craftingOutputInventory.itemSlots[1];
          if ((craftingOutputItem.type !== craftingRecipe.product || !itemIsStackable(craftingOutputItem.type) || craftingOutputItem.count + craftingRecipe.yield > getItemStackSize(craftingOutputItem))) {
+            console.log("b");
             return;
          }
       }
@@ -107,7 +110,9 @@ class Player extends TribeMember {
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const backpackInventory = inventoryComponent.getInventory("backpack");
 
+      // @Speed: Garbage collection
       if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe)) {
+         console.log("can craft");
          // Consume ingredients
          for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
             // Prioritise consuming ingredients from the backpack inventory first
@@ -155,7 +160,7 @@ class Player extends TribeMember {
       const heldItemInventory = playerInventoryComponent.getInventory("heldItemSlot");
       // Don't release an item if there is no held item
       if (!heldItemInventory.itemSlots.hasOwnProperty(1)) return;
-
+      
       if (!Board.entities.hasOwnProperty(entityID)) {
          return;
       }
@@ -166,7 +171,7 @@ class Player extends TribeMember {
       }
 
       const heldItem = heldItemInventory.itemSlots[1];
-
+      
       // Add the item to the inventory
       const amountAdded = inventoryComponent.addItemToSlot(inventoryName, itemSlot, heldItem.type, amount);
 

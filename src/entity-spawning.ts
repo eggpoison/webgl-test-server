@@ -5,6 +5,7 @@ import Board from "./Board";
 import Yeti from "./entities/mobs/Yeti";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
+import SRandom from "./SRandom";
 
 export type EntitySpawnInfo = {
    /** The type of entity to spawn */
@@ -109,16 +110,16 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.004,
       maxDensity: 0.008
    },
-   {
-      entityType: "fish",
-      spawnableTiles: [TileType.water],
-      spawnRate: 0.015,
-      maxDensity: 0.03,
-      packSpawningInfo: {
-         size: [3, 4],
-         spawnRange: 200
-      }
-   }
+   // {
+   //    entityType: "fish",
+   //    spawnableTiles: [TileType.water],
+   //    spawnRate: 0.015,
+   //    maxDensity: 0.03,
+   //    packSpawningInfo: {
+   //       size: [3, 4],
+   //       spawnRange: 200
+   //    }
+   // }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */
@@ -187,8 +188,19 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
 
    let totalSpawnAttempts = 0;
 
-   const spawnCount = typeof spawnInfo.packSpawningInfo.size === "number" ? spawnInfo.packSpawningInfo.size : randInt(...spawnInfo.packSpawningInfo.size);
+   let spawnCount: number;
+   if (typeof spawnInfo.packSpawningInfo.size === "number") {
+      spawnCount = spawnInfo.packSpawningInfo.size;
+   } else {
+      if (OPTIONS.inBenchmarkMode) {
+         spawnCount = SRandom.randInt(spawnInfo.packSpawningInfo.size[0], spawnInfo.packSpawningInfo.size[1]);
+      } else {
+         spawnCount = randInt(spawnInfo.packSpawningInfo.size[0], spawnInfo.packSpawningInfo.size[1]);
+      }
+   }
    for (let i = 0; i < spawnCount - 1;) {
+      // @Speed: Garbage collection, and doing a whole bunch of unnecessary continues here
+      
       // Generate a spawn position near the spawn origin
       const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
 
@@ -247,6 +259,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
       // Calculate a random position in that tile to run the spawn at
       const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
+      // @Speed: Garbage collection
       const spawnPosition = new Point(x, y);
 
       spawnEntities(spawnInfo, spawnPosition);

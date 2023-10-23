@@ -95,7 +95,7 @@ class Fish extends Mob {
 
       if (this.tile.type !== TileType.water) {
          this.secondsOutOfWater += 1 / SETTINGS.TPS;
-         if (this.secondsOutOfWater >= 5 && customTickIntervalHasPassed(this.secondsOutOfWater * SETTINGS.TPS, 1)) {
+         if (this.secondsOutOfWater >= 5 && customTickIntervalHasPassed(this.secondsOutOfWater * SETTINGS.TPS, 1.5)) {
             this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.lack_of_oxygen, 0);
          }
       } else {

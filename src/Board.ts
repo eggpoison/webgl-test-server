@@ -2,7 +2,7 @@ import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SE
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import generateTerrain from "./terrain-generation/terrain-generation";
+import generateTerrain, { TerrainGenerationInfo } from "./terrain-generation/terrain-generation";
 import Tile from "./Tile";
 import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
@@ -10,6 +10,8 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import { getTilesOfType, removeEntityFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
+import OPTIONS from "./options";
+import generateBenchmarkTerrain from "./terrain-generation/benchmark-terrain-generation";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -21,11 +23,6 @@ const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [0, 1],
    [1, 1],
 ];
-
-interface KilledEntityInfo {
-   readonly id: number;
-   readonly boundingChunks: ReadonlySet<Chunk>;
-}
 
 export function customTickIntervalHasPassed(ticks: number, intervalSeconds: number): boolean {
    const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
@@ -69,13 +66,15 @@ abstract class Board {
 
    private static tribes = new Array<Tribe>();
 
-   /** The IDs of all entities which have been killed since the start of the current tick */
-   public static killedEntities = new Array<KilledEntityInfo>();
-
    public static setup(): void {
       this.initialiseChunks();
 
-      const generationInfo = generateTerrain();
+      let generationInfo: TerrainGenerationInfo;
+      if (OPTIONS.inBenchmarkMode) {
+         generationInfo = generateBenchmarkTerrain();
+      } else {
+         generationInfo = generateTerrain();
+      }
       this.tiles = generationInfo.tiles;
       this.riverFlowDirections = generationInfo.riverFlowDirections;
       this.waterRocks = generationInfo.waterRocks;
@@ -249,57 +248,20 @@ abstract class Board {
       for (let i = 0; i < length; i++) {
          const gameObject = this.gameObjects[i];
 
-         const positionXBeforeUpdate = gameObject.position.x;
-         const positionYBeforeUpdate = gameObject.position.y;
-
          gameObject.tick();
-      
-         if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
-            gameObject.positionIsDirty = true;
-            gameObject.hitboxesAreDirty = true;
-
-            // Check for dirty tile
-            if (Math.floor(positionXBeforeUpdate / SETTINGS.TILE_SIZE) !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
-                Math.floor(positionYBeforeUpdate / SETTINGS.TILE_SIZE) !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
-               gameObject.tileIsDirty = true;
-            }
-         }
 
          // Clean the game object's bounding area, hitbox bounds and chunks
          if (gameObject.hitboxesAreDirty) {
-            const previousMinTileX = Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE);
-            const previousMaxTileX = Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE);
-            const previousMinTileY = Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE);
-            const previousMaxTileY = Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE);
-            
             gameObject.cleanHitboxes();
-            
-            // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
-            if (previousMinTileX !== Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE) ||
-            previousMaxTileX !== Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE) ||
-            previousMinTileY !== Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE) ||
-            previousMaxTileY !== Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE)) {
-               const minTileX = clampToBoardDimensions(Math.floor(gameObject.boundingArea[0] / SETTINGS.TILE_SIZE));
-               const maxTileX = clampToBoardDimensions(Math.floor(gameObject.boundingArea[1] / SETTINGS.TILE_SIZE));
-               const minTileY = clampToBoardDimensions(Math.floor(gameObject.boundingArea[2] / SETTINGS.TILE_SIZE));
-               const maxTileY = clampToBoardDimensions(Math.floor(gameObject.boundingArea[3] / SETTINGS.TILE_SIZE));
-               
-               gameObject.hasPotentialWallTileCollisions = false;
-               for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-                  for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-                     const tile = this.getTile(tileX, tileY);
-                     if (tile.isWall) {
-                        gameObject.hasPotentialWallTileCollisions = true;
-                     }
-                  }
-               }
-            }
          }
       }
    }
 
    public static resolveGameObjectCollisions(): void {
       // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
+      // Ideal implementation:
+      // Ensure that any two game objects only get checked together ONCE
+      // As few nested loops as possible
       
       const numChunks = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
       for (let i = 0; i < numChunks; i++) {
@@ -335,30 +297,28 @@ abstract class Board {
          }
 
          if (gameObject.positionIsDirty) {
-            let positionXBeforeUpdate = gameObject.position.x;
-            let positionYBeforeUpdate = gameObject.position.y;
+            gameObject.positionIsDirty = false;
    
             if (gameObject.hasPotentialWallTileCollisions) {
                gameObject.resolveWallTileCollisions();
             }
          
             // If the object moved due to resolving wall tile collisions, recalculate
-            if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
+            if (gameObject.positionIsDirty) {
                gameObject.updateHitboxesAndBoundingArea();
             }
-
-            positionXBeforeUpdate = gameObject.position.x;
-            positionYBeforeUpdate = gameObject.position.y;
    
             gameObject.resolveBorderCollisions();
          
             // If the object moved due to resolving border collisions, recalculate
-            if (gameObject.position.x !== positionXBeforeUpdate || gameObject.position.y !== positionYBeforeUpdate) {
+            if (gameObject.positionIsDirty) {
                gameObject.updateHitboxesAndBoundingArea();
             }
 
-            // Tile is only dirt if position is dirty so we can do this check inside
-            if (gameObject.tileIsDirty) {
+            // If the game object has moved to a new tile, update its tile
+            // Tile is only dirty if position is dirty so we can do this check inside
+            if (gameObject.tile.x !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
+                gameObject.tile.y !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
                gameObject.updateTile();
                gameObject.isInRiver = gameObject.checkIsInRiver();
             }

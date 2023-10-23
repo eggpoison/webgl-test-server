@@ -390,30 +390,32 @@ class Tribesman extends TribeMember {
 
       if (this.targetPatrolPosition === null && Math.random() < 0.3 / SETTINGS.TPS) {
          const tileTargets = getPositionRadialTiles(this.position, Tribesman.VISION_RANGE);
-
-         // Filter tiles in tribe area
-         const tilesInTribeArea = new Array<Tile>();
-         for (const tile of tileTargets) {
-            if (this.tribe.tileIsInArea(tile.x, tile.y)) {
-               tilesInTribeArea.push(tile);
+         if (tileTargets.length > 0) {
+            // Filter tiles in tribe area
+            const tilesInTribeArea = new Array<Tile>();
+            for (const tile of tileTargets) {
+               if (this.tribe.tileIsInArea(tile.x, tile.y)) {
+                  tilesInTribeArea.push(tile);
+               }
             }
+   
+            let targetTile: Tile;
+            if (tilesInTribeArea.length > 0) {
+               // Move to random tribe tile
+               targetTile = randItem(tilesInTribeArea);
+            } else {
+               // Move to any random tile
+               targetTile = randItem(tileTargets);
+            }
+   
+            this.targetPatrolPosition = new Point((targetTile.x + Math.random()) * SETTINGS.TILE_SIZE, (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE);
+            this.rotation = this.position.calculateAngleBetween(this.targetPatrolPosition);
+            this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
+            this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+            this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
+            this.lastAIType = TribesmanAIType.patrolling;
+            return;
          }
-
-         let targetTile: Tile;
-         if (tilesInTribeArea.length > 0) {
-            // Move to random tribe tile
-            targetTile = randItem(tilesInTribeArea);
-         } else {
-            // Move to any random tile
-            targetTile = randItem(tileTargets);
-         }
-
-         this.targetPatrolPosition = new Point((targetTile.x + Math.random()) * SETTINGS.TILE_SIZE, (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE);
-         this.rotation = this.position.calculateAngleBetween(this.targetPatrolPosition);
-         this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
-         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
-         this.lastAIType = TribesmanAIType.patrolling;
       } else if (this.targetPatrolPosition !== null) {
          if (this.hasReachedPatrolPosition()) {
             this.terminalVelocity = 0;
@@ -430,12 +432,14 @@ class Tribesman extends TribeMember {
          this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
          this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
          this.lastAIType = TribesmanAIType.patrolling;
-      } else {
-         this.terminalVelocity = 0;
-         this.acceleration.x = 0;
-         this.acceleration.y = 0;
-         this.lastAIType = TribesmanAIType.idle;
+         return;
       }
+
+      // If all else fails, just stop movin'
+      this.terminalVelocity = 0;
+      this.acceleration.x = 0;
+      this.acceleration.y = 0;
+      this.lastAIType = TribesmanAIType.idle;
    }
 
    private hasReachedPatrolPosition(): boolean {

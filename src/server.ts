@@ -166,33 +166,6 @@ const bundleProjectileDataArray = (visibleChunkBounds: VisibleChunkBounds): Read
    return projectileDataArray;
 }
 
-const calculateKilledEntityIDs = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<number> => {
-   const visibleChunks = new Set<Chunk>();
-   for (let chunkX = visibleChunkBounds[0]; chunkX <= visibleChunkBounds[1]; chunkX++) {
-      for (let chunkY = visibleChunkBounds[2]; chunkY <= visibleChunkBounds[3]; chunkY++) {
-         const chunk = Board.getChunk(chunkX, chunkY);
-         visibleChunks.add(chunk);
-      }
-   }
-
-   // Calculate killed entity IDs for entities visible to the player
-   const killedEntityIDs = new Array<number>();
-   for (const killedEntityInfo of Board.killedEntities) {
-      let isInVisibleChunks = false;
-      for (const chunk of killedEntityInfo.boundingChunks) {
-         if (visibleChunks.has(chunk)) {
-            isInVisibleChunks = true;
-            break;
-         }
-      }
-      if (isInVisibleChunks) {
-         killedEntityIDs.push(killedEntityInfo.id);
-      }
-   }
-
-   return killedEntityIDs;
-}
-
 type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 interface PlayerData {
@@ -259,12 +232,11 @@ class GameServer {
       // Done before wall collisions so that game objects don't clip into walls for a tick
       Board.resolveGameObjectCollisions();
       Board.resolveOtherCollisions();
-      
-      Board.pushJoinBuffer();
 
       runSpawnAttempt();
-
-      Board.spreadGrass();
+      runTribeSpawnAttempt();
+      
+      Board.pushJoinBuffer();
 
       // Push tribes from buffer
       while (TribeBuffer.hasTribes()) {
@@ -274,19 +246,20 @@ class GameServer {
          tribeJoinInfo.startingTribeMember.setTribe(tribe);
       }
 
-      runTribeSpawnAttempt();
+      Board.spreadGrass();
 
       Board.removeFlaggedGameObjects();
 
       this.sendGameDataPackets();
 
-      // Reset the killed entity IDs
-      Board.killedEntities = [];
-
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
       Board.ticks++;
       Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+
+      if (OPTIONS.inBenchmarkMode) {
+         console.log("[BENCHMARK] Game objects: " + Board.gameObjects.length + " (" + Object.keys(Board.entities).length + " | " + Object.keys(Board.droppedItems).length + " | " + Object.keys(Board.projectiles).length + ")");
+      }
    }
 
    public getPlayerFromUsername(username: string): Player | null {
@@ -455,7 +428,6 @@ class GameServer {
                serverTime: Board.time,
                playerHealth: 20,
                tribeData: null,
-               killedEntityIDs: [],
                hasFrostShield: false
             };
 
@@ -591,8 +563,6 @@ class GameServer {
 
          const visibleEntities = getPlayerVisibleEntities(extendedVisibleChunkBounds);
 
-         const killedEntityIDs = calculateKilledEntityIDs(extendedVisibleChunkBounds);
-
          const playerArmour = player.forceGetComponent("inventory").getItem("armourSlot", 1);
 
          // Initialise the game data packet
@@ -607,7 +577,6 @@ class GameServer {
             playerHealth: player.forceGetComponent("health").health,
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
-            killedEntityIDs: killedEntityIDs,
             hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour
          };
 

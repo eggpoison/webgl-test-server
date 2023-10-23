@@ -43,10 +43,10 @@ class FrozenYeti extends Mob {
    private static readonly SNOWBALL_THROW_SPEED = [590, 750] as const;
 
    private static readonly GLOBAL_ATTACK_COOLDOWN = 1.25;
-   private static readonly BITE_COOLDOWN = 3;
+   private static readonly BITE_COOLDOWN = 30;
    private static readonly SNOWBALL_THROW_COOLDOWN = 10;
-   private static readonly ROAR_COOLDOWN = 5;
-   private static readonly STOMP_COOLDOWN = 10;
+   private static readonly ROAR_COOLDOWN = 100;
+   private static readonly STOMP_COOLDOWN = 100;
 
    private static readonly STOMP_START_OFFSET = 40;
    private static readonly ROCK_SPIKE_HITBOX_SIZES = [12 * 2, 16 * 2, 20 * 2];
@@ -519,7 +519,7 @@ class FrozenYeti extends Mob {
       for (let i = 0; i < targets.length; i++) {
          const entity = targets[i];
          // Don't attack entities which aren't in the tundra or the entity is native to the tundra
-         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "ice_spikes") {
+         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "ice_spikes" || entity.type === "snowball") {
             targets.splice(i, 1);
             i--;
          }

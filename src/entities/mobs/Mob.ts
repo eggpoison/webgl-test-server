@@ -172,14 +172,17 @@ abstract class Mob extends Entity {
    
    /** Finds all entities within the range of the mob's vision */
    private updateVisibleGameObjects(): void {
+      // @Speed: Garbage collection, and likely uses a whole ton of malloc under the hood
       this.visibleGameObjects = [this];
       this.visibleEntities = [this];
       this.visibleDroppedItems = [];
+
 
       const numPotentialGameObjects = this.potentialVisibleGameObjects.length;
       for (let i = 0; i < numPotentialGameObjects; i++) {
          const gameObject = this.potentialVisibleGameObjects[i];
          // Don't add existing game objects
+         // @Cleanup: This wouldn't be necessary if 
          if (this.visibleGameObjects.indexOf(gameObject) !== -1) {
             continue;
          }

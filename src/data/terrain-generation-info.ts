@@ -29,24 +29,24 @@ export interface BiomeGenerationInfo {
 }
 
 const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
-   magmaFields: {
-      spawnRequirements: null,
-      tiles: [
-         {
-            tileType: TileType.lava,
-            isWall: false,
-            noiseRequirements: {
-               scale: 7,
-               minWeight: 0.2
-            },
-            minDist: 3
-         },
-         {
-            tileType: TileType.magma,
-            isWall: false
-         }
-      ]
-   },
+   // magmaFields: {
+   //    spawnRequirements: null,
+   //    tiles: [
+   //       {
+   //          tileType: TileType.lava,
+   //          isWall: false,
+   //          noiseRequirements: {
+   //             scale: 7,
+   //             minWeight: 0.2
+   //          },
+   //          minDist: 3
+   //       },
+   //       {
+   //          tileType: TileType.magma,
+   //          isWall: false
+   //       }
+   //    ]
+   // },
    river: {
       spawnRequirements: null,
       tiles: [
@@ -62,15 +62,15 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          maxHumidity: 0.5
       },
       tiles: [
-         {
-            tileType: TileType.fimbultur,
-            isWall: false,
-            noiseRequirements: {
-               scale: 8,
-               minWeight: 0.2
-            },
-            minDist: 8
-         },
+         // {
+         //    tileType: TileType.fimbultur,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 8,
+         //       minWeight: 0.2
+         //    },
+         //    minDist: 8
+         // },
          {
             tileType: TileType.permafrost,
             isWall: false,
