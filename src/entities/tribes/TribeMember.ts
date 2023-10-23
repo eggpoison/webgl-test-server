@@ -258,14 +258,12 @@ abstract class TribeMember extends Mob {
       } else {
          this.forceGetComponent("health").removeDefence("armour");
       }
-
       for (const itemSlot of Object.keys(this.bowCooldowns) as unknown as ReadonlyArray<number>) {
          this.bowCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
          if (this.bowCooldowns[itemSlot] < 0) {
             delete this.bowCooldowns[itemSlot];
          }
       }
-
       // Update backpack
       if (inventoryComponent.getInventory("backpackSlot").itemSlots.hasOwnProperty(1)) {
          const itemInfo = ITEM_INFO_RECORD[inventoryComponent.getInventory("backpackSlot").itemSlots[1].type] as BackpackItemInfo;
@@ -273,6 +271,8 @@ abstract class TribeMember extends Mob {
       } else {
          inventoryComponent.resizeInventory("backpack", -1, -1);
       }
+
+
 
       const selectedItem = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
 
