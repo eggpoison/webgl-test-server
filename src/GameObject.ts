@@ -876,11 +876,12 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    public collide(gameObject: GameObject): void {
       // @Cleanup This shouldn't be hardcoded
       // Krumblids and cacti don't collide
+      // Make a collision mask for each entity type
       if (gameObject.i === "entity" && this.i === "entity" && ((gameObject.type === "cactus" && (this as unknown as Entity).type === "krumblid") || (gameObject.type === "krumblid" && (this as unknown as Entity).type === "cactus"))) {
          return;
       }
       
-      if (!this.isStatic && gameObject.i !== "droppedItem") {
+      if (!this.isStatic) {
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);

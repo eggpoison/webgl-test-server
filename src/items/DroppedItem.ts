@@ -31,6 +31,8 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
 
    private readonly entityPickupCooldowns = new Set<EntityPickupCooldown>();
 
+   public mass = 0.1;
+
    constructor(position: Point, item: Item) {
       super(position);
 
