@@ -24,14 +24,6 @@ const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [1, 1],
 ];
 
-export function customTickIntervalHasPassed(ticks: number, intervalSeconds: number): boolean {
-   const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
-   
-   const previousCheck = (ticks - 1) / ticksPerInterval;
-   const check = ticks / ticksPerInterval;
-   return Math.floor(previousCheck) !== Math.floor(check);
-}
-
 abstract class Board {
    public static ticks = 0;
 
@@ -261,7 +253,8 @@ abstract class Board {
       // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
       // Ideal implementation:
       // Ensure that any two game objects only get checked together ONCE
-      // As few nested loops as possible
+      // As few checks as possible (e.g. check for if they have already collided this tick)
+      // BSP?
       
       const numChunks = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
       for (let i = 0; i < numChunks; i++) {

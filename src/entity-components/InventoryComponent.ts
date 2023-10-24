@@ -325,6 +325,23 @@ class InventoryComponent extends Component {
 
       return true;
    }
+
+   public dropInventory(inventoryName: string, dropRange: number): void {
+      const inventory = this.getInventory(inventoryName);
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            const position = this.entity.position.copy();
+
+            const spawnOffsetMagnitude = dropRange * Math.random();
+            const spawnOffsetDirection = 2 * Math.PI * Math.random();
+            position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
+            position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
+            
+            const item = inventory.itemSlots[itemSlot];
+            new DroppedItem(position, item);
+         }
+      }
+   }
 }
 
 export default InventoryComponent;

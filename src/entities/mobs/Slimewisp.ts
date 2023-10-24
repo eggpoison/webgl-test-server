@@ -22,7 +22,7 @@ class Slimewisp extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)
-      }, "slimewisp", SETTINGS.TILE_SIZE * 1.5);
+      }, "slimewisp", 100);
 
       // Merge AI
       this.addAI(new ChaseAI(this, {

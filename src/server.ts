@@ -193,6 +193,19 @@ class GameServer {
    /** Sets up the various stuff */
    public setup() {
       spawnInitialEntities();
+
+      // for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
+      //    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
+      //       const tile = Board.getTile(x, y);
+      //       if (tile.biomeName === "swamp") {
+      //          if (Math.random() < 0.1) {
+      //             const p = new Point((x + Math.random()) * SETTINGS.TILE_SIZE, (y + Math.random()) * SETTINGS.TILE_SIZE);
+      //             const item = new Item(ItemType.flesh_sword, 1);
+      //             new DroppedItem(p, item);
+      //          }
+      //       }
+      //    }
+      // }
    }
 
    public setTrackedGameObject(id: number | null): void {

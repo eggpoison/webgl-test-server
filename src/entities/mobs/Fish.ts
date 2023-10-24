@@ -1,4 +1,4 @@
-import { FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType } from "webgl-test-shared";
+import { FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, customTickIntervalHasPassed } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -7,7 +7,7 @@ import WanderAI from "../../mob-ai/WanderAI";
 import HerdAI from "../../mob-ai/HerdAI";
 import FlailAI from "../../mob-ai/FlailAI";
 import { MobAIType } from "../../mob-ai-types";
-import Board, { customTickIntervalHasPassed } from "../../Board";
+import Board from "../../Board";
 import EscapeAI from "../../mob-ai/EscapeAI";
 import MinionAI from "../../mob-ai/MinionAI";
 

@@ -1,9 +1,8 @@
 import { MobAIType } from "../mob-ai-types";
 import AI from "./AI";
-import { ItemType, PlayerCauseOfDeath, SETTINGS, TileType } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, SETTINGS, TileType, customTickIntervalHasPassed } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import { customTickIntervalHasPassed } from "../Board";
 import Fish from "../entities/mobs/Fish";
 
 interface MinionAIParams {

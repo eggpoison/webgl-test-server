@@ -180,9 +180,9 @@ abstract class TribeMember extends Mob {
 
       // Drop inventory on death
       this.createEvent("death", () => {
-         this.dropInventory("hotbar");
-         this.dropInventory("armourSlot");
-         this.dropInventory("backpackSlot");
+         this.forceGetComponent("inventory").dropInventory("hotbar", TribeMember.DEATH_ITEM_DROP_RANGE);
+         this.forceGetComponent("inventory").dropInventory("armourSlot", TribeMember.DEATH_ITEM_DROP_RANGE);
+         this.forceGetComponent("inventory").dropInventory("backpackSlot", TribeMember.DEATH_ITEM_DROP_RANGE);
       });
 
       // Lose immunity to damage if the tribe member is hit
@@ -196,23 +196,6 @@ abstract class TribeMember extends Mob {
             this.tribe.requestReinforcements(attackingEntity);
          }
       });
-   }
-
-   private dropInventory(inventoryName: string): void {
-      const inventory = this.forceGetComponent("inventory").getInventory(inventoryName);
-      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
-         if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
-            const position = this.position.copy();
-
-            const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
-            const spawnOffsetDirection = 2 * Math.PI * Math.random();
-            position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
-            position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
-            
-            const item = inventory.itemSlots[itemSlot];
-            new DroppedItem(position, item);
-         }
-      }
    }
 
    public setTribe(tribe: Tribe | null): void {
@@ -258,12 +241,14 @@ abstract class TribeMember extends Mob {
       } else {
          this.forceGetComponent("health").removeDefence("armour");
       }
+
       for (const itemSlot of Object.keys(this.bowCooldowns) as unknown as ReadonlyArray<number>) {
          this.bowCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
          if (this.bowCooldowns[itemSlot] < 0) {
             delete this.bowCooldowns[itemSlot];
          }
       }
+
       // Update backpack
       if (inventoryComponent.getInventory("backpackSlot").itemSlots.hasOwnProperty(1)) {
          const itemInfo = ITEM_INFO_RECORD[inventoryComponent.getInventory("backpackSlot").itemSlots[1].type] as BackpackItemInfo;
@@ -271,8 +256,6 @@ abstract class TribeMember extends Mob {
       } else {
          inventoryComponent.resizeInventory("backpack", -1, -1);
       }
-
-
 
       const selectedItem = inventoryComponent.getItem("hotbar", this.selectedItemSlot);
 

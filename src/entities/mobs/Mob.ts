@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, circlesDoIntersect, EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, commandComponentMatchesParameter, EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
@@ -100,74 +100,89 @@ abstract class Mob extends Entity {
    }
 
    private updateVisibleChunks(): void {
+      // @Speed: We can't only run this check when the mob changes visible chunk bounds because the visible chunks isn't a circle.
+      // But perhaps there is some other optimisation we can do using visible chunk bounds, so I am leaving some of the earlier
+      // stuff here in case it is useful in the future
+      
       const minChunkX = Math.max(Math.min(Math.floor((this.position.x - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkX = Math.max(Math.min(Math.floor((this.position.x + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const minChunkY = Math.max(Math.min(Math.floor((this.position.y - this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
       const maxChunkY = Math.max(Math.min(Math.floor((this.position.y + this.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
 
-      if (minChunkX !== this.lastMinVisibleChunkX || maxChunkX !== this.lastMaxVisibleChunkX || minChunkY !== this.lastMinVisibleChunkY || maxChunkY !== this.lastMaxVisibleChunkY) {
-         const newVisibleChunks = new Array<Chunk>();
-         for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-               // Check if the chunk is actually in the vision range
-               // Find the closest vertex of the chunk to the mob
-               const x = this.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
-               const y = this.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
-   
-               if (Math.pow(x - this.position.x, 2) + Math.pow(y - this.position.y, 2) <= this.visionRangeSquared) {
-                  newVisibleChunks.push(Board.getChunk(chunkX, chunkY));
-               }
+      const thisChunkX = Math.max(Math.min(Math.floor(this.position.x / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+      const thisChunkY = Math.max(Math.min(Math.floor(this.position.y / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+      
+      const newVisibleChunks = new Array<Chunk>();
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            // Check if the chunk is actually in the vision range
+            // Find the closest point of the chunk border to the mob
+            let closestChunkPointX: number;
+            let closestChunkPointY: number;
+            if (chunkX === thisChunkX) {
+               closestChunkPointX = this.position.x;
+            } else {
+               closestChunkPointX = this.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
+            }
+            if (chunkY === thisChunkY) {
+               closestChunkPointY = this.position.y;
+            } else {
+               closestChunkPointY = this.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
+            }
+
+            if (Math.pow(closestChunkPointX - this.position.x, 2) + Math.pow(closestChunkPointY - this.position.y, 2) <= this.visionRangeSquared) {
+               newVisibleChunks.push(Board.getChunk(chunkX, chunkY));
             }
          }
-
-         // Find all chunks which aren't present in the new chunks and remove them
-         for (const chunk of this.visibleChunks) {
-            if (newVisibleChunks.indexOf(chunk) === -1) {
-               // Remove previously visible chunk
-               chunk.viewingMobs.splice(chunk.viewingMobs.indexOf(this), 1);
-               this.visibleChunks.splice(this.visibleChunks.indexOf(chunk), 1);
-
-               // Remove game objects in the chunk from the potentially visible list
-               const numGameObjects = chunk.gameObjects.length;
-               for (let i = 0; i < numGameObjects; i++) {
-                  const gameObject = chunk.gameObjects[i];
-                  const idx = this.potentialVisibleGameObjects.indexOf(gameObject);
-                  this.potentialVisibleGameObjectAppearances[idx]--;
-                  if (this.potentialVisibleGameObjectAppearances[idx] === 0) {
-                     this.potentialVisibleGameObjects.splice(idx, 1);
-                     this.potentialVisibleGameObjectAppearances.splice(idx, 1);
-                  }
-               }
-            }
-         }
-   
-         // Add all new chunks
-         for (const chunk of newVisibleChunks) {
-            if (this.visibleChunks.indexOf(chunk) === -1) {
-               // Add new visible chunk
-               chunk.viewingMobs.push(this);
-               this.visibleChunks.push(chunk);
-
-               // Add existing game objects to the potentially visible list
-               const numGameObjects = chunk.gameObjects.length;
-               for (let i = 0; i < numGameObjects; i++) {
-                  const gameObject = chunk.gameObjects[i];
-                  const idx = this.potentialVisibleGameObjects.indexOf(gameObject);
-                  if (idx === -1) {
-                     this.potentialVisibleGameObjects.push(gameObject);
-                     this.potentialVisibleGameObjectAppearances.push(1);
-                  } else {
-                     this.potentialVisibleGameObjectAppearances[idx]++;
-                  }
-               }
-            }
-         }
-
-         this.lastMinVisibleChunkX = minChunkX;
-         this.lastMaxVisibleChunkX = maxChunkX;
-         this.lastMinVisibleChunkY = minChunkY;
-         this.lastMaxVisibleChunkY = maxChunkY;
       }
+
+      // Find all chunks which aren't present in the new chunks and remove them
+      for (const chunk of this.visibleChunks) {
+         if (newVisibleChunks.indexOf(chunk) === -1) {
+            // Remove previously visible chunk
+            chunk.viewingMobs.splice(chunk.viewingMobs.indexOf(this), 1);
+            this.visibleChunks.splice(this.visibleChunks.indexOf(chunk), 1);
+
+            // Remove game objects in the chunk from the potentially visible list
+            const numGameObjects = chunk.gameObjects.length;
+            for (let i = 0; i < numGameObjects; i++) {
+               const gameObject = chunk.gameObjects[i];
+               const idx = this.potentialVisibleGameObjects.indexOf(gameObject);
+               this.potentialVisibleGameObjectAppearances[idx]--;
+               if (this.potentialVisibleGameObjectAppearances[idx] === 0) {
+                  this.potentialVisibleGameObjects.splice(idx, 1);
+                  this.potentialVisibleGameObjectAppearances.splice(idx, 1);
+               }
+            }
+         }
+      }
+
+      // Add all new chunks
+      for (const chunk of newVisibleChunks) {
+         if (this.visibleChunks.indexOf(chunk) === -1) {
+            // Add new visible chunk
+            chunk.viewingMobs.push(this);
+            this.visibleChunks.push(chunk);
+
+            // Add existing game objects to the potentially visible list
+            const numGameObjects = chunk.gameObjects.length;
+            for (let i = 0; i < numGameObjects; i++) {
+               const gameObject = chunk.gameObjects[i];
+               const idx = this.potentialVisibleGameObjects.indexOf(gameObject);
+               if (idx === -1) {
+                  this.potentialVisibleGameObjects.push(gameObject);
+                  this.potentialVisibleGameObjectAppearances.push(1);
+               } else {
+                  this.potentialVisibleGameObjectAppearances[idx]++;
+               }
+            }
+         }
+      }
+
+      this.lastMinVisibleChunkX = minChunkX;
+      this.lastMaxVisibleChunkX = maxChunkX;
+      this.lastMinVisibleChunkY = minChunkY;
+      this.lastMaxVisibleChunkY = maxChunkY;
    }
    
    /** Finds all entities within the range of the mob's vision */
@@ -176,7 +191,6 @@ abstract class Mob extends Entity {
       this.visibleGameObjects = [this];
       this.visibleEntities = [this];
       this.visibleDroppedItems = [];
-
 
       const numPotentialGameObjects = this.potentialVisibleGameObjects.length;
       for (let i = 0; i < numPotentialGameObjects; i++) {
@@ -222,6 +236,9 @@ abstract class Mob extends Entity {
             }
          }
       }
+      // if (this.type === "slimewisp") {
+      //    console.log(this.visibleGameObjects.length);
+      // }
 
       this.visibleGameObjects.splice(this.visibleGameObjects.indexOf(this), 1);
       this.visibleEntities.splice(this.visibleEntities.indexOf(this), 1);
