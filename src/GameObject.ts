@@ -131,11 +131,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = true;
 
-   /** Whether the game object's tile has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
-   public tileIsDirty = false;
-
    /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
-   public hitboxesAreDirty = true;
+   public hitboxesAreDirty = false;
    
    /** Indicates whether the game object could potentially collide with a wall tile */
    public hasPotentialWallTileCollisions = false;
@@ -182,17 +179,11 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          this.boundingArea[3] = hitbox.bounds[3];
       }
 
-      this.hitboxesAreDirty = true;
-
-      // 
       // Flag if the hitbox could be in a wall
-      // 
-
       const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
       const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
       const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
       const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
-      
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
             const tile = Board.getTile(tileX, tileY);
@@ -230,6 +221,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
             this.boundingArea[3] = hitbox.bounds[3];
          }
       }
+
+      this.positionIsDirty = false;
    }
 
    public cleanHitboxes(): void {
@@ -282,6 +275,23 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
       if (hitboxChunkBoundsHaveChanged) {
          this.updateContainingChunks();
+
+         // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
+
+         const minTileX = Math.max(Math.min(Math.floor(this.boundingArea[0] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         const maxTileX = Math.max(Math.min(Math.floor(this.boundingArea[1] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         const minTileY = Math.max(Math.min(Math.floor(this.boundingArea[2] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         const maxTileY = Math.max(Math.min(Math.floor(this.boundingArea[3] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         
+         this.hasPotentialWallTileCollisions = false;
+         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+            for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+               const tile = Board.getTile(tileX, tileY);
+               if (tile.isWall) {
+                  this.hasPotentialWallTileCollisions = true;
+               }
+            }
+         }
       }
 
       this.hitboxesAreDirty = false;
@@ -411,6 +421,11 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       // Apply velocity
       this.position.x += this.velocity.x / SETTINGS.TPS;
       this.position.y += this.velocity.y / SETTINGS.TPS;
+
+      if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+         this.positionIsDirty = true;
+         this.hitboxesAreDirty = true;
+      }
    }
 
    public updateContainingChunks(): void {
@@ -586,10 +601,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    private resolveXAxisRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
-      // 
-      // @Speed: don't recalculate, instead pass in
-      // 
-
       const tileMinX = tile.x * SETTINGS.TILE_SIZE;
       const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
       const tileMinY = tile.y * SETTINGS.TILE_SIZE;
@@ -620,10 +631,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    private resolveYAxisRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
-      // 
-      // @Speed: don't recalculate, instead pass in
-      // 
-
       const tileMinX = tile.x * SETTINGS.TILE_SIZE;
       const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
       const tileMinY = tile.y * SETTINGS.TILE_SIZE;
@@ -788,6 +795,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
                            break;
                         }
                      }
+                     this.positionIsDirty = true;
                   }
                }
             }
@@ -811,6 +819,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
                            break;
                         }
                      }
+                     this.positionIsDirty = true;
                   }
                }
             }
@@ -823,20 +832,28 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       if (this.boundingArea[0] < 0) {
          this.position.x -= this.boundingArea[0];
          this.velocity.x = 0;
+         this.positionIsDirty = true;
+         this.hitboxesAreDirty = true;
          // Right border
       } else if (this.boundingArea[1] > SETTINGS.BOARD_UNITS) {
          this.position.x -= this.boundingArea[1] - SETTINGS.BOARD_UNITS;
          this.velocity.x = 0;
+         this.positionIsDirty = true;
+         this.hitboxesAreDirty = true;
       }
 
       // Bottom border
       if (this.boundingArea[2] < 0) {
          this.position.y -= this.boundingArea[2];
          this.velocity.y = 0;
+         this.positionIsDirty = true;
+         this.hitboxesAreDirty = true;
          // Top border
       } else if (this.boundingArea[3] > SETTINGS.BOARD_UNITS) {
          this.position.y -= this.boundingArea[3] - SETTINGS.BOARD_UNITS;
          this.velocity.y = 0;
+         this.positionIsDirty = true;
+         this.hitboxesAreDirty = true;
       }
 
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_UNITS || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_UNITS) {
@@ -963,9 +980,6 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public remove(): void {
-      if (this.isRemoved) {
-         return;
-      }
       this.isRemoved = true;
    }
 
@@ -976,7 +990,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          circles: [],
          tileHighlights: [],
          debugEntries: []
-      }
+      };
    }
 }
 

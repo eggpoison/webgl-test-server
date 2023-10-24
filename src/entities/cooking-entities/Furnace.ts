@@ -15,7 +15,6 @@ class Furnace extends HeatingEntity {
          health: new HealthComponent(Furnace.MAX_HEALTH, false)
       }, "furnace");
 
-
       const hitbox = new RectangularHitbox();
       hitbox.setHitboxInfo(Furnace.SIZE, Furnace.SIZE);
       this.addHitbox(hitbox);

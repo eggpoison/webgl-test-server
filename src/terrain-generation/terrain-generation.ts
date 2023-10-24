@@ -149,7 +149,7 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 }
 
 /** Generate the tile array's tile types based on their biomes */
-const generateTileInfo = (tileInfoArray: Array<Array<Partial<TileInfo>>>): void => {
+export function generateTileInfo(tileInfoArray: Array<Array<Partial<TileInfo>>>): void {
    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const tileInfo = tileInfoArray[x][y];
@@ -289,7 +289,6 @@ function generateTerrain(): TerrainGenerationInfo {
    generateBiomeInfo(tileInfoArray);
 
    // Generate rivers
-   // @Temporary
    let riverTiles: ReadonlyArray<WaterTileGenerationInfo>;
    if (OPTIONS.generateRivers) {
       riverTiles = generateRiverTiles();

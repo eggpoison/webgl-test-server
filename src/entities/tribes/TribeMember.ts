@@ -180,9 +180,9 @@ abstract class TribeMember extends Mob {
 
       // Drop inventory on death
       this.createEvent("death", () => {
-         this.dropInventory("hotbar");
-         this.dropInventory("armourSlot");
-         this.dropInventory("backpackSlot");
+         this.forceGetComponent("inventory").dropInventory("hotbar", TribeMember.DEATH_ITEM_DROP_RANGE);
+         this.forceGetComponent("inventory").dropInventory("armourSlot", TribeMember.DEATH_ITEM_DROP_RANGE);
+         this.forceGetComponent("inventory").dropInventory("backpackSlot", TribeMember.DEATH_ITEM_DROP_RANGE);
       });
 
       // Lose immunity to damage if the tribe member is hit
@@ -196,23 +196,6 @@ abstract class TribeMember extends Mob {
             this.tribe.requestReinforcements(attackingEntity);
          }
       });
-   }
-
-   private dropInventory(inventoryName: string): void {
-      const inventory = this.forceGetComponent("inventory").getInventory(inventoryName);
-      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
-         if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
-            const position = this.position.copy();
-
-            const spawnOffsetMagnitude = TribeMember.DEATH_ITEM_DROP_RANGE * Math.random();
-            const spawnOffsetDirection = 2 * Math.PI * Math.random();
-            position.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
-            position.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
-            
-            const item = inventory.itemSlots[itemSlot];
-            new DroppedItem(position, item);
-         }
-      }
    }
 
    public setTribe(tribe: Tribe | null): void {

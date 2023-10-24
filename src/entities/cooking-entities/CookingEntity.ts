@@ -64,6 +64,8 @@ const getHeatingRecipeByIngredientType = (heatingEntityType: EntityType, ingredi
 }
 
 abstract class HeatingEntity extends Entity {
+   private static readonly DEATH_ITEM_DROP_RANGE = 50;
+   
    private heatingTimer = 0;
    private currentRecipe: HeatingRecipe | null = null;
 
@@ -77,6 +79,13 @@ abstract class HeatingEntity extends Entity {
       components.inventory.createNewInventory("fuelInventory", 1, 1, false);
       components.inventory.createNewInventory("ingredientInventory", 1, 1, false);
       components.inventory.createNewInventory("outputInventory", 1, 1, false);
+
+      // Drop inventory on death
+      this.createEvent("death", () => {
+         this.forceGetComponent("inventory").dropInventory("fuelInventory", HeatingEntity.DEATH_ITEM_DROP_RANGE);
+         this.forceGetComponent("inventory").dropInventory("ingredientInventory", HeatingEntity.DEATH_ITEM_DROP_RANGE);
+         this.forceGetComponent("inventory").dropInventory("outputInventory", HeatingEntity.DEATH_ITEM_DROP_RANGE);
+      });
    }
 
    public tick(): void {

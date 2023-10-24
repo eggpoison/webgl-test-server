@@ -79,14 +79,11 @@ class Cactus extends Entity {
       const itemCreationComponent = new ItemCreationComponent(48);
 
       super(position, {
-         // @Temporary
-         // health: new HealthComponent(Cactus.MAX_HEALTH, false),
-         health: new HealthComponent(500, false),
+         health: new HealthComponent(Cactus.MAX_HEALTH, false),
          item_creation: itemCreationComponent
       }, "cactus");
 
-      // this.rotation = 2 * Math.PI * Math.random();
-      this.rotation = Math.random() < 0.5 ? 0 : Math.PI;
+      this.rotation = 2 * Math.PI * Math.random();
 
       const hitbox = new CircularHitbox();
       hitbox.radius = Cactus.RADIUS - Cactus.HITBOX_PADDING;

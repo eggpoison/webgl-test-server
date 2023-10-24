@@ -1,4 +1,4 @@
-import { CowSpecies, ItemType, Point, randFloat, randInt, SETTINGS, TileType } from "webgl-test-shared";
+import { CowSpecies, ItemType, MOB_ENTITY_TYPES, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
@@ -16,9 +16,7 @@ import { MobAIType } from "../../mob-ai-types";
 class Cow extends Mob {
    private static readonly MAX_HEALTH = 10;
 
-   // @Temporary
    public mass = 1.2;
-   // public mass = 0.5;
 
    public species: CowSpecies;
 
@@ -31,8 +29,6 @@ class Cow extends Mob {
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
-
-      // @Temporary
 
       this.addAI(new EscapeAI(this, {
          acceleration: 200,
@@ -97,8 +93,6 @@ class Cow extends Mob {
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
-      // @Temporary
-      // this.rotation = -Math.PI * 1/4;
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
 

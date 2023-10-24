@@ -1,9 +1,8 @@
 import { MobAIType } from "../mob-ai-types";
 import AI from "./AI";
-import { ItemType, PlayerCauseOfDeath, SETTINGS, TileType } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, SETTINGS, TileType, customTickIntervalHasPassed } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
-import { customTickIntervalHasPassed } from "../Board";
 import Fish from "../entities/mobs/Fish";
 
 interface MinionAIParams {
@@ -21,7 +20,7 @@ class MinionAI extends AI {
    private readonly acceleration: number;
    private readonly terminalVelocity: number;
 
-   private leader!: Entity;
+   private leader: Entity | undefined;
    private attackTarget: Entity | null = null;
 
    constructor(mob: Mob, aiParams: MinionAIParams) {
@@ -39,12 +38,24 @@ class MinionAI extends AI {
             }
          }
       });
+
+      this.mob.createEvent("death", () => {
+         if (typeof this.leader !== "undefined") {
+            console.log("remove");
+            this.leader.removeEvent("hurt", this.onLeaderHurt);
+         }
+      });
    }
 
    public tick(): void {
+      // Don't attack dead targets
+      if (this.attackTarget !== null && this.attackTarget.isRemoved) {
+         this.attackTarget = null;
+      }
+      
       if (this.attackTarget === null) {
          // Follow leader
-         this.move(this.mob.position.calculateAngleBetween(this.leader.position));
+         this.move(this.mob.position.calculateAngleBetween(this.leader!.position));
       } else {
          // Attack the target
          this.move(this.mob.position.calculateAngleBetween(this.attackTarget.position));

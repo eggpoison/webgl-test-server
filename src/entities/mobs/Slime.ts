@@ -115,27 +115,27 @@ class Slime extends Mob {
       this.mass = Slime.SLIME_MASSES[size];
 
       // Anger AI
-      this.addAI(new MoveAI(this, {
-         acceleration: 100 * speedMultiplier,
-         terminalVelocity: 50 * speedMultiplier,
-         getMoveTargetPosition: (): Point | null => {
-            const target = this.getAngerTarget();
-            if (target !== null) {
-               // @Speed: Garbage collection
-               return target.position.copy();
-            }
-            return null;
-         }
-      }));
+      // this.addAI(new MoveAI(this, {
+      //    acceleration: 100 * speedMultiplier,
+      //    terminalVelocity: 50 * speedMultiplier,
+      //    getMoveTargetPosition: (): Point | null => {
+      //       const target = this.getAngerTarget();
+      //       if (target !== null) {
+      //          // @Speed: Garbage collection
+      //          return target.position.copy();
+      //       }
+      //       return null;
+      //    }
+      // }));
       
       // Regular chase AI
-      this.addAI(new ChaseAI(this, {
-         acceleration: 100 * speedMultiplier,
-         terminalVelocity: 50 * speedMultiplier,
-         entityIsChased: (entity: Entity) => {
-            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type) && entity.getComponent("health") !== null;
-         }
-      }));
+      // this.addAI(new ChaseAI(this, {
+      //    acceleration: 100 * speedMultiplier,
+      //    terminalVelocity: 50 * speedMultiplier,
+      //    entityIsChased: (entity: Entity) => {
+      //       return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type) && entity.getComponent("health") !== null;
+      //    }
+      // }));
 
       // Merge AI
       this.addAI(new ChaseAI(this, {
@@ -281,6 +281,8 @@ class Slime extends Mob {
             this.forceGetComponent("health").heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
          }
       }
+
+      this.eyeRotation += Math.PI * 3 / SETTINGS.TPS * (this.id % 2 === 0 ? 1 : -1);
    }
 
    /**
@@ -297,6 +299,8 @@ class Slime extends Mob {
       if (otherSlime.isRemoved) return;
 
       this.mergeWeight += otherSlime.mergeWeight;
+
+      this.mergeTimer = Slime.MERGE_TIME
 
       if (this.size < SlimeSize.large && this.mergeWeight >= Slime.SLIME_MERGE_WEIGHTS[this.size + 1]) {
          const slime = new Slime(new Point((this.position.x + otherSlime.position.x) / 2, (this.position.y + otherSlime.position.y) / 2), this.size + 1);

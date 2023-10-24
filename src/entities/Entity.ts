@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectData, Vector, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectData, Vector, customTickIntervalHasPassed, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -6,8 +6,7 @@ import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 import _GameObject, { GameObjectEvents } from "../GameObject";
 import { cleanAngle } from "../ai-shared";
 import HungerComponent from "../entity-components/HungerComponent";
-import Board, { customTickIntervalHasPassed } from "../Board";
-import { removeEntityFromCensus } from "src/census";
+import Board from "../Board";
 import Chunk from "src/Chunk";
 
 export interface EntityComponents {

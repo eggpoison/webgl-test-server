@@ -141,18 +141,27 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
          if (Math.random() < FLESH_SWORD_WANDER_RATE / SETTINGS.TPS) {
             const tileWanderTargets = getTileWanderTargets(droppedItem);
    
-            let targetTile!: Tile;
-   
             // If any of the tiles are in a swamp, move to them
+            // Otherwise move to any random tile
+            
+            let foundSwampTile = false;
             for (const tile of tileWanderTargets) {
                if (tile.biomeName === "swamp") {
-                  targetTile = tile;
+                  foundSwampTile = true;
                   break;
                }
             }
-   
-            // Otherwise just pick a random tile to go to
-            if (typeof targetTile === "undefined") {
+
+            let targetTile: Tile;
+            if (foundSwampTile) {
+               const tiles = new Array<Tile>();
+               for (const tile of tileWanderTargets) {
+                  if (tile.biomeName === "swamp") {
+                     tiles.push(tile);
+                  }
+               }
+               targetTile = randItem(tiles);
+            } else {
                targetTile = randItem(tileWanderTargets);
             }
    
