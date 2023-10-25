@@ -2,7 +2,6 @@ import { FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ItemType } from "w
 import Mob from "../entities/mobs/Mob";
 import DroppedItem from "../items/DroppedItem";
 import AI from "./AI";
-import { GameObject } from "../GameObject";
 import { MobAIType } from "../mob-ai-types";
 
 interface ItemConsumeAIParams {
@@ -28,11 +27,9 @@ class ItemConsumeAI extends AI implements ItemConsumeAIParams {
       this.terminalVelocity = aiParams.terminalVelocity;
       this.itemTargets = typeof aiParams.itemTargets !== "undefined" ? aiParams.itemTargets : new Set();
 
-      this.mob.createEvent("during_collision", (droppedItem: GameObject): void => {
-         if (droppedItem.i === "droppedItem") {
-            if (!this.mob.isRemoved && this.itemTargets.has(droppedItem.item.type)) {
-               this.consumeItem(droppedItem);
-            }
+      this.mob.createEvent("during_dropped_item_collision", (droppedItem: DroppedItem): void => {
+         if (!this.mob.isRemoved && this.itemTargets.has(droppedItem.item.type)) {
+            this.consumeItem(droppedItem);
          }
       });
    }

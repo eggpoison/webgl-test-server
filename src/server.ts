@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, TribeType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
-import _GameObject from "./GameObject";
+import GameObject from "./GameObject";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";

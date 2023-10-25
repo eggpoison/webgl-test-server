@@ -1,19 +1,19 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, ProjectileType, SETTINGS } from "webgl-test-shared";
-import _GameObject, { GameObjectEvents } from "./GameObject";
+import GameObject, { GameObjectEvents } from "./GameObject";
 import Board from "./Board";
 import Chunk from "./Chunk";
+import Mob from "./entities/mobs/Mob";
 
 interface ProjectileEvents extends GameObjectEvents {}
 
-class Projectile extends _GameObject<"projectile", ProjectileEvents> {
-   public readonly i = "projectile" as const;
-   
+class Projectile extends GameObject<ProjectileEvents> {
    protected readonly events = {
       on_destroy: [],
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],
-      during_entity_collision: []
+      during_entity_collision: [],
+      during_dropped_item_collision: []
    };
 
    public readonly type: ProjectileType;
@@ -41,6 +41,12 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
       this.data = data;
 
       Board.addProjectileToJoinBuffer(this);
+   }
+
+   public callCollisionEvent(): void {}
+
+   public addToMobVisibleGameObjects(mob: Mob): void {
+      mob.visibleGameObjects.push(this);
    }
 
    public tick(): void {

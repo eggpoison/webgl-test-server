@@ -1,9 +1,9 @@
 import { Point, RiverSteppingStoneData, RiverSteppingStoneSize } from "webgl-test-shared";
-import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Mob from "./entities/mobs/Mob";
+import GameObject from "./GameObject";
 
 export interface RiverSteppingStone {
    readonly position: Point;

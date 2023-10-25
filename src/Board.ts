@@ -2,15 +2,14 @@ import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SE
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import generateTerrain, { TerrainGenerationInfo } from "./terrain-generation/terrain-generation";
+import generateTerrain from "./terrain-generation/terrain-generation";
 import Tile from "./Tile";
-import { GameObject } from "./GameObject";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { getTilesOfType, removeEntityFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
-import OPTIONS from "./options";
+import GameObject from "./GameObject";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],

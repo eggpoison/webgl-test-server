@@ -4,9 +4,9 @@ import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import Projectile from "./Projectile";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
+import Mob from "./entities/mobs/Mob";
 
 // @Cleanup: probably move to webgl-test-shared
 
@@ -42,20 +42,13 @@ export function findAvailableEntityID(): number {
    return idCounter++;
 }
 
-export type GameObject = Entity | DroppedItem | Projectile;
-
-interface GameObjectSubclasses {
-   entity: Entity;
-   droppedItem: DroppedItem;
-   projectile: Projectile;
-}
-
 export interface GameObjectEvents {
    on_destroy: () => void;
    enter_collision: (collidingGameObject: GameObject) => void;
    during_collision: (collidingGameObject: GameObject) => void;
    enter_entity_collision: (collidingEntity: Entity) => void;
    during_entity_collision: (collidingEntity: Entity) => void;
+   during_dropped_item_collision: (droppedItem: DroppedItem) => void;
 }
 
 enum TileCollisionAxis {
@@ -69,17 +62,9 @@ export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
 export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
 
-/*
-* @Cleanup: To reduce the use of "this as unknown as GameObject", make this not have type parameters.
-* Step 1: Limit all the uses of "i" to crucial places (e.g. GameObject and its subclasses)
-* Step 2: Remove the use of "i"
-*/
-
 /** A generic class for any object in the world which has hitbox(es) */
-abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType extends GameObjectEvents> {
+abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents> {
    private static readonly rectangularTestHitbox = new RectangularHitbox();
-   
-   public abstract readonly i: I;
    
    /** Unique identifier for each game object */
    public readonly id: number;
@@ -163,11 +148,14 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       this.isInRiver = this.checkIsInRiver();
    }
 
+   public abstract callCollisionEvent(gameObject: GameObject): void;
+   public abstract addToMobVisibleGameObjects(mob: Mob): void;
+
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
       this.hitboxes.push(hitbox);
       
       // Calculate initial position and hitbox bounds for the hitbox as it is not guaranteed that they are updated the immediate tick after
-      hitbox.updateFromGameObject(this as unknown as GameObject);
+      hitbox.updateFromGameObject(this);
       hitbox.updateHitboxBounds(this.rotation);
 
       // Update bounding area
@@ -209,7 +197,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
-         hitbox.updateFromGameObject(this as unknown as GameObject);
+         hitbox.updateFromGameObject(this);
          hitbox.updateHitboxBounds(this.rotation);
 
          // Update bounding area
@@ -244,7 +232,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
          // Find new hitbox bounds
          if (this.positionIsDirty) {
-            hitbox.updateFromGameObject(this as unknown as GameObject);
+            hitbox.updateFromGameObject(this);
          }
          hitbox.updateHitboxBounds(this.rotation);
 
@@ -470,14 +458,14 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    protected addToChunk(chunk: Chunk): void {
-      chunk.gameObjects.push(this as unknown as GameObject);
+      chunk.gameObjects.push(this);
 
       const numViewingMobs = chunk.viewingMobs.length;
       for (let i = 0; i < numViewingMobs; i++) {
          const mob = chunk.viewingMobs[i];
-         const idx = mob.potentialVisibleGameObjects.indexOf(this as unknown as GameObject);
+         const idx = mob.potentialVisibleGameObjects.indexOf(this);
          if (idx === -1) {
-            mob.potentialVisibleGameObjects.push(this as unknown as GameObject);
+            mob.potentialVisibleGameObjects.push(this);
             mob.potentialVisibleGameObjectAppearances.push(1);
          } else {
             mob.potentialVisibleGameObjectAppearances[idx]++;
@@ -486,7 +474,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public removeFromChunk(chunk: Chunk): void {
-      const idx = chunk.gameObjects.indexOf(this as unknown as GameObject);
+      const idx = chunk.gameObjects.indexOf(this);
       if (idx !== -1) {
          chunk.gameObjects.splice(idx, 1);
       }
@@ -494,7 +482,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       const numViewingMobs = chunk.viewingMobs.length;
       for (let i = 0; i < numViewingMobs; i++) {
          const mob = chunk.viewingMobs[i];
-         const idx = mob.potentialVisibleGameObjects.indexOf(this as unknown as GameObject);
+         const idx = mob.potentialVisibleGameObjects.indexOf(this);
          if (idx === -1) {
             throw new Error();
          }
@@ -594,11 +582,11 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       // Check for diagonal collisions
       // 
       
-      _GameObject.rectangularTestHitbox.setHitboxInfo(SETTINGS.TILE_SIZE, SETTINGS.TILE_SIZE);
-      _GameObject.rectangularTestHitbox.position = new Point((tile.x + 0.5) * SETTINGS.TILE_SIZE, (tile.y + 0.5) * SETTINGS.TILE_SIZE);
-      _GameObject.rectangularTestHitbox.updateHitboxBounds(0);
+      GameObject.rectangularTestHitbox.setHitboxInfo(SETTINGS.TILE_SIZE, SETTINGS.TILE_SIZE);
+      GameObject.rectangularTestHitbox.position = new Point((tile.x + 0.5) * SETTINGS.TILE_SIZE, (tile.y + 0.5) * SETTINGS.TILE_SIZE);
+      GameObject.rectangularTestHitbox.updateHitboxBounds(0);
 
-      if (_GameObject.rectangularTestHitbox.isColliding(hitbox)) {
+      if (GameObject.rectangularTestHitbox.isColliding(hitbox)) {
          return TileCollisionAxis.diagonal;
       }
 
@@ -925,7 +913,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
       }
 
       (this.callEvents as any)("during_collision", gameObject);
-      if (gameObject.i === "entity") (this.callEvents as any)("during_entity_collision", gameObject);
+      gameObject.callCollisionEvent(this as any);
    }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {
@@ -994,4 +982,4 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 }
 
-export default _GameObject;
+export default GameObject;

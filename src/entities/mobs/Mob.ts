@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, circlesDoIntersect, commandComponentMatchesParameter, EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
@@ -6,9 +6,9 @@ import DroppedItem from "../../items/DroppedItem";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Chunk from "../../Chunk";
 import { MobAIType } from "../../mob-ai-types";
-import { GameObject } from "src/GameObject";
 import Hitbox from "src/hitboxes/Hitbox";
 import RectangularHitbox from "src/hitboxes/RectangularHitbox";
+import GameObject from "src/GameObject";
 
 abstract class Mob extends Entity {
    /** Number of ticks between AI refreshes */
@@ -23,7 +23,7 @@ abstract class Mob extends Entity {
 
    private aiRefreshTicker = randInt(0, Mob.AI_REFRESH_INTERVAL - 1);
 
-   protected visibleGameObjects = new Array<GameObject>();
+   public visibleGameObjects = new Array<GameObject>();
    public visibleEntities = new Array<Entity>();
    public visibleDroppedItems = new Array<DroppedItem>();
 
@@ -202,17 +202,7 @@ abstract class Mob extends Entity {
          }
 
          if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= this.visionRangeSquared) {
-            this.visibleGameObjects.push(gameObject);
-            switch (gameObject.i) {
-               case "entity": {
-                  this.visibleEntities.push(gameObject);
-                  break;
-               }
-               case "droppedItem": {
-                  this.visibleDroppedItems.push(gameObject);
-                  break;
-               }
-            }
+            gameObject.addToMobVisibleGameObjects(this);
             continue;
          }
 
@@ -221,24 +211,11 @@ abstract class Mob extends Entity {
          for (let j = 0; j < numHitboxes; j++) {
             const hitbox = gameObject.hitboxes[j];
             if (this.hitboxIsVisible(hitbox)) {
-               this.visibleGameObjects.push(gameObject);
-               switch (gameObject.i) {
-                  case "entity": {
-                     this.visibleEntities.push(gameObject);
-                     break;
-                  }
-                  case "droppedItem": {
-                     this.visibleDroppedItems.push(gameObject);
-                     break;
-                  }
-               }
+               gameObject.addToMobVisibleGameObjects(this);
                break;
             }
          }
       }
-      // if (this.type === "slimewisp") {
-      //    console.log(this.visibleGameObjects.length);
-      // }
 
       this.visibleGameObjects.splice(this.visibleGameObjects.indexOf(this), 1);
       this.visibleEntities.splice(this.visibleEntities.indexOf(this), 1);

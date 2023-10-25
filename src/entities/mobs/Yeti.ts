@@ -5,7 +5,7 @@ import HungerComponent from "../../entity-components/HungerComponent";
 import Mob from "./Mob";
 import Entity from "../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import _GameObject from "../../GameObject";
+import GameObject from "../../GameObject";
 import Tile from "../../Tile";
 import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";

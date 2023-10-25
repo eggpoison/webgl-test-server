@@ -2,7 +2,6 @@ import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType, StackableItem
 import Item, { itemIsStackable } from "../items/Item";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
-import { GameObject } from "../GameObject";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 
@@ -50,10 +49,8 @@ class InventoryComponent extends Component {
    private readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 
    public onLoad(): void {
-      this.entity.createEvent("during_collision", (collidingGameObject: GameObject): void => {
-         if (collidingGameObject.i === "droppedItem") {
-            this.pickupDroppedItem(collidingGameObject);
-         }
+      this.entity.createEvent("during_dropped_item_collision", (droppedItem: DroppedItem): void => {
+         this.pickupDroppedItem(droppedItem);
       });
    }
 

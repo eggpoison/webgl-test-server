@@ -3,11 +3,12 @@ import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
 import ItemCreationComponent from "../entity-components/ItemCreationComponent";
-import _GameObject, { GameObjectEvents } from "../GameObject";
+import GameObject, { GameObjectEvents } from "../GameObject";
 import { cleanAngle } from "../ai-shared";
 import HungerComponent from "../entity-components/HungerComponent";
 import Board from "../Board";
 import Chunk from "src/Chunk";
+import Mob from "./mobs/Mob";
 
 export interface EntityComponents {
    health: HealthComponent;
@@ -36,9 +37,7 @@ interface EntityEvents extends GameObjectEvents {
    death: (attackingEntity: Entity | null) => void;
 }
 
-abstract class Entity extends _GameObject<"entity", EntityEvents> {
-   public readonly i = "entity" as const;
-   
+abstract class Entity extends GameObject<EntityEvents> {
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
    private readonly tickableComponents: ReadonlyArray<Component>;
 
@@ -52,7 +51,8 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],
-      during_entity_collision: []
+      during_entity_collision: [],
+      during_dropped_item_collision: []
    };
 
    private readonly statusEffects = new Array<StatusEffect>();
@@ -79,6 +79,15 @@ abstract class Entity extends _GameObject<"entity", EntityEvents> {
    }
 
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
+   
+   public callCollisionEvent(gameObject: GameObject): void {
+      (gameObject as any).callEvents("during_entity_collision", this);
+   }
+
+   public addToMobVisibleGameObjects(mob: Mob): void {
+      mob.visibleGameObjects.push(this);
+      mob.visibleEntities.push(this);
+   }
 
    /** Called after every physics update. */
    public tick(): void {

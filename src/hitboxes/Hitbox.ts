@@ -1,7 +1,7 @@
 import { Point, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import RectangularHitbox from "./RectangularHitbox";
 import CircularHitbox from "./CircularHitbox";
-import { GameObject } from "../GameObject";
+import GameObject from "src/GameObject";
 
 export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: number];
 

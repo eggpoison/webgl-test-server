@@ -1,7 +1,7 @@
 import { circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Hitbox from "./Hitbox";
 import CircularHitbox from "./CircularHitbox";
-import { GameObject } from "src/GameObject";
+import GameObject from "src/GameObject";
 
 class RectangularHitbox extends Hitbox {
    /** Length of half of the diagonal of the rectangle */

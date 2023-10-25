@@ -1,10 +1,11 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./Item";
-import _GameObject, { GameObjectEvents } from "../GameObject";
+import GameObject, { GameObjectEvents } from "../GameObject";
 import { runFleshSwordAI } from "../flesh-sword-ai";
 import Board from "../Board";
 import Chunk from "src/Chunk";
+import Mob from "src/entities/mobs/Mob";
 
 interface EntityPickupCooldown {
    readonly entityID: number;
@@ -13,15 +14,14 @@ interface EntityPickupCooldown {
 
 interface DroppedItemEvents extends GameObjectEvents {}
 
-class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
-   public i = "droppedItem" as const;
-
+class DroppedItem extends GameObject<DroppedItemEvents> {
    protected events = {
       on_destroy: [],
       enter_collision: [],
       during_collision: [],
       enter_entity_collision: [],
-      during_entity_collision: []
+      during_entity_collision: [],
+      during_dropped_item_collision: []
    }
    
    /** How long an item will take to despawn */
@@ -49,7 +49,16 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
       this.rotation = 2 * Math.PI * Math.random();
 
       Board.addDroppedItemToJoinBuffer(this);
-   } 
+   }
+   
+   public callCollisionEvent(gameObject: GameObject): void {
+      (gameObject as any).callEvents("during_dropped_item_collision", this);
+   }
+
+   public addToMobVisibleGameObjects(mob: Mob): void {
+      mob.visibleGameObjects.push(this);
+      mob.visibleDroppedItems.push(this);
+   }
 
    public tick(): void {
       super.tick();
