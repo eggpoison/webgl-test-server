@@ -11,7 +11,6 @@ import { getTilesOfType, removeEntityFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import OPTIONS from "./options";
-import generateBenchmarkTerrain from "./terrain-generation/benchmark-terrain-generation";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -61,12 +60,7 @@ abstract class Board {
    public static setup(): void {
       this.initialiseChunks();
 
-      let generationInfo: TerrainGenerationInfo;
-      if (OPTIONS.inBenchmarkMode) {
-         generationInfo = generateBenchmarkTerrain();
-      } else {
-         generationInfo = generateTerrain();
-      }
+      const generationInfo = generateTerrain();
       this.tiles = generationInfo.tiles;
       this.riverFlowDirections = generationInfo.riverFlowDirections;
       this.waterRocks = generationInfo.waterRocks;

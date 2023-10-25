@@ -1,4 +1,4 @@
-import { ArmourItemInfo, BowItemInfo, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -93,6 +93,9 @@ class Tribesman extends TribeMember {
    private lastAIType = TribesmanAIType.idle;
 
    private targetPatrolPosition: Point | null = null;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
@@ -195,7 +198,6 @@ class Tribesman extends TribeMember {
       if (this.enemiesInVisionRange.length > 0) {
          this.huntEntity(this.getClosestEntity(this.enemiesInVisionRange));
          this.lastAIType = TribesmanAIType.attacking;
-         this.currentAction = TribeMemberAction.none;
          return;
       }
       
@@ -203,7 +205,6 @@ class Tribesman extends TribeMember {
       if (this.enemyBuildingsInVisionRange.length > 0) {
          this.huntEntity(this.getClosestEntity(this.enemyBuildingsInVisionRange));
          this.lastAIType = TribesmanAIType.attacking;
-         this.currentAction = TribeMemberAction.none;
          return;
       }
       
@@ -211,7 +212,6 @@ class Tribesman extends TribeMember {
       if (this.hostileMobsInVisionRange.length > 0) {
          this.huntEntity(this.getClosestEntity(this.hostileMobsInVisionRange));
          this.lastAIType = TribesmanAIType.attacking;
-         this.currentAction = TribeMemberAction.none;
          return;
       }
 

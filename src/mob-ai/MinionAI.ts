@@ -41,7 +41,6 @@ class MinionAI extends AI {
 
       this.mob.createEvent("death", () => {
          if (typeof this.leader !== "undefined") {
-            console.log("remove");
             this.leader.removeEvent("hurt", this.onLeaderHurt);
          }
       });

@@ -1,4 +1,4 @@
-import { Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -12,6 +12,9 @@ class TribeHut extends Entity {
    public readonly tribe: Tribe;
 
    public mass = 1.5;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point, tribe: Tribe) {
       super(position, {

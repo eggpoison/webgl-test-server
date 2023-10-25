@@ -242,7 +242,9 @@ abstract class TribeMember extends Mob {
          this.forceGetComponent("health").removeDefence("armour");
       }
 
-      for (const itemSlot of Object.keys(this.bowCooldowns) as unknown as ReadonlyArray<number>) {
+      // @Speed
+      for (const _itemSlot of Object.keys(this.bowCooldowns)) {
+         const itemSlot = Number(_itemSlot);
          this.bowCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
          if (this.bowCooldowns[itemSlot] < 0) {
             delete this.bowCooldowns[itemSlot];

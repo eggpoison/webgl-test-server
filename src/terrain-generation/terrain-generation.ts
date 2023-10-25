@@ -274,7 +274,11 @@ export interface TerrainGenerationInfo {
 
 function generateTerrain(): TerrainGenerationInfo {
    // Seed the random number generator
-   SRandom.seed(123456789);
+   if (OPTIONS.inBenchmarkMode) {
+      SRandom.seed(40404040404);
+   } else {
+      SRandom.seed(123456789);
+   }
    
    // Initialise the tile info array
    const tileInfoArray = new Array<Array<Partial<TileInfo>>>();

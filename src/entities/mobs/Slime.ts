@@ -1,4 +1,4 @@
-import { ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, STATUS_EFFECT_MODIFIERS, SlimeOrbData, SlimeSize, TileType, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, STATUS_EFFECT_MODIFIERS, SlimeOrbData, SlimeSize, TileType, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -100,6 +100,11 @@ class Slime extends Mob {
    private readonly orbs = new Array<MovingOrbData>();
 
    private readonly angeredEntities = new Array<EntityAnger>();
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
+
+   public collisionPushForceMultiplier = 0.5;
 
    constructor(position: Point, size: SlimeSize = SlimeSize.small) {
       const itemCreationComponent = new ItemCreationComponent(48);

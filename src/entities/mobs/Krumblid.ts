@@ -1,4 +1,4 @@
-import { ItemType, Point, SETTINGS, TileType, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS, TileType, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -18,6 +18,9 @@ class Krumblid extends Mob {
    private static readonly RUN_TERMINAL_VELOCITY = 200;
 
    public mass = 0.75;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK & ~COLLISION_BITS.cactus;
    
    constructor(position: Point) {
       super(position, {

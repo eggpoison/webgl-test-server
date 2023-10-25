@@ -1,4 +1,4 @@
-import { Point, ProjectileType, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, ProjectileType, SETTINGS } from "webgl-test-shared";
 import _GameObject, { GameObjectEvents } from "./GameObject";
 import Board from "./Board";
 import Chunk from "./Chunk";
@@ -25,6 +25,9 @@ class Projectile extends _GameObject<"projectile", ProjectileEvents> {
    public readonly data: any;
 
    public tickCallback?: () => void;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, type: ProjectileType, lifetime: number, data: any) {
       super(position);

@@ -1,4 +1,4 @@
-import { DeathInfo, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { COLLISION_BITS, DeathInfo, DEFAULT_COLLISION_MASK, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
@@ -34,6 +34,9 @@ class Tombstone extends Entity {
    private zombieSpawnPosition!: Point;
 
    private readonly deathInfo: DeathInfo | null;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       super(position, {

@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -36,6 +36,9 @@ class TribeTotem extends Entity {
    private readonly availableBannerPositions = Array.from(new Set(TRIBE_TOTEM_POSITIONS));
 
    public mass = 2.5;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point) {
       super(position, {

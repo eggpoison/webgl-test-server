@@ -1,4 +1,4 @@
-import { ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffect, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffect, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -35,6 +35,9 @@ class Zombie extends Mob {
 
    // Stores the ids of all entities which have recently attacked the zombie
    private readonly attackingEntities: Record<number, number> = {};
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, isGolden: boolean = false) {
       const itemCreationComponent = new ItemCreationComponent(48);

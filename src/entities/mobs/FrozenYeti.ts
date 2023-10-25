@@ -1,4 +1,4 @@
-import { FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, TileType, angle, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, TileType, angle, randFloat, randInt, randItem } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -86,6 +86,9 @@ class FrozenYeti extends Mob {
    private lastTargetPosition: Point | null = null;
 
    protected targetPosition: Point | null = null;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       super(position, {

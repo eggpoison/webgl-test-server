@@ -1,4 +1,4 @@
-import { ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffect, TileType, Vector, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffect, TileType, Vector, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -31,6 +31,9 @@ class IceSpikes extends Entity {
    private iceSpikeGrowProgress = 0;
 
    private readonly rootIceSpike: IceSpikes;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, rootIceSpike?: IceSpikes) {
       const itemCreationComponent = new ItemCreationComponent(48);

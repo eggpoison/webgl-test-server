@@ -1,4 +1,4 @@
-import { Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -21,6 +21,9 @@ class Snowball extends Entity {
    private angularVelocity = randFloat(1, 2) * Math.PI * randSign();
 
    public canDamage = true;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, size: SnowballSize = SnowballSize.small) {
       super(position, {

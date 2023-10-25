@@ -1,4 +1,4 @@
-import { Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import Mob from "./Mob";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -18,6 +18,11 @@ class Slimewisp extends Mob {
    private mergeTimer = Slimewisp.MERGE_TIME;
 
    public mass = 0.5;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
+
+   public collisionPushForceMultiplier = 0.3;
 
    constructor(position: Point) {
       super(position, {

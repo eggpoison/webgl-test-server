@@ -1,4 +1,4 @@
-import { ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Item from "./Item";
 import _GameObject, { GameObjectEvents } from "../GameObject";
@@ -32,6 +32,9 @@ class DroppedItem extends _GameObject<"droppedItem", DroppedItemEvents> {
    private readonly entityPickupCooldowns = new Set<EntityPickupCooldown>();
 
    public mass = 0.1;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, item: Item) {
       super(position);

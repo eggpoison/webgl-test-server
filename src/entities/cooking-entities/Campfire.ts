@@ -1,4 +1,4 @@
-import { Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import HeatingEntity from "./CookingEntity";
@@ -11,6 +11,9 @@ class Campfire extends HeatingEntity {
    private static readonly LIFETIME_SECONDS = 15;
 
    public mass = 2;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       super(position, {

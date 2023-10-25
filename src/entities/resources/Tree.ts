@@ -1,4 +1,4 @@
-import { ItemType, Point, randInt, TreeSize } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, randInt, TreeSize } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -19,6 +19,9 @@ class Tree extends Entity {
    };
 
    private readonly size: TreeSize;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point) {
       const size = randInt(0, 2) >= 1 ? 1 : 0;

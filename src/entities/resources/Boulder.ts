@@ -1,4 +1,4 @@
-import { ItemType, Point, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, randInt } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -10,6 +10,9 @@ class Boulder extends Entity {
    private static readonly MAX_HEALTH = 40;
 
    private readonly boulderType: number;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent(48);

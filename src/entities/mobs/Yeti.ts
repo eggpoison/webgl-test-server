@@ -1,4 +1,4 @@
-import { GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
@@ -84,6 +84,9 @@ class Yeti extends Mob {
 
    /** Stores the ID's of all snowballs thrown by the yeti */
    private readonly snowballIDs = new Set<number>();
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       super(position, {

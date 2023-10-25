@@ -1,4 +1,4 @@
-import { FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, customTickIntervalHasPassed } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, customTickIntervalHasPassed } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -27,6 +27,9 @@ class Fish extends Mob {
    public mass = 0.5;
 
    public secondsOutOfWater = 0;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point) {
       super(position, {

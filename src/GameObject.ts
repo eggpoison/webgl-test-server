@@ -103,6 +103,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
 
    protected moveSpeedMultiplier = 1;
 
+   public collisionPushForceMultiplier = 1;
+
    /** Set of all chunks the object is contained in */
    public chunks = new Set<Chunk>();
 
@@ -142,6 +144,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    protected overrideMoveSpeedMultiplier = false;
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
+
+   public abstract readonly collisionBit: number;
+   public abstract readonly collisionMask: number;
 
    constructor(position: Point) {
       this.position = position;
@@ -891,10 +896,7 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    public collide(gameObject: GameObject): void {
-      // @Cleanup This shouldn't be hardcoded
-      // Krumblids and cacti don't collide
-      // Make a collision mask for each entity type
-      if (gameObject.i === "entity" && this.i === "entity" && ((gameObject.type === "cactus" && (this as unknown as Entity).type === "krumblid") || (gameObject.type === "krumblid" && (this as unknown as Entity).type === "cactus"))) {
+      if ((gameObject.collisionMask & this.collisionBit) === 0 || (this.collisionMask & gameObject.collisionBit) === 0) {
          return;
       }
       
@@ -903,13 +905,9 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
-         let dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
-         if (this.i === "entity" && (this as unknown as Entity).type === "slime" && gameObject.i === "entity" && (gameObject as unknown as Entity).type === "slime") {
-            dist += 0.15;
-         }
-         const forceMultiplier = 1 / dist;
+         const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
          
-         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS * forceMultiplier * gameObject.mass / this.mass;
+         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * gameObject.mass / this.mass * gameObject.collisionPushForceMultiplier;
          const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
          this.velocity.x += force * Math.sin(pushAngle);
          this.velocity.y += force * Math.cos(pushAngle);
@@ -931,6 +929,8 @@ abstract class _GameObject<I extends keyof GameObjectSubclasses, EventsType exte
    }
 
    private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {
+      // @Speed
+      
       let maxDist = 0;
 
       // Account for this object's hitboxes

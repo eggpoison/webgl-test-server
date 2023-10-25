@@ -11,7 +11,7 @@ const OPTIONS: Options = {
    spawnTribes: false,
    generateRivers: false,
    inBenchmarkMode: false,
-   warp: true
+   warp: false
 };
 
 export default OPTIONS;

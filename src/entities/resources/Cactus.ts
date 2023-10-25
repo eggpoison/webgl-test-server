@@ -1,4 +1,4 @@
-import { CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -74,6 +74,9 @@ class Cactus extends Entity {
 
    private readonly flowers: ReadonlyArray<CactusBodyFlowerData>;
    private readonly limbs: ReadonlyArray<CactusLimbData>;
+
+   public readonly collisionBit = COLLISION_BITS.cactus;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       const itemCreationComponent = new ItemCreationComponent(48);

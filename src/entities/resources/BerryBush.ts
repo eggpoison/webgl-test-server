@@ -1,4 +1,4 @@
-import { ItemType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -20,6 +20,9 @@ class BerryBush extends Entity {
    private numBerries = 5;
 
    private berryGrowTimer = 0;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point) {
       super(position, {
@@ -94,8 +97,8 @@ class BerryBush extends Entity {
       const droppedItem = new DroppedItem(position, berry);
       
       const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
-      droppedItem.velocity.x = BerryBush.BERRY_DROP_OFFSET * Math.sin(spawnDirection + velocityDirectionOffset);
-      droppedItem.velocity.y = BerryBush.BERRY_DROP_OFFSET * Math.cos(spawnDirection + velocityDirectionOffset);
+      droppedItem.velocity.x = BerryBush.BERRY_DROP_VELOCITY * Math.sin(spawnDirection + velocityDirectionOffset);
+      droppedItem.velocity.y = BerryBush.BERRY_DROP_VELOCITY * Math.cos(spawnDirection + velocityDirectionOffset);
    }
 }
 

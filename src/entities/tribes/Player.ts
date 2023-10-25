@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, canCraftRecipe, CRAFTING_RECIPES, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, canCraftRecipe, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
@@ -24,6 +24,9 @@ class Player extends TribeMember {
    public readonly username: string;
 
    public interactingEntityID: number | null = null;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, username: string, tribe: Tribe | null) {
       super(position, "player", 0, TribeType.plainspeople);
@@ -88,9 +91,7 @@ class Player extends TribeMember {
    }
 
    public processCraftingPacket(recipeIndex: number): void {
-      console.log("craft");
       if (recipeIndex < 0 || recipeIndex >= CRAFTING_RECIPES.length) {
-         console.log("a");
          return;
       }
       
@@ -102,7 +103,6 @@ class Player extends TribeMember {
       if (craftingOutputInventory.itemSlots.hasOwnProperty(1)) {
          const craftingOutputItem = craftingOutputInventory.itemSlots[1];
          if ((craftingOutputItem.type !== craftingRecipe.product || !itemIsStackable(craftingOutputItem.type) || craftingOutputItem.count + craftingRecipe.yield > getItemStackSize(craftingOutputItem))) {
-            console.log("b");
             return;
          }
       }
@@ -112,7 +112,6 @@ class Player extends TribeMember {
 
       // @Speed: Garbage collection
       if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe)) {
-         console.log("can craft");
          // Consume ingredients
          for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
             // Prioritise consuming ingredients from the backpack inventory first

@@ -1,4 +1,4 @@
-import { InventoryData, ItemSlotsData, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, InventoryData, ItemSlotsData, Point } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -16,6 +16,9 @@ class Barrel extends Entity {
    public mass = 1.5;
 
    public tribe: Tribe | null = null;
+
+   public readonly collisionBit = COLLISION_BITS.other;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point) {
       const inventoryComponent = new InventoryComponent();
