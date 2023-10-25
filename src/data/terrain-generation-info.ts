@@ -1,7 +1,7 @@
-import { BiomeName, TileType } from "webgl-test-shared";
+import { BiomeName, TileTypeConst } from "webgl-test-shared";
 
 export type TileGenerationInfo = {
-   readonly tileType: TileType;
+   readonly tileType: TileTypeConst;
    readonly isWall: boolean;
    readonly noiseRequirements?: {
       readonly scale: number;
@@ -29,29 +29,29 @@ export interface BiomeGenerationInfo {
 }
 
 const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
-   // magmaFields: {
-   //    spawnRequirements: null,
-   //    tiles: [
-   //       {
-   //          tileType: TileType.lava,
-   //          isWall: false,
-   //          noiseRequirements: {
-   //             scale: 7,
-   //             minWeight: 0.2
-   //          },
-   //          minDist: 3
-   //       },
-   //       {
-   //          tileType: TileType.magma,
-   //          isWall: false
-   //       }
-   //    ]
-   // },
+   magmaFields: {
+      spawnRequirements: null,
+      tiles: [
+         {
+            tileType: TileTypeConst.lava,
+            isWall: false,
+            noiseRequirements: {
+               scale: 7,
+               minWeight: 0.2
+            },
+            minDist: 3
+         },
+         {
+            tileType: TileTypeConst.magma,
+            isWall: false
+         }
+      ]
+   },
    river: {
       spawnRequirements: null,
       tiles: [
          {
-            tileType: TileType.water,
+            tileType: TileTypeConst.water,
             isWall: false
          }
       ]
@@ -72,7 +72,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          //    minDist: 8
          // },
          {
-            tileType: TileType.permafrost,
+            tileType: TileTypeConst.permafrost,
             isWall: false,
             noiseRequirements: {
                scale: 7,
@@ -81,7 +81,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             minDist: 4
          },
          {
-            tileType: TileType.ice,
+            tileType: TileTypeConst.ice,
             isWall: false,
             noiseRequirements: {
                scale: 7,
@@ -90,7 +90,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             minDist: 1
          },
          {
-            tileType: TileType.snow,
+            tileType: TileTypeConst.snow,
             isWall: false
          }
       ]
@@ -102,7 +102,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            tileType: TileType.sandstone,
+            tileType: TileTypeConst.sandstone,
             isWall: true,
             noiseRequirements: {
                scale: 7,
@@ -120,7 +120,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          //    minDist: 1
          // },
          {
-            tileType: TileType.sand,
+            tileType: TileTypeConst.sand,
             isWall: false
          }
       ]
@@ -132,7 +132,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       tiles: [
          {
             // tileType: TileType.rock,
-            tileType: TileType.darkRock,
+            tileType: TileTypeConst.darkRock,
             isWall: true,
             noiseRequirements: {
                scale: 7,
@@ -141,7 +141,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             minDist: 2
          },
          {
-            tileType: TileType.rock,
+            tileType: TileTypeConst.rock,
             isWall: false
          }
       ]
@@ -153,7 +153,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            tileType: TileType.slime,
+            tileType: TileTypeConst.slime,
             isWall: false,
             noiseRequirements: {
                scale: 2.5,
@@ -162,7 +162,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             minDist: 4
          },
          {
-            tileType: TileType.slime,
+            tileType: TileTypeConst.slime,
             isWall: false,
             noiseRequirements: {
                scale: 2.5,
@@ -171,7 +171,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             minDist: 2
          },
          {
-            tileType: TileType.sludge,
+            tileType: TileTypeConst.sludge,
             isWall: false
          }
          // {
@@ -211,7 +211,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       spawnRequirements: {},
       tiles: [
          {
-            tileType: TileType.grass,
+            tileType: TileTypeConst.grass,
             isWall: false
          }
       ]

@@ -1,11 +1,10 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileType, Vector, veryBadHash } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
 import Mob from "./Mob";
 import Entity from "../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import GameObject from "../../GameObject";
 import Tile from "../../Tile";
 import WanderAI from "../../mob-ai/WanderAI";
 import ChaseAI from "../../mob-ai/ChaseAI";
@@ -48,7 +47,7 @@ class Yeti extends Mob {
    private static readonly CONTACT_DAMAGE = 3;
    private static readonly CONTACT_KNOCKBACK = 200;
 
-   private static readonly YETI_TILES: ReadonlyArray<TileType> = [TileType.snow, TileType.ice, TileType.permafrost];
+   private static readonly YETI_TILES: ReadonlyArray<TileTypeConst> = [TileTypeConst.snow, TileTypeConst.ice, TileTypeConst.permafrost];
    
    /** Minimum number of tiles that can belong to a yeti */
    private static readonly MIN_TERRITORY_SIZE = 50;

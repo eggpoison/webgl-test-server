@@ -52,7 +52,7 @@ class DroppedItem extends GameObject<DroppedItemEvents> {
    }
    
    public callCollisionEvent(gameObject: GameObject): void {
-      (gameObject as any).callEvents("during_dropped_item_collision", this);
+      gameObject.callEvents("during_dropped_item_collision", this);
    }
 
    public addToMobVisibleGameObjects(mob: Mob): void {

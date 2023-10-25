@@ -81,7 +81,7 @@ abstract class Entity extends GameObject<EntityEvents> {
    public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
    
    public callCollisionEvent(gameObject: GameObject): void {
-      (gameObject as any).callEvents("during_entity_collision", this);
+      gameObject.callEvents("during_entity_collision", this);
    }
 
    public addToMobVisibleGameObjects(mob: Mob): void {
@@ -131,26 +131,26 @@ abstract class Entity extends GameObject<EntityEvents> {
          }    
       }
 
-      if (this.hasStatusEffect(StatusEffect.burning)) {
+      if (this.hasStatusEffect("burning")) {
          // If the entity is in a river, clear the fire effect
          if (this.checkIsInRiver()) {
-            this.clearStatusEffect(StatusEffect.burning);
+            this.clearStatusEffect("burning");
          } else {
             // Fire tick
-            if (customTickIntervalHasPassed(this.statusEffectInfo[StatusEffect.burning]!.ticksElapsed, 0.75)) {
+            if (customTickIntervalHasPassed(this.statusEffectInfo["burning"]!.ticksElapsed, 0.75)) {
                this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
             }
          }
       }
 
-      if (this.hasStatusEffect(StatusEffect.poisoned)) {
-         if (customTickIntervalHasPassed(this.statusEffectInfo[StatusEffect.poisoned]!.ticksElapsed, 0.5)) {
+      if (this.hasStatusEffect("poisoned")) {
+         if (customTickIntervalHasPassed(this.statusEffectInfo["poisoned"]!.ticksElapsed, 0.5)) {
             this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
          }
       }
 
-      if (this.hasStatusEffect(StatusEffect.bleeding)) {
-         if (customTickIntervalHasPassed(this.statusEffectInfo[StatusEffect.bleeding]!.ticksElapsed, 1)) {
+      if (this.hasStatusEffect("bleeding")) {
+         if (customTickIntervalHasPassed(this.statusEffectInfo["bleeding"]!.ticksElapsed, 1)) {
             this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
          }
       }
@@ -190,7 +190,7 @@ abstract class Entity extends GameObject<EntityEvents> {
       const data = new Array<StatusEffectData>();
       for (const [_statusEffect, statusEffectInfo] of Object.entries(this.statusEffectInfo)) {
          data.push({
-            type: Number(_statusEffect),
+            type: _statusEffect as StatusEffect,
             ticksElapsed: statusEffectInfo.ticksElapsed
          });
       }

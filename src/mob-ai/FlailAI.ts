@@ -1,4 +1,4 @@
-import { SETTINGS, TileType, randFloat } from "webgl-test-shared";
+import { SETTINGS, TileType, TileTypeConst, randFloat } from "webgl-test-shared";
 import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
 import Mob from "../entities/mobs/Mob";
@@ -47,7 +47,7 @@ class FlailAI extends AI {
    }
 
    public canSwitch(): boolean {
-      return this.mob.tile.type !== TileType.water;
+      return this.mob.tile.type !== TileTypeConst.water;
    }
 }
 

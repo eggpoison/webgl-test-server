@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, STATUS_EFFECT_MODIFIERS, SlimeOrbData, SlimeSize, TileType, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, SlimeOrbData, SlimeSize, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -7,7 +7,6 @@ import Entity from "../Entity";
 import Board from "../../Board";
 import ChaseAI from "../../mob-ai/ChaseAI";
 import WanderAI from "../../mob-ai/WanderAI";
-import MoveAI from "../../mob-ai/MoveAI";
 import { MobAIType } from "../../mob-ai-types";
 
 interface MovingOrbData extends Mutable<SlimeOrbData> {
@@ -163,7 +162,7 @@ class Slime extends Mob {
          acceleration: 60 * speedMultiplier,
          terminalVelocity: 30 * speedMultiplier,
          wanderRate: 0.5,
-         validTileTargets: [TileType.sludge, TileType.slime],
+         validTileTargets: [TileTypeConst.sludge, TileTypeConst.slime],
          shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
             const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
             const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);
@@ -213,7 +212,7 @@ class Slime extends Mob {
 
    public tick(): void {
       // Slimes move at normal speed on slime blocks
-      this.overrideMoveSpeedMultiplier = this.tile.type === TileType.slime;
+      this.overrideMoveSpeedMultiplier = this.tile.type === TileTypeConst.slime;
       
       super.tick();
 
@@ -281,7 +280,7 @@ class Slime extends Mob {
       }
 
       // Heal when standing on slime blocks
-      if (this.tile.type === TileType.slime) {
+      if (this.tile.type === TileTypeConst.slime) {
          if (Board.tickIntervalHasPassed(Slime.HEALING_PROC_INTERVAL)) {
             this.forceGetComponent("health").heal(Slime.HEALING_ON_SLIME_PER_SECOND * Slime.HEALING_PROC_INTERVAL);
          }

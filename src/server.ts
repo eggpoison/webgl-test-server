@@ -380,7 +380,7 @@ class GameServer {
                   serverTileData[y][x] = {
                      x: tile.x,
                      y: tile.y,
-                     type: tile.type,
+                     type: tile.type as unknown as TileType,
                      biomeName: tile.biomeName,
                      isWall: tile.isWall
                   };

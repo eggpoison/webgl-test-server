@@ -1,4 +1,4 @@
-import { Point, SETTINGS, Vector, lerp, randItem } from "webgl-test-shared";
+import { Point, SETTINGS, Vector, angle, lerp, randItem } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
@@ -91,6 +91,7 @@ const hasReachedTargetPosition = (droppedItem: DroppedItem, targetPosition: Poin
 
 interface FleshSwordInfo {
    internalWiggleTicks: number;
+   // @Speed: Garbage collection
    tileTargetPosition: Point | null;
 }
 
@@ -104,7 +105,8 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
    const info = FLESH_SWORD_INFO[droppedItem.id];
 
    // Position the flesh sword wants to move to
-   let targetPosition: Point | undefined;
+   let targetPositionX = -1;
+   let targetPositionY = -1;
    let moveSpeed: number | undefined;
    let wiggleSpeed: number | undefined;
 
@@ -115,10 +117,8 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
    // Run away from the run target
    if (runTarget !== null) {
       const angleFromTarget = droppedItem.position.calculateAngleBetween(runTarget.position);
-
-      targetPosition = droppedItem.position.copy();
-      // @Speed: Garbage collection
-      targetPosition.add(Point.fromVectorForm(100, angleFromTarget + Math.PI));
+      targetPositionX = droppedItem.position.x + 100 * Math.sin(angleFromTarget + Math.PI);
+      targetPositionY = droppedItem.position.y + 100 * Math.cos(angleFromTarget + Math.PI);
       
       const distance = droppedItem.position.calculateDistanceBetween(runTarget.position);
       let dist = distance / FLESH_SWORD_VISION_RANGE;
@@ -132,7 +132,8 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
          if (hasReachedTargetPosition(droppedItem, info.tileTargetPosition)) {
             info.tileTargetPosition = null;
          } else {
-            targetPosition = info.tileTargetPosition;
+            targetPositionX = info.tileTargetPosition.x;
+            targetPositionY = info.tileTargetPosition.y;
             moveSpeed = FLESH_SWORD_WANDER_MOVE_SPEED;
             wiggleSpeed = 1;
          }
@@ -165,21 +166,19 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
                targetTile = randItem(tileWanderTargets);
             }
    
-            const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE
-            const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE
-            targetPosition = new Point(x, y);
+            const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+            const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+            info.tileTargetPosition = new Point(x, y);
             moveSpeed = FLESH_SWORD_WANDER_MOVE_SPEED;
             wiggleSpeed = 1;
-            
-            info.tileTargetPosition = targetPosition;
          }
       }
    }
 
-   if (typeof targetPosition !== "undefined") {
+   if (targetPositionX !== -1) {
       info.internalWiggleTicks += wiggleSpeed!;
       
-      const directMoveAngle = droppedItem.position.calculateAngleBetween(targetPosition);
+      const directMoveAngle = angle(targetPositionX - droppedItem.position.x, targetPositionY - droppedItem.position.y);
 
       const moveAngleOffset = Math.sin(info.internalWiggleTicks / SETTINGS.TPS * 10) * Math.PI * 0.2;
 

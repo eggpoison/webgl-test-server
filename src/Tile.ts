@@ -1,4 +1,4 @@
-import { TileType, BiomeName, TileInfo } from "webgl-test-shared";
+import { BiomeName, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import { addTileToCensus, removeTileFromCensus } from "./census";
 
@@ -7,15 +7,15 @@ export interface TileCoordinates {
    readonly y: number;
 }
 
-class Tile implements TileInfo {
+class Tile {
    public readonly x: number;
    public readonly y: number;
 
-   public readonly type: TileType;
+   public readonly type: TileTypeConst;
    public readonly biomeName: BiomeName;
    public readonly isWall: boolean;
 
-   constructor(x: number, y: number, tileType: TileType, biomeName: BiomeName, isWall: boolean) {
+   constructor(x: number, y: number, tileType: TileTypeConst, biomeName: BiomeName, isWall: boolean) {
       this.x = x;
       this.y = y;
 

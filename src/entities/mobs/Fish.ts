@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, customTickIntervalHasPassed } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -81,14 +81,14 @@ class Fish extends Mob {
          acceleration: Fish.ACCELERATION,
          terminalVelocity: Fish.TERMINAL_VELOCITY,
          wanderRate: 0.5,
-         validTileTargets: [TileType.water]
+         validTileTargets: [TileTypeConst.water]
       }));
 
       this.rotation = 2 * Math.PI * Math.random();
    }
 
    public tick(): void {
-      this.overrideMoveSpeedMultiplier = this.tile.type === TileType.water;
+      this.overrideMoveSpeedMultiplier = this.tile.type === TileTypeConst.water;
       
       super.tick();
 
@@ -96,7 +96,7 @@ class Fish extends Mob {
          this.rotation += Math.sin(Board.ticks / 5) * 0.05;
       }
 
-      if (this.tile.type !== TileType.water) {
+      if (this.tile.type !== TileTypeConst.water) {
          this.secondsOutOfWater += 1 / SETTINGS.TPS;
          if (this.secondsOutOfWater >= 5 && customTickIntervalHasPassed(this.secondsOutOfWater * SETTINGS.TPS, 1.5)) {
             this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.lack_of_oxygen, 0);

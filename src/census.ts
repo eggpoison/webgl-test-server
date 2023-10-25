@@ -1,4 +1,4 @@
-import { BiomeName, EntityType, TileType } from "webgl-test-shared";
+import { BiomeName, EntityType, TileType, TileTypeConst } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import Tile from "./Tile";
 
@@ -83,7 +83,7 @@ export function removeTileFromCensus(tile: Tile): void {
    }
 }
 
-export function getTileTypeCount(tileType: TileType): number {
+export function getTileTypeCount(tileType: TileTypeConst): number {
    if (!tileCensus.types.hasOwnProperty(tileType)) {
       return 0;
    }

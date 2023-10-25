@@ -1,4 +1,4 @@
-import { Point, SETTINGS, TileType } from "webgl-test-shared";
+import { Point, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -22,7 +22,7 @@ export function getPositionRadialTiles(position: Point, radius: number): Array<T
          const tile = Board.getTile(tileX, tileY);
 
          // Don't try to wander to wall tiles or water
-         if (tile.isWall || tile.type === TileType.water) continue;
+         if (tile.isWall || tile.type === TileTypeConst.water) continue;
 
          const distanceSquared = Math.pow(position.x - tileX * SETTINGS.TILE_SIZE, 2) + Math.pow(position.y - tileY * SETTINGS.TILE_SIZE, 2);
          if (distanceSquared <= radiusSquared) {
@@ -35,7 +35,7 @@ export function getPositionRadialTiles(position: Point, radius: number): Array<T
 }
 
 /** Gets all tiles within a given distance from a position */
-export function getAllowedPositionRadialTiles(position: Point, radius: number, validTileTargets: ReadonlyArray<TileType>): Array<Tile> {
+export function getAllowedPositionRadialTiles(position: Point, radius: number, validTileTargets: ReadonlyArray<TileTypeConst>): Array<Tile> {
    const tiles = new Array<Tile>();
 
    const minTileX = Math.max(Math.min(Math.floor((position.x - radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);

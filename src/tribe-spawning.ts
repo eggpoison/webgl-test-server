@@ -1,4 +1,4 @@
-import { Point, SETTINGS, TileType, TribeType, randItem } from "webgl-test-shared";
+import { Point, SETTINGS, TileTypeConst, TribeType, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import Tribe from "./Tribe";
 import TribeTotem from "./entities/tribes/TribeTotem";
@@ -59,7 +59,7 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
    const tile = Board.getTileAtPosition(position);
 
    // Don't spawn in wall tiles or water
-   if (tile.isWall || tile.type === TileType.water) {
+   if (tile.isWall || tile.type === TileTypeConst.water) {
       return false;
    }
 
@@ -84,7 +84,7 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
       const tile = randItem(areaTiles);
 
       // Don't spawn buildings in walls or water
-      if (tile.isWall || tile.type === TileType.water) {
+      if (tile.isWall || tile.type === TileTypeConst.water) {
          continue;
       }
 

@@ -2,7 +2,7 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/terrain-generation-info";
 import Tile from "../Tile";
-import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfo, WaterRockData, lerp } from "webgl-test-shared";
+import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, WaterRockData, lerp } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
 import Board from "../Board";
 import SRandom from "../SRandom";
@@ -55,7 +55,7 @@ const getBiome = (height: number, temperature: number, humidity: number): BiomeN
    throw new Error(`Couldn't find a valid biome! Height: ${height}, temperature: ${temperature}, humidity: ${humidity}`);
 }
 
-const generateBiomeInfo = (tileArray: Array<Array<Partial<TileInfo>>>): void => {
+const generateBiomeInfo = (tileArray: Array<Array<Partial<TileInfoConst>>>): void => {
    // Generate the noise
    const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
    const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TEMPERATURE_NOISE_SCALE);
@@ -86,7 +86,7 @@ const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: num
    return true;
 }
 
-const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): Omit<TileInfo, "biomeName" | "fogAmount"> => {
+const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): Omit<TileInfoConst, "biomeName" | "fogAmount"> => {
    const biomeGenerationInfo = BIOME_GENERATION_INFO[biomeName];
    for (const tileGenerationInfo of biomeGenerationInfo.tiles) {
       let weight = 0;
@@ -106,7 +106,7 @@ const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): 
    throw new Error(`Couldn't find a valid tile info! Biome: ${biomeName}`);
 }
 
-const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: number, tileY: number): number => {
+const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfoConst>>>, tileX: number, tileY: number): number => {
    /** The maximum distance that the algorithm will search for */
    const MAX_SEARCH_DIST = 10;
 
@@ -149,7 +149,7 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfo>>>, tileX: numb
 }
 
 /** Generate the tile array's tile types based on their biomes */
-export function generateTileInfo(tileInfoArray: Array<Array<Partial<TileInfo>>>): void {
+export function generateTileInfo(tileInfoArray: Array<Array<Partial<TileInfoConst>>>): void {
    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
       for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
          const tileInfo = tileInfoArray[x][y];
@@ -281,9 +281,9 @@ function generateTerrain(): TerrainGenerationInfo {
    }
    
    // Initialise the tile info array
-   const tileInfoArray = new Array<Array<Partial<TileInfo>>>();
+   const tileInfoArray = new Array<Array<Partial<TileInfoConst>>>();
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-      tileInfoArray.push(new Array<TileInfo>(SETTINGS.BOARD_DIMENSIONS));
+      tileInfoArray.push(new Array<TileInfoConst>(SETTINGS.BOARD_DIMENSIONS));
 
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          tileInfoArray[x][y] = {};
@@ -444,7 +444,7 @@ function generateTerrain(): TerrainGenerationInfo {
       tiles.push(new Array<Tile>());
       for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
          // Create the tile
-         const tileInfo = tileInfoArray[x][y] as TileInfo;
+         const tileInfo = tileInfoArray[x][y] as TileInfoConst;
          tiles[x].push(new Tile(x, y, tileInfo.type, tileInfo.biomeName, tileInfo.isWall));
       }
    }

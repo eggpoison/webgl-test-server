@@ -159,8 +159,8 @@ class Zombie extends Mob {
       // If day time, ignite
       if (Board.time >= 6 && Board.time < 18) {
          // Ignite randomly or stay on fire if already on fire
-         if (super.hasStatusEffect(StatusEffect.burning) || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
-            super.applyStatusEffect(StatusEffect.burning, 5);
+         if (super.hasStatusEffect("burning") || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
+            super.applyStatusEffect("burning", 5);
          }
       }
    }

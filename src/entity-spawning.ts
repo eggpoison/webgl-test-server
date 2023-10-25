@@ -1,4 +1,4 @@
-import { EntityType, Point, randInt, SETTINGS, TileType } from "webgl-test-shared";
+import { EntityType, Point, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
@@ -11,7 +11,7 @@ export type EntitySpawnInfo = {
    /** The type of entity to spawn */
    readonly entityType: EntityType;
    /** Array of all tile types in which the entity is able to be spawned in */
-   readonly spawnableTiles: ReadonlyArray<TileType>;
+   readonly spawnableTiles: ReadonlyArray<TileTypeConst>;
    /** Average number of spawn attempts that happen each second per chunk. */
    readonly spawnRate: number;
    /**
@@ -34,7 +34,7 @@ export type EntitySpawnInfo = {
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
       entityType: "cow",
-      spawnableTiles: [TileType.grass],
+      spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.01,
       packSpawningInfo: {
@@ -44,7 +44,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "berry_bush",
-      spawnableTiles: [TileType.grass],
+      spawnableTiles: [TileTypeConst.grass],
       // spawnRate: 0.001,
       // maxDensity: 0.0025
       spawnRate: 0.005,
@@ -52,39 +52,39 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    },
    {
       entityType: "tree",
-      spawnableTiles: [TileType.grass],
+      spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.015
    },
    {
       entityType: "tombstone",
-      spawnableTiles: [TileType.grass],
+      spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.003,
       spawnTimeRanges: [[0, 3], [19, 24]] // 7pm to 3am
    },
    {
       entityType: "boulder",
-      spawnableTiles: [TileType.rock],
+      spawnableTiles: [TileTypeConst.rock],
       spawnRate: 0.005,
       maxDensity: 0.025
    },
    {
       entityType: "cactus",
-      spawnableTiles: [TileType.sand],
+      spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.03
    },
    {
       entityType: "yeti",
-      spawnableTiles: [TileType.snow],
+      spawnableTiles: [TileTypeConst.snow],
       spawnRate: 0.004,
       maxDensity: 0.008,
       spawnValidationFunction: Yeti.spawnValidationFunction
    },
    {
       entityType: "ice_spikes",
-      spawnableTiles: [TileType.ice, TileType.permafrost],
+      spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
       spawnRate: 0.015,
       maxDensity: 0.06,
       // spawnRate: 0.015 * 50,
@@ -94,19 +94,19 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: "slimewisp",
       // @Temporary
       // spawnableTiles: ["slime"],
-      spawnableTiles: [TileType.slime, TileType.sludge],
+      spawnableTiles: [TileTypeConst.slime, TileTypeConst.sludge],
       spawnRate: 0.2,
       maxDensity: 0.3
    },
    {
       entityType: "krumblid",
-      spawnableTiles: [TileType.sand],
+      spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.015
    },
    {
       entityType: "frozen_yeti",
-      spawnableTiles: [TileType.fimbultur],
+      spawnableTiles: [TileTypeConst.fimbultur],
       spawnRate: 0.004,
       maxDensity: 0.008
    },

@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemInfo, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffect, SwordItemInfo, TRIBE_INFO_RECORD, TileType, ToolItemInfo, TribeMemberAction, TribeType, Vector, lerp, randInt } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffect, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -213,11 +213,11 @@ abstract class TribeMember extends Mob {
       this.overrideMoveSpeedMultiplier = false;
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          // If snow armour is equipped, move at normal speed on snow tiles
-         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileType.snow) {
+         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileTypeConst.snow) {
             this.overrideMoveSpeedMultiplier = true;
          }
          // If fishlord suit is equipped, move at normal speed on snow tiles
-         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileType.water) {
+         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileTypeConst.water) {
             this.overrideMoveSpeedMultiplier = true;
          }
       }
@@ -443,7 +443,7 @@ abstract class TribeMember extends Mob {
       targetEntity.forceGetComponent("health").addLocalInvulnerabilityHash(attackHash, 0.3);
 
       if (item !== null && item.type === ItemType.flesh_sword) {
-         targetEntity.applyStatusEffect(StatusEffect.poisoned, 3);
+         targetEntity.applyStatusEffect("poisoned", 3);
       }
 
       this.lastAttackTicks = Board.ticks;

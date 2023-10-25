@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, Vector, clampToBoardDimensions, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, Vector, clampToBoardDimensions, distToSegment, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -7,33 +7,6 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Mob from "./entities/mobs/Mob";
-
-// @Cleanup: probably move to webgl-test-shared
-
-function sqr(x: number) { return x * x }
-function dist2(v: Point, w: Point) {return sqr(v.x - w.x) + sqr(v.y - w.y) }
-function distToSegmentSquared(p: Point, v: Point, w: Point) {
-  var l2 = dist2(v, w);
-  if (l2 == 0) return dist2(p, v);
-  var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-  t = Math.max(0, Math.min(1, t));
-  return dist2(p, new Point(v.x + t * (w.x - v.x),
-                    v.y + t * (w.y - v.y) ));
-}
-function distToSegment(p: Point, v: Point, w: Point) { return Math.sqrt(distToSegmentSquared(p, v, w)); }
-
-const pointIsInRectangle = (pointX: number, pointY: number, rectPos: Point, rectWidth: number, rectHeight: number, rectRotation: number): boolean => {
-   // Rotate point around rect to make the situation axis-aligned
-   const alignedPointX = rotateXAroundPoint(pointX, pointY, rectPos.x, rectPos.y, -rectRotation);
-   const alignedPointY = rotateYAroundPoint(pointX, pointY, rectPos.x, rectPos.y, -rectRotation);
-
-   const x1 = rectPos.x - rectWidth / 2;
-   const x2 = rectPos.x + rectWidth / 2;
-   const y1 = rectPos.y - rectHeight / 2;
-   const y2 = rectPos.y + rectHeight / 2;
-   
-   return alignedPointX >= x1 && alignedPointX <= x2 && alignedPointY >= y1 && alignedPointY <= y2;
-}
 
 let idCounter = 0;
 
@@ -305,7 +278,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 
    public checkIsInRiver(): boolean {
-      if (this.tile.type !== TileType.water) {
+      if (this.tile.type !== TileTypeConst.water) {
          return false;
       }
 
@@ -328,7 +301,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       let moveSpeedMultiplier: number;
       if (this.overrideMoveSpeedMultiplier) {
          moveSpeedMultiplier = 1;
-      } else if (this.tile.type === TileType.water && !this.isInRiver) {
+      } else if (this.tile.type === TileTypeConst.water && !this.isInRiver) {
          moveSpeedMultiplier = this.moveSpeedMultiplier;
       } else {
          moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
@@ -750,6 +723,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          return;
       }
 
+      // @Speed: Garbage collection
       const distance = distToSegment(new Point(tileVertexX, tileVertexY), collidingVertex1, collidingVertex2);
 
       const pushDirection = collidingVertex1.calculateAngleBetween(collidingVertex2) + Math.PI / 2;

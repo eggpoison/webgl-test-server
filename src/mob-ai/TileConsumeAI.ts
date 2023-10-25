@@ -1,4 +1,4 @@
-import { SETTINGS, TileInfo, TileType, randFloat } from "webgl-test-shared";
+import { SETTINGS, TileInfoConst, TileType, TileTypeConst, randFloat } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import Tile from "../Tile";
 import AI from "./AI";
@@ -11,7 +11,7 @@ interface FoodSource {
 
 export interface TileFoodSource extends FoodSource {
    /** What the tile turns into after being eaten */
-   readonly resultingTileType: TileType;
+   readonly resultingTileType: TileTypeConst;
    /** Time it takes to eat the tile */
    readonly grazeTime: number;
    /** Amount of health restored to the entity when eating a tile */
@@ -21,7 +21,7 @@ export interface TileFoodSource extends FoodSource {
 interface TileConsumeAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
-   readonly tileTargets?: ReadonlyMap<TileType, TileFoodSource>;
+   readonly tileTargets?: ReadonlyMap<TileTypeConst, TileFoodSource>;
 }
 
 class TileConsumeAI extends AI implements TileConsumeAIParams {
@@ -32,7 +32,7 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
 
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly tileTargets: ReadonlyMap<TileType, TileFoodSource>;
+   public readonly tileTargets: ReadonlyMap<TileTypeConst, TileFoodSource>;
 
    private grazeTimer: number = 0;
    private grazeCooldown = randFloat(TileConsumeAI.GRAZE_COOLDOWN_RANGE[0], TileConsumeAI.GRAZE_COOLDOWN_RANGE[1]);
@@ -75,7 +75,7 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
       healthComponent.heal(foodInfo.healAmount);
       
       const previousTile = this.mob.tile;
-      const newTileInfo: TileInfo = {
+      const newTileInfo: TileInfoConst = {
          type: foodInfo.resultingTileType,
          biomeName: previousTile.biomeName,
          isWall: previousTile.isWall

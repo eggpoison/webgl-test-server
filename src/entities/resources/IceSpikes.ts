@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffect, TileType, Vector, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -77,7 +77,7 @@ class IceSpikes extends Entity {
             healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.ice_spikes, 0, "ice_spikes");
             healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
 
-            collidingEntity.applyStatusEffect(StatusEffect.freezing, 5);
+            collidingEntity.applyStatusEffect("freezing", 5);
          }
       });
    }
@@ -111,7 +111,7 @@ class IceSpikes extends Entity {
 
       // Don't grow into rivers
       const tile = Board.getTileAtPosition(position);
-      if (tile.type === TileType.water) {
+      if (tile.type === TileTypeConst.water) {
          return;
       }
 
@@ -159,7 +159,7 @@ class IceSpikes extends Entity {
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
                   if (collidingEntity.type !== "yeti") {
-                     collidingEntity.applyStatusEffect(StatusEffect.freezing, 3);
+                     collidingEntity.applyStatusEffect("freezing", 3);
                   }
                }
 

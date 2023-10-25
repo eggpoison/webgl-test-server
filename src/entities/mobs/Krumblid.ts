@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS, TileType, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS, TileType, TileTypeConst, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -55,7 +55,7 @@ class Krumblid extends Mob {
          acceleration: Krumblid.WALK_ACCELERATION,
          terminalVelocity: Krumblid.WALK_TERMINAL_VELOCITY,
          wanderRate: 0.25,
-         validTileTargets: [TileType.sand]
+         validTileTargets: [TileTypeConst.sand]
       }));
 
       this.rotation = 2 * Math.PI * Math.random();

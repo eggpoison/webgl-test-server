@@ -1,11 +1,11 @@
-import { ALL_TILE_TYPES, GameObjectDebugData, Point, SETTINGS, TileType, randInt, randItem } from "webgl-test-shared";
+import { ALL_TILE_TYPES_CONST, GameObjectDebugData, Point, SETTINGS, TileTypeConst, randInt, randItem } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
 import AI from "./AI";
 import { getAllowedPositionRadialTiles } from "../ai-shared";
 import { MobAIType } from "../mob-ai-types";
 
-const ALL_TILE_TYPES_EXCEPT_WATER = ALL_TILE_TYPES.slice();
-const idx = ALL_TILE_TYPES_EXCEPT_WATER.indexOf(TileType.water);
+const ALL_TILE_TYPES_EXCEPT_WATER = ALL_TILE_TYPES_CONST.slice();
+const idx = ALL_TILE_TYPES_EXCEPT_WATER.indexOf(TileTypeConst.water);
 if (idx !== -1) {
    ALL_TILE_TYPES_EXCEPT_WATER.splice(idx, 1);
 }
@@ -16,7 +16,7 @@ interface WanderAIParams {
    readonly acceleration: number;
    readonly terminalVelocity: number;
    /** Tile types which the entity will wander to */
-   readonly validTileTargets?: ReadonlyArray<TileType>;
+   readonly validTileTargets?: ReadonlyArray<TileTypeConst>;
    readonly shouldWander?: (wanderPositionX: number, wanderPositionY: number) => boolean;
 }
 
@@ -26,7 +26,7 @@ class WanderAI extends AI implements WanderAIParams {
    public readonly wanderRate: number;
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
-   public readonly validTileTargets: ReadonlyArray<TileType>;
+   public readonly validTileTargets: ReadonlyArray<TileTypeConst>;
    public readonly shouldWander?: ((wanderPositionX: number, wanderPositionY: number) => boolean) | undefined;
 
    constructor(mob: Mob, aiParams: WanderAIParams) {

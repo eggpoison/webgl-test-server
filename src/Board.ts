@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, Vector, WaterRockData, clampToBoardDimensions, randInt, randItem } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -335,7 +335,7 @@ abstract class Board {
          const tile = this.getTile(tileX, tileY);
          tileUpdates.push({
             tileIndex: tileIndex,
-            type: tile.type,
+            type: tile.type as unknown as TileType,
             isWall: tile.isWall
          });
       }
@@ -366,8 +366,8 @@ abstract class Board {
          }
 
          const dirtTile = Board.getTile(tileX, tileY);
-         if (dirtTile.type === TileType.dirt) {
-            new Tile(tileX, tileY, TileType.grass, "grasslands", false);
+         if (dirtTile.type === TileTypeConst.dirt) {
+            new Tile(tileX, tileY, TileTypeConst.grass, "grasslands", false);
          }
       }
    }
