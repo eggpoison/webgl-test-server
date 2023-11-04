@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, randItem } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -10,6 +10,8 @@ import { getTilesOfType, removeEntityFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import GameObject from "./GameObject";
+import Hitbox from "./hitboxes/Hitbox";
+import RectangularHitbox from "./hitboxes/RectangularHitbox";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -70,15 +72,15 @@ abstract class Board {
       // Add river stepping stones to chunks
       for (const steppingStoneData of generationInfo.riverSteppingStones) {
          const size = RIVER_STEPPING_STONE_SIZES[steppingStoneData.size];
-         const minChunkX = Math.max(Math.min(Math.floor((steppingStoneData.position[0] - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkX = Math.max(Math.min(Math.floor((steppingStoneData.position[0] + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const minChunkY = Math.max(Math.min(Math.floor((steppingStoneData.position[1] - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkY = Math.max(Math.min(Math.floor((steppingStoneData.position[1] + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkX = Math.max(Math.min(Math.floor((steppingStoneData.positionX - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor((steppingStoneData.positionX + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor((steppingStoneData.positionY - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor((steppingStoneData.positionY + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
          
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
                const chunk = this.getChunk(chunkX, chunkY);
-               chunk.addRiverSteppingStone(steppingStoneData);
+               chunk.riverSteppingStones.push(steppingStoneData);
             }
          }
       }
@@ -107,14 +109,6 @@ abstract class Board {
       const previousCheck = (this.ticks - 1) / ticksPerInterval;
       const check = this.ticks / ticksPerInterval;
       return Math.floor(previousCheck) !== Math.floor(check);
-   }
-
-   public static getRiverFlowDirection(tileX: number, tileY: number): number {
-      if (!this.riverFlowDirections.hasOwnProperty(tileX) || !this.riverFlowDirections[tileX].hasOwnProperty(tileY)) {
-         throw new Error("Tried to get the river flow direction of a non-water tile.");
-      }
-      
-      return this.riverFlowDirections[tileX][tileY];
    }
 
    public static getRiverFlowDirections(): Record<number, Record<number, number>> {
@@ -306,8 +300,18 @@ abstract class Board {
             if (gameObject.tile.x !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
                 gameObject.tile.y !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
                gameObject.updateTile();
-               gameObject.isInRiver = gameObject.checkIsInRiver();
+               gameObject.tileMoveSpeedMultiplier = gameObject.getTileMoveSpeedMultiplier();
             }
+            // Move at normal speed on stepping stones
+            if (gameObject.tile.type === TileTypeConst.water) {
+               if (!gameObject.isInRiver) {
+                  gameObject.tileMoveSpeedMultiplier = 1;
+               } else {
+                  gameObject.tileMoveSpeedMultiplier = gameObject.getTileMoveSpeedMultiplier();
+               }
+            }
+
+            gameObject.isInRiver = gameObject.checkIsInRiver();
          }
 
          // @Incomplete: We may need to set hitboxesAreDirty in the resolveBorderCollisions and other places, so this actually gets called
@@ -367,7 +371,7 @@ abstract class Board {
 
          const dirtTile = Board.getTile(tileX, tileY);
          if (dirtTile.type === TileTypeConst.dirt) {
-            new Tile(tileX, tileY, TileTypeConst.grass, "grasslands", false);
+            new Tile(tileX, tileY, TileTypeConst.grass, "grasslands", false, 0);
          }
       }
    }
@@ -508,29 +512,36 @@ abstract class Board {
          throw new Error("Position isn't in the board");
       }
       
-      // @Speed: Avoid creating a new hitbox every call
-      const testHitbox = new CircularHitbox();
-      testHitbox.radius = 1;
-      testHitbox.position.x = x;
-      testHitbox.position.y = y;
-      testHitbox.updateHitboxBounds();
+      // @Speed: Garbage collection
+      const testPosition = new Point(x, y);
 
-      const chunkX = Math.floor(x / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
-      const chunkY = Math.floor(y / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE);
+      const chunkX = Math.floor(x / SETTINGS.CHUNK_UNITS);
+      const chunkY = Math.floor(y / SETTINGS.CHUNK_UNITS);
 
       const entities = new Set<Entity>();
       
       const chunk = this.getChunk(chunkX, chunkY);
-      entityLoop: for (const entity of chunk.entities) {
+      for (const entity of chunk.entities) {
          for (const hitbox of entity.hitboxes) {
-            if (testHitbox.isColliding(hitbox)) {
+            if (this.hitboxIsInRange(testPosition, hitbox)) {
                entities.add(entity);
-               continue entityLoop;
+               break;
             }
          }
       }
 
       return entities;
+   }
+
+   private static hitboxIsInRange(testPosition: Point, hitbox: Hitbox): boolean {
+      // @Speed: This check is slow
+      if (hitbox.hasOwnProperty("radius")) {
+         // Circular hitbox
+         return circlesDoIntersect(testPosition, 1, hitbox.position, (hitbox as CircularHitbox).radius);
+      } else {
+         // Rectangular hitbox
+         return circleAndRectangleDoIntersect(testPosition, 1, hitbox.position, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+      }
    }
 
    public static getGameObject(id: number): GameObject {

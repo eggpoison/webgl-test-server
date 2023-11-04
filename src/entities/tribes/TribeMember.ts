@@ -148,7 +148,7 @@ abstract class TribeMember extends Mob {
    protected lastEatTicks = -99999;
    protected lastBowChargeTicks = -99999;
 
-   protected bowCooldowns: Record<number, number> = {};
+   protected bowCooldownTicks = 0;
 
    public immunityTimer = 0;
 
@@ -205,22 +205,26 @@ abstract class TribeMember extends Mob {
       this.tribe = tribe;
    }
 
+   public getTileMoveSpeedMultiplier(): number {
+      const armourInventory = this.forceGetComponent("inventory").getInventory("armourSlot");
+      if (armourInventory.itemSlots.hasOwnProperty(1)) {
+         // If snow armour is equipped, move at normal speed on snow tiles
+         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileTypeConst.snow) {
+            return 1;
+         }
+         // If fishlord suit is equipped, move at normal speed on snow tiles
+         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileTypeConst.water) {
+            return 1;
+         }
+      }
+
+      return super.getTileMoveSpeedMultiplier();
+   }
+
    public tick(): void {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
-
-      this.overrideMoveSpeedMultiplier = false;
-      if (armourInventory.itemSlots.hasOwnProperty(1)) {
-         // If snow armour is equipped, move at normal speed on snow tiles
-         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileTypeConst.snow) {
-            this.overrideMoveSpeedMultiplier = true;
-         }
-         // If fishlord suit is equipped, move at normal speed on snow tiles
-         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileTypeConst.water) {
-            this.overrideMoveSpeedMultiplier = true;
-         }
-      }
 
       super.tick();
 
@@ -242,13 +246,9 @@ abstract class TribeMember extends Mob {
          this.forceGetComponent("health").removeDefence("armour");
       }
 
-      // @Speed
-      for (const _itemSlot of Object.keys(this.bowCooldowns)) {
-         const itemSlot = Number(_itemSlot);
-         this.bowCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
-         if (this.bowCooldowns[itemSlot] < 0) {
-            delete this.bowCooldowns[itemSlot];
-         }
+      this.bowCooldownTicks--;
+      if (this.bowCooldownTicks < 0) {
+         this.bowCooldownTicks = 0;
       }
 
       // Update backpack
@@ -630,7 +630,7 @@ abstract class TribeMember extends Mob {
             this.lastBowChargeTicks = Board.ticks;
 
             const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
-            this.bowCooldowns[itemSlot] = itemInfo.shotCooldown;
+            this.bowCooldownTicks = itemInfo.shotCooldownTicks;
 
             // Offset the arrow's spawn to be just outside of the tribe member's hitbox
             const spawnPosition = this.position.copy();
@@ -700,7 +700,7 @@ abstract class TribeMember extends Mob {
    }
 
    private canFire(itemSlot: number): boolean {
-      return !this.bowCooldowns.hasOwnProperty(itemSlot);
+      return this.bowCooldownTicks === 0;
    }
 
    private canBePlaced(spawnPositionX: number, spawnPositionY: number, placeRotation: number, itemType: PlaceableItemType): boolean {

@@ -60,6 +60,8 @@ const barrelHasFood = (barrel: Barrel): boolean => {
 }
 
 class Tribesman extends TribeMember {
+   private static readonly RADIUS = 32;
+   
    private static readonly INVENTORY_SIZE = 3;
    
    private static readonly VISION_RANGE = 320;
@@ -79,7 +81,7 @@ class Tribesman extends TribeMember {
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_MELEE_ATTACK_DISTANCE = 120;
-   private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 500;
+   private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 300;
 
    private static readonly BARREL_INTERACT_DISTANCE = 80;
 
@@ -101,7 +103,7 @@ class Tribesman extends TribeMember {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
 
       const hitbox = new CircularHitbox();
-      hitbox.radius = 32;
+      hitbox.radius = Tribesman.RADIUS;
       this.addHitbox(hitbox);
 
       const inventoryComponent = this.forceGetComponent("inventory");
@@ -178,7 +180,8 @@ class Tribesman extends TribeMember {
       for (const entity of this.visibleEntities) {
          if (entity.type === "player" && (entity as Player).interactingEntityID === this.id) {
             this.rotation = this.position.calculateAngleBetween(entity.position);
-            if (this.willStopAtDesiredDistance(80, entity.position)) {
+            const distance = this.position.calculateDistanceBetween(entity.position);
+            if (this.willStopAtDesiredDistance(80, distance)) {
                this.terminalVelocity = 0;
                this.acceleration.x = 0;
                this.acceleration.y = 0;
@@ -519,24 +522,14 @@ class Tribesman extends TribeMember {
             // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
             if (this.currentAction !== TribeMemberAction.charge_bow) {
                const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
-               this.bowCooldowns[this.selectedItemSlot] = itemInfo.shotCooldown;
+               this.bowCooldownTicks = itemInfo.shotCooldownTicks;
             }
             this.currentAction = TribeMemberAction.charge_bow;
             
-            if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, entity.position)) {
-               this.terminalVelocity = 0;
-               this.acceleration.x = 0;
-               this.acceleration.y = 0;
-            } else {
-               this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
-               const moveAngle = this.position.calculateAngleBetween(entity.position);
-               this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(moveAngle);
-               this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(moveAngle);
-            }
-            this.rotation = this.position.calculateAngleBetween(entity.position);
+            this.engageTargetRanged(entity);
 
             // If the bow is fully charged, fire it
-            if (!this.bowCooldowns.hasOwnProperty(this.selectedItemSlot)) {
+            if (this.bowCooldownTicks === 0) {
                this.useItem(selectedItem, this.selectedItemSlot);
             }
 
@@ -545,28 +538,61 @@ class Tribesman extends TribeMember {
       }
 
       // If a melee attack is being done, update to attack at melee distance
-      this.rotation = this.position.calculateAngleBetween(entity.position);
-      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, entity.position)) {
-         this.terminalVelocity = 0;
-         this.acceleration.x = 0;
-         this.acceleration.y = 0;
-      } else {
-         this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
-         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
-         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
-      }
+      this.engageTargetMelee(entity);
 
       this.currentAction = TribeMemberAction.none;
       
       this.doMeleeAttack();
    }
 
+   private engageTargetRanged(target: Entity): void {
+      const distance = this.calculateDistanceFromEntity(target);
+      this.rotation = this.position.calculateAngleBetween(target.position);
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
+         this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
+         this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(this.rotation + Math.PI);
+         this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(this.rotation + Math.PI);
+      } else {
+         this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
+         this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(this.rotation);
+         this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(this.rotation);
+      }
+   }
+
+   private engageTargetMelee(target: Entity): void {
+      const distance = this.calculateDistanceFromEntity(target);
+      this.rotation = this.position.calculateAngleBetween(target.position);
+      if (this.willStopAtDesiredDistance(Tribesman.DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
+         this.terminalVelocity = Tribesman.SLOW_TERMINAL_VELOCITY;
+         this.acceleration.x = Tribesman.SLOW_ACCELERATION * Math.sin(this.rotation + Math.PI);
+         this.acceleration.y = Tribesman.SLOW_ACCELERATION * Math.cos(this.rotation + Math.PI);
+      } else {
+         this.terminalVelocity = Tribesman.TERMINAL_VELOCITY;
+         this.acceleration.x = Tribesman.ACCELERATION * Math.sin(this.rotation);
+         this.acceleration.y = Tribesman.ACCELERATION * Math.cos(this.rotation);
+      }
+   }
+
+   private calculateDistanceFromEntity(entity: Entity): number {
+      let distance = this.position.calculateDistanceBetween(entity.position);
+      for (const hitbox of entity.hitboxes) {
+         if (hitbox.hasOwnProperty("radius")) {
+            const hitboxDistance = this.position.calculateDistanceBetween(hitbox.position) - Tribesman.RADIUS - (hitbox as CircularHitbox).radius;
+            if (hitboxDistance < distance) {
+               distance = hitboxDistance;
+            }
+         } else {
+            // @Incomplete: Rectangular hitbox dist
+         }
+      }
+      return distance;
+   }
+
    // @Cleanup: Move the following 2 functions to ai-shared
 
-   private willStopAtDesiredDistance(desiredDistance: number, targetPosition: Point): boolean {
+   private willStopAtDesiredDistance(desiredDistance: number, distance: number): boolean {
       // If the entity has a desired distance from its target, try to stop at that desired distance
       const stopDistance = this.estimateStopDistance();
-      const distance = this.position.calculateDistanceBetween(targetPosition);
       return distance - stopDistance <= desiredDistance;
    }
 

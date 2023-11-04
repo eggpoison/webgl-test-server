@@ -80,7 +80,7 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
          biomeName: previousTile.biomeName,
          isWall: previousTile.isWall
       };
-      new Tile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall);
+      new Tile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall, 0);
 
       this.grazeCooldown = randFloat(TileConsumeAI.GRAZE_COOLDOWN_RANGE[0], TileConsumeAI.GRAZE_COOLDOWN_RANGE[1]);
    }

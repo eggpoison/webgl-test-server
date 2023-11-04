@@ -15,13 +15,16 @@ class Tile {
    public readonly biomeName: BiomeName;
    public readonly isWall: boolean;
 
-   constructor(x: number, y: number, tileType: TileTypeConst, biomeName: BiomeName, isWall: boolean) {
+   public readonly riverFlowDirection: number;
+
+   constructor(x: number, y: number, tileType: TileTypeConst, biomeName: BiomeName, isWall: boolean, riverFlowDirection: number) {
       this.x = x;
       this.y = y;
 
       this.type = tileType;
       this.biomeName = biomeName;
       this.isWall = isWall;
+      this.riverFlowDirection = riverFlowDirection;
 
       addTileToCensus(this);
 

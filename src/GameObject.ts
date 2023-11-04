@@ -1,4 +1,4 @@
-import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, Vector, clampToBoardDimensions, distToSegment, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, TribeMemberAction, Vector, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -7,6 +7,19 @@ import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Mob from "./entities/mobs/Mob";
+
+const FRICTION_MULTIPLY_VALS = TILE_FRICTIONS.map(friction => {
+   let multiplyVal = 1 / (1 + 3 / SETTINGS.TPS * friction);
+   return multiplyVal;
+});
+
+const a = new Array<number>();
+const b = new Array<number>();
+for (let i = 0; i < 8; i++) {
+   const angle = i / 4 * Math.PI;
+   a.push(Math.sin(angle));
+   b.push(Math.cos(angle));
+}
 
 let idCounter = 0;
 
@@ -24,6 +37,7 @@ export interface GameObjectEvents {
    during_dropped_item_collision: (droppedItem: DroppedItem) => void;
 }
 
+// @Cleanup: Remove this and just do all collision stuff in one function
 enum TileCollisionAxis {
    none = 0,
    x = 1,
@@ -99,7 +113,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
 
    public isInRiver: boolean;
 
-   protected overrideMoveSpeedMultiplier = false;
+   public tileMoveSpeedMultiplier = 1;
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
@@ -277,8 +291,12 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       this.tile = Board.getTile(tileX, tileY);
    }
 
+   public getTileMoveSpeedMultiplier(): number {
+      return TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type];
+   }
+
    public checkIsInRiver(): boolean {
-      if (this.tile.type !== TileTypeConst.water) {
+      if (this.tile.type !== TileTypeConst.water || !this.isAffectedByFriction) {
          return false;
       }
 
@@ -287,7 +305,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          for (const steppingStone of chunk.riverSteppingStones) {
             const size = RIVER_STEPPING_STONE_SIZES[steppingStone.size];
             
-            const dist = this.position.calculateDistanceBetween(steppingStone.position);
+            const dist = distance(this.position.x, this.position.y, steppingStone.positionX, steppingStone.positionY);
             if (dist <= size/2) {
                return false;
             }
@@ -298,97 +316,89 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 
    public applyPhysics(): void {
-      let moveSpeedMultiplier: number;
-      if (this.overrideMoveSpeedMultiplier) {
-         moveSpeedMultiplier = 1;
-      } else if (this.tile.type === TileTypeConst.water && !this.isInRiver) {
-         moveSpeedMultiplier = this.moveSpeedMultiplier;
-      } else {
-         moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
-      }
-
-      const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
-
-      let tileFrictionReduceAmount: number;
-      
-      // Friction
-      if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
-         // @Speed
-         const amountBefore = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
-         const divideAmount = 1 + 3 / SETTINGS.TPS * TILE_FRICTIONS[this.tile.type];
-         this.velocity.x /= divideAmount;
-         this.velocity.y /= divideAmount;
-         tileFrictionReduceAmount = amountBefore - Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
-      } else {
-         tileFrictionReduceAmount = 0;
-      }
-      
       // Accelerate
       if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
+         const moveSpeedMultiplier = this.tileMoveSpeedMultiplier * this.moveSpeedMultiplier;
+
+         const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
+         const terminalVelocitySquared = terminalVelocity * terminalVelocity;
+
          const friction = TILE_FRICTIONS[this.tile.type];
          let accelerateAmountX = this.acceleration.x * friction * moveSpeedMultiplier / SETTINGS.TPS;
          let accelerateAmountY = this.acceleration.y * friction * moveSpeedMultiplier / SETTINGS.TPS;
 
-         const velocityMagnitude = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
+         const velocityMagnitudeSquared = this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y;
 
          // Make acceleration slow as the game object reaches its terminal velocity
-         if (velocityMagnitude < terminalVelocity) {
+         if (velocityMagnitudeSquared < terminalVelocitySquared) {
+            const velocityMagnitude = Math.sqrt(velocityMagnitudeSquared);
             const progressToTerminalVelocity = velocityMagnitude / terminalVelocity;
             accelerateAmountX *= 1 - Math.pow(progressToTerminalVelocity, 2);
             accelerateAmountY *= 1 - Math.pow(progressToTerminalVelocity, 2);
          }
-
-         // @Speed
-         const accelerateAmountLength = Math.sqrt(Math.pow(accelerateAmountX, 2) + Math.pow(accelerateAmountY, 2));
-         accelerateAmountX += tileFrictionReduceAmount * accelerateAmountX / accelerateAmountLength;
-         accelerateAmountY += tileFrictionReduceAmount * accelerateAmountY / accelerateAmountLength;
          
          // Add acceleration to velocity
          this.velocity.x += accelerateAmountX;
          this.velocity.y += accelerateAmountY;
          
          // Don't accelerate past terminal velocity
-          // @Speed
-         const newVelocityMagnitude = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
-         if (newVelocityMagnitude > terminalVelocity && newVelocityMagnitude > velocityMagnitude) {
-            if (velocityMagnitude < terminalVelocity) {
+         // @Speed
+         const newVelocityMagnitudeSquared = this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y;
+         const newVelocityMagnitude = Math.sqrt(newVelocityMagnitudeSquared);
+         if (newVelocityMagnitude > terminalVelocity) {
+            if (velocityMagnitudeSquared < terminalVelocitySquared) {
+               // Set magnitude of velocity to terminal velocity
                this.velocity.x *= terminalVelocity / newVelocityMagnitude;
                this.velocity.y *= terminalVelocity / newVelocityMagnitude;
             } else {
+               // If already exceeded terminal velocity, don't apply any velocity
+               const velocityMagnitude = Math.sqrt(velocityMagnitudeSquared);
                this.velocity.x *= velocityMagnitude / newVelocityMagnitude;
                this.velocity.y *= velocityMagnitude / newVelocityMagnitude;
+
+               // Tile friction
+               if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
+                  const multiplyAmount = FRICTION_MULTIPLY_VALS[this.tile.type];
+                  this.velocity.x *= multiplyAmount;
+                  this.velocity.y *= multiplyAmount;
+               }
             }
          }
-      // Friction
-      } else if (this.velocity.x !== 0 || this.velocity.y !== 0) {
-         // 
-         // Apply friction
-         // 
-
-         const xSignBefore = Math.sign(this.velocity.x);
+      } else {
+         // Tile friction
+         if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
+            const multiplyAmount = FRICTION_MULTIPLY_VALS[this.tile.type];
+            this.velocity.x *= multiplyAmount;
+            this.velocity.y *= multiplyAmount;
+         }
          
-         // @Speed
-         const velocityLength = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
-         this.velocity.x = (velocityLength - 3) * this.velocity.x / velocityLength;
-         this.velocity.y = (velocityLength - 3) * this.velocity.y / velocityLength;
-         if (Math.sign(this.velocity.x) !== xSignBefore) {
-            this.velocity.x = 0;
-            this.velocity.y = 0;
+         // Global constant friction
+         if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+            const xSignBefore = Math.sign(this.velocity.x);
+            
+            const velocityLength = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
+            this.velocity.x = (velocityLength - 3) * this.velocity.x / velocityLength;
+            this.velocity.y = (velocityLength - 3) * this.velocity.y / velocityLength;
+            if (Math.sign(this.velocity.x) !== xSignBefore) {
+               this.velocity.x = 0;
+               this.velocity.y = 0;
+            }
          }
       }
 
       // If the game object is in a river, push them in the flow direction of the river
-      if (this.isAffectedByFriction && this.isInRiver && !this.overrideMoveSpeedMultiplier) {
-         const flowDirection = Board.getRiverFlowDirection(this.tile.x, this.tile.y);
-         this.velocity.x += 240 / SETTINGS.TPS * Math.sin(flowDirection);
-         this.velocity.y += 240 / SETTINGS.TPS * Math.cos(flowDirection);
+      // The tileMoveSpeedMultiplier check is so that game objects on stepping stones aren't pushed
+      if (this.isInRiver && this.tileMoveSpeedMultiplier !== 1) {
+         const flowDirection = this.tile.riverFlowDirection;
+         this.velocity.x += 240 / SETTINGS.TPS * a[flowDirection];
+         this.velocity.y += 240 / SETTINGS.TPS * b[flowDirection];
       }
 
-      // Apply velocity
-      this.position.x += this.velocity.x / SETTINGS.TPS;
-      this.position.y += this.velocity.y / SETTINGS.TPS;
-
       if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+         // Apply velocity
+         this.position.x += this.velocity.x / SETTINGS.TPS;
+         this.position.y += this.velocity.y / SETTINGS.TPS;
+
          this.positionIsDirty = true;
          this.hitboxesAreDirty = true;
       }

@@ -188,25 +188,19 @@ abstract class Mob extends Entity {
    /** Finds all entities within the range of the mob's vision */
    private updateVisibleGameObjects(): void {
       // @Speed: Garbage collection, and likely uses a whole ton of malloc under the hood
-      this.visibleGameObjects = [this];
-      this.visibleEntities = [this];
+      this.visibleGameObjects = [];
+      this.visibleEntities = [];
       this.visibleDroppedItems = [];
 
-      const numPotentialGameObjects = this.potentialVisibleGameObjects.length;
-      for (let i = 0; i < numPotentialGameObjects; i++) {
+      for (let i = 0; i < this.potentialVisibleGameObjects.length; i++) {
          const gameObject = this.potentialVisibleGameObjects[i];
-         // Don't add existing game objects
-         // @Cleanup: This wouldn't be necessary if 
-         if (this.visibleGameObjects.indexOf(gameObject) !== -1) {
-            continue;
-         }
-
+         
          if (Math.pow(this.position.x - gameObject.position.x, 2) + Math.pow(this.position.y - gameObject.position.y, 2) <= this.visionRangeSquared) {
             gameObject.addToMobVisibleGameObjects(this);
             continue;
          }
 
-         // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
+         // If the mob can see any of the game object's hitboxes, it is visible
          const numHitboxes = gameObject.hitboxes.length;
          for (let j = 0; j < numHitboxes; j++) {
             const hitbox = gameObject.hitboxes[j];

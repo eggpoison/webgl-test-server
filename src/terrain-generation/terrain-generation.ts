@@ -351,6 +351,7 @@ function generateTerrain(): TerrainGenerationInfo {
    const riverSteppingStones = new Array<RiverSteppingStoneData>();
 
    // Generate features for the crossings
+   let currentCrossingGroupID = 0;
    for (const crossing of riverCrossings) {
       const minX = (crossing.startTileX + 0.5) * SETTINGS.TILE_SIZE;
       const maxX = (crossing.endTileX + 0.5) * SETTINGS.TILE_SIZE;
@@ -388,16 +389,18 @@ function generateTerrain(): TerrainGenerationInfo {
 
          // Don't overlap with existing stones in the crossing
          for (const stone of localCrossingStones) {
-            const dist = Math.sqrt(Math.pow(x - stone.position[0], 2) + Math.pow(y - stone.position[1], 2));
+            const dist = Math.sqrt(Math.pow(x - stone.positionX, 2) + Math.pow(y - stone.positionY, 2));
             if (dist - RIVER_STEPPING_STONE_SIZES[stone.size]/2 - radius < RIVER_STEPPING_STONE_SPACING) {
                continue stoneCreationLoop;
             }
          }
 
          const data: RiverSteppingStoneData = {
-            position: [x, y],
+            positionX: x,
+            positionY: y,
             size: stoneSize,
-            rotation: 2 * Math.PI * SRandom.next()
+            rotation: 2 * Math.PI * SRandom.next(),
+            groupID: currentCrossingGroupID
          };
          localCrossingStones.push(data);
          riverSteppingStones.push(data);
@@ -434,18 +437,44 @@ function generateTerrain(): TerrainGenerationInfo {
             opacity: SRandom.next()
          });
       }
+
+      currentCrossingGroupID++;
    }
 
    generateTileInfo(tileInfoArray);
 
    // Make an array of tiles from the tile info array
    const tiles = new Array<Array<Tile>>();
-   for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
+   for (let tileX = 0; tileX < SETTINGS.BOARD_DIMENSIONS; tileX++) {
       tiles.push(new Array<Tile>());
-      for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
+      for (let tileY = 0; tileY < SETTINGS.BOARD_DIMENSIONS; tileY++) {
+         let riverFlowDirection: number;
+         if (riverFlowDirections.hasOwnProperty(tileX) && riverFlowDirections[tileX].hasOwnProperty(tileY)) {
+            let desired = riverFlowDirections[tileX][tileY];
+            if (desired >= 2 * Math.PI) {
+               desired -= 2 * Math.PI;
+            } else if (desired < 0) {
+               desired += 2 * Math.PI;
+            }
+
+            for (let i = 0; i < 8; i++) {
+               const angle = i / 4 * Math.PI;
+               if (Math.abs(angle - desired) < 0.01) {
+                  riverFlowDirection = i;
+                  break;
+               }
+            }
+            if (typeof riverFlowDirection! === "undefined") {
+               console.log(riverFlowDirections[tileX][tileY]);
+               throw new Error();
+            }
+         } else {
+            riverFlowDirection = 0;
+         }
+         
          // Create the tile
-         const tileInfo = tileInfoArray[x][y] as TileInfoConst;
-         tiles[x].push(new Tile(x, y, tileInfo.type, tileInfo.biomeName, tileInfo.isWall));
+         const tileInfo = tileInfoArray[tileX][tileY] as TileInfoConst;
+         tiles[tileX].push(new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, tileInfo.isWall, riverFlowDirection));
       }
    }
 

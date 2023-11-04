@@ -5,7 +5,7 @@
       "esModuleInterop": true,
       "strict": true,
       "sourceMap": true,
-      "removeComments": true,
+      "removeComments": false,
       "baseUrl": "./"
    },
    "include": [

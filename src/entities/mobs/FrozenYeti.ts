@@ -511,12 +511,9 @@ class FrozenYeti extends Mob {
    }
 
    private findTargets(): ReadonlyArray<Entity> {
-      const targets = getEntitiesInVisionRange(this.position.x, this.position.y, FrozenYeti.VISION_RANGE);
-
-      // Don't attack yourself
-      const idx = targets.indexOf(this);
-      if (idx !== -1) {
-         targets.splice(idx, 1);
+      const targets = new Array<Entity>();
+      for (const entity of this.visibleEntities) {
+         targets.push(entity);
       }
 
       for (let i = 0; i < targets.length; i++) {

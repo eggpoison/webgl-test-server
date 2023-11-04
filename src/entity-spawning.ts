@@ -110,16 +110,16 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.004,
       maxDensity: 0.008
    },
-   // {
-   //    entityType: "fish",
-   //    spawnableTiles: [TileType.water],
-   //    spawnRate: 0.015,
-   //    maxDensity: 0.03,
-   //    packSpawningInfo: {
-   //       size: [3, 4],
-   //       spawnRange: 200
-   //    }
-   // }
+   {
+      entityType: "fish",
+      spawnableTiles: [TileTypeConst.water],
+      spawnRate: 0.015,
+      maxDensity: 0.03,
+      packSpawningInfo: {
+         size: [3, 4],
+         spawnRange: 200
+      }
+   }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */

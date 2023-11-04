@@ -1,6 +1,6 @@
 import { AttackPacket, BowItemInfo, canCraftRecipe, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { getItemStackSize, itemIsStackable } from "../../items/Item";
+import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
 import Entity from "../Entity";
 import Board from "../../Board";
@@ -198,27 +198,30 @@ class Player extends TribeMember {
       }
    }
 
-   public throwHeldItem(throwDirection: number): void {
+   public dropItem(inventoryName: string, itemSlot: number, dropAmount: number, throwDirection: number): void {
       const inventoryComponent = this.forceGetComponent("inventory");
-      const heldItemInventory = inventoryComponent.getInventory("heldItemSlot");
-      if (heldItemInventory.itemSlots.hasOwnProperty(1)) {
-         const dropPosition = this.position.copy();
-         dropPosition.x += Player.ITEM_THROW_OFFSET * Math.sin(throwDirection);
-         dropPosition.y += Player.ITEM_THROW_OFFSET * Math.cos(throwDirection);
-
-         // Create the dropped item
-         const heldItem = heldItemInventory.itemSlots[1];
-         const droppedItem = new DroppedItem(dropPosition, heldItem);
-
-         // Add a pickup cooldown so the item isn't picked up immediately
-         droppedItem.addPlayerPickupCooldown(this.id, Player.THROWN_ITEM_PICKUP_COOLDOWN);
-
-         // Throw the dropped item away from the player
-         droppedItem.velocity.x += Player.ITEM_THROW_FORCE * Math.sin(throwDirection);
-         droppedItem.velocity.y += Player.ITEM_THROW_FORCE * Math.cos(throwDirection);
-         
-         inventoryComponent.removeItemFromInventory("heldItemSlot", 1);
+      const inventory = inventoryComponent.getInventory(inventoryName);
+      if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+         return;
       }
+      
+      const itemType = inventory.itemSlots[itemSlot].type;
+      const amountRemoved = inventoryComponent.consumeItem(inventoryName, itemSlot, dropAmount);
+
+      const dropPosition = this.position.copy();
+      dropPosition.x += Player.ITEM_THROW_OFFSET * Math.sin(throwDirection);
+      dropPosition.y += Player.ITEM_THROW_OFFSET * Math.cos(throwDirection);
+
+      // Create the dropped item
+      const item = new Item(itemType, amountRemoved);
+      const droppedItem = new DroppedItem(dropPosition, item);
+
+      // Add a pickup cooldown so the item isn't picked up immediately
+      droppedItem.addPlayerPickupCooldown(this.id, Player.THROWN_ITEM_PICKUP_COOLDOWN);
+
+      // Throw the dropped item away from the player
+      droppedItem.velocity.x += Player.ITEM_THROW_FORCE * Math.sin(throwDirection);
+      droppedItem.velocity.y += Player.ITEM_THROW_FORCE * Math.cos(throwDirection);
    }
 
    public setTribe(tribe: Tribe | null): void {
@@ -247,7 +250,7 @@ class Player extends TribeMember {
       const bow = this.forceGetComponent("inventory").getItem("hotbar", this.selectedItemSlot);
       if (bow !== null) {
          const itemInfo = ITEM_INFO_RECORD[bow.type] as BowItemInfo;
-         this.bowCooldowns[this.selectedItemSlot] = itemInfo.shotCooldown;
+         this.bowCooldownTicks = itemInfo.shotCooldownTicks;
          this.lastBowChargeTicks = Board.ticks;
       }
       

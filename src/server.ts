@@ -236,6 +236,8 @@ class GameServer {
    }
 
    private tick(): void {
+      const tickStartTime = OPTIONS.inBenchmarkMode ? performance.now() : 0;
+      
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
 
@@ -270,8 +272,10 @@ class GameServer {
       Board.ticks++;
       Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
 
-      if (OPTIONS.inBenchmarkMode) {
-         console.log("[BENCHMARK] Game objects: " + Board.gameObjects.length + " (" + Object.keys(Board.entities).length + " | " + Object.keys(Board.droppedItems).length + " | " + Object.keys(Board.projectiles).length + ")");
+      if (OPTIONS.logging) {
+         const tickEndTime = performance.now();
+         const tickTime = tickEndTime - tickStartTime;
+         console.log("[BENCHMARK] " + tickTime.toFixed(2) + "ms | Game objects: " + Board.gameObjects.length + " (" + Object.keys(Board.entities).length + " | " + Object.keys(Board.droppedItems).length + " | " + Object.keys(Board.projectiles).length + ")");
       }
    }
 
@@ -511,10 +515,17 @@ class GameServer {
             }
          });
 
-         socket.on("throw_held_item_packet", (throwDirection: number) => {
+         socket.on("held_item_drop", (dropAmount: number, throwDirection: number) => {
             if (this.playerDataRecord.hasOwnProperty(socket.id)) {
                const player = this.playerDataRecord[socket.id].instance;
-               player.throwHeldItem(throwDirection);
+               player.dropItem("heldItemSlot", 1, dropAmount, throwDirection);
+            }
+         });
+
+         socket.on("item_drop", (itemSlot: number, dropAmount: number, throwDirection: number) => {
+            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
+               const player = this.playerDataRecord[socket.id].instance;
+               player.dropItem("hotbar", itemSlot, dropAmount, throwDirection);
             }
          });
 

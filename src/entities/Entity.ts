@@ -133,7 +133,7 @@ abstract class Entity extends GameObject<EntityEvents> {
 
       if (this.hasStatusEffect("burning")) {
          // If the entity is in a river, clear the fire effect
-         if (this.checkIsInRiver()) {
+         if (this.isInRiver) {
             this.clearStatusEffect("burning");
          } else {
             // Fire tick
