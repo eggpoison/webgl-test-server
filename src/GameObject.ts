@@ -336,6 +336,19 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
             accelerateAmountX *= 1 - Math.pow(progressToTerminalVelocity, 2);
             accelerateAmountY *= 1 - Math.pow(progressToTerminalVelocity, 2);
          }
+
+         if (this.isAffectedByFriction) {
+            const amountBefore = this.velocity.length();
+            const divideAmount = 1 + 3 / SETTINGS.TPS * TILE_FRICTIONS[this.tile.type];
+            this.velocity.x /= divideAmount;
+            this.velocity.y /= divideAmount;
+            const tileFrictionReduceAmount = amountBefore - this.velocity.length();
+
+            // Undo tile friction, but in the direction of acceleration instead of velocity
+            const accelerateAmountLength = Math.sqrt(Math.pow(accelerateAmountX, 2) + Math.pow(accelerateAmountY, 2));
+            accelerateAmountX += tileFrictionReduceAmount * accelerateAmountX / accelerateAmountLength;
+            accelerateAmountY += tileFrictionReduceAmount * accelerateAmountY / accelerateAmountLength;
+         }
          
          // Add acceleration to velocity
          this.velocity.x += accelerateAmountX;
@@ -355,13 +368,6 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
                const velocityMagnitude = Math.sqrt(velocityMagnitudeSquared);
                this.velocity.x *= velocityMagnitude / newVelocityMagnitude;
                this.velocity.y *= velocityMagnitude / newVelocityMagnitude;
-
-               // Tile friction
-               if (this.isAffectedByFriction && (this.velocity.x !== 0 || this.velocity.y !== 0)) {
-                  const multiplyAmount = FRICTION_MULTIPLY_VALS[this.tile.type];
-                  this.velocity.x *= multiplyAmount;
-                  this.velocity.y *= multiplyAmount;
-               }
             }
          }
       } else {
