@@ -300,15 +300,6 @@ abstract class Board {
             if (gameObject.tile.x !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
                 gameObject.tile.y !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
                gameObject.updateTile();
-               gameObject.tileMoveSpeedMultiplier = gameObject.getTileMoveSpeedMultiplier();
-            }
-            // Move at normal speed on stepping stones
-            if (gameObject.tile.type === TileTypeConst.water) {
-               if (!gameObject.isInRiver) {
-                  gameObject.tileMoveSpeedMultiplier = 1;
-               } else {
-                  gameObject.tileMoveSpeedMultiplier = gameObject.getTileMoveSpeedMultiplier();
-               }
             }
 
             gameObject.isInRiver = gameObject.checkIsInRiver();

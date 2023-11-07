@@ -80,7 +80,7 @@ class Tribesman extends TribeMember {
    private static readonly ATTACK_RADIUS = 50;
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
-   private static readonly DESIRED_MELEE_ATTACK_DISTANCE = 120;
+   private static readonly DESIRED_MELEE_ATTACK_DISTANCE = 60;
    private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 300;
 
    private static readonly BARREL_INTERACT_DISTANCE = 80;

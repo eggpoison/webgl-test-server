@@ -331,7 +331,7 @@ class GameServer {
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
          const totem = new TribeTotem(new Point(spawnPosition.x + 600, spawnPosition.y));
-         const tribe = new Tribe(TribeType.frostlings, totem);
+         const tribe = new Tribe(TribeType.barbarians, totem);
 
          const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
          hut.rotation = 2 * Math.PI * Math.random();

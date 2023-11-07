@@ -39,6 +39,7 @@ class Fish extends Mob {
 
       this.colour = Math.floor(Math.random() * NUM_FISH_COLOURS);
       this.herdMemberHash = this.colour;
+      this.overrideMoveSpeedMultiplier = true;
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_fish, 1, false);
 
@@ -86,14 +87,9 @@ class Fish extends Mob {
       this.rotation = 2 * Math.PI * Math.random();
    }
 
-   public getTileMoveSpeedMultiplier(): number {
-      if (this.tile.type === TileTypeConst.water) {
-         return 1;
-      }
-      return super.getTileMoveSpeedMultiplier();
-   }
-
    public tick(): void {
+      this.overrideMoveSpeedMultiplier = this.tile.type === TileTypeConst.water;
+      
       super.tick();
 
       if (this.currentAI !== null && this.currentAI.type !== MobAIType.flail && (this.currentAI.type !== MobAIType.wander || this.currentAI.targetPosition !== null)) {

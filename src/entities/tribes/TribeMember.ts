@@ -205,26 +205,22 @@ abstract class TribeMember extends Mob {
       this.tribe = tribe;
    }
 
-   public getTileMoveSpeedMultiplier(): number {
-      const armourInventory = this.forceGetComponent("inventory").getInventory("armourSlot");
-      if (armourInventory.itemSlots.hasOwnProperty(1)) {
-         // If snow armour is equipped, move at normal speed on snow tiles
-         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileTypeConst.snow) {
-            return 1;
-         }
-         // If fishlord suit is equipped, move at normal speed on snow tiles
-         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileTypeConst.water) {
-            return 1;
-         }
-      }
-
-      return super.getTileMoveSpeedMultiplier();
-   }
-
    public tick(): void {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = inventoryComponent.getInventory("hotbar");
       const armourInventory = inventoryComponent.getInventory("armourSlot");
+
+      this.overrideMoveSpeedMultiplier = false;
+      if (armourInventory.itemSlots.hasOwnProperty(1)) {
+         // If snow armour is equipped, move at normal speed on snow tiles
+         if ((armourInventory.itemSlots[1].type === ItemType.frost_armour || armourInventory.itemSlots[1].type === ItemType.deepfrost_armour) && this.tile.type === TileTypeConst.snow) {
+            this.overrideMoveSpeedMultiplier = true;
+         }
+         // If fishlord suit is equipped, move at normal speed on snow tiles
+         if (armourInventory.itemSlots[1].type === ItemType.fishlord_suit && this.tile.type === TileTypeConst.water) {
+            this.overrideMoveSpeedMultiplier = true;
+         }
+      }
 
       super.tick();
 

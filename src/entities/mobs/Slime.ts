@@ -211,15 +211,10 @@ class Slime extends Mob {
       });
    }
 
-   public getTileMoveSpeedMultiplier(): number {
-      // Slimes move at normal speed on slime blocks
-      if (this.tile.type === TileTypeConst.slime) {
-         return 1;
-      }
-      return super.getTileMoveSpeedMultiplier();
-   }
-
    public tick(): void {
+      // Slimes move at normal speed on slime blocks
+      this.overrideMoveSpeedMultiplier = this.tile.type === TileTypeConst.slime;
+      
       super.tick();
 
       this.mergeWant += 1 / SETTINGS.TPS;
