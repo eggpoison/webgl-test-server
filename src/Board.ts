@@ -599,3 +599,76 @@ abstract class Board {
 }
 
 export default Board;
+
+/** Returns false if any of the tiles in the raycast don't match the inputted tile types. */
+export function tileRaytraceMatchesTileTypes(startX: number, startY: number, endX: number, endY: number, tileTypes: ReadonlyArray<TileTypeConst>): boolean {
+   /*
+   Kindly yoinked from https://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
+   */
+   
+   const x0 = Math.floor(startX / SETTINGS.TILE_SIZE);
+   const x1 = Math.floor(endX / SETTINGS.TILE_SIZE);
+   const y0 = Math.floor(startY / SETTINGS.TILE_SIZE);
+   const y1 = Math.floor(endY / SETTINGS.TILE_SIZE);
+   
+   const dx = Math.abs(x0 - x1);
+   const dy = Math.abs(y0 - y1);
+
+   // Starting tile coordinates
+   let x = Math.floor(x0);
+   let y = Math.floor(y0);
+
+   const dt_dx = 1 / dx;
+   const dt_dy = 1 / dy;
+
+   let t = 0;
+
+   let n  = 1;
+   let x_inc, y_inc;
+   let t_next_vertical, t_next_horizontal;
+
+   if (dx === 0) {
+      x_inc = 0;
+      t_next_horizontal = dt_dx; // Infinity
+   } else if (x1 > x0) {
+      x_inc = 1;
+      n += Math.floor(x1) - x;
+      t_next_horizontal = (Math.floor(x0) + 1 - x0) * dt_dx;
+   } else {
+      x_inc = -1;
+      n += x - Math.floor(x1);
+      t_next_horizontal = (x0 - Math.floor(x0)) * dt_dx;
+   }
+
+   if (dy === 0) {
+      y_inc = 0;
+      t_next_vertical = dt_dy; // Infinity
+   } else if (y1 > y0) {
+      y_inc = 1;
+      n += Math.floor(y1) - y;
+      t_next_vertical = (Math.floor(y0) + 1 - y0) * dt_dy;
+   } else {
+      y_inc = -1;
+      n += y - Math.floor(y1);
+      t_next_vertical = (y0 - Math.floor(y0)) * dt_dy;
+   }
+
+   for (; n > 0; n--) {
+      const tile = Board.getTile(x, y);
+      if (!tileTypes.includes(tile.type)) {
+         return false;
+      }
+
+      if (t_next_vertical < t_next_horizontal) {
+         y += y_inc;
+         t = t_next_vertical;
+         t_next_vertical += dt_dy;
+      } else {
+         x += x_inc;
+         t = t_next_horizontal;
+         t_next_horizontal += dt_dx;
+      }
+   }
+
+   return true;
+}

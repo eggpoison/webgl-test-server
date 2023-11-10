@@ -81,7 +81,8 @@ class Fish extends Mob {
          acceleration: Fish.ACCELERATION,
          terminalVelocity: Fish.TERMINAL_VELOCITY,
          wanderRate: 0.5,
-         validTileTargets: [TileTypeConst.water]
+         validTileTargets: [TileTypeConst.water],
+         strictValidation: true
       }));
 
       this.rotation = 2 * Math.PI * Math.random();

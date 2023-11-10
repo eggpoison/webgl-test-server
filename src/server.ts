@@ -28,36 +28,46 @@ node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
 
 */
 
-const bundleHitboxData = (hitbox: RectangularHitbox | CircularHitbox): RectangularHitboxData | CircularHitboxData => {
-   if (hitbox.hasOwnProperty("radius")) {
-      // Circular hitbox
-      return {
-         radius: (hitbox as CircularHitbox).radius,
-         offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : undefined,
-         offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : undefined
-      };
-   } else {
-      return {
-         width: (hitbox as RectangularHitbox).width,
-         height: (hitbox as RectangularHitbox).height,
-         offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : undefined,
-         offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : undefined
-      };
-   }
+const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitboxData => {
+   return {
+      width: hitbox.width,
+      height: hitbox.height,
+      offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : 0,
+      offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : 0
+   };
+}
+
+const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData => {
+   return {
+      radius: hitbox.radius,
+      offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : 0,
+      offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : 0
+   };
 }
 
 const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
    const healthComponent = entity.getComponent("health");
 
+   const circularHitboxes = new Array<CircularHitboxData>();
+   const rectangularHitboxes = new Array<RectangularHitboxData>();
+
+   for (let i = 0; i < entity.hitboxes.length; i++) {
+      const hitbox = entity.hitboxes[i];
+      if (hitbox.hasOwnProperty("radius")) {
+         circularHitboxes.push(bundleCircularHitboxData(hitbox as CircularHitbox));
+      } else {
+         rectangularHitboxes.push(bundleRectangularHitboxData(hitbox as RectangularHitbox));
+      }
+   }
+   
    return {
       id: entity.id,
       position: entity.position.package(),
       velocity: entity.velocity.package(),
       rotation: entity.rotation,
       mass: entity.mass,
-      hitboxes: entity.hitboxes.map(hitbox => {
-         return bundleHitboxData(hitbox);
-      }),
+      circularHitboxes: circularHitboxes,
+      rectangularHitboxes: rectangularHitboxes,
       ageTicks: entity.ageTicks,
       type: entity.type,
       clientArgs: entity.getClientArgs(),
@@ -68,30 +78,52 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
 }
 
 const bundleDroppedItemData = (droppedItem: DroppedItem): DroppedItemData => {
+   const circularHitboxes = new Array<CircularHitboxData>();
+   const rectangularHitboxes = new Array<RectangularHitboxData>();
+
+   for (let i = 0; i < droppedItem.hitboxes.length; i++) {
+      const hitbox = droppedItem.hitboxes[i];
+      if (hitbox.hasOwnProperty("radius")) {
+         circularHitboxes.push(bundleCircularHitboxData(hitbox as CircularHitbox));
+      } else {
+         rectangularHitboxes.push(bundleRectangularHitboxData(hitbox as RectangularHitbox));
+      }
+   }
+
    return {
       id: droppedItem.id,
       position: droppedItem.position.package(),
       velocity: droppedItem.velocity.package(),
       rotation: droppedItem.rotation,
       mass: droppedItem.mass,
-      hitboxes: droppedItem.hitboxes.map(hitbox => {
-         return bundleHitboxData(hitbox);
-      }),
+      circularHitboxes: circularHitboxes,
+      rectangularHitboxes: rectangularHitboxes,
       ageTicks: droppedItem.ageTicks,
       type: droppedItem.item.type
    };
 }
 
 const bundleProjectileData = (projectile: Projectile): ProjectileData => {
+   const circularHitboxes = new Array<CircularHitboxData>();
+   const rectangularHitboxes = new Array<RectangularHitboxData>();
+
+   for (let i = 0; i < projectile.hitboxes.length; i++) {
+      const hitbox = projectile.hitboxes[i];
+      if (hitbox.hasOwnProperty("radius")) {
+         circularHitboxes.push(bundleCircularHitboxData(hitbox as CircularHitbox));
+      } else {
+         rectangularHitboxes.push(bundleRectangularHitboxData(hitbox as RectangularHitbox));
+      }
+   }
+
    return {
       id: projectile.id,
       position: projectile.position.package(),
       velocity: projectile.velocity.package(),
       rotation: projectile.rotation,
       mass: projectile.mass,
-      hitboxes: projectile.hitboxes.map(hitbox => {
-         return bundleHitboxData(hitbox);
-      }),
+      circularHitboxes: circularHitboxes,
+      rectangularHitboxes: rectangularHitboxes,
       ageTicks: projectile.ageTicks,
       type: projectile.type,
       data: projectile.data
@@ -236,7 +268,7 @@ class GameServer {
    }
 
    private tick(): void {
-      const tickStartTime = OPTIONS.inBenchmarkMode ? performance.now() : 0;
+      const tickStartTime = OPTIONS.logging ? performance.now() : 0;
       
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
@@ -317,12 +349,12 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         // const spawnPosition = this.generatePlayerSpawnPosition();
+         const spawnPosition = this.generatePlayerSpawnPosition();
 
-         let spawnPosition: Point;
-         do {
-            spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
-         } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).biomeName !== "tundra");
+         // let spawnPosition: Point;
+         // do {
+         //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
+         // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).biomeName !== "tundra");
 
          // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
          // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));
@@ -330,12 +362,12 @@ class GameServer {
 
          // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
 
-         const totem = new TribeTotem(new Point(spawnPosition.x + 600, spawnPosition.y));
-         const tribe = new Tribe(TribeType.barbarians, totem);
+         // const totem = new TribeTotem(new Point(spawnPosition.x + 600, spawnPosition.y));
+         // const tribe = new Tribe(TribeType.barbarians, totem);
 
-         const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
-         hut.rotation = 2 * Math.PI * Math.random();
-         tribe.registerNewHut(hut);
+         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
+         // hut.rotation = 2 * Math.PI * Math.random();
+         // tribe.registerNewHut(hut);
          // const hut2 = new TribeHut(new Point(spawnPosition.x + 390, spawnPosition.y + 300), tribe);
          // hut2.rotation = 2 * Math.PI * Math.random();
          // tribe.registerNewHut(hut2);

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, ItemType, MOB_ENTITY_TYPES, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
+import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, ItemType, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
@@ -88,7 +88,8 @@ class Cow extends Mob {
       this.addAI(new WanderAI(this, {
          wanderRate: 0.6,
          acceleration: 100,
-         terminalVelocity: 50
+         terminalVelocity: 50,
+         strictValidation: false
       }));
 
       const hitbox = new RectangularHitbox();

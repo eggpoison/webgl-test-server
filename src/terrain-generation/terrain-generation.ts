@@ -8,12 +8,13 @@ import Board from "../Board";
 import SRandom from "../SRandom";
 import OPTIONS from "../options";
 
-const HEIGHT_NOISE_SCALE = 50;
-const TEMPERATURE_NOISE_SCALE = 80;
-const HUMIDITY_NOISE_SCALE = 30;
-// const HEIGHT_NOISE_SCALE = 25;
-// const TEMPERATURE_NOISE_SCALE = 30;
-// const HUMIDITY_NOISE_SCALE = 15;
+// @Temporary (remove after vid 2 is done)
+// const HEIGHT_NOISE_SCALE = 50;
+// const TEMPERATURE_NOISE_SCALE = 80;
+// const HUMIDITY_NOISE_SCALE = 30;
+const HEIGHT_NOISE_SCALE = 25;
+const TEMPERATURE_NOISE_SCALE = 30;
+const HUMIDITY_NOISE_SCALE = 15;
 
 const ADJACENT_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
    [1, 0],
@@ -474,7 +475,8 @@ function generateTerrain(): TerrainGenerationInfo {
          
          // Create the tile
          const tileInfo = tileInfoArray[tileX][tileY] as TileInfoConst;
-         tiles[tileX].push(new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, tileInfo.isWall, riverFlowDirection));
+         const isWall = OPTIONS.generateWalls ? tileInfo.isWall : false;
+         tiles[tileX].push(new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, isWall, riverFlowDirection));
       }
    }
 

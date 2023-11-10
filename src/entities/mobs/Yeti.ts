@@ -133,6 +133,7 @@ class Yeti extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          validTileTargets: Yeti.YETI_TILES,
+         strictValidation: false,
          shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
             const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
             const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);

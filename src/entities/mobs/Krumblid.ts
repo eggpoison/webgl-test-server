@@ -55,7 +55,8 @@ class Krumblid extends Mob {
          acceleration: Krumblid.WALK_ACCELERATION,
          terminalVelocity: Krumblid.WALK_TERMINAL_VELOCITY,
          wanderRate: 0.25,
-         validTileTargets: [TileTypeConst.sand]
+         validTileTargets: [TileTypeConst.sand],
+         strictValidation: false
       }));
 
       this.rotation = 2 * Math.PI * Math.random();

@@ -42,6 +42,7 @@ class Slimewisp extends Mob {
          wanderRate: 99999,
          acceleration: 50,
          terminalVelocity: 25,
+         strictValidation: false,
          shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
             const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
             const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);

@@ -3,6 +3,7 @@ import Mob from "../entities/mobs/Mob";
 import AI from "./AI";
 import { getAllowedPositionRadialTiles } from "../ai-shared";
 import { MobAIType } from "../mob-ai-types";
+import { tileRaytraceMatchesTileTypes } from "../Board";
 
 const ALL_TILE_TYPES_EXCEPT_WATER = ALL_TILE_TYPES_CONST.slice();
 const idx = ALL_TILE_TYPES_EXCEPT_WATER.indexOf(TileTypeConst.water);
@@ -17,6 +18,8 @@ interface WanderAIParams {
    readonly terminalVelocity: number;
    /** Tile types which the entity will wander to */
    readonly validTileTargets?: ReadonlyArray<TileTypeConst>;
+   /** Whether the wander AI should also validate intermediate tiles, and not default to wandering to a random tile */
+   readonly strictValidation: boolean;
    readonly shouldWander?: (wanderPositionX: number, wanderPositionY: number) => boolean;
 }
 
@@ -27,6 +30,7 @@ class WanderAI extends AI implements WanderAIParams {
    public readonly acceleration: number;
    public readonly terminalVelocity: number;
    public readonly validTileTargets: ReadonlyArray<TileTypeConst>;
+   public readonly strictValidation: boolean;
    public readonly shouldWander?: ((wanderPositionX: number, wanderPositionY: number) => boolean) | undefined;
 
    constructor(mob: Mob, aiParams: WanderAIParams) {
@@ -36,6 +40,7 @@ class WanderAI extends AI implements WanderAIParams {
       this.acceleration = aiParams.acceleration;
       this.terminalVelocity = aiParams.terminalVelocity;
       this.validTileTargets = aiParams.validTileTargets || ALL_TILE_TYPES_EXCEPT_WATER;
+      this.strictValidation = aiParams.strictValidation;
       this.shouldWander = aiParams.shouldWander;
    }
    
@@ -73,6 +78,11 @@ class WanderAI extends AI implements WanderAIParams {
          const wanderPositionX = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
          const wanderPositionY = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
 
+         // If the path to the tile has any bad intermediates, skip it
+         if (this.strictValidation && !tileRaytraceMatchesTileTypes(this.mob.position.x, this.mob.position.y, wanderPositionX, wanderPositionY, this.validTileTargets)) {
+            continue;
+         }
+
          // If the mob should wander to the position, do so
          if (typeof this.shouldWander === "undefined" || this.shouldWander(wanderPositionX, wanderPositionY)) {
             super.moveToPosition(new Point(wanderPositionX, wanderPositionY), this.acceleration, this.terminalVelocity);
@@ -81,9 +91,11 @@ class WanderAI extends AI implements WanderAIParams {
       }
 
       // If no valid positions can be found then move to a random position
-      const tile = randItem(wanderTiles);
-      const position = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE)
-      super.moveToPosition(position, this.acceleration, this.terminalVelocity);
+      if (!this.strictValidation) {
+         const tile = randItem(wanderTiles);
+         const position = new Point((tile.x + Math.random()) * SETTINGS.TILE_SIZE, (tile.y + Math.random()) * SETTINGS.TILE_SIZE)
+         super.moveToPosition(position, this.acceleration, this.terminalVelocity);
+      }
    }
 
    public canSwitch(): boolean {

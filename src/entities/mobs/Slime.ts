@@ -164,6 +164,7 @@ class Slime extends Mob {
          terminalVelocity: 30 * speedMultiplier,
          wanderRate: 0.5,
          validTileTargets: [TileTypeConst.sludge, TileTypeConst.slime],
+         strictValidation: false,
          shouldWander: (wanderPositionX: number, wanderPositionY: number): boolean => {
             const tileX = Math.floor(wanderPositionX / SETTINGS.TILE_SIZE);
             const tileY = Math.floor(wanderPositionY / SETTINGS.TILE_SIZE);

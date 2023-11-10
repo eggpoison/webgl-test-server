@@ -80,7 +80,8 @@ class Zombie extends Mob {
       this.addAI(new WanderAI(this, {
          wanderRate: 0.4,
          acceleration: Zombie.ACCELERATION_SLOW * speedMultiplier,
-         terminalVelocity: Zombie.TERMINAL_VELOCITY_SLOW * speedMultiplier
+         terminalVelocity: Zombie.TERMINAL_VELOCITY_SLOW * speedMultiplier,
+         strictValidation: false
       }));
 
       const hitbox = new CircularHitbox();
