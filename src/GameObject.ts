@@ -312,17 +312,6 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 
    public applyPhysics(): void {
-      let moveSpeedMultiplier: number;
-      if (this.overrideMoveSpeedMultiplier) {
-         moveSpeedMultiplier = 1;
-      } else if (this.tile.type === TileTypeConst.water && !this.isInRiver) {
-         moveSpeedMultiplier = this.moveSpeedMultiplier;
-      } else {
-         moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
-      }
-
-      const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
-
       let tileFrictionReduceAmount: number;
       
       // Friction
@@ -339,6 +328,17 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       
       // Accelerate
       if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
+         let moveSpeedMultiplier: number;
+         if (this.overrideMoveSpeedMultiplier) {
+            moveSpeedMultiplier = 1;
+         } else if (this.tile.type === TileTypeConst.water && !this.isInRiver) {
+            moveSpeedMultiplier = this.moveSpeedMultiplier;
+         } else {
+            moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
+         }
+   
+         const terminalVelocity = this.terminalVelocity * moveSpeedMultiplier;
+
          const friction = TILE_FRICTIONS[this.tile.type];
          let accelerateAmountX = this.acceleration.x * friction * moveSpeedMultiplier / SETTINGS.TPS;
          let accelerateAmountY = this.acceleration.y * friction * moveSpeedMultiplier / SETTINGS.TPS;

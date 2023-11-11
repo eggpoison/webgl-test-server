@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
+import { ALL_TILE_TYPES_CONST, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -128,9 +128,6 @@ abstract class Board {
    }
 
    public static getTile(tileX: number, tileY: number): Tile {
-      if (tileX < 0 || tileX >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Tile x '${tileX}' is not a valid tile coordinate.`);
-      if (tileY < 0 || tileY >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Tile y '${tileY}' is not a valid tile coordinate.`);
-
       return this.tiles[tileX][tileY];
    }
 
@@ -139,8 +136,6 @@ abstract class Board {
    }
 
    public static getChunk(chunkX: number, chunkY: number): Chunk {
-      if (chunkX < 0 || chunkX >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Chunk x '${chunkX}' is not a valid chunk coordinate.`);
-      if (chunkY < 0 || chunkY >= SETTINGS.BOARD_DIMENSIONS) throw new Error(`Chunk y '${chunkY}' is not a valid chunk coordinate.`);
       return this.chunks[chunkX][chunkY];
    }
 
@@ -606,10 +601,11 @@ export function tileRaytraceMatchesTileTypes(startX: number, startY: number, end
    Kindly yoinked from https://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
    */
    
-   const x0 = Math.floor(startX / SETTINGS.TILE_SIZE);
-   const x1 = Math.floor(endX / SETTINGS.TILE_SIZE);
-   const y0 = Math.floor(startY / SETTINGS.TILE_SIZE);
-   const y1 = Math.floor(endY / SETTINGS.TILE_SIZE);
+   // Convert to tile coordinates
+   const x0 = startX / SETTINGS.TILE_SIZE;
+   const x1 = endX / SETTINGS.TILE_SIZE;
+   const y0 = startY / SETTINGS.TILE_SIZE;
+   const y1 = endY / SETTINGS.TILE_SIZE;
    
    const dx = Math.abs(x0 - x1);
    const dy = Math.abs(y0 - y1);
@@ -621,9 +617,7 @@ export function tileRaytraceMatchesTileTypes(startX: number, startY: number, end
    const dt_dx = 1 / dx;
    const dt_dy = 1 / dy;
 
-   let t = 0;
-
-   let n  = 1;
+   let n = 1;
    let x_inc, y_inc;
    let t_next_vertical, t_next_horizontal;
 
@@ -661,11 +655,9 @@ export function tileRaytraceMatchesTileTypes(startX: number, startY: number, end
 
       if (t_next_vertical < t_next_horizontal) {
          y += y_inc;
-         t = t_next_vertical;
          t_next_vertical += dt_dy;
       } else {
          x += x_inc;
-         t = t_next_horizontal;
          t_next_horizontal += dt_dx;
       }
    }
