@@ -42,14 +42,14 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
          spawnRange: 200
       }
    },
-   // {
-   //    entityType: "berry_bush",
-   //    spawnableTiles: [TileTypeConst.grass],
-   //    // spawnRate: 0.001,
-   //    // maxDensity: 0.0025
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.005,
-   // },
+   {
+      entityType: "berry_bush",
+      spawnableTiles: [TileTypeConst.grass],
+      // spawnRate: 0.001,
+      // maxDensity: 0.0025
+      spawnRate: 0.005,
+      maxDensity: 0.005,
+   },
    {
       entityType: "tree",
       spawnableTiles: [TileTypeConst.grass],
@@ -69,41 +69,41 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnRate: 0.005,
       maxDensity: 0.025
    },
-   // {
-   //    entityType: "cactus",
-   //    spawnableTiles: [TileTypeConst.sand],
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.03
-   // },
-   // {
-   //    entityType: "yeti",
-   //    spawnableTiles: [TileTypeConst.snow],
-   //    spawnRate: 0.004,
-   //    maxDensity: 0.008,
-   //    spawnValidationFunction: Yeti.spawnValidationFunction
-   // },
-   // {
-   //    entityType: "ice_spikes",
-   //    spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
-   //    spawnRate: 0.015,
-   //    maxDensity: 0.06,
-   //    // spawnRate: 0.015 * 50,
-   //    // maxDensity: 0.06 * 50
-   // },
-   // {
-   //    entityType: "slimewisp",
-   //    // @Temporary
-   //    // spawnableTiles: ["slime"],
-   //    spawnableTiles: [TileTypeConst.slime, TileTypeConst.sludge],
-   //    spawnRate: 0.2,
-   //    maxDensity: 0.3
-   // },
-   // {
-   //    entityType: "krumblid",
-   //    spawnableTiles: [TileTypeConst.sand],
-   //    spawnRate: 0.005,
-   //    maxDensity: 0.015
-   // },
+   {
+      entityType: "cactus",
+      spawnableTiles: [TileTypeConst.sand],
+      spawnRate: 0.005,
+      maxDensity: 0.03
+   },
+   {
+      entityType: "yeti",
+      spawnableTiles: [TileTypeConst.snow],
+      spawnRate: 0.004,
+      maxDensity: 0.008,
+      spawnValidationFunction: Yeti.spawnValidationFunction
+   },
+   {
+      entityType: "ice_spikes",
+      spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
+      spawnRate: 0.015,
+      maxDensity: 0.06,
+      // spawnRate: 0.015 * 50,
+      // maxDensity: 0.06 * 50
+   },
+   {
+      entityType: "slimewisp",
+      // @Temporary
+      // spawnableTiles: ["slime"],
+      spawnableTiles: [TileTypeConst.slime, TileTypeConst.sludge],
+      spawnRate: 0.2,
+      maxDensity: 0.3
+   },
+   {
+      entityType: "krumblid",
+      spawnableTiles: [TileTypeConst.sand],
+      spawnRate: 0.005,
+      maxDensity: 0.015
+   },
    {
       entityType: "frozen_yeti",
       spawnableTiles: [TileTypeConst.fimbultur],

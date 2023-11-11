@@ -62,24 +62,24 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          maxHumidity: 0.5
       },
       tiles: [
-         // {
-         //    tileType: TileTypeConst.fimbultur,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 8,
-         //       minWeight: 0.2
-         //    },
-         //    minDist: 8
-         // },
-         // {
-         //    tileType: TileTypeConst.permafrost,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 7,
-         //       minWeight: 0.2,
-         //    },
-         //    minDist: 4
-         // },
+         {
+            tileType: TileTypeConst.fimbultur,
+            isWall: false,
+            noiseRequirements: {
+               scale: 8,
+               minWeight: 0.2
+            },
+            minDist: 8
+         },
+         {
+            tileType: TileTypeConst.permafrost,
+            isWall: false,
+            noiseRequirements: {
+               scale: 7,
+               minWeight: 0.2,
+            },
+            minDist: 4
+         },
          {
             tileType: TileTypeConst.ice,
             isWall: false,
@@ -131,8 +131,8 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
       },
       tiles: [
          {
-            tileType: TileTypeConst.rock,
-            // tileType: TileTypeConst.darkRock,
+            // tileType: TileTypeConst.rock,
+            tileType: TileTypeConst.darkRock,
             isWall: true,
             noiseRequirements: {
                scale: 7,
@@ -152,59 +152,59 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          minHumidity: 0.8
       },
       tiles: [
-         // {
-         //    tileType: TileTypeConst.slime,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 2.5,
-         //       minWeight: 0.2
-         //    },
-         //    minDist: 4
-         // },
-         // {
-         //    tileType: TileTypeConst.slime,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 2.5,
-         //       minWeight: 0.6
-         //    },
-         //    minDist: 2
-         // },
-         // {
-         //    tileType: TileTypeConst.sludge,
-         //    isWall: false
-         // }
          {
-            tileType: TileTypeConst.sludge,
+            tileType: TileTypeConst.slime,
             isWall: false,
             noiseRequirements: {
-               scale: 5,
-               minWeight: 0.25
+               scale: 2.5,
+               minWeight: 0.2
             },
-            minDist: 3
+            minDist: 4
          },
          {
-            tileType: TileTypeConst.dirt,
+            tileType: TileTypeConst.slime,
             isWall: false,
             noiseRequirements: {
-               scale: 5,
-               minWeight: 0.4
+               scale: 2.5,
+               minWeight: 0.6
             },
             minDist: 2
          },
          {
             tileType: TileTypeConst.sludge,
-            isWall: false,
-            noiseRequirements: {
-               scale: 5,
-               minWeight: 0.6
-            },
-            minDist: 1
-         },
-         {
-            tileType: TileTypeConst.dirt,
             isWall: false
          }
+         // {
+         //    tileType: TileTypeConst.sludge,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 5,
+         //       minWeight: 0.25
+         //    },
+         //    minDist: 3
+         // },
+         // {
+         //    tileType: TileTypeConst.dirt,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 5,
+         //       minWeight: 0.4
+         //    },
+         //    minDist: 2
+         // },
+         // {
+         //    tileType: TileTypeConst.sludge,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 5,
+         //       minWeight: 0.6
+         //    },
+         //    minDist: 1
+         // },
+         // {
+         //    tileType: TileTypeConst.dirt,
+         //    isWall: false
+         // }
       ]
    },
    grasslands: {

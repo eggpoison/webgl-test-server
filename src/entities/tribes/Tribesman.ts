@@ -894,7 +894,7 @@ class Tribesman extends TribeMember {
             }
 
             const foodValue = (ITEM_INFO_RECORD[item.type] as FoodItemInfo).healAmount * item.count;
-            if (foodValue > maxFoodValue) {
+            if (typeof food === "undefined" || foodValue > maxFoodValue) {
                food = item;
                foodItemSlot = slotNum;
                maxFoodValue = foodValue;

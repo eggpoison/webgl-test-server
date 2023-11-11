@@ -84,6 +84,7 @@ class Tribe {
          if (info.targetEntity.isRemoved) {
             this.reinforcementInfoArray.splice(i, 1);
             i--;
+            continue;
          }
 
          // Remove old notices

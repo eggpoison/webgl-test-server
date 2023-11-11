@@ -256,6 +256,8 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          hitbox.previousBounds[3] = hitbox.bounds[3];
       }
 
+      this.hitboxesAreDirty = false;
+
       if (hitboxChunkBoundsHaveChanged) {
          this.updateContainingChunks();
 
@@ -272,12 +274,11 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
                const tile = Board.getTile(tileX, tileY);
                if (tile.isWall) {
                   this.hasPotentialWallTileCollisions = true;
+                  return;
                }
             }
          }
       }
-
-      this.hitboxesAreDirty = false;
    }
 
    public tick(): void {
