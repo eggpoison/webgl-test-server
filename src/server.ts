@@ -77,7 +77,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
       hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : [],
-      amountHealed: healthComponent !== null ? healthComponent.amountHealedSinceLastPacketSend : 0
+      amountHealed: healthComponent !== null ? healthComponent.amountHealedThisTick : 0
    };
 }
 

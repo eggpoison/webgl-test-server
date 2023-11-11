@@ -81,7 +81,8 @@ class Zombie extends Mob {
          wanderRate: 0.4,
          acceleration: Zombie.ACCELERATION_SLOW * speedMultiplier,
          terminalVelocity: Zombie.TERMINAL_VELOCITY_SLOW * speedMultiplier,
-         strictValidation: false
+         strictValidation: false,
+         tileValidationPadding: 0
       }));
 
       const hitbox = new CircularHitbox(32, 0, 0);

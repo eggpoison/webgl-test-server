@@ -88,12 +88,6 @@ abstract class Entity extends GameObject<EntityEvents> {
 
    /** Called after every physics update. */
    public tick(): void {
-      // @Speed @Incomplete: This will not work correctly if something the entity does results in an entity being healed
-      const healthComponent = this.getComponent("health");
-      if (healthComponent !== null) {
-         healthComponent.amountHealedSinceLastPacketSend = 0;
-      }
-      
       super.tick();
 
       // Tick components

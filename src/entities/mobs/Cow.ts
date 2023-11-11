@@ -89,7 +89,8 @@ class Cow extends Mob {
          wanderRate: 0.6,
          acceleration: 100,
          terminalVelocity: 50,
-         strictValidation: false
+         strictValidation: false,
+         tileValidationPadding: 0
       }));
 
       const hitbox = new RectangularHitbox(50, 100, 0, 0);
