@@ -51,8 +51,7 @@ class Slimewisp extends Mob {
          }
       }));
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = Slimewisp.RADIUS;
+      const hitbox = new CircularHitbox(Slimewisp.RADIUS, 0, 0);
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (entity: Entity): void => {

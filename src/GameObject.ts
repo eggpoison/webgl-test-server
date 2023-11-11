@@ -51,7 +51,7 @@ export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: numb
 
 /** A generic class for any object in the world which has hitbox(es) */
 abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents> {
-   private static readonly rectangularTestHitbox = new RectangularHitbox();
+   private static readonly rectangularTestHitbox = new RectangularHitbox(-1, -1, 0, 0);
    
    /** Unique identifier for each game object */
    public readonly id: number;
@@ -143,7 +143,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       
       // Calculate initial position and hitbox bounds for the hitbox as it is not guaranteed that they are updated the immediate tick after
       hitbox.updateFromGameObject(this);
-      hitbox.updateHitboxBounds(this.rotation);
+      hitbox.updateHitboxBounds();
 
       // Update bounding area
       if (hitbox.bounds[0] < this.boundingArea[0]) {
@@ -185,7 +185,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          const hitbox = this.hitboxes[i];
 
          hitbox.updateFromGameObject(this);
-         hitbox.updateHitboxBounds(this.rotation);
+         hitbox.updateHitboxBounds();
 
          // Update bounding area
          if (hitbox.bounds[0] < this.boundingArea[0]) {
@@ -205,7 +205,10 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       this.positionIsDirty = false;
    }
 
+   /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
    public cleanHitboxes(): void {
+      // Idea: what if we store the flag in each hitbox
+      
       this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
       this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
       this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
@@ -221,7 +224,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          if (this.positionIsDirty) {
             hitbox.updateFromGameObject(this);
          }
-         hitbox.updateHitboxBounds(this.rotation);
+         hitbox.updateHitboxBounds();
 
          // Update bounding area
          if (hitbox.bounds[0] < this.boundingArea[0]) {
@@ -472,7 +475,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          const mob = chunk.viewingMobs[i];
          const idx = mob.potentialVisibleGameObjects.indexOf(this);
          if (idx === -1) {
-            throw new Error();
+            throw new Error("Tried to remove game object from visible game objects when it wasn't in it");
          }
          mob.potentialVisibleGameObjectAppearances[idx]--;
          if (mob.potentialVisibleGameObjectAppearances[idx] === 0) {
@@ -570,9 +573,10 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       // Check for diagonal collisions
       // 
       
-      GameObject.rectangularTestHitbox.setHitboxInfo(SETTINGS.TILE_SIZE, SETTINGS.TILE_SIZE);
+      GameObject.rectangularTestHitbox.width = SETTINGS.TILE_SIZE;
+      GameObject.rectangularTestHitbox.height = SETTINGS.TILE_SIZE;
       GameObject.rectangularTestHitbox.position = new Point((tile.x + 0.5) * SETTINGS.TILE_SIZE, (tile.y + 0.5) * SETTINGS.TILE_SIZE);
-      GameObject.rectangularTestHitbox.updateHitboxBounds(0);
+      GameObject.rectangularTestHitbox.updateHitboxBounds();
 
       if (GameObject.rectangularTestHitbox.isColliding(hitbox)) {
          return TileCollisionAxis.diagonal;

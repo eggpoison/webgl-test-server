@@ -84,8 +84,7 @@ class Zombie extends Mob {
          strictValidation: false
       }));
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = 32;
+      const hitbox = new CircularHitbox(32, 0, 0);
       this.addHitbox(hitbox);
       
       if (isGolden) {

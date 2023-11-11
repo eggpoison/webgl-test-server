@@ -22,8 +22,7 @@ class Boulder extends Entity {
          item_creation: itemCreationComponent
       }, "boulder");
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = Boulder.RADIUS;
+      const hitbox = new CircularHitbox(Boulder.RADIUS, 0, 0);
       this.addHitbox(hitbox);
 
       this.boulderType = Math.floor(Math.random() * 2);

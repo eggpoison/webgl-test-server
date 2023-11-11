@@ -101,20 +101,16 @@ class FrozenYeti extends Mob {
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(5, 7), true);
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(13, 18), false);
 
-      const bodyHitbox = new CircularHitbox();
-      bodyHitbox.radius = FrozenYeti.SIZE / 2;
+      const bodyHitbox = new CircularHitbox(FrozenYeti.SIZE / 2, 0, 0);
       this.addHitbox(bodyHitbox);
 
-      const headHitbox = new CircularHitbox();
-      headHitbox.radius = FrozenYeti.HEAD_HITBOX_SIZE / 2;
-      headHitbox.offset = new Point(0, FrozenYeti.HEAD_DISTANCE);
+      const headHitbox = new CircularHitbox(FrozenYeti.HEAD_HITBOX_SIZE / 2, 0, FrozenYeti.HEAD_DISTANCE);
       this.addHitbox(headHitbox);
 
       // Paw hitboxes
       for (let i = 0; i < 2; i++) {
-         const hitbox = new CircularHitbox();
-         hitbox.radius = FrozenYeti.PAW_SIZE / 2;
-         hitbox.offset = Point.fromVectorForm(FrozenYeti.PAW_OFFSET, FrozenYeti.PAW_RESTING_ANGLE * (i === 0 ? -1 : 1));
+         const pawDirection = FrozenYeti.PAW_RESTING_ANGLE * (i === 0 ? -1 : 1);
+         const hitbox = new CircularHitbox(FrozenYeti.PAW_SIZE / 2, FrozenYeti.PAW_OFFSET * Math.sin(pawDirection), FrozenYeti.PAW_OFFSET * Math.cos(pawDirection));
          this.addHitbox(hitbox);
       }
 
@@ -800,8 +796,7 @@ class FrozenYeti extends Mob {
       projectile.rotation = 2 * Math.PI * Math.random();
       projectile.mass = FrozenYeti.ROCK_SPIKE_MASSES[size];
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[size];
+      const hitbox = new CircularHitbox(FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[size], 0, 0);
       projectile.addHitbox(hitbox);
 
       projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {

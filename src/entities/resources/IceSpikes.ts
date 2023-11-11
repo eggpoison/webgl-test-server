@@ -49,8 +49,7 @@ class IceSpikes extends Entity {
          this.rootIceSpike = this;
       }
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = IceSpikes.RADIUS;
+      const hitbox = new CircularHitbox(IceSpikes.RADIUS, 0, 0);
       this.addHitbox(hitbox);
 
       if (Object.keys(Board.droppedItems).length < 50) {
@@ -142,8 +141,7 @@ class IceSpikes extends Entity {
          projectile.velocity.y = IceSpikes.ICE_SHARD_EXPLODE_SPEED * Math.cos(moveDirection);
          projectile.terminalVelocity = IceSpikes.ICE_SHARD_EXPLODE_SPEED;
 
-         const hitbox = new RectangularHitbox();
-         hitbox.setHitboxInfo(24, 24);
+         const hitbox = new RectangularHitbox(24, 24, 0, 0);
          projectile.addHitbox(hitbox);
 
          projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {

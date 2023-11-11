@@ -46,8 +46,7 @@ class TribeTotem extends Entity {
       }, "tribe_totem");
 
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = TribeTotem.SIZE / 2;
+      const hitbox = new CircularHitbox(TribeTotem.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);
 
       this.isStatic = true;

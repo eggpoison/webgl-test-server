@@ -20,6 +20,10 @@ import Cow from "./entities/mobs/Cow";
 import OPTIONS from "./options";
 import TribeTotem from "./entities/tribes/TribeTotem";
 import TribeHut from "./entities/tribes/TribeHut";
+import Zombie from "./entities/mobs/Zombie";
+import BerryBush from "./entities/resources/BerryBush";
+import Krumblid from "./entities/mobs/Krumblid";
+import Yeti from "./entities/mobs/Yeti";
 
 /*
 
@@ -32,16 +36,16 @@ const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitb
    return {
       width: hitbox.width,
       height: hitbox.height,
-      offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : 0,
-      offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : 0
+      offsetX: hitbox.offset.x,
+      offsetY: hitbox.offset.y
    };
 }
 
 const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData => {
    return {
       radius: hitbox.radius,
-      offsetX: typeof hitbox.offset !== "undefined" ? hitbox.offset.x : 0,
-      offsetY: typeof hitbox.offset !== "undefined" ? hitbox.offset.y : 0
+      offsetX: hitbox.offset.x,
+      offsetY: hitbox.offset.y
    };
 }
 
@@ -225,19 +229,6 @@ class GameServer {
    /** Sets up the various stuff */
    public setup() {
       spawnInitialEntities();
-
-      // for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-      //    for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-      //       const tile = Board.getTile(x, y);
-      //       if (tile.biomeName === "swamp") {
-      //          if (Math.random() < 0.1) {
-      //             const p = new Point((x + Math.random()) * SETTINGS.TILE_SIZE, (y + Math.random()) * SETTINGS.TILE_SIZE);
-      //             const item = new Item(ItemType.flesh_sword, 1);
-      //             new DroppedItem(p, item);
-      //          }
-      //       }
-      //    }
-      // }
    }
 
    public setTrackedGameObject(id: number | null): void {

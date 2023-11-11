@@ -1,10 +1,10 @@
-import { Point, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
+import { Point, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity from "./entities/Entity";
    
-const testCircularHitbox = new CircularHitbox();
+const testCircularHitbox = new CircularHitbox(-1, 0, 0);
 
 /** Gets all tiles within a given distance from a position */
 export function getPositionRadialTiles(position: Point, radius: number): Array<Tile> {

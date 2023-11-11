@@ -38,10 +38,7 @@ class Snowball extends Entity {
          this.mass = 1.5;
       }
 
-      const hitboxSize = SNOWBALL_SIZES[size];
-      
-      const hitbox = new CircularHitbox();
-      hitbox.radius = hitboxSize / 2;
+      const hitbox = new CircularHitbox(SNOWBALL_SIZES[size], 0, 0);
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();

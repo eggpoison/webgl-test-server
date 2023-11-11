@@ -43,8 +43,7 @@ class Fish extends Mob {
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_fish, 1, false);
 
-      const hitbox = new RectangularHitbox();
-      hitbox.setHitboxInfo(Fish.WIDTH, Fish.HEIGHT);
+      const hitbox = new RectangularHitbox(Fish.WIDTH, Fish.HEIGHT, 0, 0);
       this.addHitbox(hitbox);
 
       this.addAI(new MinionAI(this, {

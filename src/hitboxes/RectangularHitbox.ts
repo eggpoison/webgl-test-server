@@ -1,30 +1,43 @@
-import { circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { angle, circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rotateXAroundOrigin, rotateXAroundPoint, rotateYAroundOrigin, rotateYAroundPoint } from "webgl-test-shared";
 import Hitbox from "./Hitbox";
 import CircularHitbox from "./CircularHitbox";
 import GameObject from "src/GameObject";
 
 class RectangularHitbox extends Hitbox {
+   public width: number;
+   public height: number;
+   
    /** Length of half of the diagonal of the rectangle */
    public halfDiagonalLength!: number;
 
+   private previousRotation = 0;
    /** The rotation of the hitbox relative to its game object */
    public rotation = 0;
    /** Rotation of the hitboxes game object */
    public externalRotation = 0;
 
+   private vertexOffsetTopLeftX = -1;
+   private vertexOffsetTopLeftY = -1;
+   private vertexOffsetTopRightX = -1;
+   private vertexOffsetTopRightY = -1;
+   private vertexOffsetBottomLeftX = -1;
+   private vertexOffsetBottomLeftY = -1;
+   private vertexOffsetBottomRightX = -1;
+   private vertexOffsetBottomRightY = -1;
    public vertexPositions: HitboxVertexPositions = [new Point(-1, -1), new Point(-1, -1), new Point(-1, -1), new Point(-1, -1)];
    public sideAxes = [new Point(0, 0), new Point(0, 0)] as const;
 
-   public width!: number;
-   public height!: number;
+   constructor(width: number, height: number, offsetX: number, offsetY: number) {
+      super(offsetX, offsetY);
 
-   // @Cleanup: Perhaps remove this, just set values directly
-   public setHitboxInfo(width: number, height: number, offset?: Point): void {
       this.width = width;
       this.height = height;
-      this.offset = offset;
+      this.updateHalfDiagonalLength();
+      this.updateVertexPositions();
+   }
 
-      this.halfDiagonalLength = Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
+   public updateHalfDiagonalLength(): void {
+      this.halfDiagonalLength = Math.sqrt(Math.pow(this.width / 2, 2) + Math.pow(this.height / 2, 2));
    }
 
    public updateFromGameObject(gameObject: GameObject): void {
@@ -32,41 +45,58 @@ class RectangularHitbox extends Hitbox {
       this.externalRotation = gameObject.rotation;
    }
 
-   private computeVertexPositions(externalRotation: number): void {
-      const x1 = this.position.x - this.width / 2;
-      const x2 = this.position.x + this.width / 2;
-      const y1 = this.position.y - this.height / 2;
-      const y2 = this.position.y + this.height / 2;
+   private updateVertexPositions(): void {
+      const newRotation = this.rotation + this.externalRotation;
+      if (newRotation !== this.previousRotation) {
+         const x1 = -this.width / 2;
+         const x2 = this.width / 2;
+         const y1 = -this.height / 2;
+         const y2 = this.height / 2;
+   
+         // Rotate vertices
+   
+         // Top left vertex
+         this.vertexOffsetTopLeftX = rotateXAroundOrigin(x1, y2, newRotation);
+         this.vertexOffsetTopLeftY = rotateYAroundOrigin(x1, y2, newRotation);
+         // Top right vertex
+         this.vertexOffsetTopRightX = rotateXAroundOrigin(x2, y2, newRotation);
+         this.vertexOffsetTopRightY = rotateYAroundOrigin(x2, y2, newRotation);
+         // Bottom left vertex
+         this.vertexOffsetBottomLeftX = rotateXAroundOrigin(x1, y1, newRotation);
+         this.vertexOffsetBottomLeftY = rotateYAroundOrigin(x1, y1, newRotation);
+         // Bottom right vertex
+         this.vertexOffsetBottomRightX = rotateXAroundOrigin(x2, y1, newRotation);
+         this.vertexOffsetBottomRightY = rotateYAroundOrigin(x2, y1, newRotation);
 
-      // Rotate vertices
+         this.previousRotation = newRotation;
+         
+         this.calculateSideAxes();
+      }
 
-      // Top left vertex
-      this.vertexPositions[0].x = rotateXAroundPoint(x1, y2, this.position.x, this.position.y, this.rotation + externalRotation);
-      this.vertexPositions[0].y = rotateYAroundPoint(x1, y2, this.position.x, this.position.y, this.rotation + externalRotation);
-      // Top right vertex
-      this.vertexPositions[1].x = rotateXAroundPoint(x2, y2, this.position.x, this.position.y, this.rotation + externalRotation);
-      this.vertexPositions[1].y = rotateYAroundPoint(x2, y2, this.position.x, this.position.y, this.rotation + externalRotation);
-      // Bottom left vertex
-      this.vertexPositions[2].x = rotateXAroundPoint(x1, y1, this.position.x, this.position.y, this.rotation + externalRotation);
-      this.vertexPositions[2].y = rotateYAroundPoint(x1, y1, this.position.x, this.position.y, this.rotation + externalRotation);
-      // Bottom right vertex
-      this.vertexPositions[3].x = rotateXAroundPoint(x2, y1, this.position.x, this.position.y, this.rotation + externalRotation);
-      this.vertexPositions[3].y = rotateYAroundPoint(x2, y1, this.position.x, this.position.y, this.rotation + externalRotation);
+      this.vertexPositions[0].x = this.vertexOffsetTopLeftX + this.position.x;
+      this.vertexPositions[0].y = this.vertexOffsetTopLeftY + this.position.y;
+      this.vertexPositions[1].x = this.vertexOffsetTopRightX + this.position.x;
+      this.vertexPositions[1].y = this.vertexOffsetTopRightY + this.position.y;
+      this.vertexPositions[2].x = this.vertexOffsetBottomLeftX + this.position.x;
+      this.vertexPositions[2].y = this.vertexOffsetBottomLeftY + this.position.y;
+      this.vertexPositions[3].x = this.vertexOffsetBottomRightX + this.position.x;
+      this.vertexPositions[3].y = this.vertexOffsetBottomRightY + this.position.y;
    }
 
    private calculateSideAxes(): void {
-      const angle1 = this.vertexPositions[0].calculateAngleBetween(this.vertexPositions[1]);
+      // Angle between vertex 0 (top left) and vertex 1 (top right)
+      const angle1 = angle(this.vertexOffsetTopRightX - this.vertexOffsetTopLeftX, this.vertexOffsetTopRightY - this.vertexOffsetTopLeftY);
       this.sideAxes[0].x = Math.sin(angle1);
       this.sideAxes[0].y = Math.cos(angle1);
       
-      const angle2 = this.vertexPositions[2].calculateAngleBetween(this.vertexPositions[3]);
+      // Angle between vertex 2 (bottom left) and vertex 3 (bottom right)
+      const angle2 = angle(this.vertexOffsetBottomRightX - this.vertexOffsetBottomLeftX, this.vertexOffsetBottomRightY - this.vertexOffsetBottomLeftY);
       this.sideAxes[1].x = Math.sin(angle2);
       this.sideAxes[1].y = Math.cos(angle2);
    }
 
-   public updateHitboxBounds(offsetRotation: number): void {
-      this.computeVertexPositions(offsetRotation);
-      this.calculateSideAxes();
+   public updateHitboxBounds(): void {
+      this.updateVertexPositions();
 
       this.bounds[0] = Math.min(this.vertexPositions[0].x, this.vertexPositions[1].x, this.vertexPositions[2].x, this.vertexPositions[3].x);
       this.bounds[1] = Math.max(this.vertexPositions[0].x, this.vertexPositions[1].x, this.vertexPositions[2].x, this.vertexPositions[3].x);

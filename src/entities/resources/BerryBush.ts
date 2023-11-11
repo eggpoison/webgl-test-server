@@ -29,8 +29,7 @@ class BerryBush extends Entity {
          health: new HealthComponent(BerryBush.HEALTH, false)
       }, "berry_bush");
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = BerryBush.RADIUS;
+      const hitbox = new CircularHitbox(BerryBush.RADIUS, 0, 0);
       this.addHitbox(hitbox);
 
       this.createEvent("hurt", () => {

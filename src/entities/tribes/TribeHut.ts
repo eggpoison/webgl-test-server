@@ -21,8 +21,7 @@ class TribeHut extends Entity {
          health: new HealthComponent(TribeHut.MAX_HEALTH, false)
       }, "tribe_hut");
 
-      const hitbox = new RectangularHitbox();
-      hitbox.setHitboxInfo(TribeHut.SIZE, TribeHut.SIZE);
+      const hitbox = new RectangularHitbox(TribeHut.SIZE, TribeHut.SIZE, 0, 0);
       this.addHitbox(hitbox);
 
       this.isStatic = true;

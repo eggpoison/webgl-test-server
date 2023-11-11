@@ -102,8 +102,7 @@ class Tribesman extends TribeMember {
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
       super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = Tribesman.RADIUS;
+      const hitbox = new CircularHitbox(Tribesman.RADIUS, 0, 0);
       this.addHitbox(hitbox);
 
       const inventoryComponent = this.forceGetComponent("inventory");

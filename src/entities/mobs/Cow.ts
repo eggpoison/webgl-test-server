@@ -92,8 +92,7 @@ class Cow extends Mob {
          strictValidation: false
       }));
 
-      const hitbox = new RectangularHitbox();
-      hitbox.setHitboxInfo(50, 100);
+      const hitbox = new RectangularHitbox(50, 100, 0, 0);
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();

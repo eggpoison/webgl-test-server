@@ -45,8 +45,7 @@ class Tombstone extends Entity {
 
       this.deathInfo = TombstoneDeathManager.popDeath();
 
-      const hitbox = new RectangularHitbox();
-      hitbox.setHitboxInfo(Tombstone.WIDTH, Tombstone.HEIGHT);
+      const hitbox = new RectangularHitbox(Tombstone.WIDTH, Tombstone.HEIGHT, 0, 0);
       this.addHitbox(hitbox);
 
       this.tombstoneType = Math.floor(Math.random() * 3);

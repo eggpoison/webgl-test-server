@@ -30,8 +30,7 @@ class Krumblid extends Mob {
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.leather, randInt(2, 3), true);
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = Krumblid.SIZE / 2;
+      const hitbox = new CircularHitbox(Krumblid.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);
 
       this.addAI(new EscapeAI(this, {

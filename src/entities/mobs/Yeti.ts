@@ -94,8 +94,7 @@ class Yeti extends Mob {
          hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 1.2))
       }, "yeti", Yeti.VISION_RANGE);
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = Yeti.SIZE / 2;
+      const hitbox = new CircularHitbox(Yeti.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);
 
       // Snow throw AI

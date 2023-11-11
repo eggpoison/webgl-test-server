@@ -31,8 +31,7 @@ class Tree extends Entity {
          item_creation: new ItemCreationComponent(48)
       }, "tree");
 
-      const hitbox = new CircularHitbox();
-      hitbox.radius = Tree.TREE_RADIUSES[size];
+      const hitbox = new CircularHitbox(Tree.TREE_RADIUSES[size], 0, 0);
       this.addHitbox(hitbox);
 
       this.isStatic = true;
