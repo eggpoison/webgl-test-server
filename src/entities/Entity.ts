@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectData, Vector, customTickIntervalHasPassed, lerp, randFloat, randItem, randSign } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityType, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -27,10 +27,7 @@ const filterTickableComponents = (components: Partial<EntityComponents>): Readon
    return tickableComponents;
 }
 
-interface StatusEffectInfo {
-   secondsRemaining: number;
-   ticksElapsed: number;
-}
+const NUM_STATUS_EFFECTS = Object.keys(STATUS_EFFECT_MODIFIERS).length;
 
 interface EntityEvents extends GameObjectEvents {
    hurt: (damage: number, attackingEntity: Entity | null, knockback: number, hitDirection: number | null) => void;
@@ -55,8 +52,8 @@ abstract class Entity extends GameObject<EntityEvents> {
       during_dropped_item_collision: []
    };
 
-   private readonly statusEffects = new Array<StatusEffect>();
-   private readonly statusEffectInfo: Partial<Record<StatusEffect, StatusEffectInfo>> = {};
+   private readonly statusEffectTicksRemaining = [0, 0, 0, 0];
+   private readonly statusEffectTicksElapsed = [0, 0, 0, 0];
 
    constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
       super(position);
@@ -121,78 +118,83 @@ abstract class Entity extends GameObject<EntityEvents> {
    }
 
    private tickStatusEffects(): void {
-      for (const statusEffect of this.statusEffects) {
-         const statusEffectInfo = this.statusEffectInfo[statusEffect]!
-         statusEffectInfo.secondsRemaining -= 1 / SETTINGS.TPS;
-         statusEffectInfo.ticksElapsed++;
-         if (statusEffectInfo.secondsRemaining <= 0) {
-            // Remove the status effect
-            this.clearStatusEffect(statusEffect);
-         }    
-      }
+      for (let statusEffect = 0; statusEffect < NUM_STATUS_EFFECTS; statusEffect++) {
+         const ticksRemaining = this.statusEffectTicksRemaining[statusEffect];
+         if (ticksRemaining > 0) {
+            this.statusEffectTicksRemaining[statusEffect]--;
+            this.statusEffectTicksElapsed[statusEffect]++;
+            if (this.statusEffectTicksRemaining[statusEffect] === 0) {
+               this.clearStatusEffect(statusEffect);
+            }
 
-      if (this.hasStatusEffect("burning")) {
-         // If the entity is in a river, clear the fire effect
-         if (this.isInRiver) {
-            this.clearStatusEffect("burning");
-         } else {
-            // Fire tick
-            if (customTickIntervalHasPassed(this.statusEffectInfo["burning"]!.ticksElapsed, 0.75)) {
-               this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
+            switch (statusEffect) {
+               case StatusEffectConst.burning: {
+                  // If the entity is in a river, clear the fire effect
+                  if (this.isInRiver) {
+                     this.clearStatusEffect(StatusEffectConst.burning);
+                  } else {
+                     // Fire tick
+                     const ticksElapsed = this.statusEffectTicksElapsed[StatusEffectConst.burning];
+                     if (customTickIntervalHasPassed(ticksElapsed, 0.75)) {
+                        this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.fire, 0);
+                     }
+                  }
+                  break;
+               }
+               case StatusEffectConst.poisoned: {
+                  const ticksElapsed = this.statusEffectTicksElapsed[StatusEffectConst.poisoned];
+                  if (customTickIntervalHasPassed(ticksElapsed, 0.5)) {
+                     this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
+                  }
+                  break;
+               }
+               case StatusEffectConst.bleeding: {
+                  const ticksElapsed = this.statusEffectTicksElapsed[StatusEffectConst.bleeding];
+                  if (customTickIntervalHasPassed(ticksElapsed, 1)) {
+                     this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
+                  }
+                  break;
+               }
             }
          }
       }
-
-      if (this.hasStatusEffect("poisoned")) {
-         if (customTickIntervalHasPassed(this.statusEffectInfo["poisoned"]!.ticksElapsed, 0.5)) {
-            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.poison, 0);
-         }
-      }
-
-      if (this.hasStatusEffect("bleeding")) {
-         if (customTickIntervalHasPassed(this.statusEffectInfo["bleeding"]!.ticksElapsed, 1)) {
-            this.forceGetComponent("health").damage(1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
-         }
-      }
    }
 
-   public applyStatusEffect(statusEffect: StatusEffect, durationSeconds: number): void {
+   public applyStatusEffect(statusEffect: StatusEffectConst, durationTicks: number): void {
       if (!this.hasStatusEffect(statusEffect)) {
-         this.statusEffectInfo[statusEffect] = {
-            secondsRemaining: durationSeconds,
-            ticksElapsed: 0
-         };
-         this.statusEffects.push(statusEffect);
+         // New status effect
+         
+         this.statusEffectTicksElapsed[statusEffect] = 0;
+         this.statusEffectTicksRemaining[statusEffect] = durationTicks;
 
          this.moveSpeedMultiplier *= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
       } else {
-         if (durationSeconds > this.statusEffectInfo[statusEffect]!.secondsRemaining) {
-            this.statusEffectInfo[statusEffect]!.secondsRemaining = durationSeconds;
+         // Existing status effect
+
+         if (durationTicks > this.statusEffectTicksRemaining[statusEffect]) {
+            this.statusEffectTicksRemaining[statusEffect] = durationTicks;
          }
       }
    }
 
-   public hasStatusEffect(statusEffect: StatusEffect): boolean {
-      return this.statusEffects.indexOf(statusEffect) !== -1;
+   public hasStatusEffect(statusEffect: StatusEffectConst): boolean {
+      return this.statusEffectTicksRemaining[statusEffect] > 0;
    }
 
-   public clearStatusEffect(statusEffect: StatusEffect): void {
-      delete this.statusEffectInfo[statusEffect];
-      const idx = this.statusEffects.indexOf(statusEffect);
-      if (idx !== -1) {
-         this.statusEffects.splice(idx);
-      }
-
+   public clearStatusEffect(statusEffect: StatusEffectConst): void {
+      this.statusEffectTicksRemaining[statusEffect] = 0;
       this.moveSpeedMultiplier /= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
    }
 
    public getStatusEffectData(): Array<StatusEffectData> {
       const data = new Array<StatusEffectData>();
-      for (const [_statusEffect, statusEffectInfo] of Object.entries(this.statusEffectInfo)) {
-         data.push({
-            type: _statusEffect as StatusEffect,
-            ticksElapsed: statusEffectInfo.ticksElapsed
-         });
+      for (let statusEffect = 0; statusEffect < NUM_STATUS_EFFECTS; statusEffect++) {
+         if (this.hasStatusEffect(statusEffect)) {
+            data.push({
+               type: statusEffect as StatusEffect,
+               ticksElapsed: this.statusEffectTicksElapsed[statusEffect]
+            });
+         }
       }
       return data;
    }

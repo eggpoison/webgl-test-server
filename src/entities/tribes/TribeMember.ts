@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffect, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffectConst, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -439,7 +439,7 @@ abstract class TribeMember extends Mob {
       targetEntity.forceGetComponent("health").addLocalInvulnerabilityHash(attackHash, 0.3);
 
       if (item !== null && item.type === ItemType.flesh_sword) {
-         targetEntity.applyStatusEffect("poisoned", 3);
+         targetEntity.applyStatusEffect(StatusEffectConst.poisoned, 3 * SETTINGS.TPS);
       }
 
       this.lastAttackTicks = Board.ticks;

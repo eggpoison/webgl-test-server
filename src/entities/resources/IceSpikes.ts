@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -25,7 +25,6 @@ class IceSpikes extends Entity {
    public readonly mass = 1;
 
    private readonly maxChildren = randInt(0, 3);
-   // private readonly maxChildren = 100;
 
    public numChildrenIceSpikes = 0;
    private iceSpikeGrowProgress = 0;
@@ -52,9 +51,7 @@ class IceSpikes extends Entity {
       const hitbox = new CircularHitbox(IceSpikes.RADIUS, 0, 0);
       this.addHitbox(hitbox);
 
-      if (Object.keys(Board.droppedItems).length < 50) {
-         itemCreationComponent.createItemOnDeath(ItemType.frostcicle, randInt(0, 1), false);
-      }
+      itemCreationComponent.createItemOnDeath(ItemType.frostcicle, randInt(0, 1), false);
 
       this.isStatic = true;
       
@@ -76,7 +73,7 @@ class IceSpikes extends Entity {
             healthComponent.damage(IceSpikes.CONTACT_DAMAGE, IceSpikes.CONTACT_KNOCKBACK, hitDirection, this, PlayerCauseOfDeath.ice_spikes, 0, "ice_spikes");
             healthComponent.addLocalInvulnerabilityHash("ice_spikes", 0.3);
 
-            collidingEntity.applyStatusEffect("freezing", 5);
+            collidingEntity.applyStatusEffect(StatusEffectConst.freezing, 5 * SETTINGS.TPS);
          }
       });
    }
@@ -157,7 +154,7 @@ class IceSpikes extends Entity {
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
                   if (collidingEntity.type !== "yeti") {
-                     collidingEntity.applyStatusEffect("freezing", 3);
+                     collidingEntity.applyStatusEffect(StatusEffectConst.freezing, 3 * SETTINGS.TPS);
                   }
                }
 

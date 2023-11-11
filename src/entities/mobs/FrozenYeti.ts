@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffect, TileType, TileTypeConst, angle, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, angle, randFloat, randInt, randItem } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -607,7 +607,7 @@ class FrozenYeti extends Mob {
             entity.velocity.x += 50 * Math.sin(angle);
             entity.velocity.y += 50 * Math.cos(angle);
 
-            entity.applyStatusEffect("freezing", 5);
+            entity.applyStatusEffect(StatusEffectConst.freezing, 5 * SETTINGS.TPS);
          }
       }
    }
@@ -621,7 +621,7 @@ class FrozenYeti extends Mob {
             const healthComponent = entity.getComponent("health");
             if (healthComponent !== null) {
                healthComponent.damage(3, 200, angleToTarget, this, PlayerCauseOfDeath.frozen_yeti, 0);
-               entity.applyStatusEffect("bleeding", 5);
+               entity.applyStatusEffect(StatusEffectConst.bleeding, 5 * SETTINGS.TPS);
             }
          }
       }
