@@ -97,6 +97,7 @@ abstract class Entity extends GameObject<EntityEvents> {
          this.tickableComponents[i].tick!();
       }
       
+      // Tick status effects
       this.tickStatusEffects();
    }
 

@@ -77,7 +77,7 @@ abstract class Mob extends Entity {
       const numAIs = this.ais.length;
       for (var i = 0; i < numAIs; i++) {
          ai = this.ais[i];
-         if (ai.canSwitch()) {
+         if (ai.isEnabled && ai.canSwitch()) {
             break;
          }
       }

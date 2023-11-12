@@ -22,6 +22,8 @@ class Fish extends Mob {
    private static readonly ACCELERATION = 40;
    private static readonly TERMINAL_VELOCITY = 40;
 
+   private static readonly HERD_PREDICTION_TIME_SECONDS = 0.5;
+
    private readonly colour: FishColour;
 
    public mass = 0.5;
@@ -30,6 +32,8 @@ class Fish extends Mob {
 
    public readonly collisionBit = COLLISION_BITS.other;
    public readonly collisionMask = DEFAULT_COLLISION_MASK;
+
+   private readonly herdAI: HerdAI;
    
    constructor(position: Point) {
       super(position, {
@@ -63,7 +67,7 @@ class Fish extends Mob {
          escapeHealthThreshold: Fish.MAX_HEALTH
       }));
 
-      this.addAI(new HerdAI(this, {
+      this.herdAI = new HerdAI(this, {
          acceleration: Fish.ACCELERATION,
          terminalVelocity: Fish.TERMINAL_VELOCITY,
          minSeperationDistance: 150,
@@ -74,7 +78,8 @@ class Fish extends Mob {
          seperationInfluence: 0.7,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.3
-      }));
+      });
+      this.addAI(this.herdAI);
 
       this.addAI(new WanderAI(this, {
          acceleration: Fish.ACCELERATION,
@@ -90,6 +95,13 @@ class Fish extends Mob {
 
    public tick(): void {
       this.overrideMoveSpeedMultiplier = this.tile.type === TileTypeConst.water;
+
+      const predictedX = this.position.x + this.velocity.x * Fish.HERD_PREDICTION_TIME_SECONDS;
+      const predictedY = this.position.y + this.velocity.y * Fish.HERD_PREDICTION_TIME_SECONDS;
+      const predictedTile = Board.getTile(Math.floor(predictedX / SETTINGS.TILE_SIZE), Math.floor(predictedY / SETTINGS.TILE_SIZE));
+
+      // If going to move into water tile, don't allow using herd ai
+      this.herdAI.isEnabled = predictedTile.type === TileTypeConst.water;
       
       super.tick();
 

@@ -226,6 +226,8 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          }
          hitbox.updateHitboxBounds();
 
+         // Idea: make bounds and bounding area from arrays to 4 separate values
+
          // Update bounding area
          if (hitbox.bounds[0] < this.boundingArea[0]) {
             this.boundingArea[0] = hitbox.bounds[0];
@@ -258,6 +260,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
 
       this.hitboxesAreDirty = false;
 
+      // @Speed
       if (hitboxChunkBoundsHaveChanged) {
          this.updateContainingChunks();
 

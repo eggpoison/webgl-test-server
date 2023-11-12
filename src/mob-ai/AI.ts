@@ -10,6 +10,8 @@ abstract class AI {
    protected isActive: boolean = false;
    public targetPosition: Point | null = null;
 
+   public isEnabled = true;
+
    constructor(mob: Mob) {
       this.mob = mob;
    }
