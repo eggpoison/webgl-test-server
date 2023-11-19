@@ -221,14 +221,15 @@ class Slime extends Mob {
          this.mergeWant = Slime.MAX_MERGE_WANT[this.size];
       }
 
-      for (const orb of this.orbs) {
+      for (let i = 0; i < this.orbs.length; i++) {
+         const orb = this.orbs[i];
+
+         // Randomly move around the orbs
          if (Math.random() < 0.3 / SETTINGS.TPS) {
             orb.angularVelocity = randFloat(-3, 3);
          }
-      }
 
-      // Update orb angular velocity
-      for (const orb of this.orbs) {
+         // Update orb angular velocity & rotation
          orb.rotation += orb.angularVelocity / SETTINGS.TPS;
          orb.angularVelocity -= 3 / SETTINGS.TPS;
          if (orb.angularVelocity < 0) {

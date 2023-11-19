@@ -59,7 +59,6 @@ abstract class Mob extends Entity {
       if (++this.aiRefreshTicker === Mob.AI_REFRESH_INTERVAL) {
          this.updateVisibleChunks();
          this.updateVisibleGameObjects();
-         // @Temporary: If the tribesman starts using AI classes, move this check into the main one just above
          if (this.ais.length > 0) {
             this.refreshAI();
          }

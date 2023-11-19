@@ -84,6 +84,10 @@ abstract class Board {
             }
          }
       }
+   } 
+
+   public static isNight(): boolean {
+      return Board.time < 6 || Board.time >= 18;
    }
 
    public static terrainHasBeenGenerated(): boolean {

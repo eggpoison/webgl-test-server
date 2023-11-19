@@ -1,6 +1,6 @@
 import { BiomeName, TileTypeConst } from "webgl-test-shared";
 
-export type TileGenerationInfo = {
+export interface TileGenerationInfo {
    readonly tileType: TileTypeConst;
    readonly isWall: boolean;
    readonly noiseRequirements?: {
@@ -62,24 +62,24 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          maxHumidity: 0.5
       },
       tiles: [
-         {
-            tileType: TileTypeConst.fimbultur,
-            isWall: false,
-            noiseRequirements: {
-               scale: 8,
-               minWeight: 0.2
-            },
-            minDist: 8
-         },
-         {
-            tileType: TileTypeConst.permafrost,
-            isWall: false,
-            noiseRequirements: {
-               scale: 7,
-               minWeight: 0.2,
-            },
-            minDist: 4
-         },
+         // {
+         //    tileType: TileTypeConst.fimbultur,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 8,
+         //       minWeight: 0.2
+         //    },
+         //    minDist: 8
+         // },
+         // {
+         //    tileType: TileTypeConst.permafrost,
+         //    isWall: false,
+         //    noiseRequirements: {
+         //       scale: 7,
+         //       minWeight: 0.2,
+         //    },
+         //    minDist: 4
+         // },
          {
             tileType: TileTypeConst.ice,
             isWall: false,

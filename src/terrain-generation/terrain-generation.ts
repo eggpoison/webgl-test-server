@@ -1,6 +1,6 @@
 import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
-import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "../data/terrain-generation-info";
+import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./terrain-generation-info";
 import Tile from "../Tile";
 import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, WaterRockData, lerp } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
@@ -9,12 +9,12 @@ import SRandom from "../SRandom";
 import OPTIONS from "../options";
 
 // @Temporary (remove after vid 2 is done)
-// const HEIGHT_NOISE_SCALE = 50;
-// const TEMPERATURE_NOISE_SCALE = 80;
-// const HUMIDITY_NOISE_SCALE = 30;
-const HEIGHT_NOISE_SCALE = 25;
-const TEMPERATURE_NOISE_SCALE = 30;
-const HUMIDITY_NOISE_SCALE = 15;
+const HEIGHT_NOISE_SCALE = 50;
+const TEMPERATURE_NOISE_SCALE = 80;
+const HUMIDITY_NOISE_SCALE = 30;
+// const HEIGHT_NOISE_SCALE = 25;
+// const TEMPERATURE_NOISE_SCALE = 30;
+// const HUMIDITY_NOISE_SCALE = 15;
 
 const ADJACENT_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
    [1, 0],

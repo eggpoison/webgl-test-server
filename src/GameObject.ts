@@ -8,11 +8,6 @@ import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Mob from "./entities/mobs/Mob";
 
-const FRICTION_MULTIPLY_VALS = TILE_FRICTIONS.map(friction => {
-   let multiplyVal = 1 / (1 + 3 / SETTINGS.TPS * friction);
-   return multiplyVal;
-});
-
 const a = new Array<number>();
 const b = new Array<number>();
 for (let i = 0; i < 8; i++) {

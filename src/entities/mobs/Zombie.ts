@@ -116,7 +116,7 @@ class Zombie extends Mob {
       });
 
       this.createEvent("hurt", (_, attackingEntity: Entity | null): void => {
-         if (attackingEntity !== null) {
+         if (attackingEntity !== null && attackingEntity.type !== "ice_spikes" && attackingEntity.type !== "cactus") {
             this.attackingEntities[attackingEntity.id] = Zombie.ATTACK_PURSUE_TIME;
          }
       });
@@ -158,7 +158,7 @@ class Zombie extends Mob {
       }
 
       // If day time, ignite
-      if (Board.time >= 6 && Board.time < 18) {
+      if (!Board.isNight()) {
          // Ignite randomly or stay on fire if already on fire
          if (super.hasStatusEffect(StatusEffectConst.burning) || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
             super.applyStatusEffect(StatusEffectConst.burning, 5 * SETTINGS.TPS);

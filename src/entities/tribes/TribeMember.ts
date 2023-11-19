@@ -130,9 +130,7 @@ abstract class TribeMember extends Mob {
    
    private static readonly DEFAULT_ATTACK_KNOCKBACK = 125;
 
-   // @Temporary
    private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 20;
-   // private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 3;
 
    private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityType> = ["yeti", "frozen_yeti", "zombie", "slime"];
 

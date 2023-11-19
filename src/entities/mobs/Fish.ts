@@ -98,10 +98,11 @@ class Fish extends Mob {
 
       const predictedX = this.position.x + this.velocity.x * Fish.HERD_PREDICTION_TIME_SECONDS;
       const predictedY = this.position.y + this.velocity.y * Fish.HERD_PREDICTION_TIME_SECONDS;
-      const predictedTile = Board.getTile(Math.floor(predictedX / SETTINGS.TILE_SIZE), Math.floor(predictedY / SETTINGS.TILE_SIZE));
-
-      // If going to move into water tile, don't allow using herd ai
-      this.herdAI.isEnabled = predictedTile.type === TileTypeConst.water;
+      if (predictedX >= 0 && predictedX < SETTINGS.BOARD_DIMENSIONS && predictedY >= 0 && predictedY < SETTINGS.BOARD_DIMENSIONS) {
+         // If going to move into water tile, don't allow using herd ai
+         const predictedTile = Board.getTile(Math.floor(predictedX / SETTINGS.TILE_SIZE), Math.floor(predictedY / SETTINGS.TILE_SIZE));
+         this.herdAI.isEnabled = predictedTile.type === TileTypeConst.water;
+      }
       
       super.tick();
 

@@ -1,34 +1,26 @@
-import { EntityType, Point, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
+import { EntityType, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
-import Yeti from "./entities/mobs/Yeti";
+import Yeti, { yetiSpawnPositionIsValid } from "./entities/mobs/Yeti";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
 
-export type EntitySpawnInfo = {
+const PACK_SPAWN_RANGE = 200;
+
+export interface EntitySpawnInfo {
    /** The type of entity to spawn */
    readonly entityType: EntityType;
    /** Array of all tile types in which the entity is able to be spawned in */
    readonly spawnableTiles: ReadonlyArray<TileTypeConst>;
    /** Average number of spawn attempts that happen each second per chunk. */
    readonly spawnRate: number;
-   /**
-    * If present, details how a pack of entities should be spawned.
-    * Doesn't affect the conditions for the entity's spawn.
-   */
-   readonly packSpawningInfo?: {
-      readonly size: number | [number, number];
-      /** Maximum istance from the spawn origin that the entities can spawn */
-      readonly spawnRange: number;
-   }
    /** Maximum global density per tile the entity type can have. */
    readonly maxDensity: number;
-   /** Time ranges when the entity is able to be spawned. Only one time range has to be satisfied for the entity to be able to spawn. */
-   readonly spawnTimeRanges?: ReadonlyArray<[minSpawnTime: number, maxSpawnTime: number]>;
-   /** Optional function which determines whether a given position is suitable to spawn the entity at according to some custom criteria. */
-   readonly spawnValidationFunction?: (position: Point) => boolean;
+   readonly minPackSize: number;
+   readonly maxPackSize: number;
+   readonly onlySpawnsInNight: boolean;
 }
 
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
@@ -37,93 +29,123 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.01,
-      packSpawningInfo: {
-         size: [2, 5],
-         spawnRange: 200
-      }
+      minPackSize: 2,
+      maxPackSize: 5,
+      onlySpawnsInNight: false
    },
    {
       entityType: "berry_bush",
       spawnableTiles: [TileTypeConst.grass],
-      // spawnRate: 0.001,
-      // maxDensity: 0.0025
-      spawnRate: 0.005,
-      maxDensity: 0.005,
+      spawnRate: 0.001,
+      maxDensity: 0.0025,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "tree",
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
-      maxDensity: 0.015
+      maxDensity: 0.015,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "tombstone",
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.003,
-      spawnTimeRanges: [[0, 3], [19, 24]] // 7pm to 3am
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: true
    },
    {
       entityType: "boulder",
       spawnableTiles: [TileTypeConst.rock],
       spawnRate: 0.005,
-      maxDensity: 0.025
+      maxDensity: 0.025,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "cactus",
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
-      maxDensity: 0.03
+      maxDensity: 0.03,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "yeti",
       spawnableTiles: [TileTypeConst.snow],
       spawnRate: 0.004,
       maxDensity: 0.008,
-      spawnValidationFunction: Yeti.spawnValidationFunction
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
-   {
-      entityType: "ice_spikes",
-      spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
-      spawnRate: 0.015,
-      maxDensity: 0.06,
-      // spawnRate: 0.015 * 50,
-      // maxDensity: 0.06 * 50
-   },
+   // {
+   //    entityType: "ice_spikes",
+   //    spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
+   //    spawnRate: 0.015,
+   //    maxDensity: 0.06,
+   //    // spawnRate: 0.015 * 50,
+   //    // maxDensity: 0.06 * 50
+   // },
    {
       entityType: "slimewisp",
-      // @Temporary
-      // spawnableTiles: ["slime"],
-      spawnableTiles: [TileTypeConst.slime, TileTypeConst.sludge],
+      spawnableTiles: [TileTypeConst.slime],
       spawnRate: 0.2,
-      maxDensity: 0.3
+      maxDensity: 0.3,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "krumblid",
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
-      maxDensity: 0.015
+      maxDensity: 0.015,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "frozen_yeti",
       spawnableTiles: [TileTypeConst.fimbultur],
       spawnRate: 0.004,
-      maxDensity: 0.008
+      maxDensity: 0.008,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    },
    {
       entityType: "fish",
       spawnableTiles: [TileTypeConst.water],
       spawnRate: 0.015,
       maxDensity: 0.03,
-      packSpawningInfo: {
-         size: [3, 4],
-         spawnRange: 200
-      }
+      minPackSize: 3,
+      maxPackSize: 4,
+      onlySpawnsInNight: false
    }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */
 export const MIN_SPAWN_DISTANCE = 150;
+const MIN_SPAWN_DISTANCE_SQUARED = MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE;
+
+const customSpawnConditionsAreMet = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOriginY: number) => {
+   switch (spawnInfo.entityType) {
+      case "yeti": {
+         return yetiSpawnPositionIsValid(spawnOriginX, spawnOriginY);
+      }
+   }
+
+   return true;
+}
 
 const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
    let numEligibleTiles = 0;
@@ -141,30 +163,15 @@ const spawnConditionsAreMet = (spawnInfo: EntitySpawnInfo): boolean => {
       return false;
    }
 
-   // Check time ranges are valid
-   if (typeof spawnInfo.spawnTimeRanges !== "undefined") {
-      let spawnTimeIsValid = false;
-      for (const [minSpawnTime, maxSpawnTime] of spawnInfo.spawnTimeRanges) {
-         if (Board.time >= minSpawnTime && Board.time <= maxSpawnTime) {
-            spawnTimeIsValid = true;
-            break;
-         }
-      }
-      if (!spawnTimeIsValid) return false;
+   // Make sure the spawn time is right
+   if (spawnInfo.onlySpawnsInNight && !Board.isNight()) {
+      return false;
    }
    
    return true;
 }
 
-const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => {
-   if (!spawnPositionIsValid(spawnOrigin)) {
-      return;
-   }
-
-   if (typeof spawnInfo.spawnValidationFunction !== "undefined" && !spawnInfo.spawnValidationFunction(spawnOrigin)) {
-      return;
-   }
-
+const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOriginY: number): void => {
    // @Incomplete @Cleanup: Make all cows spawn with the same type,
    // and make fish spawn with the same colour
    
@@ -172,44 +179,39 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
-   const entity = new entityClass(spawnOrigin, true);
+   const entity = new entityClass(new Point(spawnOriginX, spawnOriginY), true);
    addEntityToCensus(entity);
-
-   if (typeof spawnInfo.packSpawningInfo === "undefined") {
-      return;
-   }
 
    // Pack spawning
  
-   const minX = Math.max(spawnOrigin.x - spawnInfo.packSpawningInfo.spawnRange, 0);
-   const maxX = Math.min(spawnOrigin.x + spawnInfo.packSpawningInfo.spawnRange, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
-   const minY = Math.max(spawnOrigin.y - spawnInfo.packSpawningInfo.spawnRange, 0);
-   const maxY = Math.min(spawnOrigin.y + spawnInfo.packSpawningInfo.spawnRange, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
+   const minX = Math.max(spawnOriginX - PACK_SPAWN_RANGE, 0);
+   const maxX = Math.min(spawnOriginX + PACK_SPAWN_RANGE, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
+   const minY = Math.max(spawnOriginY - PACK_SPAWN_RANGE, 0);
+   const maxY = Math.min(spawnOriginY + PACK_SPAWN_RANGE, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
 
    let totalSpawnAttempts = 0;
 
    let spawnCount: number;
-   if (typeof spawnInfo.packSpawningInfo.size === "number") {
-      spawnCount = spawnInfo.packSpawningInfo.size;
+   if (OPTIONS.inBenchmarkMode) {
+      spawnCount = SRandom.randInt(spawnInfo.minPackSize, spawnInfo.maxPackSize) - 1;
    } else {
-      if (OPTIONS.inBenchmarkMode) {
-         spawnCount = SRandom.randInt(spawnInfo.packSpawningInfo.size[0], spawnInfo.packSpawningInfo.size[1]);
-      } else {
-         spawnCount = randInt(spawnInfo.packSpawningInfo.size[0], spawnInfo.packSpawningInfo.size[1]);
-      }
+      spawnCount = randInt(spawnInfo.minPackSize, spawnInfo.maxPackSize) - 1;
    }
+
    for (let i = 0; i < spawnCount - 1;) {
       // @Speed: Garbage collection, and doing a whole bunch of unnecessary continues here
       
       // Generate a spawn position near the spawn origin
-      const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
+      const spawnPositionX = randFloat(minX, maxX);
+      const spawnPositionY = randFloat(minY, maxY);
 
-      const tile = Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE));
+      const tile = Board.getTile(Math.floor(spawnPositionX / SETTINGS.TILE_SIZE), Math.floor(spawnPositionY / SETTINGS.TILE_SIZE));
       if (!spawnInfo.spawnableTiles.includes(tile.type)) {
          continue;
       }
 
-      if (spawnPositionIsValid(spawnPosition)) {
+      if (spawnPositionIsValid(spawnPositionX, spawnPositionY)) {
+         const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
          const entity = new entityClass(spawnPosition, true);
          addEntityToCensus(entity);
          i++;
@@ -221,11 +223,11 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOrigin: Point): void => 
    }
 }
 
-export function spawnPositionIsValid(position: Point): boolean {
-   const minChunkX = Math.max(Math.min(Math.floor((position.x - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((position.x + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((position.y - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((position.y + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+export function spawnPositionIsValid(positionX: number, positionY: number): boolean {
+   const minChunkX = Math.max(Math.min(Math.floor((positionX - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((positionX + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((positionY - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((positionY + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
    const checkedEntities = new Set<Entity>();
    
@@ -235,8 +237,8 @@ export function spawnPositionIsValid(position: Point): boolean {
          for (const entity of chunk.entities) {
             if (checkedEntities.has(entity)) continue;
             
-            const distance = position.calculateDistanceBetween(entity.position);
-            if (distance <= MIN_SPAWN_DISTANCE) {
+            const distanceSquared = Math.pow(positionX - entity.position.x, 2) + Math.pow(positionY - entity.position.y, 2);
+            if (distanceSquared <= MIN_SPAWN_DISTANCE_SQUARED) {
                return false;
             }
 
@@ -259,10 +261,10 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
       // Calculate a random position in that tile to run the spawn at
       const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
-      // @Speed: Garbage collection
-      const spawnPosition = new Point(x, y);
 
-      spawnEntities(spawnInfo, spawnPosition);
+      if (spawnPositionIsValid(x, y) && customSpawnConditionsAreMet(spawnInfo, x, y)) {
+         spawnEntities(spawnInfo, x, y);
+      }
    }
 }
 
