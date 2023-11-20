@@ -117,6 +117,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    Board.addTribe(tribe);
 
    totem.rotation = 2 * Math.PI * Math.random();
+   totem.hitboxesAreDirty = true;
 
    const buildingPositions: Array<Point> = [position];
 

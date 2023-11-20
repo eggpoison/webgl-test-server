@@ -48,6 +48,8 @@ class Zombie extends Mob {
          hunger: new HungerComponent(randFloat(0, 25), randFloat(3, 5))
       }, EntityTypeConst.zombie, 270);
 
+      this.rotation = 2 * Math.PI * Math.random();
+
       const speedMultiplier = randFloat(0.9, 1.1);
       
       this.addAI(new ChaseAI(this, {
@@ -85,7 +87,7 @@ class Zombie extends Mob {
          tileValidationPadding: 0
       }));
 
-      const hitbox = new CircularHitbox(32, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, 32);
       this.addHitbox(hitbox);
       
       if (isGolden) {
@@ -93,8 +95,6 @@ class Zombie extends Mob {
       } else {
          this.zombieType = Math.floor(Math.random() * 3);
       }
-
-      this.rotation = 2 * Math.PI * Math.random();
 
       // Hurt enemies on collision
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {

@@ -28,8 +28,10 @@ class BerryBush extends Entity {
       super(position, {
          health: new HealthComponent(BerryBush.HEALTH, false)
       }, EntityTypeConst.berry_bush);
+      
+      this.rotation = 2 * Math.PI * Math.random();
 
-      const hitbox = new CircularHitbox(BerryBush.RADIUS, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, BerryBush.RADIUS);
       this.addHitbox(hitbox);
 
       this.createEvent("hurt", () => {
@@ -42,8 +44,6 @@ class BerryBush extends Entity {
       });
 
       this.isStatic = true;
-      
-      this.rotation = 2 * Math.PI * Math.random();
    }
 
    public tick(): void {

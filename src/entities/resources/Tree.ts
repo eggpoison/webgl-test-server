@@ -30,15 +30,15 @@ class Tree extends Entity {
          health: new HealthComponent(Tree.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(48)
       }, EntityTypeConst.tree);
+      
+      this.rotation = Math.PI * 2 * Math.random();
 
-      const hitbox = new CircularHitbox(Tree.TREE_RADIUSES[size], 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, Tree.TREE_RADIUSES[size]);
       this.addHitbox(hitbox);
 
       this.isStatic = true;
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.wood, randInt(...Tree.WOOD_DROP_AMOUNT_RECORD[size]), true);
-      
-      this.rotation = Math.PI * 2 * Math.random();
 
       this.size = size;
 

@@ -41,6 +41,8 @@ class IceSpikes extends Entity {
          health: new HealthComponent(IceSpikes.MAX_HEALTH, false),
          item_creation: itemCreationComponent
       }, EntityTypeConst.ice_spikes);
+      
+      this.rotation = 2 * Math.PI * Math.random();
 
       if (typeof rootIceSpike !== "undefined") {
          this.rootIceSpike = rootIceSpike;
@@ -48,14 +50,12 @@ class IceSpikes extends Entity {
          this.rootIceSpike = this;
       }
 
-      const hitbox = new CircularHitbox(IceSpikes.RADIUS, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, IceSpikes.RADIUS);
       this.addHitbox(hitbox);
 
       itemCreationComponent.createItemOnDeath(ItemType.frostcicle, randInt(0, 1), false);
 
       this.isStatic = true;
-      
-      this.rotation = 2 * Math.PI * Math.random();
 
       this.createEvent("death", () => {
          this.explode();
@@ -138,7 +138,7 @@ class IceSpikes extends Entity {
          projectile.velocity.y = IceSpikes.ICE_SHARD_EXPLODE_SPEED * Math.cos(moveDirection);
          projectile.terminalVelocity = IceSpikes.ICE_SHARD_EXPLODE_SPEED;
 
-         const hitbox = new RectangularHitbox(24, 24, 0, 0);
+         const hitbox = new RectangularHitbox(this, 0, 0, 24, 24);
          projectile.addHitbox(hitbox);
 
          projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {

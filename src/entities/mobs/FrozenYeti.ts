@@ -101,16 +101,16 @@ class FrozenYeti extends Mob {
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(5, 7), true);
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(13, 18), false);
 
-      const bodyHitbox = new CircularHitbox(FrozenYeti.SIZE / 2, 0, 0);
+      const bodyHitbox = new CircularHitbox(this, 0, 0, FrozenYeti.SIZE / 2);
       this.addHitbox(bodyHitbox);
 
-      const headHitbox = new CircularHitbox(FrozenYeti.HEAD_HITBOX_SIZE / 2, 0, FrozenYeti.HEAD_DISTANCE);
+      const headHitbox = new CircularHitbox(this, 0, FrozenYeti.HEAD_DISTANCE, FrozenYeti.HEAD_HITBOX_SIZE / 2);
       this.addHitbox(headHitbox);
 
       // Paw hitboxes
       for (let i = 0; i < 2; i++) {
          const pawDirection = FrozenYeti.PAW_RESTING_ANGLE * (i === 0 ? -1 : 1);
-         const hitbox = new CircularHitbox(FrozenYeti.PAW_SIZE / 2, FrozenYeti.PAW_OFFSET * Math.sin(pawDirection), FrozenYeti.PAW_OFFSET * Math.cos(pawDirection));
+         const hitbox = new CircularHitbox(this, FrozenYeti.PAW_OFFSET * Math.sin(pawDirection), FrozenYeti.PAW_OFFSET * Math.cos(pawDirection), FrozenYeti.PAW_SIZE / 2);
          this.addHitbox(hitbox);
       }
 
@@ -227,6 +227,7 @@ class FrozenYeti extends Mob {
                   this.acceleration.y = FrozenYeti.SLOW_ACCELERATION * Math.cos(direction);
                   this.terminalVelocity = FrozenYeti.SLOW_TERMINAL_VELOCITY;
                   this.rotation = direction;
+                  this.hitboxesAreDirty = true;
 
                   return;
                }
@@ -249,6 +250,7 @@ class FrozenYeti extends Mob {
                   this.acceleration.y = FrozenYeti.SLOW_ACCELERATION * Math.cos(direction);
                   this.terminalVelocity = FrozenYeti.SLOW_TERMINAL_VELOCITY;
                   this.rotation = direction;
+                  this.hitboxesAreDirty = true;
                   return;
                }
             } else {
@@ -796,7 +798,7 @@ class FrozenYeti extends Mob {
       projectile.rotation = 2 * Math.PI * Math.random();
       projectile.mass = FrozenYeti.ROCK_SPIKE_MASSES[size];
 
-      const hitbox = new CircularHitbox(FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[size], 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, FrozenYeti.ROCK_SPIKE_HITBOX_SIZES[size]);
       projectile.addHitbox(hitbox);
 
       projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {

@@ -38,10 +38,11 @@ class Snowball extends Entity {
          this.mass = 1.5;
       }
 
-      const hitbox = new CircularHitbox(SNOWBALL_SIZES[size] / 2, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, SNOWBALL_SIZES[size] / 2);
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();
+      this.hitboxesAreDirty = true;
    }
 
    public tick(): void {
@@ -49,6 +50,7 @@ class Snowball extends Entity {
 
       // Angular velocity
       this.rotation += this.angularVelocity / SETTINGS.TPS;
+      this.hitboxesAreDirty = true;
       if (this.angularVelocity !== 0) {
          const beforeSign = Math.sign(this.angularVelocity);
          this.angularVelocity -= Math.PI / SETTINGS.TPS * beforeSign;

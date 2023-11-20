@@ -45,7 +45,7 @@ class TribeTotem extends Entity {
          health: new HealthComponent(TribeTotem.MAX_HEALTH, false)
       }, EntityTypeConst.tribe_totem);
 
-      const hitbox = new CircularHitbox(TribeTotem.SIZE / 2, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, TribeTotem.SIZE / 2);
       this.addHitbox(hitbox);
 
       this.isStatic = true;

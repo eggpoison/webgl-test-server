@@ -179,7 +179,7 @@ class Slime extends Mob {
 
       this.size = size;
 
-      const hitbox = new CircularHitbox(Slime.RADIUSES[this.size], 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, Slime.RADIUSES[this.size]);
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {

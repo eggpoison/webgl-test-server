@@ -46,7 +46,7 @@ export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: numb
 
 /** A generic class for any object in the world which has hitbox(es) */
 abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents> {
-   private static readonly rectangularTestHitbox = new RectangularHitbox(-1, -1, 0, 0);
+   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1);
    
    /** Unique identifier for each game object */
    public readonly id: number;
@@ -135,30 +135,36 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
       this.hitboxes.push(hitbox);
-      
-      // Calculate initial position and hitbox bounds for the hitbox as it is not guaranteed that they are updated the immediate tick after
-      hitbox.updateFromGameObject(this);
-      hitbox.updateHitboxBounds();
+
+      const boundsMinX = hitbox.calculateHitboxBoundsMinX();
+      const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
+      const boundsMinY = hitbox.calculateHitboxBoundsMinY();
+      const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
 
       // Update bounding area
-      if (hitbox.bounds[0] < this.boundingArea[0]) {
-         this.boundingArea[0] = hitbox.bounds[0];
+      if (boundsMinX < this.boundingArea[0]) {
+         this.boundingArea[0] = boundsMinX;
       }
-      if (hitbox.bounds[1] > this.boundingArea[1]) {
-         this.boundingArea[1] = hitbox.bounds[1];
+      if (boundsMaxX > this.boundingArea[1]) {
+         this.boundingArea[1] = boundsMaxX;
       }
-      if (hitbox.bounds[2] < this.boundingArea[2]) {
-         this.boundingArea[2] = hitbox.bounds[2];
+      if (boundsMinY < this.boundingArea[2]) {
+         this.boundingArea[2] = boundsMinY;
       }
-      if (hitbox.bounds[3] > this.boundingArea[3]) {
-         this.boundingArea[3] = hitbox.bounds[3];
+      if (boundsMaxY > this.boundingArea[3]) {
+         this.boundingArea[3] = boundsMaxY;
       }
 
+      hitbox.chunkBounds[0] = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
+      hitbox.chunkBounds[1] = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
+      hitbox.chunkBounds[2] = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
+      hitbox.chunkBounds[3] = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+
       // Flag if the hitbox could be in a wall
-      const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
-      const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
-      const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
-      const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
+      const minTileX = clampToBoardDimensions(Math.floor(boundsMinX / SETTINGS.TILE_SIZE));
+      const maxTileX = clampToBoardDimensions(Math.floor(boundsMaxX / SETTINGS.TILE_SIZE));
+      const minTileY = clampToBoardDimensions(Math.floor(boundsMinY / SETTINGS.TILE_SIZE));
+      const maxTileY = clampToBoardDimensions(Math.floor(boundsMaxY / SETTINGS.TILE_SIZE));
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
             const tile = Board.getTile(tileX, tileY);
@@ -169,41 +175,8 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       }
    }
 
-   public updateHitboxesAndBoundingArea(): void {
-      this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
-      this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
-      this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
-      this.boundingArea[3] = Number.MIN_SAFE_INTEGER;
-
-      const numHitboxes = this.hitboxes.length;
-      for (let i = 0; i < numHitboxes; i++) {
-         const hitbox = this.hitboxes[i];
-
-         hitbox.updateFromGameObject(this);
-         hitbox.updateHitboxBounds();
-
-         // Update bounding area
-         if (hitbox.bounds[0] < this.boundingArea[0]) {
-            this.boundingArea[0] = hitbox.bounds[0];
-         }
-         if (hitbox.bounds[1] > this.boundingArea[1]) {
-            this.boundingArea[1] = hitbox.bounds[1];
-         }
-         if (hitbox.bounds[2] < this.boundingArea[2]) {
-            this.boundingArea[2] = hitbox.bounds[2];
-         }
-         if (hitbox.bounds[3] > this.boundingArea[3]) {
-            this.boundingArea[3] = hitbox.bounds[3];
-         }
-      }
-
-      this.positionIsDirty = false;
-   }
-
    /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
    public cleanHitboxes(): void {
-      // Idea: what if we store the flag in each hitbox
-      
       this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
       this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
       this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
@@ -215,47 +188,55 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
-         // Find new hitbox bounds
-         if (this.positionIsDirty) {
-            hitbox.updateFromGameObject(this);
+         // @Speed: This check is slow
+         if (!hitbox.hasOwnProperty("radius")) {
+            // Rectangular hitbox
+            (hitbox as RectangularHitbox).updateVertexPositions();
          }
-         hitbox.updateHitboxBounds();
 
-         // Idea: make bounds and bounding area from arrays to 4 separate values
+         const boundsMinX = hitbox.calculateHitboxBoundsMinX();
+         const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
+         const boundsMinY = hitbox.calculateHitboxBoundsMinY();
+         const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
 
          // Update bounding area
-         if (hitbox.bounds[0] < this.boundingArea[0]) {
-            this.boundingArea[0] = hitbox.bounds[0];
+         if (boundsMinX < this.boundingArea[0]) {
+            this.boundingArea[0] = boundsMinX;
          }
-         if (hitbox.bounds[1] > this.boundingArea[1]) {
-            this.boundingArea[1] = hitbox.bounds[1];
+         if (boundsMaxX > this.boundingArea[1]) {
+            this.boundingArea[1] = boundsMaxX;
          }
-         if (hitbox.bounds[2] < this.boundingArea[2]) {
-            this.boundingArea[2] = hitbox.bounds[2];
+         if (boundsMinY < this.boundingArea[2]) {
+            this.boundingArea[2] = boundsMinY;
          }
-         if (hitbox.bounds[3] > this.boundingArea[3]) {
-            this.boundingArea[3] = hitbox.bounds[3];
+         if (boundsMaxY > this.boundingArea[3]) {
+            this.boundingArea[3] = boundsMaxY;
          }
 
          // Check if the hitboxes' chunk bounds have changed
          if (!hitboxChunkBoundsHaveChanged) {
-            if (Math.floor(hitbox.previousBounds[0] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS) ||
-                Math.floor(hitbox.previousBounds[1] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[1] / SETTINGS.CHUNK_UNITS) ||
-                Math.floor(hitbox.previousBounds[2] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[2] / SETTINGS.CHUNK_UNITS) ||
-                Math.floor(hitbox.previousBounds[3] / SETTINGS.CHUNK_UNITS) !== Math.floor(hitbox.bounds[3] / SETTINGS.CHUNK_UNITS)) {
+            const minChunkX = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
+            const maxChunkX = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
+            const minChunkY = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
+            const maxChunkY = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+
+            if (minChunkX !== hitbox.chunkBounds[0] ||
+                maxChunkX !== hitbox.chunkBounds[1] ||
+                minChunkY !== hitbox.chunkBounds[2] ||
+                maxChunkY !== hitbox.chunkBounds[3]) {
                hitboxChunkBoundsHaveChanged = true;
+
+               hitbox.chunkBounds[0] = minChunkX;
+               hitbox.chunkBounds[1] = maxChunkX;
+               hitbox.chunkBounds[2] = minChunkY;
+               hitbox.chunkBounds[3] = maxChunkY;
             }
          }
-         
-         hitbox.previousBounds[0] = hitbox.bounds[0];
-         hitbox.previousBounds[1] = hitbox.bounds[1];
-         hitbox.previousBounds[2] = hitbox.bounds[2];
-         hitbox.previousBounds[3] = hitbox.bounds[3];
       }
 
       this.hitboxesAreDirty = false;
 
-      // @Speed
+      // Check if the chunk bounds have changed
       if (hitboxChunkBoundsHaveChanged) {
          this.updateContainingChunks();
 
@@ -407,18 +388,24 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          this.position.y += this.velocity.y / SETTINGS.TPS;
 
          this.positionIsDirty = true;
-         this.hitboxesAreDirty = true;
       }
    }
 
    public updateContainingChunks(): void {
       // Calculate containing chunks
       const containingChunks = new Set<Chunk>();
-      for (const hitbox of this.hitboxes) {
-         const minChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[0] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkX = Math.max(Math.min(Math.floor(hitbox.bounds[1] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-         const minChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[2] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkY = Math.max(Math.min(Math.floor(hitbox.bounds[3] / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+      for (let i = 0; i < this.hitboxes.length; i++) {
+         const hitbox = this.hitboxes[i];
+
+         const boundsMinX = hitbox.calculateHitboxBoundsMinX();
+         const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
+         const boundsMinY = hitbox.calculateHitboxBoundsMinY();
+         const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
+
+         const minChunkX = Math.max(Math.min(Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
 
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
@@ -555,7 +542,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
 
       for (let i = 0; i < 4; i++) {
-         const vertex = hitbox.vertexPositions[i];
+         const vertex = hitbox.vertexOffsets[i];
          if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
             const distX = Math.abs(this.position.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE);
             const distY = Math.abs(this.position.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE);
@@ -574,8 +561,8 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       
       GameObject.rectangularTestHitbox.width = SETTINGS.TILE_SIZE;
       GameObject.rectangularTestHitbox.height = SETTINGS.TILE_SIZE;
-      GameObject.rectangularTestHitbox.position = new Point((tile.x + 0.5) * SETTINGS.TILE_SIZE, (tile.y + 0.5) * SETTINGS.TILE_SIZE);
-      GameObject.rectangularTestHitbox.updateHitboxBounds();
+      GameObject.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SETTINGS.TILE_SIZE;
+      GameObject.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SETTINGS.TILE_SIZE;
 
       if (GameObject.rectangularTestHitbox.isColliding(hitbox)) {
          return TileCollisionAxis.diagonal;
@@ -590,20 +577,22 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       const tileMinY = tile.y * SETTINGS.TILE_SIZE;
       const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
 
-      let vertexPosition: Point | undefined;
+      let vertexPositionX = -99999;
       for (let i = 0; i < 4; i++) {
-         const vertex = hitbox.vertexPositions[i];
-         if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
-            vertexPosition = vertex;
+         const vertexOffset = hitbox.vertexOffsets[i];
+         const vertexPosX = this.position.x + vertexOffset.x;
+         const vertexPosY = this.position.y + vertexOffset.y;
+         if (vertexPosX >= tileMinX && vertexPosX <= tileMaxX && vertexPosY >= tileMinY && vertexPosY <= tileMaxY) {
+            vertexPositionX = vertexPosX;
             break;
          }
       }
-      if (typeof vertexPosition === "undefined") {
+      if (vertexPositionX === -99999) {
          throw new Error();
       }
 
-      const startXDist = vertexPosition.x - tile.x * SETTINGS.TILE_SIZE;
-      const xDist = vertexPosition.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE;
+      const startXDist = vertexPositionX - tile.x * SETTINGS.TILE_SIZE;
+      const xDist = vertexPositionX - (tile.x + 0.5) * SETTINGS.TILE_SIZE;
 
       // Push left
       if (xDist < 0) {
@@ -620,20 +609,22 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       const tileMinY = tile.y * SETTINGS.TILE_SIZE;
       const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
 
-      let vertexPosition: Point | undefined;
+      let vertexPositionY = -99999;
       for (let i = 0; i < 4; i++) {
-         const vertex = hitbox.vertexPositions[i];
-         if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
-            vertexPosition = vertex;
+         const vertexOffset = hitbox.vertexOffsets[i];
+         const vertexPosX = this.position.x + vertexOffset.x;
+         const vertexPosY = this.position.y + vertexOffset.y;
+         if (vertexPosX >= tileMinX && vertexPosX <= tileMaxX && vertexPosY >= tileMinY && vertexPosY <= tileMaxY) {
+            vertexPositionY = vertexPosY;
             break;
          }
       }
-      if (typeof vertexPosition === "undefined") {
+      if (vertexPositionY === -99999) {
          throw new Error();
       }
 
-      const startYDist = vertexPosition.y - tile.y * SETTINGS.TILE_SIZE;
-      const yDist = vertexPosition.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE;
+      const startYDist = vertexPositionY - tile.y * SETTINGS.TILE_SIZE;
+      const yDist = vertexPositionY - (tile.y + 0.5) * SETTINGS.TILE_SIZE;
 
       // Push left
       if (yDist < 0) {
@@ -645,11 +636,11 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 
    private resolveDiagonalRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
-      const pairs: ReadonlyArray<[Point, Point]> = [
-         [hitbox.vertexPositions[0], hitbox.vertexPositions[1]],
-         [hitbox.vertexPositions[1], hitbox.vertexPositions[3]],
-         [hitbox.vertexPositions[3], hitbox.vertexPositions[2]],
-         [hitbox.vertexPositions[2], hitbox.vertexPositions[0]]
+      const vertexOffsetPairs: ReadonlyArray<[Point, Point]> = [
+         [hitbox.vertexOffsets[0], hitbox.vertexOffsets[1]],
+         [hitbox.vertexOffsets[1], hitbox.vertexOffsets[3]],
+         [hitbox.vertexOffsets[3], hitbox.vertexOffsets[2]],
+         [hitbox.vertexOffsets[2], hitbox.vertexOffsets[0]]
       ];
 
       const tileX1 = tile.x * SETTINGS.TILE_SIZE;
@@ -660,54 +651,66 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       let collidingVertex1!: Point;
       let collidingVertex2!: Point;
       
-      for (const pair of pairs) {
-         const leftPoint =   pair[0].x < pair[1].x ? pair[0] : pair[1];
-         const rightPoint =  pair[0].x < pair[1].x ? pair[1] : pair[0];
-         const bottomPoint = pair[0].y < pair[1].y ? pair[0] : pair[1];
-         const topPoint =    pair[0].y < pair[1].y ? pair[1] : pair[0];
+      for (const offsetPair of vertexOffsetPairs) {
+         const leftPoint =   offsetPair[0].x < offsetPair[1].x ? offsetPair[0] : offsetPair[1];
+         const rightPoint =  offsetPair[0].x < offsetPair[1].x ? offsetPair[1] : offsetPair[0];
+         const bottomPoint = offsetPair[0].y < offsetPair[1].y ? offsetPair[0] : offsetPair[1];
+         const topPoint =    offsetPair[0].y < offsetPair[1].y ? offsetPair[1] : offsetPair[0];
 
-         if (pair[0].x === pair[1].x) {
+         if (offsetPair[0].x === offsetPair[1].x) {
+            // Division by 0 error
             throw new Error();
          }
 
-         const slope = (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x);
+         const leftPointX = leftPoint.x + this.position.x;
+         const leftPointY = leftPoint.y + this.position.y;
+         const rightPointX = rightPoint.x + this.position.x;
+         const rightPointY = rightPoint.y + this.position.y;
+
+         const slope = (rightPointY - leftPointY) / (rightPointX - leftPointX);
 
          // Check left projection
-         if (leftPoint.x < tileX1) {
-            const leftProjectionY = leftPoint.y + slope * (tileX1 - leftPoint.x);
+         if (leftPointX < tileX1) {
+            const leftProjectionY = leftPointY + slope * (tileX1 - leftPointX);
             if (leftProjectionY >= tileY1 && leftProjectionY <= tileY2) {
-               collidingVertex1 = pair[0];
-               collidingVertex2 = pair[1];
+               collidingVertex1 = offsetPair[0];
+               collidingVertex2 = offsetPair[1];
                break;
             }
          }
 
          // Check right projection
-         if (rightPoint.x > tileX2) {
-            const rightProjectionY = rightPoint.y - slope * (rightPoint.x - tileX2);
+         if (rightPointX > tileX2) {
+            const rightProjectionY = rightPointY - slope * (rightPointX - tileX2);
             if (rightProjectionY >= tileY1 && rightProjectionY <= tileY2) {
-               collidingVertex1 = pair[0];
-               collidingVertex2 = pair[1];
+               collidingVertex1 = offsetPair[0];
+               collidingVertex2 = offsetPair[1];
                break;
             }
          }
+
+         const topPointX = topPoint.x + this.position.x;
+         const topPointY = topPoint.y + this.position.y;
 
          // Check top projection
-         if (topPoint.y > tileY2) {
-            const topProjectionX = topPoint.x + (topPoint.y - tileY2) / slope;
+         if (topPointY > tileY2) {
+            const topProjectionX = topPointX + (topPointY - tileY2) / slope;
             if (topProjectionX >= tileX1 && topProjectionX <= tileX2) {
-               collidingVertex1 = pair[0];
-               collidingVertex2 = pair[1];
+               collidingVertex1 = offsetPair[0];
+               collidingVertex2 = offsetPair[1];
                break;
             }
          }
 
+         const bottomPointX = bottomPoint.x + this.position.x;
+         const bottomPointY = bottomPoint.y + this.position.y;
+
          // Check bottom projection
-         if (bottomPoint.y < tileY1) {
-            const bottomProjectionX = bottomPoint.x - (tileY2 - topPoint.y) / slope;
+         if (bottomPointY < tileY1) {
+            const bottomProjectionX = bottomPointX - (tileY2 - topPointY) / slope;
             if (bottomProjectionX >= tileX1 && bottomProjectionX <= tileX2) {
-               collidingVertex1 = pair[0];
-               collidingVertex2 = pair[1];
+               collidingVertex1 = offsetPair[0];
+               collidingVertex2 = offsetPair[1];
                break;
             }
          }
@@ -729,7 +732,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       let tileVertexX!: number;
       let tileVertexY!: number;
       for (const pair of pairs2) {
-         if (pointIsInRectangle(pair[0], pair[1], hitbox.position, hitbox.width, hitbox.height, this.rotation + hitbox.rotation)) {
+         if (pointIsInRectangle(pair[0], pair[1], this.position, hitbox.offset, hitbox.width, hitbox.height, this.rotation + hitbox.rotation)) {
             tileVertexX = pair[0];
             tileVertexY = pair[1];
             break;
@@ -752,10 +755,15 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
 
    public resolveWallTileCollisions(): void {
       for (const hitbox of this.hitboxes) {
-         const minTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[0] / SETTINGS.TILE_SIZE));
-         const maxTileX = clampToBoardDimensions(Math.floor(hitbox.bounds[1] / SETTINGS.TILE_SIZE));
-         const minTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[2] / SETTINGS.TILE_SIZE));
-         const maxTileY = clampToBoardDimensions(Math.floor(hitbox.bounds[3] / SETTINGS.TILE_SIZE));
+         const boundsMinX = hitbox.calculateHitboxBoundsMinX();
+         const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
+         const boundsMinY = hitbox.calculateHitboxBoundsMinY();
+         const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
+
+         const minTileX = clampToBoardDimensions(Math.floor(boundsMinX / SETTINGS.TILE_SIZE));
+         const maxTileX = clampToBoardDimensions(Math.floor(boundsMaxX / SETTINGS.TILE_SIZE));
+         const minTileY = clampToBoardDimensions(Math.floor(boundsMinY / SETTINGS.TILE_SIZE));
+         const maxTileY = clampToBoardDimensions(Math.floor(boundsMaxY / SETTINGS.TILE_SIZE));
 
          // @Cleanup: Combine the check and resolve functions into one
 
@@ -818,13 +826,11 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          this.position.x -= this.boundingArea[0];
          this.velocity.x = 0;
          this.positionIsDirty = true;
-         this.hitboxesAreDirty = true;
          // Right border
       } else if (this.boundingArea[1] > SETTINGS.BOARD_UNITS) {
          this.position.x -= this.boundingArea[1] - SETTINGS.BOARD_UNITS;
          this.velocity.x = 0;
          this.positionIsDirty = true;
-         this.hitboxesAreDirty = true;
       }
 
       // Bottom border
@@ -832,17 +838,14 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          this.position.y -= this.boundingArea[2];
          this.velocity.y = 0;
          this.positionIsDirty = true;
-         this.hitboxesAreDirty = true;
          // Top border
       } else if (this.boundingArea[3] > SETTINGS.BOARD_UNITS) {
          this.position.y -= this.boundingArea[3] - SETTINGS.BOARD_UNITS;
          this.velocity.y = 0;
          this.positionIsDirty = true;
-         this.hitboxesAreDirty = true;
       }
 
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_UNITS || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_UNITS) {
-         console.log(this.hitboxes.map(hitbox => hitbox.bounds));
          console.log(this.boundingArea);
          console.log(this.position.x, this.position.y);
          throw new Error("Unable to properly resolve wall collisions.");

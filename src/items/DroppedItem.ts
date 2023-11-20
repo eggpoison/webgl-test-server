@@ -39,13 +39,12 @@ class DroppedItem extends GameObject<DroppedItemEvents> {
    constructor(position: Point, item: Item) {
       super(position);
 
-      this.position = position;
+      this.rotation = 2 * Math.PI * Math.random();
+
       this.item = item;
 
-      const hitbox = new RectangularHitbox(SETTINGS.ITEM_SIZE, SETTINGS.ITEM_SIZE, 0, 0);
+      const hitbox = new RectangularHitbox(this, 0, 0, SETTINGS.ITEM_SIZE, SETTINGS.ITEM_SIZE);
       this.addHitbox(hitbox);
-
-      this.rotation = 2 * Math.PI * Math.random();
 
       Board.addDroppedItemToJoinBuffer(this);
    }

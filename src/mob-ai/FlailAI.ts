@@ -40,6 +40,7 @@ class FlailAI extends AI {
       this.mob.velocity.y += this.flailForce * Math.cos(flailDirection);
 
       this.mob.rotation = flailDirection + randFloat(-0.5, 0.5);
+      this.mob.hitboxesAreDirty = true;
    }
 
    protected onActivation(): void {

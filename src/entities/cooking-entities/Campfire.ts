@@ -20,7 +20,7 @@ class Campfire extends HeatingEntity {
          health: new HealthComponent(Campfire.MAX_HEALTH, false),
       }, EntityTypeConst.campfire);
 
-      const hitbox = new CircularHitbox(Campfire.SIZE / 2, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, Campfire.SIZE / 2);
       this.addHitbox(hitbox);
 
       this.remainingHeatSeconds = Campfire.LIFETIME_SECONDS;

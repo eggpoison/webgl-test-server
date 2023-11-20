@@ -1,4 +1,4 @@
-import { EntityTypeConst, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
+import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -234,12 +234,60 @@ abstract class Board {
       const length = this.gameObjects.length;
       for (let i = 0; i < length; i++) {
          const gameObject = this.gameObjects[i];
-
          gameObject.tick();
+      }
+   }
 
-         // Clean the game object's bounding area, hitbox bounds and chunks
-         if (gameObject.hitboxesAreDirty) {
+   public static resolveOtherCollisions(): void {
+      const numGameObjects = this.gameObjects.length;
+      for (let i = 0; i < numGameObjects; i++) {
+         const gameObject = this.gameObjects[i];
+
+         // Remove old collisions
+         // @Speed
+         let numCollisions = gameObject.collidingObjects.length;
+         for (let i = 0; i < numCollisions; i++) {
+            if (gameObject.collidingObjectTicks[i] !== Board.ticks) {
+               gameObject.collidingObjects.splice(i, 1);
+               gameObject.collidingObjectTicks.splice(i, 1);
+               i--;
+               numCollisions--;
+            }
+         }
+
+         // @Incomplete: We may need to set hitboxesAreDirty in the resolveBorderCollisions and other places, so this actually gets called
+         // @Temporary
+         if (gameObject.positionIsDirty || gameObject.hitboxesAreDirty) {
             gameObject.cleanHitboxes();
+         }
+
+         if (gameObject.positionIsDirty) {
+            gameObject.positionIsDirty = false;
+   
+            if (gameObject.hasPotentialWallTileCollisions) {
+               gameObject.resolveWallTileCollisions();
+            }
+         
+            // If the object moved due to resolving wall tile collisions, recalculate
+            if (gameObject.positionIsDirty) {
+               gameObject.cleanHitboxes();
+            }
+   
+            gameObject.resolveBorderCollisions();
+         
+            // If the object moved due to resolving border collisions, recalculate
+            if (gameObject.positionIsDirty) {
+               gameObject.cleanHitboxes();
+            }
+
+            // If the game object has moved to a new tile, update its tile
+            // Tile is only dirty if position is dirty so we can do this check inside
+            if (gameObject.tile.x !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
+                gameObject.tile.y !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
+               gameObject.updateTile();
+            }
+
+            gameObject.isInRiver = gameObject.checkIsInRiver();
          }
       }
    }
@@ -263,60 +311,6 @@ abstract class Board {
                   gameObject2.collide(gameObject1);
                }
             }
-         }
-      }
-   }
-
-   public static resolveOtherCollisions(): void {
-      const numGameObjects = this.gameObjects.length;
-      for (let i = 0; i < numGameObjects; i++) {
-         const gameObject = this.gameObjects[i];
-
-         // Remove old collisions
-         // @Speed
-         let numCollisions = gameObject.collidingObjects.length;
-         for (let i = 0; i < numCollisions; i++) {
-            if (gameObject.collidingObjectTicks[i] !== Board.ticks) {
-               gameObject.collidingObjects.splice(i, 1);
-               gameObject.collidingObjectTicks.splice(i, 1);
-               i--;
-               numCollisions--;
-            }
-         }
-
-         if (gameObject.positionIsDirty) {
-            gameObject.positionIsDirty = false;
-   
-            if (gameObject.hasPotentialWallTileCollisions) {
-               gameObject.resolveWallTileCollisions();
-            }
-         
-            // If the object moved due to resolving wall tile collisions, recalculate
-            if (gameObject.positionIsDirty) {
-               gameObject.updateHitboxesAndBoundingArea();
-            }
-   
-            gameObject.resolveBorderCollisions();
-         
-            // If the object moved due to resolving border collisions, recalculate
-            if (gameObject.positionIsDirty) {
-               gameObject.updateHitboxesAndBoundingArea();
-            }
-
-            // If the game object has moved to a new tile, update its tile
-            // Tile is only dirty if position is dirty so we can do this check inside
-            if (gameObject.tile.x !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
-                gameObject.tile.y !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
-               gameObject.updateTile();
-            }
-
-            gameObject.isInRiver = gameObject.checkIsInRiver();
-         }
-
-         // @Incomplete: We may need to set hitboxesAreDirty in the resolveBorderCollisions and other places, so this actually gets called
-         
-         if (gameObject.hitboxesAreDirty) {
-            gameObject.cleanHitboxes();
          }
       }
    }
@@ -445,7 +439,8 @@ abstract class Board {
    }
 
    private static addGameObjectToBoard(gameObject: GameObject): void {
-      gameObject.updateHitboxesAndBoundingArea();
+      // @Cleanup: Is this necessary?
+      gameObject.cleanHitboxes();
       gameObject.updateContainingChunks();
 
       this.gameObjects.push(gameObject);
@@ -536,10 +531,12 @@ abstract class Board {
       // @Speed: This check is slow
       if (hitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circlesDoIntersect(testPosition, 1, hitbox.position, (hitbox as CircularHitbox).radius);
+         // @Speed: Garbage collection
+         return circulesDoIntersectWithOffset(testPosition, new Point(0, 0), 1, hitbox.object.position, hitbox.offset, (hitbox as CircularHitbox).radius);
       } else {
          // Rectangular hitbox
-         return circleAndRectangleDoIntersect(testPosition, 1, hitbox.position, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         // @Speed: Garbage collection
+         return circleAndRectangleDoIntersectWithOffset(testPosition, new Point(0, 0), 1, hitbox.object.position, hitbox.offset, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, hitbox.object.rotation);
       }
    }
 

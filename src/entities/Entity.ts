@@ -222,6 +222,7 @@ abstract class Entity extends GameObject<EntityEvents> {
             this.rotation += Math.PI * 2;
          }
       }
+      this.hitboxesAreDirty = true;
    }
 
    protected shouldTurnClockwise(targetRotation: number): boolean {
@@ -237,7 +238,11 @@ abstract class Entity extends GameObject<EntityEvents> {
    }
 
    protected cleanRotation(): void {
-      this.rotation = cleanAngle(this.rotation);
+      const rotation = cleanAngle(this.rotation);
+      if (rotation !== this.rotation) {
+         this.hitboxesAreDirty = true;
+         this.rotation = rotation;
+      }
    }
 
    protected getClosestEntity(entities: ReadonlyArray<Entity>): Entity {

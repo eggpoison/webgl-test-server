@@ -93,7 +93,7 @@ class Cow extends Mob {
          tileValidationPadding: 0
       }));
 
-      const hitbox = new RectangularHitbox(50, 100, 0, 0);
+      const hitbox = new RectangularHitbox(this, 0, 0, 50, 100);
       this.addHitbox(hitbox);
 
       this.rotation = 2 * Math.PI * Math.random();

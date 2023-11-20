@@ -4,7 +4,7 @@ import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity from "./entities/Entity";
    
-const testCircularHitbox = new CircularHitbox(-1, 0, 0);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1);
 
 /** Gets all tiles within a given distance from a position */
 export function getPositionRadialTiles(position: Point, radius: number): Array<Tile> {
@@ -68,9 +68,8 @@ export function entityIsInVisionRange(position: Point, visionRange: number, enti
    }
 
    testCircularHitbox.radius = visionRange;
-   testCircularHitbox.position.x = position.x;
-   testCircularHitbox.position.y = position.y;
-   testCircularHitbox.updateHitboxBounds();
+   testCircularHitbox.object.position.x = position.x;
+   testCircularHitbox.object.position.y = position.y;
 
    // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
    for (const hitbox of entity.hitboxes) {
@@ -89,9 +88,8 @@ export function getEntitiesInVisionRange(x: number, y: number, visionRange: numb
    const maxChunkY = Math.max(Math.min(Math.floor((y + visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
    testCircularHitbox.radius = visionRange;
-   testCircularHitbox.position.x = x;
-   testCircularHitbox.position.y = y;
-   testCircularHitbox.updateHitboxBounds();
+   testCircularHitbox.object.position.x = x;
+   testCircularHitbox.object.position.y = y;
 
    const visionRangeSquared = Math.pow(visionRange, 2);
    

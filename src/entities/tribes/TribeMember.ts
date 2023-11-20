@@ -118,8 +118,8 @@ export enum EntityRelationship {
 }
 
 abstract class TribeMember extends Mob {
-   private static readonly testRectangularHitbox = new RectangularHitbox(-1, -1, 0, 0);
-   private static readonly testCircularHitbox = new CircularHitbox(-1, 0, 0);
+   private static readonly testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1);
+   private static readonly testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1);
 
    private static readonly ARROW_WIDTH = 20;
    private static readonly ARROW_HEIGHT = 64;
@@ -635,7 +635,7 @@ abstract class TribeMember extends Mob {
             arrowProjectile.velocity.y = itemInfo.projectileSpeed * Math.cos(this.rotation);
             arrowProjectile.rotation = this.rotation;
 
-            const hitbox = new RectangularHitbox(TribeMember.ARROW_WIDTH, TribeMember.ARROW_HEIGHT, 0, 0);
+            const hitbox = new RectangularHitbox(arrowProjectile, 0, 0, TribeMember.ARROW_WIDTH, TribeMember.ARROW_HEIGHT);
             arrowProjectile.addHitbox(hitbox);
 
             arrowProjectile.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
@@ -708,18 +708,22 @@ abstract class TribeMember extends Mob {
          // Rectangular
          TribeMember.testRectangularHitbox.width = testHitboxInfo.width;
          TribeMember.testRectangularHitbox.height = testHitboxInfo.height;
-         TribeMember.testRectangularHitbox.externalRotation = placeRotation;
          placeTestHitbox = TribeMember.testRectangularHitbox;
       }
 
-      placeTestHitbox.position.x = spawnPositionX;
-      placeTestHitbox.position.y = spawnPositionY;
-      placeTestHitbox.updateHitboxBounds();
+      placeTestHitbox.object.position.x = spawnPositionX;
+      placeTestHitbox.object.position.y = spawnPositionY;
+      placeTestHitbox.object.rotation = placeRotation;
 
-      const minChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[0] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[1] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[2] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor(placeTestHitbox.bounds[3] / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const hitboxBoundsMinX = placeTestHitbox.calculateHitboxBoundsMinX();
+      const hitboxBoundsMaxX = placeTestHitbox.calculateHitboxBoundsMaxX();
+      const hitboxBoundsMinY = placeTestHitbox.calculateHitboxBoundsMinY();
+      const hitboxBoundsMaxY = placeTestHitbox.calculateHitboxBoundsMaxY();
+
+      const minChunkX = Math.max(Math.min(Math.floor(hitboxBoundsMinX / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor(hitboxBoundsMaxX / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor(hitboxBoundsMinY / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor(hitboxBoundsMaxY / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
       
       const previouslyCheckedEntityIDs = new Set<number>();
 

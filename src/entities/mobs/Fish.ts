@@ -47,7 +47,7 @@ class Fish extends Mob {
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_fish, 1, false);
 
-      const hitbox = new RectangularHitbox(Fish.WIDTH, Fish.HEIGHT, 0, 0);
+      const hitbox = new RectangularHitbox(this, 0, 0, Fish.WIDTH, Fish.HEIGHT);
       this.addHitbox(hitbox);
 
       this.addAI(new MinionAI(this, {
@@ -108,6 +108,7 @@ class Fish extends Mob {
 
       if (this.currentAI !== null && this.currentAI.type !== MobAIType.flail && (this.currentAI.type !== MobAIType.wander || this.currentAI.targetPosition !== null)) {
          this.rotation += Math.sin(Board.ticks / 5) * 0.05;
+         this.hitboxesAreDirty = true;
       }
 
       if (this.tile.type !== TileTypeConst.water) {

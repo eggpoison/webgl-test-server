@@ -55,7 +55,10 @@ class EscapeAI extends AI implements EscapeAIParams {
       this.mob.acceleration.x = this.acceleration * Math.sin(direction);
       this.mob.acceleration.y = this.acceleration * Math.cos(direction);
       this.mob.terminalVelocity = this.terminalVelocity;
-      this.mob.rotation = direction;
+      if (direction !== this.mob.rotation) {
+         this.mob.rotation = direction;
+         this.mob.hitboxesAreDirty = true;
+      }
    }
 
    public canSwitch(): boolean {

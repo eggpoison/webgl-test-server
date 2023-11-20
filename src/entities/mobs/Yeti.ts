@@ -165,7 +165,9 @@ class Yeti extends Mob {
          hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 1.2))
       }, EntityTypeConst.yeti, Yeti.VISION_RANGE);
 
-      const hitbox = new CircularHitbox(Yeti.SIZE / 2, 0, 0);
+      this.rotation = 2 * Math.PI * Math.random();
+
+      const hitbox = new CircularHitbox(this, 0, 0, Yeti.SIZE / 2);
       this.addHitbox(hitbox);
 
       // Snow throw AI
@@ -235,8 +237,6 @@ class Yeti extends Mob {
             healthComponent.addLocalInvulnerabilityHash("yeti", 0.3);
          }
       });
-
-      this.rotation = 2 * Math.PI * Math.random();
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.raw_beef, randInt(4, 7), false);
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(2, 3), true);

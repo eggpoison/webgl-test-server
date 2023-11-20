@@ -58,7 +58,10 @@ abstract class AI {
       this.mob.acceleration.x = acceleration * Math.sin(_direction);
       this.mob.acceleration.y = acceleration * Math.cos(_direction);
       this.mob.terminalVelocity = terminalVelocity;
-      this.mob.rotation = _direction;
+      if (_direction !== this.mob.rotation) {
+         this.mob.rotation = _direction;
+         this.mob.hitboxesAreDirty = true;
+      }
    }
 
    public addDebugData?(debugData: GameObjectDebugData): void;

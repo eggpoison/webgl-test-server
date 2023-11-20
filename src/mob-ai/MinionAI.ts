@@ -83,7 +83,10 @@ class MinionAI extends AI {
          if (customTickIntervalHasPassed((this.mob as Fish).secondsOutOfWater * SETTINGS.TPS, MinionAI.LUNGE_INTERVAL)) {
             this.mob.velocity.x += MinionAI.LUNGE_FORCE * Math.sin(direction);
             this.mob.velocity.y += MinionAI.LUNGE_FORCE * Math.cos(direction);
-            this.mob.rotation = direction;
+            if (direction !== this.mob.rotation) {
+               this.mob.rotation = direction;
+               this.mob.hitboxesAreDirty = true;
+            }
          }
       }
    }

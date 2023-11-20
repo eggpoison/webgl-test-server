@@ -71,7 +71,10 @@ class FollowAI extends AI implements HerdAIParams {
          }
 
          // Always stare at the target
-         this.mob.rotation = dir;
+         if (dir !== this.mob.rotation) {
+            this.mob.rotation = dir;
+            this.mob.hitboxesAreDirty = true;
+         }
 
          this.interestTimer += 1 / SETTINGS.TPS;
          if (this.interestTimer >= this.interestDuration) {

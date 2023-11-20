@@ -21,8 +21,10 @@ class Boulder extends Entity {
          health: new HealthComponent(Boulder.MAX_HEALTH, false),
          item_creation: itemCreationComponent
       }, EntityTypeConst.boulder);
+      
+      this.rotation = 2 * Math.PI * Math.random();
 
-      const hitbox = new CircularHitbox(Boulder.RADIUS, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, Boulder.RADIUS);
       this.addHitbox(hitbox);
 
       this.boulderType = Math.floor(Math.random() * 2);
@@ -31,8 +33,6 @@ class Boulder extends Entity {
       itemCreationComponent.createItemOnDeath(ItemType.rock, rockDropCount, true);
 
       this.isStatic = true;
-      
-      this.rotation = 2 * Math.PI * Math.random();
    }
 
    public getClientArgs(): [boulderType: number] {

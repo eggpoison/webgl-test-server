@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, circlesDoIntersect, EntityType, EntityTypeConst, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circleAndRectangleDoIntersectWithOffset, circlesDoIntersect, circulesDoIntersectWithOffset, EntityTypeConst, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
@@ -218,10 +218,12 @@ abstract class Mob extends Entity {
       // @Speed: This check is slow
       if (hitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circlesDoIntersect(this.position, this.visionRange, hitbox.position, (hitbox as CircularHitbox).radius);
+         // @Speed
+         return circulesDoIntersectWithOffset(this.position, new Point(0, 0), this.visionRange, hitbox.object.position, hitbox.offset, (hitbox as CircularHitbox).radius);
       } else {
          // Rectangular hitbox
-         return circleAndRectangleDoIntersect(this.position, this.visionRange, hitbox.position, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         // @Speed
+         return circleAndRectangleDoIntersectWithOffset(this.position, new Point(0, 0), this.visionRange, hitbox.object.position, hitbox.offset, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
       }
    }
 

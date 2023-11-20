@@ -32,7 +32,7 @@ class Player extends TribeMember {
    constructor(position: Point, username: string, tribe: Tribe | null) {
       super(position, EntityTypeConst.player, 0, TribeType.plainspeople);
 
-      const hitbox = new CircularHitbox(32, 0, 0);
+      const hitbox = new CircularHitbox(this, 0, 0, 32);
       this.addHitbox(hitbox);
 
       const inventoryComponent = this.forceGetComponent("inventory");

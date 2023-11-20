@@ -283,11 +283,10 @@ class GameServer {
 
       Board.updateGameObjects();
       const timeAfterUpdate = OPTIONS.logging ? performance.now() : 0;
-      // Done before wall collisions so that game objects don't clip into walls for a tick
-      Board.resolveGameObjectCollisions();
-      const timeAfterGameObjectCollisions = OPTIONS.logging ? performance.now() : 0;
       Board.resolveOtherCollisions();
       const timeAfterOtherCollisions = OPTIONS.logging ? performance.now() : 0;
+      Board.resolveGameObjectCollisions();
+      const timeAfterGameObjectCollisions = OPTIONS.logging ? performance.now() : 0;
 
       runSpawnAttempt();
       runTribeSpawnAttempt();
@@ -753,11 +752,13 @@ class GameServer {
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
       const playerData = SERVER.playerDataRecord[socket.id];
 
-      playerData.instance.position = Point.unpackage(playerDataPacket.position);
+      playerData.instance.position.x = playerDataPacket.position[0];
+      playerData.instance.position.y = playerDataPacket.position[1];
       playerData.instance.velocity = Point.unpackage(playerDataPacket.velocity);
       playerData.instance.acceleration = Point.unpackage(playerDataPacket.acceleration);
       playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
+      playerData.instance.hitboxesAreDirty = true;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
       playerData.instance.interactingEntityID = playerDataPacket.interactingEntityID;

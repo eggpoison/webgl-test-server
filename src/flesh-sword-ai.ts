@@ -184,6 +184,7 @@ export function runFleshSwordAI(droppedItem: DroppedItem) {
 
       const moveAngle = directMoveAngle + moveAngleOffset;
       droppedItem.rotation = moveAngle - Math.PI/4;
+      droppedItem.hitboxesAreDirty = true;
       droppedItem.velocity.x = moveSpeed! * Math.sin(moveAngle);
       droppedItem.velocity.y = moveSpeed! * Math.cos(moveAngle);
    }

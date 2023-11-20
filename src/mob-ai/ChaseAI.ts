@@ -38,7 +38,10 @@ class ChaseAI extends AI implements ChaseAIParams {
 
       // Rotate towards target
       const angle = this.mob.position.calculateAngleBetween(this.target.position);
-      this.mob.rotation = angle;
+      if (angle !== this.mob.rotation) {
+         this.mob.rotation = angle;
+         this.mob.hitboxesAreDirty = true;
+      }
 
       // If the entity has a desired distance from its target, try to stop at that desired distance
       if (typeof this.desiredDistance !== "undefined") {
