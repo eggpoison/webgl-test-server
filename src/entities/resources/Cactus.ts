@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -84,7 +84,7 @@ class Cactus extends Entity {
       super(position, {
          health: new HealthComponent(Cactus.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "cactus");
+      }, EntityTypeConst.cactus);
 
       this.rotation = 2 * Math.PI * Math.random();
 

@@ -1,4 +1,4 @@
-import { Point, SETTINGS, Vector, angle, lerp, randItem } from "webgl-test-shared";
+import { EntityTypeConst, Point, SETTINGS, Vector, angle, lerp, randItem } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
@@ -41,7 +41,7 @@ const getRunTarget = (droppedItem: DroppedItem, visibleEntities: ReadonlyArray<E
    let runTarget: Entity | null = null;
 
    for (const entity of visibleEntities) {
-      if (entity.type === "player" || entity.type === "tribesman") {
+      if (entity.type === EntityTypeConst.player || entity.type === EntityTypeConst.tribesman) {
          const distance = droppedItem.position.calculateDistanceBetween(entity.position);
          if (distance < closestRunTargetDistance) {
             closestRunTargetDistance = distance;

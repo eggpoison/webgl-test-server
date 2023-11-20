@@ -1,4 +1,4 @@
-import { CookingIngredientItemType, EntityType, FuelSourceItemType, InventoryData, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { CookingIngredientItemType, EntityTypeConst, FuelSourceItemType, InventoryData, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import Entity, { EntityComponents } from "../Entity";
 import InventoryComponent, { serializeInventoryData } from "../../entity-components/InventoryComponent";
 import Item from "../../items/Item";
@@ -10,7 +10,7 @@ interface HeatingRecipe {
    readonly productAmount: number;
    readonly cookTime: number;
    /** Which heating entities are able to use the recipe */
-   readonly usableHeatingEntityTypes: ReadonlyArray<EntityType>;
+   readonly usableHeatingEntityTypes: ReadonlyArray<EntityTypeConst>;
 }
 
 const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
@@ -20,7 +20,7 @@ const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
       productType: ItemType.cooked_beef,
       productAmount: 1,
       cookTime: 5,
-      usableHeatingEntityTypes: ["campfire", "furnace"]
+      usableHeatingEntityTypes: [EntityTypeConst.campfire, EntityTypeConst.furnace]
    },
    {
       ingredientType: ItemType.meat_suit,
@@ -28,7 +28,7 @@ const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
       productType: ItemType.cooked_beef,
       productAmount: 5,
       cookTime: 5,
-      usableHeatingEntityTypes: ["campfire", "furnace"]
+      usableHeatingEntityTypes: [EntityTypeConst.campfire, EntityTypeConst.furnace]
    },
    {
       ingredientType: ItemType.raw_fish,
@@ -36,7 +36,7 @@ const HEATING_INFO: ReadonlyArray<HeatingRecipe> = [
       productType: ItemType.cooked_fish,
       productAmount: 1,
       cookTime: 5,
-      usableHeatingEntityTypes: ["campfire", "furnace"]
+      usableHeatingEntityTypes: [EntityTypeConst.campfire, EntityTypeConst.furnace]
    }
 ];
 
@@ -45,7 +45,7 @@ const FUEL_SOURCES: Record<FuelSourceItemType, number> = {
    [ItemType.wood]: 5
 };
 
-const getHeatingRecipeByIngredientType = (heatingEntityType: EntityType, ingredientType: ItemType): HeatingRecipe | null => {
+const getHeatingRecipeByIngredientType = (heatingEntityType: EntityTypeConst, ingredientType: ItemType): HeatingRecipe | null => {
    for (const heatingInfo of HEATING_INFO) {
       if (heatingInfo.ingredientType === ingredientType) {
          // Found it!
@@ -71,7 +71,7 @@ abstract class HeatingEntity extends Entity {
 
    protected remainingHeatSeconds = 0;
    
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityTypeConst) {
       components.inventory = new InventoryComponent();
       
       super(position, components, entityType);

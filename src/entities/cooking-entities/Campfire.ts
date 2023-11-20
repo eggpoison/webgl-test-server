@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import HeatingEntity from "./CookingEntity";
@@ -18,7 +18,7 @@ class Campfire extends HeatingEntity {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Campfire.MAX_HEALTH, false),
-      }, "campfire");
+      }, EntityTypeConst.campfire);
 
       const hitbox = new CircularHitbox(Campfire.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);

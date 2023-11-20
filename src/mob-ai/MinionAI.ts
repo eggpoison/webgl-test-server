@@ -1,6 +1,6 @@
 import { MobAIType } from "../mob-ai-types";
 import AI from "./AI";
-import { ItemType, PlayerCauseOfDeath, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
+import { EntityTypeConst, ItemType, PlayerCauseOfDeath, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import Fish from "../entities/mobs/Fish";
@@ -98,7 +98,7 @@ class MinionAI extends AI {
    public onRefresh(): void {
       // Look for a leader
       for (const entity of this.mob.visibleEntities) {
-         if (entity.type === "player" || entity.type === "tribesman") {
+         if (entity.type === EntityTypeConst.player || entity.type === EntityTypeConst.tribesman) {
             const armourInventory = entity.forceGetComponent("inventory").getInventory("armourSlot");
             if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.fishlord_suit) {
                // New leader
@@ -121,7 +121,7 @@ class MinionAI extends AI {
    public canSwitch(): boolean {
       // Look for any tribe members wearing a fishlord suit
       for (const entity of this.mob.visibleEntities) {
-         if (entity.type === "player" || entity.type === "tribesman") {
+         if (entity.type === EntityTypeConst.player || entity.type === EntityTypeConst.tribesman) {
             const armourInventory = entity.forceGetComponent("inventory").getInventory("armourSlot");
             if (armourInventory.itemSlots.hasOwnProperty(1) && armourInventory.itemSlots[1].type === ItemType.fishlord_suit) {
                return true;

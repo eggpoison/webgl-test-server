@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import HeatingEntity from "./CookingEntity";
@@ -16,7 +16,7 @@ class Furnace extends HeatingEntity {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Furnace.MAX_HEALTH, false)
-      }, "furnace");
+      }, EntityTypeConst.furnace);
 
       const hitbox = new RectangularHitbox(Furnace.SIZE, Furnace.SIZE, 0, 0);
       this.addHitbox(hitbox);

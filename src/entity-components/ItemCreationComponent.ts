@@ -1,4 +1,4 @@
-import { ItemType, Point, Vector } from "webgl-test-shared";
+import { EntityTypeConst, ItemType } from "webgl-test-shared";
 import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import Entity from "../entities/Entity";
@@ -16,7 +16,7 @@ class ItemCreationComponent extends Component {
 
    public createItemOnDeath(itemType: ItemType, count: number, onlyCreatedOnPlayerKill: boolean): void {
       this.entity.createEvent("death", (attackingEntity: Entity | null) => {
-         if (onlyCreatedOnPlayerKill && (attackingEntity === null || (attackingEntity.type !== "player" && attackingEntity.type !== "tribesman"))) {
+         if (onlyCreatedOnPlayerKill && (attackingEntity === null || (attackingEntity.type !== EntityTypeConst.player && attackingEntity.type !== EntityTypeConst.tribesman))) {
             return;
          }
          

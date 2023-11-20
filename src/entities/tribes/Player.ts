@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, canCraftRecipe, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, canCraftRecipe, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, EntityTypeConst, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 import DroppedItem from "../../items/DroppedItem";
@@ -8,6 +8,7 @@ import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
+import TombstoneDeathManager from "src/tombstone-deaths";
 
 class Player extends TribeMember {
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
@@ -29,7 +30,7 @@ class Player extends TribeMember {
    public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
    constructor(position: Point, username: string, tribe: Tribe | null) {
-      super(position, "player", 0, TribeType.plainspeople);
+      super(position, EntityTypeConst.player, 0, TribeType.plainspeople);
 
       const hitbox = new CircularHitbox(32, 0, 0);
       this.addHitbox(hitbox);

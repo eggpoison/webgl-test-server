@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, veryBadHash } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
@@ -23,7 +23,11 @@ enum SnowThrowStage {
 }
 
 /** Stores which tiles belong to which yetis' territories */
-const yetiTerritoryTiles: Record<number, Yeti> = {};
+let yetiTerritoryTiles: Record<number, Yeti> = {};
+
+export function resetYetiTerritoryTiles(): void {
+   yetiTerritoryTiles = {};
+}
 
 const generateYetiTerritoryTiles = (originTileX: number, originTileY: number): ReadonlyArray<Tile> => {
    const territoryTiles = new Array<Tile>();
@@ -159,7 +163,7 @@ class Yeti extends Mob {
          health: new HealthComponent(Yeti.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(Yeti.SIZE / 2),
          hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 1.2))
-      }, "yeti", Yeti.VISION_RANGE);
+      }, EntityTypeConst.yeti, Yeti.VISION_RANGE);
 
       const hitbox = new CircularHitbox(Yeti.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);
@@ -179,7 +183,7 @@ class Yeti extends Mob {
          terminalVelocity: 300,
          entityIsChased: (entity: Entity) => {
             // Don't chase ice spikes or snowballs or frozen yetis who aren't attacking the yeti
-            if (entity.type === "ice_spikes" || entity.type === "snowball" || (entity.type === "frozen_yeti" && !this.attackingEntities.hasOwnProperty(entity.id))) {
+            if (entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball || (entity.type === EntityTypeConst.frozen_yeti && !this.attackingEntities.hasOwnProperty(entity.id))) {
                return false;
             }
             
@@ -217,10 +221,10 @@ class Yeti extends Mob {
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
          // Don't damage ice spikes
-         if (collidingEntity.type === "ice_spikes") return;
+         if (collidingEntity.type === EntityTypeConst.ice_spikes) return;
 
          // Don't damage snowballs thrown by the yeti
-         if (collidingEntity.type === "snowball" && this.snowballIDs.has(collidingEntity.id)) {
+         if (collidingEntity.type === EntityTypeConst.snowball && this.snowballIDs.has(collidingEntity.id)) {
             return;
          }
          
@@ -357,7 +361,7 @@ class Yeti extends Mob {
 
       snowball.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          // Don't let the yeti damage itself or other snowballs
-         if (collidingEntity === this || collidingEntity.type === "snowball") {
+         if (collidingEntity === this || collidingEntity.type === EntityTypeConst.snowball) {
             return;
          }
          

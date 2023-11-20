@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point, SETTINGS } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import Mob from "./Mob";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -27,14 +27,14 @@ class Slimewisp extends Mob {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Slimewisp.MAX_HEALTH, false)
-      }, "slimewisp", 100);
+      }, EntityTypeConst.slimewisp, 100);
 
       // Merge AI
       this.addAI(new ChaseAI(this, {
          acceleration: 50,
          terminalVelocity: 25,
          entityIsChased: (entity: Entity): boolean => {
-            return entity.type === "slimewisp";
+            return entity.type === EntityTypeConst.slimewisp;
          }
       }));
 
@@ -56,7 +56,7 @@ class Slimewisp extends Mob {
       this.addHitbox(hitbox);
 
       this.createEvent("during_entity_collision", (entity: Entity): void => {
-         if (entity.type !== "slimewisp") return;
+         if (entity.type !== EntityTypeConst.slimewisp) return;
 
          this.mergeTimer -= 1 / SETTINGS.TPS;
          if (this.mergeTimer <= 0) {

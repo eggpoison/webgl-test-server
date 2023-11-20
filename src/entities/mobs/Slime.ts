@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, SETTINGS, SlimeOrbData, SlimeSize, TileType, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Mutable, PlayerCauseOfDeath, Point, RESOURCE_ENTITY_TYPES, RESOURCE_ENTITY_TYPES_CONST, SETTINGS, SlimeOrbData, SlimeSize, TileType, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -112,7 +112,7 @@ class Slime extends Mob {
       super(position, {
          health: new HealthComponent(Slime.MAX_HEALTH[size], false),
          item_creation: itemCreationComponent
-      }, "slime", Slime.VISION[size]);
+      }, EntityTypeConst.slime, Slime.VISION[size]);
 
       const speedMultiplier = Slime.SPEED_MULTIPLIERS[size];
 
@@ -138,7 +138,7 @@ class Slime extends Mob {
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
-            return entity.type !== "slime" && entity.type !== "slimewisp" && !RESOURCE_ENTITY_TYPES.includes(entity.type) && entity.getComponent("health") !== null;
+            return entity.type !== EntityTypeConst.slime && entity.type !== EntityTypeConst.slimewisp && !RESOURCE_ENTITY_TYPES_CONST.includes(entity.type) && entity.getComponent("health") !== null;
          }
       }));
 
@@ -152,7 +152,7 @@ class Slime extends Mob {
                return false;
             }
             
-            if (entity.type === "slime") {
+            if (entity.type === EntityTypeConst.slime) {
                return this.wantsToMerge(entity as Slime);
             }
             return false;
@@ -184,7 +184,7 @@ class Slime extends Mob {
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
          // Merge with slimes
-         if (collidingEntity.type === "slime") {
+         if (collidingEntity.type === EntityTypeConst.slime) {
             this.mergeTimer -= 1 / SETTINGS.TPS;
             if (this.mergeTimer <= 0) {
                this.merge(collidingEntity as Slime);
@@ -192,7 +192,7 @@ class Slime extends Mob {
             return;
          }
          
-         if (collidingEntity.type === "slimewisp" || RESOURCE_ENTITY_TYPES.includes(collidingEntity.type)) return;
+         if (collidingEntity.type === EntityTypeConst.slimewisp || RESOURCE_ENTITY_TYPES_CONST.includes(collidingEntity.type)) return;
          
          const healthComponent = collidingEntity.getComponent("health");
          if (healthComponent !== null) {
@@ -203,7 +203,7 @@ class Slime extends Mob {
       });
 
       this.createEvent("hurt", (_damage: number, attackingEntity: Entity | null): void => {
-         if (attackingEntity === null || RESOURCE_ENTITY_TYPES.includes(attackingEntity.type)) return;
+         if (attackingEntity === null || RESOURCE_ENTITY_TYPES_CONST.includes(attackingEntity.type)) return;
 
          this.addEntityAnger(attackingEntity, 1, { chainLength: 0, propagatedEntityIDs: new Set() });
          this.propagateAnger(attackingEntity, 1);
@@ -388,7 +388,7 @@ class Slime extends Mob {
    private propagateAnger(angeredEntity: Entity, amount: number, propagationInfo: AngerPropagationInfo = { chainLength: 0, propagatedEntityIDs: new Set() }): void {
       // Propagate the anger
       for (const entity of this.visibleEntities) {
-         if (entity.type === "slime" && !propagationInfo.propagatedEntityIDs.has(entity.id)) {
+         if (entity.type === EntityTypeConst.slime && !propagationInfo.propagatedEntityIDs.has(entity.id)) {
             const distance = this.position.calculateDistanceBetween(entity.position);
             const distanceFactor = distance / this.visionRange;
 

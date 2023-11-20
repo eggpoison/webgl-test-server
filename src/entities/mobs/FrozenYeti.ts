@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, angle, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, angle, randFloat, randInt, randItem } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import Mob from "./Mob";
@@ -95,7 +95,7 @@ class FrozenYeti extends Mob {
          health: new HealthComponent(FrozenYeti.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(FrozenYeti.SIZE / 2),
          hunger: new HungerComponent(randFloat(0, 25), randFloat(1, 2) * 100)
-      }, "frozen_yeti", FrozenYeti.VISION_RANGE);
+      }, EntityTypeConst.frozen_yeti, FrozenYeti.VISION_RANGE);
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.deepfrost_heart, randInt(2, 3), true);
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.yeti_hide, randInt(5, 7), true);
@@ -515,7 +515,7 @@ class FrozenYeti extends Mob {
       for (let i = 0; i < targets.length; i++) {
          const entity = targets[i];
          // Don't attack entities which aren't in the tundra or the entity is native to the tundra
-         if (entity.tile.biomeName !== "tundra" || entity.type === "frozen_yeti" || entity.type === "ice_spikes" || entity.type === "snowball") {
+         if (entity.tile.biomeName !== "tundra" || entity.type === EntityTypeConst.frozen_yeti || entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball) {
             targets.splice(i, 1);
             i--;
          }
@@ -642,7 +642,7 @@ class FrozenYeti extends Mob {
 
       snowball.createEvent("during_entity_collision", (collidingEntity: Entity) => {
          // Don't let the yeti damage itself or other snowballs
-         if (collidingEntity === this || collidingEntity.type === "snowball") {
+         if (collidingEntity === this || collidingEntity.type === EntityTypeConst.snowball) {
             return;
          }
          

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -46,7 +46,7 @@ class Zombie extends Mob {
          health: new HealthComponent(Zombie.MAX_HEALTH, false),
          item_creation: itemCreationComponent,
          hunger: new HungerComponent(randFloat(0, 25), randFloat(3, 5))
-      }, "zombie", 270);
+      }, EntityTypeConst.zombie, 270);
 
       const speedMultiplier = randFloat(0.9, 1.1);
       
@@ -71,7 +71,7 @@ class Zombie extends Mob {
          turnRate: 0.2,
          minActivateAmount: 3,
          maxActivateAmount: 8,
-         validHerdMembers: new Set(["zombie"]),
+         validHerdMembers: new Set([EntityTypeConst.zombie]),
          seperationInfluence: 0.4,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.8
@@ -98,7 +98,7 @@ class Zombie extends Mob {
 
       // Hurt enemies on collision
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
-         if (collidingEntity.type === "player" || this.shouldAttackEntity(collidingEntity)) {
+         if (collidingEntity.type === EntityTypeConst.player || this.shouldAttackEntity(collidingEntity)) {
             const hitDirection = this.position.calculateAngleBetween(collidingEntity.position);
             const playerHealthComponent = collidingEntity.forceGetComponent("health");
 
@@ -116,7 +116,7 @@ class Zombie extends Mob {
       });
 
       this.createEvent("hurt", (_, attackingEntity: Entity | null): void => {
-         if (attackingEntity !== null && attackingEntity.type !== "ice_spikes" && attackingEntity.type !== "cactus") {
+         if (attackingEntity !== null && attackingEntity.type !== EntityTypeConst.ice_spikes && attackingEntity.type !== EntityTypeConst.cactus) {
             this.attackingEntities[attackingEntity.id] = Zombie.ATTACK_PURSUE_TIME;
          }
       });
@@ -133,7 +133,7 @@ class Zombie extends Mob {
       }
 
       // Attack tribe members, but only if they aren't wearing a meat suit
-      if (entity.type === "player" || entity.type === "tribesman") {
+      if (entity.type === EntityTypeConst.player || entity.type === EntityTypeConst.tribesman) {
          const armourInventory = (entity as TribeMember).forceGetComponent("inventory").getInventory("armourSlot");
          if (armourInventory.itemSlots.hasOwnProperty(1)) {
             if (armourInventory.itemSlots[1].type === ItemType.meat_suit) {
@@ -143,7 +143,7 @@ class Zombie extends Mob {
          return true;
       }
 
-      return entity.type === "tribe_totem" || entity.type === "tribe_hut" || entity.type === "barrel";
+      return entity.type === EntityTypeConst.tribe_totem || entity.type === EntityTypeConst.tribe_hut || entity.type === EntityTypeConst.barrel;
    }
 
    public tick(): void {

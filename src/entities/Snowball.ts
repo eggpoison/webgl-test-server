@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
 import Entity from "./Entity";
 import HealthComponent from "../entity-components/HealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";
@@ -28,7 +28,7 @@ class Snowball extends Entity {
    constructor(position: Point, size: SnowballSize = SnowballSize.small) {
       super(position, {
          health: new HealthComponent(Snowball.MAX_HEALTHS[size], false)
-      }, "snowball");
+      }, EntityTypeConst.snowball);
 
       this.size = size;
 

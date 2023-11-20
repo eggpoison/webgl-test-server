@@ -1,4 +1,4 @@
-import { EntityType, Point, SETTINGS, TribeType, Vector, clampToBoardDimensions } from "webgl-test-shared";
+import { EntityTypeConst, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
 import TribeMember from "./entities/tribes/TribeMember";
 import TribeHut from "./entities/tribes/TribeHut";
 import Tribesman from "./entities/tribes/Tribesman";
@@ -16,9 +16,9 @@ const getAvailableID = (): number => {
 }
 
 const TRIBE_BUILDING_AREA_INFLUENCES = {
-   tribe_totem: 200,
-   tribe_hut: 150
-} satisfies Partial<Record<EntityType, number>>;
+   [EntityTypeConst.tribe_totem]: 200,
+   [EntityTypeConst.tribe_hut]: 150
+} satisfies Partial<Record<EntityTypeConst, number>>;
 
 interface TileInfluence {
    readonly tile: Tile;
@@ -71,7 +71,7 @@ class Tribe {
          this.destroy();
       });
 
-      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_totem);
+      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_totem]);
    }
 
    public tick(): void {
@@ -106,7 +106,7 @@ class Tribe {
       // Create a tribesman for the hut
       this.createNewTribesman(hut);
 
-      this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_hut);
+      this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
       
       this.tribesmanCap++;
 
@@ -125,7 +125,7 @@ class Tribe {
 
       this.totem.removeBanner(idx);
 
-      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES.tribe_hut);
+      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
       
       this.tribesmanCap--;
    }
@@ -275,7 +275,7 @@ class Tribe {
       const barrels = new Set<Barrel>();
       for (const chunkInfluence of Object.values(this.chunkArea)) {
          for (const entity of chunkInfluence.chunk.entities) {
-            if (entity.type === "barrel") {
+            if (entity.type === EntityTypeConst.barrel) {
                (entity as Barrel).setTribe(this);
                barrels.add(entity as Barrel);
             }

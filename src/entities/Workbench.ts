@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 
@@ -11,7 +11,7 @@ class Workbench extends Entity {
    public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point) {
-      super(position, {}, "workbench");
+      super(position, {}, EntityTypeConst.workbench);
 
       const hitbox = new RectangularHitbox(Workbench.SIZE, Workbench.SIZE, 0, 0);
       this.addHitbox(hitbox);

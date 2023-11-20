@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityType, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
+import { EntityInfoClientArgs, EntityTypeConst, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
 import Component from "../entity-components/Component";
 import HealthComponent from "../entity-components/HealthComponent";
 import InventoryComponent from "../entity-components/InventoryComponent";
@@ -38,7 +38,7 @@ abstract class Entity extends GameObject<EntityEvents> {
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
    private readonly tickableComponents: ReadonlyArray<Component>;
 
-   public readonly type: EntityType;
+   public readonly type: EntityTypeConst;
 
    protected readonly events = {
       hurt: [],
@@ -55,7 +55,7 @@ abstract class Entity extends GameObject<EntityEvents> {
    private readonly statusEffectTicksRemaining = [0, 0, 0, 0];
    private readonly statusEffectTicksElapsed = [0, 0, 0, 0];
 
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityTypeConst) {
       super(position);
 
       this.type = entityType;
@@ -75,7 +75,7 @@ abstract class Entity extends GameObject<EntityEvents> {
       Board.addEntityToJoinBuffer(this);
    }
 
-   public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityType]>;
+   public abstract getClientArgs(): Parameters<EntityInfoClientArgs[EntityTypeConst]>;
    
    public callCollisionEvent(gameObject: GameObject): void {
       gameObject.callEvents("during_entity_collision", this);

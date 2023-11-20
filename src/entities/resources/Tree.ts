@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, randInt, TreeSize } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, randInt, TreeSize } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -29,7 +29,7 @@ class Tree extends Entity {
       super(position, {
          health: new HealthComponent(Tree.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(48)
-      }, "tree");
+      }, EntityTypeConst.tree);
 
       const hitbox = new CircularHitbox(Tree.TREE_RADIUSES[size], 0, 0);
       this.addHitbox(hitbox);

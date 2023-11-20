@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -39,7 +39,7 @@ class Fish extends Mob {
       super(position, {
          health: new HealthComponent(Fish.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(20)
-      }, "fish", 200);
+      }, EntityTypeConst.fish, 200);
 
       this.colour = Math.floor(Math.random() * NUM_FISH_COLOURS);
       this.herdMemberHash = this.colour;
@@ -74,7 +74,7 @@ class Fish extends Mob {
          turnRate: 0.5,
          minActivateAmount: 1,
          maxActivateAmount: 6,
-         validHerdMembers: new Set(["fish"]),
+         validHerdMembers: new Set([EntityTypeConst.fish]),
          seperationInfluence: 0.7,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.3

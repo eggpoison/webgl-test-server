@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, ItemType, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
+import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
@@ -28,7 +28,7 @@ class Cow extends Mob {
          health: new HealthComponent(Cow.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(48),
          hunger: new HungerComponent(randFloat(0, 25), randFloat(2.5, 3))
-      }, "cow", SETTINGS.TILE_SIZE * 4);
+      }, EntityTypeConst.cow, SETTINGS.TILE_SIZE * 4);
 
       this.species = Math.random() < 0.5 ? CowSpecies.brown : CowSpecies.black;
       this.herdMemberHash = this.species;
@@ -68,7 +68,7 @@ class Cow extends Mob {
          turnRate: 0.2,
          minActivateAmount: 3,
          maxActivateAmount: 6,
-         validHerdMembers: new Set(["cow"]),
+         validHerdMembers: new Set([EntityTypeConst.cow]),
          seperationInfluence: 0.7,
          alignmentInfluence: 0.5,
          cohesionInfluence: 0.3
@@ -82,7 +82,7 @@ class Cow extends Mob {
          weightBuildupTime: randFloat(15, 20),
          interestDuration: 7,
          chanceToGainInterest: 0.2,
-         followableEntityTypes: new Set(["player", "tribesman", "zombie"])
+         followableEntityTypes: new Set([EntityTypeConst.player, EntityTypeConst.tribesman, EntityTypeConst.zombie])
       }));
 
       this.addAI(new WanderAI(this, {

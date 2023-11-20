@@ -1,4 +1,4 @@
-import { EntityType, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
+import { EntityType, EntityTypeConst, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
@@ -11,7 +11,7 @@ const PACK_SPAWN_RANGE = 200;
 
 export interface EntitySpawnInfo {
    /** The type of entity to spawn */
-   readonly entityType: EntityType;
+   readonly entityType: EntityTypeConst;
    /** Array of all tile types in which the entity is able to be spawned in */
    readonly spawnableTiles: ReadonlyArray<TileTypeConst>;
    /** Average number of spawn attempts that happen each second per chunk. */
@@ -25,7 +25,7 @@ export interface EntitySpawnInfo {
 
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
-      entityType: "cow",
+      entityType: EntityTypeConst.cow,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.01,
@@ -34,7 +34,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "berry_bush",
+      entityType: EntityTypeConst.berry_bush,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.001,
       maxDensity: 0.0025,
@@ -43,7 +43,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "tree",
+      entityType: EntityTypeConst.tree,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.015,
@@ -52,7 +52,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "tombstone",
+      entityType: EntityTypeConst.tombstone,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.003,
@@ -61,7 +61,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: true
    },
    {
-      entityType: "boulder",
+      entityType: EntityTypeConst.boulder,
       spawnableTiles: [TileTypeConst.rock],
       spawnRate: 0.005,
       maxDensity: 0.025,
@@ -70,7 +70,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "cactus",
+      entityType: EntityTypeConst.cactus,
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.03,
@@ -79,7 +79,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "yeti",
+      entityType: EntityTypeConst.yeti,
       spawnableTiles: [TileTypeConst.snow],
       spawnRate: 0.004,
       maxDensity: 0.008,
@@ -88,7 +88,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    // {
-   //    entityType: "ice_spikes",
+   //    entityType: EntityTypeConst.ice_spikes,
    //    spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
    //    spawnRate: 0.015,
    //    maxDensity: 0.06,
@@ -96,7 +96,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    //    // maxDensity: 0.06 * 50
    // },
    {
-      entityType: "slimewisp",
+      entityType: EntityTypeConst.slimewisp,
       spawnableTiles: [TileTypeConst.slime],
       spawnRate: 0.2,
       maxDensity: 0.3,
@@ -105,7 +105,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "krumblid",
+      entityType: EntityTypeConst.krumblid,
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.015,
@@ -114,7 +114,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "frozen_yeti",
+      entityType: EntityTypeConst.frozen_yeti,
       spawnableTiles: [TileTypeConst.fimbultur],
       spawnRate: 0.004,
       maxDensity: 0.008,
@@ -123,7 +123,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: "fish",
+      entityType: EntityTypeConst.fish,
       spawnableTiles: [TileTypeConst.water],
       spawnRate: 0.015,
       maxDensity: 0.03,
@@ -139,7 +139,7 @@ const MIN_SPAWN_DISTANCE_SQUARED = MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE;
 
 const customSpawnConditionsAreMet = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOriginY: number) => {
    switch (spawnInfo.entityType) {
-      case "yeti": {
+      case EntityTypeConst.yeti: {
          return yetiSpawnPositionIsValid(spawnOriginX, spawnOriginY);
       }
    }
@@ -202,8 +202,15 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
       // @Speed: Garbage collection, and doing a whole bunch of unnecessary continues here
       
       // Generate a spawn position near the spawn origin
-      const spawnPositionX = randFloat(minX, maxX);
-      const spawnPositionY = randFloat(minY, maxY);
+      let spawnPositionX: number;
+      let spawnPositionY: number;
+      if (OPTIONS.inBenchmarkMode) {
+         spawnPositionX = SRandom.randFloat(minX, maxX);
+         spawnPositionY = SRandom.randFloat(minY, maxY);
+      } else {
+         spawnPositionX = randFloat(minX, maxX);
+         spawnPositionY = randFloat(minY, maxY);
+      }
 
       const tile = Board.getTile(Math.floor(spawnPositionX / SETTINGS.TILE_SIZE), Math.floor(spawnPositionY / SETTINGS.TILE_SIZE));
       if (!spawnInfo.spawnableTiles.includes(tile.type)) {
@@ -252,15 +259,29 @@ export function spawnPositionIsValid(positionX: number, positionY: number): bool
 
 const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
    // Pick a random tile to spawn at
-   const tileX = randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
-   const tileY = randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+   let tileX: number;
+   let tileY: number;
+   if (OPTIONS.inBenchmarkMode) {
+      tileX = SRandom.randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+      tileY = SRandom.randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+   } else {
+      tileX = randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+      tileY = randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+   }
    const tile = Board.getTile(tileX, tileY);
 
    // If the tile is a valid tile for the spawn info, continue with the spawn event
    if (spawnInfo.spawnableTiles.includes(tile.type)) {
       // Calculate a random position in that tile to run the spawn at
-      const x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
+      let x: number;
+      let y: number;
+      if (OPTIONS.inBenchmarkMode) {
+         x = (tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
+         y = (tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
+      } else {
+         x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
+         y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
+      }
 
       if (spawnPositionIsValid(x, y) && customSpawnConditionsAreMet(spawnInfo, x, y)) {
          spawnEntities(spawnInfo, x, y);
@@ -273,18 +294,20 @@ export function runSpawnAttempt(): void {
       return;
    }
 
-   for (const spawnInfo of SPAWN_INFO_RECORD) {
+   for (let i = 0; i < SPAWN_INFO_RECORD.length; i++) {
+      const spawnInfo = SPAWN_INFO_RECORD[i];
       if (!spawnConditionsAreMet(spawnInfo)) {
          continue;
       }
 
       let numSpawnEvents = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * spawnInfo.spawnRate / SETTINGS.TPS;
-      if (Math.random() < numSpawnEvents % 1) {
+      const rand = OPTIONS.inBenchmarkMode ? SRandom.next() : Math.random();
+      if (rand < numSpawnEvents % 1) {
          numSpawnEvents = Math.ceil(numSpawnEvents);
       } else {
          numSpawnEvents = Math.floor(numSpawnEvents);
       }
-      for (let i = 0; i < numSpawnEvents; i++) {
+      for (let j = 0; j < numSpawnEvents; j++) {
          runSpawnEvent(spawnInfo);
          if (!spawnConditionsAreMet(spawnInfo)) {
             break;

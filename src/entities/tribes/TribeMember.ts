@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityType, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES, SETTINGS, StatusEffectConst, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityTypeConst, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES_CONST, SETTINGS, StatusEffectConst, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
 import Board from "../../Board";
 import Entity from "../Entity";
 import InventoryComponent from "../../entity-components/InventoryComponent";
@@ -9,7 +9,6 @@ import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
 import TribeBuffer from "../../TribeBuffer";
 import Barrel from "./Barrel";
-import DroppedItem from "../../items/DroppedItem";
 import Item from "../../items/Item";
 import Hitbox from "../../hitboxes/Hitbox";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
@@ -20,8 +19,8 @@ import Campfire from "../cooking-entities/Campfire";
 import Furnace from "../cooking-entities/Furnace";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 
-const pickaxeDamageableEntities: ReadonlyArray<EntityType> = ["boulder", "tombstone", "ice_spikes", "furnace"];
-const axeDamageableEntities: ReadonlyArray<EntityType> = ["tree"];
+const pickaxeDamageableEntities: ReadonlyArray<EntityTypeConst> = [EntityTypeConst.boulder, EntityTypeConst.tombstone, EntityTypeConst.ice_spikes, EntityTypeConst.furnace];
+const axeDamageableEntities: ReadonlyArray<EntityTypeConst> = [EntityTypeConst.tree];
 
 export enum AttackToolType {
    weapon,
@@ -32,7 +31,7 @@ export enum AttackToolType {
 export function getEntityAttackToolType(entity: Entity): AttackToolType {
    // @Cleanup: This shouldn't be hardcoded ideally
    
-   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === "berry_bush" || entity.type === "cactus" || entity.type === "snowball") {
+   if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === EntityTypeConst.berry_bush || entity.type === EntityTypeConst.cactus || entity.type === EntityTypeConst.snowball) {
       return AttackToolType.weapon;
    }
    if (pickaxeDamageableEntities.includes(entity.type)) {
@@ -132,7 +131,7 @@ abstract class TribeMember extends Mob {
 
    private static readonly DEEPFROST_ARMOUR_IMMUNITY_TIME = 20;
 
-   private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityType> = ["yeti", "frozen_yeti", "zombie", "slime"];
+   private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityTypeConst> = [EntityTypeConst.yeti, EntityTypeConst.frozen_yeti, EntityTypeConst.zombie, EntityTypeConst.slime];
 
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
@@ -154,7 +153,7 @@ abstract class TribeMember extends Mob {
 
    private readonly itemAttackCooldowns: Record<number, number> = {};
 
-   constructor(position: Point, entityType: EntityType, visionRange: number, tribeType: TribeType) {
+   constructor(position: Point, entityType: EntityTypeConst, visionRange: number, tribeType: TribeType) {
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
 
       const inventoryComponent = new InventoryComponent();
@@ -315,19 +314,19 @@ abstract class TribeMember extends Mob {
       }
       
       switch (entity.type) {
-         case "tribe_hut": {
+         case EntityTypeConst.tribe_hut: {
             if (this.tribe === null || !this.tribe.hasHut(entity as TribeHut)) {
                return EntityRelationship.enemyBuilding;
             }
             return EntityRelationship.friendly;
          }
-         case "tribe_totem": {
+         case EntityTypeConst.tribe_totem: {
             if (this.tribe === null || !this.tribe.hasTotem(entity as TribeTotem)) {
                return EntityRelationship.enemyBuilding;
             }
             return EntityRelationship.friendly;
          }
-         case "barrel": {
+         case EntityTypeConst.barrel: {
             if (this.tribe === null || (entity as Barrel).tribe === null) {
                return EntityRelationship.neutral;
             }
@@ -336,8 +335,8 @@ abstract class TribeMember extends Mob {
             }
             return EntityRelationship.enemyBuilding;
          }
-         case "player":
-         case "tribesman": {
+         case EntityTypeConst.player:
+         case EntityTypeConst.tribesman: {
             if (this.tribe !== null && (entity as TribeMember).tribe === this.tribe) {
                return EntityRelationship.friendly;
             }
@@ -349,7 +348,7 @@ abstract class TribeMember extends Mob {
          return EntityRelationship.hostileMob;
       }
 
-      if (RESOURCE_ENTITY_TYPES.includes(entity.type) || entity instanceof Mob) {
+      if (RESOURCE_ENTITY_TYPES_CONST.includes(entity.type) || entity instanceof Mob) {
          return EntityRelationship.resource;
       }
 

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, randInt } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -20,7 +20,7 @@ class Boulder extends Entity {
       super(position, {
          health: new HealthComponent(Boulder.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "boulder");
+      }, EntityTypeConst.boulder);
 
       const hitbox = new CircularHitbox(Boulder.RADIUS, 0, 0);
       this.addHitbox(hitbox);

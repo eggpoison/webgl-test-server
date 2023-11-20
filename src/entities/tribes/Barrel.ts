@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, InventoryData, ItemSlotsData, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, InventoryData, ItemSlotsData, Point } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -26,8 +26,7 @@ class Barrel extends Entity {
       super(position, {
          health: new HealthComponent(Barrel.MAX_HEALTH, false),
          inventory: inventoryComponent
-      }, "barrel");
-
+      }, EntityTypeConst.barrel);
 
       const hitbox = new CircularHitbox(Barrel.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);

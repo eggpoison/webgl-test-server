@@ -1,4 +1,4 @@
-import { angle, curveWeight, EntityType, Point, SETTINGS } from "webgl-test-shared";
+import { angle, curveWeight, EntityTypeConst, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI from "./AI";
@@ -16,7 +16,7 @@ interface HerdAIParams {
    /** Maximum number of entities that can activate the AI */
    readonly maxActivateAmount: number;
    /** Mobs which can be classified as herd members */
-   readonly validHerdMembers: ReadonlySet<EntityType>;
+   readonly validHerdMembers: ReadonlySet<EntityTypeConst>;
    /** How much the mob will try and avoid being too close to nearby herd members */
    readonly seperationInfluence: number;
    /** How much the mob will try to align its direction with other nearby herd members */
@@ -35,7 +35,7 @@ class HerdAI extends AI implements HerdAIParams {
    public readonly terminalVelocity: number;
    public readonly minSeperationDistance: number;
    public readonly turnRate: number;
-   public readonly validHerdMembers: ReadonlySet<EntityType>;
+   public readonly validHerdMembers: ReadonlySet<EntityTypeConst>;
    readonly minActivateAmount: number;
    readonly maxActivateAmount: number;
    public readonly seperationInfluence: number;

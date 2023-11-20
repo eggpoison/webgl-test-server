@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HealthComponent from "../../entity-components/HealthComponent";
@@ -40,7 +40,7 @@ class IceSpikes extends Entity {
       super(position, {
          health: new HealthComponent(IceSpikes.MAX_HEALTH, false),
          item_creation: itemCreationComponent
-      }, "ice_spikes");
+      }, EntityTypeConst.ice_spikes);
 
       if (typeof rootIceSpike !== "undefined") {
          this.rootIceSpike = rootIceSpike;
@@ -62,7 +62,7 @@ class IceSpikes extends Entity {
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type === "yeti" || collidingEntity.type === "ice_spikes" || collidingEntity.type === "snowball") {
+         if (collidingEntity.type === EntityTypeConst.yeti || collidingEntity.type === EntityTypeConst.ice_spikes || collidingEntity.type === EntityTypeConst.snowball) {
             return;
          }
          
@@ -144,7 +144,7 @@ class IceSpikes extends Entity {
          projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
             const healthComponent = collidingEntity.getComponent("health");
             if (healthComponent !== null) {
-               if (collidingEntity.type === "ice_spikes") {
+               if (collidingEntity.type === EntityTypeConst.ice_spikes) {
                   // Instantly destroy ice spikes
                   healthComponent.damage(99999, 0, 0, null, PlayerCauseOfDeath.ice_spikes, 0);
                } else {
@@ -153,7 +153,7 @@ class IceSpikes extends Entity {
                   healthComponent.damage(IceSpikes.ICE_SHARD_DAMAGE, 150, hitDirection, null, PlayerCauseOfDeath.ice_shards, 0, "ice_shards");
                   healthComponent.addLocalInvulnerabilityHash("ice_shards", 0.3);
 
-                  if (collidingEntity.type !== "yeti") {
+                  if (collidingEntity.type !== EntityTypeConst.yeti) {
                      collidingEntity.applyStatusEffect(StatusEffectConst.freezing, 3 * SETTINGS.TPS);
                   }
                }

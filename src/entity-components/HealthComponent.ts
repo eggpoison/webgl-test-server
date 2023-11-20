@@ -1,4 +1,4 @@
-import { GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
+import { EntityTypeConst, GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";
@@ -108,7 +108,8 @@ class HealthComponent extends Component {
          this.entity.callEvents("death", attackingEntity);
          this.entity.remove();
 
-         if (this.entity.type === "player") {
+         // @Cleanup: This should instead just be an event created in the player class
+         if (this.entity.type === EntityTypeConst.player) {
             TombstoneDeathManager.registerNewDeath((this.entity as Player).username, causeOfDeath);
          }
       }

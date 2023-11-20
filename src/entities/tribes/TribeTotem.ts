@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -43,8 +43,7 @@ class TribeTotem extends Entity {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(TribeTotem.MAX_HEALTH, false)
-      }, "tribe_totem");
-
+      }, EntityTypeConst.tribe_totem);
 
       const hitbox = new CircularHitbox(TribeTotem.SIZE / 2, 0, 0);
       this.addHitbox(hitbox);

@@ -17,7 +17,7 @@ const NUM_STARTING_HUTS: Record<TribeType, number> = {
    [TribeType.plainspeople]: 2,
    [TribeType.frostlings]: 2,
    [TribeType.barbarians]: 1,
-   [TribeType.goblins]: 100 // 3
+   [TribeType.goblins]: 3
 };
 
 /** Minimum distance huts will spawn from other entities when they spawn */
@@ -141,10 +141,6 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 }
 
 const runSpawnAttempt = (): void => {
-   if (!OPTIONS.spawnTribes) {
-      return;
-   }
-   
    // @Speed: Garbage collection
    const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
    const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();

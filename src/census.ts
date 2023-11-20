@@ -1,12 +1,16 @@
-import { BiomeName, EntityType, TileType, TileTypeConst } from "webgl-test-shared";
+import { BiomeName, EntityTypeConst, TileType, TileTypeConst } from "webgl-test-shared";
 import Entity from "./entities/Entity";
 import Tile from "./Tile";
+import ENTITY_CLASS_RECORD from "./entity-classes";
 
-const entityTypeCounts: Partial<Record<EntityType, number>> = {};
+const entityCounts = new Array<EntityTypeConst>();
+for (let i = 0; i < Object.keys(ENTITY_CLASS_RECORD).length; i++) {
+   entityCounts.push(0);
+}
 
 interface TileCensus {
-   readonly types: Partial<Record<TileType, Array<Tile>>>;
-   readonly biomes: Partial<Record<BiomeName, Array<Tile>>>;
+   types: Partial<Record<TileType, Array<Tile>>>;
+   biomes: Partial<Record<BiomeName, Array<Tile>>>;
 }
 
 const tileCensus: TileCensus = {
@@ -18,39 +22,26 @@ const tileCensus: TileCensus = {
 const trackedEntityIDs = new Set<number>();
 
 export function addEntityToCensus(entity: Entity): void {
-   if (!entityTypeCounts.hasOwnProperty(entity.type)) {
-      entityTypeCounts[entity.type] = 1;
-   } else {
-      entityTypeCounts[entity.type]!++;
-   }
-
+   entityCounts[entity.type]++;
    trackedEntityIDs.add(entity.id);
 }
 
 export function removeEntityFromCensus(entity: Entity): void {
    if (!trackedEntityIDs.has(entity.id)) return;
    
-   if (!entityTypeCounts.hasOwnProperty(entity.type) || entityTypeCounts[entity.type]! <= 0) {
-      console.log(Object.assign({}, entityTypeCounts));
-      console.log(entity.type);
+   if (entityCounts[entity.type] <= 0) {
+      console.log(entityCounts);
       console.warn(`Entity type "${entity.type}" is not in the census.`);
       console.trace();
+      throw new Error();
    }
 
-   entityTypeCounts[entity.type]!--;
-   if (entityTypeCounts[entity.type]! === 0) {
-      delete entityTypeCounts[entity.type];
-   }
-
+   entityCounts[entity.type]--;
    trackedEntityIDs.delete(entity.id);
 }
 
-export function getEntityCount(entityType: EntityType): number {
-   if (!entityTypeCounts.hasOwnProperty(entityType)) {
-      return 0;
-   }
-   
-   return entityTypeCounts[entityType]!;
+export function getEntityCount(entityType: EntityTypeConst): number {
+   return entityCounts[entityType];
 }
 
 export function addTileToCensus(tile: Tile): void {
@@ -105,4 +96,13 @@ export function getTilesOfType(type: TileType): ReadonlyArray<Tile> {
    }
    
    return tileCensus.types[type]!;
+}
+
+export function resetCensus(): void {
+   for (let i = 0; i < Object.keys(ENTITY_CLASS_RECORD).length; i++) {
+      entityCounts[i] = 0;
+   }
+
+   tileCensus.types = {};
+   tileCensus.biomes = {};
 }

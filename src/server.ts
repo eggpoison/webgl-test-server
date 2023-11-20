@@ -2,7 +2,6 @@ import { Server, Socket } from "socket.io";
 import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, TribeType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
-import GameObject from "./GameObject";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -13,17 +12,20 @@ import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Chunk from "./Chunk";
 import Item from "./items/Item";
-import Cactus from "./entities/resources/Cactus";
-import Cow from "./entities/mobs/Cow";
 import OPTIONS from "./options";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import TribeHut from "./entities/tribes/TribeHut";
-import Zombie from "./entities/mobs/Zombie";
-import BerryBush from "./entities/resources/BerryBush";
-import Krumblid from "./entities/mobs/Krumblid";
-import Yeti from "./entities/mobs/Yeti";
+import { resetCensus } from "./census";
+import { resetYetiTerritoryTiles } from "./entities/mobs/Yeti";
+
+const NUM_TESTS = 5;
+const TEST_DURATION_MS = 15000;
+
+const IS_TIMED = process.argv[2] === "1";
+
+let lastTestTime = 0;
+let numTestsConducted = 0;
+
+const tickTimes = new Array<number>();
 
 /*
 
@@ -73,7 +75,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       circularHitboxes: circularHitboxes,
       rectangularHitboxes: rectangularHitboxes,
       ageTicks: entity.ageTicks,
-      type: entity.type,
+      type: entity.type as unknown as EntityType,
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
       hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : [],
@@ -232,44 +234,60 @@ class GameServer {
    }
 
    public setTrackedGameObject(id: number | null): void {
-      this.trackedGameObjectID = id;
+      SERVER.trackedGameObjectID = id;
    }
 
    public start(): void {
-      if (this.io === null) {
+      if (IS_TIMED && numTestsConducted === NUM_TESTS) {
+         console.log("All tests done");
+         return;
+      }
+
+      Board.setup();
+      SERVER.setup();
+      
+      if (SERVER.io === null) {
          // Start the server
-         this.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
-         this.handlePlayerConnections();
+         SERVER.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
+         SERVER.handlePlayerConnections();
          console.log("Server started on port " + SETTINGS.SERVER_PORT);
       }
 
-      if (typeof this.tickInterval === "undefined") {
+      if (typeof SERVER.tickInterval === "undefined") {
          if (OPTIONS.warp) {
-            this.tickInterval = setInterval(() => this.tick(), 2);
+            SERVER.tickInterval = setInterval(() => SERVER.tick(), 2);
          } else {
-            this.tickInterval = setInterval(() => this.tick(), 1000 / SETTINGS.TPS);
+            SERVER.tickInterval = setInterval(() => SERVER.tick(), 1000 / SETTINGS.TPS);
          }
       }
    }
 
    public stop(): void {
-      if (this.tickInterval !== null) {
-         clearInterval(this.tickInterval);
+      if (typeof SERVER.tickInterval !== "undefined") {
+         clearInterval(SERVER.tickInterval);
+         SERVER.tickInterval = undefined;
       }
+
+      this.io?.close();
    }
 
    private tick(): void {
-      const tickStartTime = OPTIONS.logging ? performance.now() : 0;
+      const tickStartTime = (OPTIONS.logging || IS_TIMED) ? performance.now() : 0;
       
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
 
       Board.updateTribes();
 
+      const timeBeforeUpdate = OPTIONS.logging ? performance.now() : 0;
+
       Board.updateGameObjects();
+      const timeAfterUpdate = OPTIONS.logging ? performance.now() : 0;
       // Done before wall collisions so that game objects don't clip into walls for a tick
       Board.resolveGameObjectCollisions();
+      const timeAfterGameObjectCollisions = OPTIONS.logging ? performance.now() : 0;
       Board.resolveOtherCollisions();
+      const timeAfterOtherCollisions = OPTIONS.logging ? performance.now() : 0;
 
       runSpawnAttempt();
       runTribeSpawnAttempt();
@@ -288,7 +306,7 @@ class GameServer {
 
       Board.removeFlaggedGameObjects();
 
-      this.sendGameDataPackets();
+      SERVER.sendGameDataPackets();
 
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
@@ -298,12 +316,52 @@ class GameServer {
       if (OPTIONS.logging) {
          const tickEndTime = performance.now();
          const tickTime = tickEndTime - tickStartTime;
-         console.log("[BENCHMARK] " + tickTime.toFixed(2) + "ms | Game objects: " + Board.gameObjects.length + " (" + Object.keys(Board.entities).length + " | " + Object.keys(Board.droppedItems).length + " | " + Object.keys(Board.projectiles).length + ")");
+         const updateTime = timeAfterUpdate - timeBeforeUpdate;
+         const gameObjectCollisionsTime = timeAfterGameObjectCollisions - timeAfterUpdate;
+         const otherCollisionsTime = timeAfterOtherCollisions - timeAfterGameObjectCollisions;
+         console.log("[BENCHMARK] " + tickTime.toFixed(2) + "ms " + updateTime.toFixed(2) + "ms " + gameObjectCollisionsTime.toFixed(2) + "ms " + otherCollisionsTime.toFixed(2) + "ms | Game objects: " + Board.gameObjects.length + " (" + Object.keys(Board.entities).length + " | " + Object.keys(Board.droppedItems).length + " | " + Object.keys(Board.projectiles).length + ")");
+
+         // tickTimes.push(tickTime);
+         // let average = 0;
+         // for (let i = 0; i < tickTimes.length; i++) {
+         //    average += tickTimes[i];
+         // }
+         // average /= Board.ticks;
+
+         // console.log("[BENCHMARK] AVG: " + average.toFixed(2) + "ms");
+      }
+
+      if (IS_TIMED) {
+         const tickTime = performance.now() - tickStartTime;
+         tickTimes.push(tickTime);
+
+         const testTimeElapsed = performance.now() - lastTestTime;
+         if (testTimeElapsed >= TEST_DURATION_MS) {
+            numTestsConducted++;
+            lastTestTime = performance.now();
+
+            let average = 0;
+            for (let i = 0; i < tickTimes.length; i++) {
+               average += tickTimes[i];
+            }
+            average /= tickTimes.length;
+
+            console.log("Completed test. AVG: " + average.toFixed(2) + "ms (" + Object.keys(Board.entities).length + " | " + Object.keys(Board.droppedItems).length + " | " + Object.keys(Board.projectiles).length + ")");
+            SERVER.stop();
+
+            // Reset
+            resetYetiTerritoryTiles();
+            SERVER = new GameServer();
+            Board.reset();
+            resetCensus();
+            
+            SERVER.start();
+         }
       }
    }
 
    public getPlayerFromUsername(username: string): Player | null {
-      for (const data of Object.values(this.playerDataRecord)) {
+      for (const data of Object.values(SERVER.playerDataRecord)) {
          if (data.username === username) {
             // Found the player!
             const player = data.instance;
@@ -315,7 +373,7 @@ class GameServer {
    }
 
    private getPlayerDataFromUsername(username: string): PlayerData | null {
-      for (const data of Object.values(this.playerDataRecord)) {
+      for (const data of Object.values(SERVER.playerDataRecord)) {
          if (data.username === username) {
             // Found the player!
             return data;
@@ -326,8 +384,8 @@ class GameServer {
    }
 
    private handlePlayerConnections(): void {
-      if (this.io === null) return;
-      this.io.on("connection", (socket: ISocket) => {
+      if (SERVER.io === null) return;
+      SERVER.io.on("connection", (socket: ISocket) => {
          const playerData: Mutable<Partial<PlayerData>> = {
             socket: socket,
             clientIsActive: true,
@@ -340,7 +398,7 @@ class GameServer {
          });
 
          // Spawn the player in a random position in the world
-         const spawnPosition = this.generatePlayerSpawnPosition();
+         const spawnPosition = SERVER.generatePlayerSpawnPosition();
 
          // let spawnPosition: Point;
          // do {
@@ -471,120 +529,120 @@ class GameServer {
                hasFrostShield: false
             };
 
-            this.playerDataRecord[socket.id] = playerData as PlayerData;
+            SERVER.playerDataRecord[socket.id] = playerData as PlayerData;
 
             socket.emit("initial_game_data_packet", initialGameDataPacket);
          });
 
          // Handle player disconnects
          socket.on("disconnect", () => {
-            this.handlePlayerDisconnect(socket);
+            SERVER.handlePlayerDisconnect(socket);
          });
 
          socket.on("deactivate", () => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               this.playerDataRecord[socket.id].clientIsActive = false;
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               SERVER.playerDataRecord[socket.id].clientIsActive = false;
             }
          });
 
          socket.on("activate", () => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               this.playerDataRecord[socket.id].clientIsActive = true;
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               SERVER.playerDataRecord[socket.id].clientIsActive = true;
 
-               this.sendGameDataSyncPacket(socket);
+               SERVER.sendGameDataSyncPacket(socket);
             }
          });
 
          socket.on("player_data_packet", (playerDataPacket: PlayerDataPacket) => {
-            this.processPlayerDataPacket(socket, playerDataPacket);
+            SERVER.processPlayerDataPacket(socket, playerDataPacket);
          });
 
          socket.on("attack_packet", (attackPacket: AttackPacket) => {
-            if (!this.playerDataRecord.hasOwnProperty(socket.id)) {
+            if (!SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                return;
             }
 
-            const player = this.playerDataRecord[socket.id].instance;
+            const player = SERVER.playerDataRecord[socket.id].instance;
             player.processAttackPacket(attackPacket);
          });
 
          socket.on("crafting_packet", (recipeIndex: number) => {
-            if (!this.playerDataRecord.hasOwnProperty(socket.id)) {
+            if (!SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                return;
             }
 
-            const playerData = this.playerDataRecord[socket.id];
+            const playerData = SERVER.playerDataRecord[socket.id];
             playerData.instance.processCraftingPacket(recipeIndex);
          });
 
          socket.on("item_pickup", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               const playerData = this.playerDataRecord[socket.id];
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               const playerData = SERVER.playerDataRecord[socket.id];
                playerData.instance.processItemPickupPacket(entityID, inventoryName, itemSlot, amount);
             }
          });
 
          socket.on("item_release", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               const playerData = this.playerDataRecord[socket.id];
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               const playerData = SERVER.playerDataRecord[socket.id];
                playerData.instance.processItemReleasePacket(entityID, inventoryName, itemSlot, amount);
             }
          });
 
          socket.on("item_use_packet", (itemSlot: number) => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               const player = this.playerDataRecord[socket.id].instance;
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               const player = SERVER.playerDataRecord[socket.id].instance;
                player.processItemUsePacket(itemSlot);
             }
          });
 
          socket.on("held_item_drop", (dropAmount: number, throwDirection: number) => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               const player = this.playerDataRecord[socket.id].instance;
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               const player = SERVER.playerDataRecord[socket.id].instance;
                player.dropItem("heldItemSlot", 1, dropAmount, throwDirection);
             }
          });
 
          socket.on("item_drop", (itemSlot: number, dropAmount: number, throwDirection: number) => {
-            if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-               const player = this.playerDataRecord[socket.id].instance;
+            if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+               const player = SERVER.playerDataRecord[socket.id].instance;
                player.dropItem("hotbar", itemSlot, dropAmount, throwDirection);
             }
          });
 
          socket.on("respawn", () => {
-            this.respawnPlayer(socket);
+            SERVER.respawnPlayer(socket);
          });
          
          socket.on("command", (command: string) => {
             // Get the player data for the current client
-            const playerData = this.playerDataRecord[socket.id];
+            const playerData = SERVER.playerDataRecord[socket.id];
             const player = playerData.instance;
 
             registerCommand(command, player);
          });
 
          socket.on("track_game_object", (id: number | null): void => {
-            this.setTrackedGameObject(id);
+            SERVER.setTrackedGameObject(id);
          })
       });
    }
 
    /** Send data about the server to all players */
    public sendGameDataPackets(): void {
-      if (this.io === null) return;
+      if (SERVER.io === null) return;
 
-      if (this.trackedGameObjectID !== null && !Board.hasGameObject(this.trackedGameObjectID)) {
-         this.trackedGameObjectID = null;
+      if (SERVER.trackedGameObjectID !== null && !Board.hasGameObject(SERVER.trackedGameObjectID)) {
+         SERVER.trackedGameObjectID = null;
       }
 
       let gameObjectDebugData: GameObjectDebugData | undefined;
-      if (this.trackedGameObjectID !== null) {
-         const gameObject = Board.getGameObject(this.trackedGameObjectID);
+      if (SERVER.trackedGameObjectID !== null) {
+         const gameObject = Board.getGameObject(SERVER.trackedGameObjectID);
          gameObjectDebugData = gameObject.getDebugData();
       }
 
-      for (const playerData of Object.values(this.playerDataRecord)) {
+      for (const playerData of Object.values(SERVER.playerDataRecord)) {
          if (!playerData.clientIsActive) {
             continue;
          }
@@ -617,7 +675,7 @@ class GameServer {
             entityDataArray: bundleEntityDataArray(visibleEntities),
             droppedItemDataArray: bundleDroppedItemDataArray(extendedVisibleChunkBounds),
             projectileDataArray: bundleProjectileDataArray(extendedVisibleChunkBounds),
-            inventory: this.bundlePlayerInventoryData(player),
+            inventory: SERVER.bundlePlayerInventoryData(player),
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
@@ -634,12 +692,12 @@ class GameServer {
 
    private bundlePlayerInventoryData(player: Player): PlayerInventoryData {
       const inventoryData: PlayerInventoryData = {
-         hotbar: this.bundleInventory(player, "hotbar"),
-         backpackInventory: this.bundleInventory(player, "backpack"),
-         backpackSlot: this.bundleInventory(player, "backpackSlot"),
-         heldItemSlot: this.bundleInventory(player, "heldItemSlot"),
-         craftingOutputItemSlot: this.bundleInventory(player, "craftingOutputSlot"),
-         armourSlot: this.bundleInventory(player, "armourSlot")
+         hotbar: SERVER.bundleInventory(player, "hotbar"),
+         backpackInventory: SERVER.bundleInventory(player, "backpack"),
+         backpackSlot: SERVER.bundleInventory(player, "backpackSlot"),
+         heldItemSlot: SERVER.bundleInventory(player, "heldItemSlot"),
+         craftingOutputItemSlot: SERVER.bundleInventory(player, "craftingOutputSlot"),
+         armourSlot: SERVER.bundleInventory(player, "armourSlot")
       };
 
       return inventoryData;
@@ -665,18 +723,18 @@ class GameServer {
    }
 
    private handlePlayerDisconnect(socket: ISocket): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const playerData = this.playerDataRecord[socket.id];
+      if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+         const playerData = SERVER.playerDataRecord[socket.id];
          if (Board.entityIsInBoard(playerData.instance)) {
             playerData.instance.remove();
          }
-         delete this.playerDataRecord[socket.id];
+         delete SERVER.playerDataRecord[socket.id];
       }
    }
 
    private sendGameDataSyncPacket(socket: ISocket): void {
-      if (this.playerDataRecord.hasOwnProperty(socket.id)) {
-         const player = this.playerDataRecord[socket.id].instance;
+      if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
+         const player = SERVER.playerDataRecord[socket.id].instance;
 
          const packet: GameDataSyncPacket = {
             position: player.position.package(),
@@ -685,7 +743,7 @@ class GameServer {
             rotation: player.rotation,
             terminalVelocity: player.terminalVelocity,
             health: player.forceGetComponent("health").health,
-            inventory: this.bundlePlayerInventoryData(player)
+            inventory: SERVER.bundlePlayerInventoryData(player)
          };
 
          socket.emit("game_data_sync_packet", packet);
@@ -693,7 +751,7 @@ class GameServer {
    }
 
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
-      const playerData = this.playerDataRecord[socket.id];
+      const playerData = SERVER.playerDataRecord[socket.id];
 
       playerData.instance.position = Point.unpackage(playerDataPacket.position);
       playerData.instance.velocity = Point.unpackage(playerDataPacket.velocity);
@@ -719,7 +777,7 @@ class GameServer {
    }
 
    private respawnPlayer(socket: ISocket): void {
-      const playerData = this.playerDataRecord[socket.id];
+      const playerData = SERVER.playerDataRecord[socket.id];
 
       // Calculate spawn position
       let spawnPosition: Point;
@@ -730,13 +788,13 @@ class GameServer {
          spawnPosition.x += 100 * Math.sin(offsetDirection);
          spawnPosition.y += 100 * Math.cos(offsetDirection);
       } else {
-         spawnPosition = this.generatePlayerSpawnPosition();
+         spawnPosition = SERVER.generatePlayerSpawnPosition();
       }
 
       const playerEntity = new Player(spawnPosition, playerData.username, playerData.tribe);
 
       // Update the player data's instance
-      this.playerDataRecord[socket.id].instance = playerEntity;
+      SERVER.playerDataRecord[socket.id].instance = playerEntity;
 
       const dataPacket: RespawnDataPacket = {
          playerID: playerEntity.id,
@@ -747,7 +805,7 @@ class GameServer {
    }
 
    public sendForcePositionUpdatePacket(playerUsername: string, position: Point): void {
-      const playerData = this.getPlayerDataFromUsername(playerUsername);
+      const playerData = SERVER.getPlayerDataFromUsername(playerUsername);
       if (playerData === null) {
          return;
       }
@@ -756,7 +814,7 @@ class GameServer {
    }
 
    public updatePlayerTribe(player: Player, tribe: Tribe | null): void {
-      const playerData = this.getPlayerDataFromUsername(player.username);
+      const playerData = SERVER.getPlayerDataFromUsername(player.username);
       if (playerData === null) {
          return;
       }
@@ -765,11 +823,9 @@ class GameServer {
    }
 }
 
-export const SERVER = new GameServer();
+export let SERVER = new GameServer();
 
 // Only start the server if jest isn't running
 if (process.env.NODE_ENV !== "test") {
-   Board.setup();
-   SERVER.setup();
    SERVER.start();
 }

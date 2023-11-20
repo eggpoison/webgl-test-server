@@ -1,4 +1,4 @@
-import { ALL_TILE_TYPES_CONST, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
+import { EntityTypeConst, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -31,11 +31,11 @@ abstract class Board {
    public static time = 6;
 
    /** This is an array as game objects get created/removed fairly slowly */
-   public static readonly gameObjects = new Array<GameObject>();
+   public static gameObjects = new Array<GameObject>();
 
-   public static readonly entities: { [id: number]: Entity } = {};
-   public static readonly droppedItems: { [id: number]: DroppedItem } = {};
-   public static readonly projectiles = new Set<Projectile>();
+   public static entities: { [id: number]: Entity } = {};
+   public static droppedItems: { [id: number]: DroppedItem } = {};
+   public static projectiles = new Set<Projectile>();
 
    // This is undefined initially to indicate that terrain hasn't been generated yet
    private static tiles: Array<Array<Tile>>;
@@ -57,6 +57,15 @@ abstract class Board {
    private static projectileRemoveBuffer = new Array<Projectile>();
 
    private static tribes = new Array<Tribe>();
+
+   public static reset(): void {
+      // @Cleanup: Hacky
+      (this.tiles as any) = undefined;
+      this.gameObjects = [];
+      this.entities = {};
+      this.droppedItems = {};
+      this.projectiles = new Set();
+   }
 
    public static setup(): void {
       this.initialiseChunks();

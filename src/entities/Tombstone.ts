@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DeathInfo, DEFAULT_COLLISION_MASK, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { COLLISION_BITS, DeathInfo, DEFAULT_COLLISION_MASK, EntityTypeConst, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
@@ -41,7 +41,7 @@ class Tombstone extends Entity {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(Tombstone.MAX_HEALTH, false)
-      }, "tombstone");
+      }, EntityTypeConst.tombstone);
 
       this.deathInfo = TombstoneDeathManager.popDeath();
 

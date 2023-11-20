@@ -1,4 +1,4 @@
-import { EntityType, GameObjectDebugData, randItem, SETTINGS } from "webgl-test-shared";
+import { EntityTypeConst, GameObjectDebugData, randItem, SETTINGS } from "webgl-test-shared";
 import Entity from "../entities/Entity";
 import Mob from "../entities/mobs/Mob";
 import AI from "./AI";
@@ -17,7 +17,7 @@ interface HerdAIParams {
    /** Chance for the mob to start following a target in a second */
    readonly chanceToGainInterest?: number;
    /** All entity types which the entity is able to follow */
-   readonly followableEntityTypes: ReadonlySet<EntityType>;
+   readonly followableEntityTypes: ReadonlySet<EntityTypeConst>;
 }
 
 class FollowAI extends AI implements HerdAIParams {
@@ -29,7 +29,7 @@ class FollowAI extends AI implements HerdAIParams {
    public readonly weightBuildupTime: number;
    public readonly interestDuration: number;
    public readonly chanceToGainInterest?: number;
-   public readonly followableEntityTypes: ReadonlySet<EntityType>;
+   public readonly followableEntityTypes: ReadonlySet<EntityTypeConst>;
 
    private followTarget: Entity | null = null;
 

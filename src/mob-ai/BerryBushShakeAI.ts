@@ -1,4 +1,4 @@
-import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
+import { EntityTypeConst, GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 import BerryBush from "../entities/resources/BerryBush";
 import AI from "./AI";
 import Board from "../Board";
@@ -53,7 +53,7 @@ class BerryBushShakeAI extends AI {
       let target: BerryBush | null = null;
       let minDistance = Number.MAX_SAFE_INTEGER;
       for (const entity of this.mob.visibleEntities) {
-         if (entity.type === "berry_bush" && (entity as BerryBush).getNumBerries() > 0) {
+         if (entity.type === EntityTypeConst.berry_bush && (entity as BerryBush).getNumBerries() > 0) {
             const distance = this.mob.position.calculateDistanceBetween(entity.position);
             if (distance < minDistance) {
                target = entity as BerryBush;
@@ -69,7 +69,7 @@ class BerryBushShakeAI extends AI {
       if (this.mob.forceGetComponent("hunger").hunger < 80) return false;
 
       for (const entity of this.mob.visibleEntities) {
-         if (entity.type === "berry_bush" && (entity as BerryBush).getNumBerries() > 0) {
+         if (entity.type === EntityTypeConst.berry_bush && (entity as BerryBush).getNumBerries() > 0) {
             return true;
          }
       }

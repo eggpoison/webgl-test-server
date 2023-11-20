@@ -1,4 +1,4 @@
-import { BiomeName, EntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import Player from "./entities/tribes/Player";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
@@ -83,7 +83,7 @@ const tpBiome = (username: string, biomeName: BiomeName): void => {
    SERVER.sendForcePositionUpdatePacket(username, newPosition);
 }
 
-const summonEntities = (username: string, unguardedEntityType: string, amount: number): void => {
+const summonEntities = (username: string, unguardedEntityType: number, amount: number): void => {
    const player = SERVER.getPlayerFromUsername(username);
    if (player === null) return;
 
@@ -91,7 +91,7 @@ const summonEntities = (username: string, unguardedEntityType: string, amount: n
       return;
    }
 
-   const entityType = unguardedEntityType as EntityType;
+   const entityType = unguardedEntityType as EntityTypeConst;
    const entityClass = ENTITY_CLASS_RECORD[entityType]();
    
    for (let i = 0; i < amount; i++) {
@@ -189,7 +189,7 @@ export function registerCommand(command: string, player: Player): void {
       }
       
       case "summon": {
-         const unguardedEntityType = commandComponents[1] as string;
+         const unguardedEntityType = EntityType[commandComponents[1] as EntityType] as unknown as number;
          if (numParameters === 1) {
             summonEntities(player.username, unguardedEntityType, 1);
          } else {

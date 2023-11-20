@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS, TileType, TileTypeConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, SETTINGS, TileType, TileTypeConst, randInt } from "webgl-test-shared";
 import Mob from "./Mob";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
@@ -26,7 +26,7 @@ class Krumblid extends Mob {
       super(position, {
          health: new HealthComponent(Krumblid.MAX_HEALTH, false),
          item_creation: new ItemCreationComponent(48)
-      }, "krumblid", SETTINGS.TILE_SIZE * 3.5);
+      }, EntityTypeConst.krumblid, SETTINGS.TILE_SIZE * 3.5);
 
       this.forceGetComponent("item_creation").createItemOnDeath(ItemType.leather, randInt(2, 3), true);
 
@@ -44,7 +44,7 @@ class Krumblid extends Mob {
       this.addAI(new FollowAI(this, {
          acceleration: Krumblid.WALK_ACCELERATION,
          terminalVelocity: Krumblid.WALK_TERMINAL_VELOCITY,
-         followableEntityTypes: new Set(["cactus"]),
+         followableEntityTypes: new Set([EntityTypeConst.cactus]),
          minDistanceFromFollowTarget: 40,
          weightBuildupTime: 9 + Math.random(),
          interestDuration: 3 + Math.random()

@@ -1,4 +1,4 @@
-import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityType, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -34,14 +34,14 @@ enum TribesmanAIType {
    idle
 }
 
-const RESOURCE_PRODUCTS: Partial<Record<EntityType, ReadonlyArray<ItemType>>> = {
-   cow: [ItemType.leather, ItemType.raw_beef],
-   berry_bush: [ItemType.berry],
-   tree: [ItemType.wood],
-   ice_spikes: [ItemType.frostcicle],
-   cactus: [ItemType.cactus_spine],
-   boulder: [ItemType.rock],
-   krumblid: [ItemType.leather]
+const RESOURCE_PRODUCTS: Partial<Record<EntityTypeConst, ReadonlyArray<ItemType>>> = {
+   [EntityTypeConst.cow]: [ItemType.leather, ItemType.raw_beef],
+   [EntityTypeConst.berry_bush]: [ItemType.berry],
+   [EntityTypeConst.tree]: [ItemType.wood],
+   [EntityTypeConst.ice_spikes]: [ItemType.frostcicle],
+   [EntityTypeConst.cactus]: [ItemType.cactus_spine],
+   [EntityTypeConst.boulder]: [ItemType.rock],
+   [EntityTypeConst.krumblid]: [ItemType.leather]
 }
 
 const barrelHasFood = (barrel: Barrel): boolean => {
@@ -81,7 +81,7 @@ class Tribesman extends TribeMember {
 
    /** How far the tribesmen will try to stay away from the entity they're attacking */
    private static readonly DESIRED_MELEE_ATTACK_DISTANCE = 60;
-   private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 300;
+   private static readonly DESIRED_RANGED_ATTACK_DISTANCE = 260;
 
    private static readonly BARREL_INTERACT_DISTANCE = 80;
 
@@ -100,7 +100,7 @@ class Tribesman extends TribeMember {
    public readonly collisionMask = DEFAULT_COLLISION_MASK;
    
    constructor(position: Point, tribeType: TribeType, tribe: Tribe) {
-      super(position, "tribesman", Tribesman.VISION_RANGE, tribeType);
+      super(position, EntityTypeConst.tribesman, Tribesman.VISION_RANGE, tribeType);
 
       const hitbox = new CircularHitbox(Tribesman.RADIUS, 0, 0);
       this.addHitbox(hitbox);
@@ -177,7 +177,7 @@ class Tribesman extends TribeMember {
 
       // If the player is interacting with the tribesman, move towards the player
       for (const entity of this.visibleEntities) {
-         if (entity.type === "player" && (entity as Player).interactingEntityID === this.id) {
+         if (entity.type === EntityTypeConst.player && (entity as Player).interactingEntityID === this.id) {
             this.rotation = this.position.calculateAngleBetween(entity.position);
             const distance = this.position.calculateDistanceBetween(entity.position);
             if (this.willStopAtDesiredDistance(80, distance)) {
@@ -354,7 +354,7 @@ class Tribesman extends TribeMember {
          let closestBarrelWithFood: Barrel | undefined;
          let minDist = Number.MAX_SAFE_INTEGER;
          for (const entity of this.visibleEntities) {
-            if (entity.type === "barrel") {
+            if (entity.type === EntityTypeConst.barrel) {
                const distance = this.position.calculateDistanceBetween(entity.position);
                if (distance < minDist && barrelHasFood(entity as Barrel)) {
                   minDist = distance;

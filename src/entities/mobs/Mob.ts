@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, circlesDoIntersect, EntityType, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect, EntityType, EntityTypeConst, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 import AI from "../../mob-ai/AI";
 import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";
@@ -41,7 +41,7 @@ abstract class Mob extends Entity {
    private lastMinVisibleChunkY = -1;
    private lastMaxVisibleChunkY = -1;
    
-   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityType, visionRange: number) {
+   constructor(position: Point, components: Partial<EntityComponents>, entityType: EntityTypeConst, visionRange: number) {
       super(position, components, entityType);
 
       this.visionRange = visionRange;

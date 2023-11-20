@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, Point, SETTINGS, Vector } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, SETTINGS, Vector } from "webgl-test-shared";
 import Entity from "../Entity";
 import HealthComponent from "../../entity-components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -27,7 +27,7 @@ class BerryBush extends Entity {
    constructor(position: Point) {
       super(position, {
          health: new HealthComponent(BerryBush.HEALTH, false)
-      }, "berry_bush");
+      }, EntityTypeConst.berry_bush);
 
       const hitbox = new CircularHitbox(BerryBush.RADIUS, 0, 0);
       this.addHitbox(hitbox);

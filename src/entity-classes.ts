@@ -1,4 +1,4 @@
-import { EntityType, Point } from "webgl-test-shared";
+import { EntityType, EntityTypeConst, Point } from "webgl-test-shared";
 import Boulder from "./entities/resources/Boulder";
 import Cow from "./entities/mobs/Cow";
 import Entity from "./entities/Entity";
@@ -25,29 +25,29 @@ import FrozenYeti from "./entities/mobs/FrozenYeti";
 import Fish from "./entities/mobs/Fish";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any[]) => Entity)> = {
-   cow: () => Cow,
-   zombie: () => Zombie,
-   tombstone: () => Tombstone,
-   tree: () => Tree,
-   workbench: () => Workbench,
-   boulder: () => Boulder,
-   berry_bush: () => BerryBush,
-   cactus: () => Cactus,
-   yeti: () => Yeti,
-   ice_spikes: () => IceSpikes,
-   slime: () => Slime,
-   slimewisp: () => Slimewisp,
-   tribesman: () => Tribesman,
-   player: () => Player,
-   tribe_totem: () => TribeTotem,
-   tribe_hut: () => TribeHut,
-   barrel: () => Barrel,
-   campfire: () => Campfire,
-   furnace: () => Furnace,
-   snowball: () => Snowball,
-   krumblid: () => Krumblid,
-   frozen_yeti: () => FrozenYeti,
-   fish: () => Fish
+   [EntityTypeConst.cow]: () => Cow,
+   [EntityTypeConst.zombie]: () => Zombie,
+   [EntityTypeConst.tombstone]: () => Tombstone,
+   [EntityTypeConst.tree]: () => Tree,
+   [EntityTypeConst.workbench]: () => Workbench,
+   [EntityTypeConst.boulder]: () => Boulder,
+   [EntityTypeConst.berry_bush]: () => BerryBush,
+   [EntityTypeConst.cactus]: () => Cactus,
+   [EntityTypeConst.yeti]: () => Yeti,
+   [EntityTypeConst.ice_spikes]: () => IceSpikes,
+   [EntityTypeConst.slime]: () => Slime,
+   [EntityTypeConst.slimewisp]: () => Slimewisp,
+   [EntityTypeConst.tribesman]: () => Tribesman,
+   [EntityTypeConst.player]: () => Player,
+   [EntityTypeConst.tribe_totem]: () => TribeTotem,
+   [EntityTypeConst.tribe_hut]: () => TribeHut,
+   [EntityTypeConst.barrel]: () => Barrel,
+   [EntityTypeConst.campfire]: () => Campfire,
+   [EntityTypeConst.furnace]: () => Furnace,
+   [EntityTypeConst.snowball]: () => Snowball,
+   [EntityTypeConst.krumblid]: () => Krumblid,
+   [EntityTypeConst.frozen_yeti]: () => FrozenYeti,
+   [EntityTypeConst.fish]: () => Fish
 };
 
 export default ENTITY_CLASS_RECORD;
