@@ -1,4 +1,4 @@
-import { ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
+import { BiomeName, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -6,7 +6,7 @@ import generateTerrain from "./terrain-generation/terrain-generation";
 import Tile from "./Tile";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import { getTilesOfType, removeEntityFromCensus } from "./census";
+import { addTileToCensus, getTilesOfType, removeEntityFromCensus, removeTileFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import GameObject from "./GameObject";
@@ -28,7 +28,7 @@ abstract class Board {
    public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time = 6;
+   public static time = 6.01;
 
    /** This is an array as game objects get created/removed fairly slowly */
    public static gameObjects = new Array<GameObject>();
@@ -37,8 +37,7 @@ abstract class Board {
    public static droppedItems: { [id: number]: DroppedItem } = {};
    public static projectiles = new Set<Projectile>();
 
-   // This is undefined initially to indicate that terrain hasn't been generated yet
-   private static tiles: Array<Array<Tile>>;
+   public static tiles: Array<Tile>;
    private static chunks1d = new Array<Chunk>();
    private static chunks = new Array<Array<Chunk>>();
 
@@ -59,8 +58,6 @@ abstract class Board {
    private static tribes = new Array<Tribe>();
 
    public static reset(): void {
-      // @Cleanup: Hacky
-      (this.tiles as any) = undefined;
       this.gameObjects = [];
       this.entities = {};
       this.droppedItems = {};
@@ -97,10 +94,6 @@ abstract class Board {
 
    public static isNight(): boolean {
       return Board.time < 6 || Board.time >= 18;
-   }
-
-   public static terrainHasBeenGenerated(): boolean {
-      return typeof this.tiles !== "undefined";
    }
 
    private static initialiseChunks(): void {
@@ -141,20 +134,26 @@ abstract class Board {
    }
 
    public static getTile(tileX: number, tileY: number): Tile {
-      return this.tiles[tileX][tileY];
+      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      return this.tiles[tileIndex];
    }
 
-   public static setTile(tileX: number, tileY: number, tile: Tile): void {
-      this.tiles[tileX][tileY] = tile;
+   public static replaceTile(tileX: number, tileY: number, tileType: TileTypeConst, biomeName: BiomeName, isWall: boolean, riverFlowDirection: number): void {
+      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      const tile = this.tiles[tileIndex];
+
+      removeTileFromCensus(tile);
+      
+      tile.type = tileType;
+      tile.biomeName = biomeName;
+      tile.isWall = isWall;
+      tile.riverFlowDirection = riverFlowDirection;
+
+      addTileToCensus(tile);
    }
 
    public static getChunk(chunkX: number, chunkY: number): Chunk {
       return this.chunks[chunkX][chunkY];
-   }
-
-   /** Returns a reference to the tiles array */
-   public static getTiles(): Array<Array<Tile>> {
-      return this.tiles;
    }
 
    public static addTribe(tribe: Tribe): void {
@@ -364,7 +363,7 @@ abstract class Board {
 
          const dirtTile = Board.getTile(tileX, tileY);
          if (dirtTile.type === TileTypeConst.dirt) {
-            new Tile(tileX, tileY, TileTypeConst.grass, "grasslands", false, 0);
+            this.replaceTile(tileX, tileY, TileTypeConst.grass, "grasslands", false, 0);
          }
       }
    }

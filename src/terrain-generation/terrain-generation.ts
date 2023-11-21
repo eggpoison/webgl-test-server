@@ -267,7 +267,7 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
 }
 
 export interface TerrainGenerationInfo {
-   readonly tiles: Array<Array<Tile>>;
+   readonly tiles: Array<Tile>;
    readonly riverFlowDirections: Record<number, Record<number, number>>;
    readonly waterRocks: ReadonlyArray<WaterRockData>;
    readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
@@ -445,10 +445,9 @@ function generateTerrain(): TerrainGenerationInfo {
    generateTileInfo(tileInfoArray);
 
    // Make an array of tiles from the tile info array
-   const tiles = new Array<Array<Tile>>();
-   for (let tileX = 0; tileX < SETTINGS.BOARD_DIMENSIONS; tileX++) {
-      tiles.push(new Array<Tile>());
-      for (let tileY = 0; tileY < SETTINGS.BOARD_DIMENSIONS; tileY++) {
+   const tiles = new Array<Tile>();
+   for (let tileY = 0; tileY < SETTINGS.BOARD_DIMENSIONS; tileY++) {
+      for (let tileX = 0; tileX < SETTINGS.BOARD_DIMENSIONS; tileX++) {
          let riverFlowDirection: number;
          if (riverFlowDirections.hasOwnProperty(tileX) && riverFlowDirections[tileX].hasOwnProperty(tileY)) {
             let desired = riverFlowDirections[tileX][tileY];
@@ -476,7 +475,8 @@ function generateTerrain(): TerrainGenerationInfo {
          // Create the tile
          const tileInfo = tileInfoArray[tileX][tileY] as TileInfoConst;
          const isWall = OPTIONS.generateWalls ? tileInfo.isWall : false;
-         tiles[tileX].push(new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, isWall, riverFlowDirection));
+         const tile = new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, isWall, riverFlowDirection);
+         tiles.push(tile);
       }
    }
 

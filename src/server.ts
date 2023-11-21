@@ -310,7 +310,10 @@ class GameServer {
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
       Board.ticks++;
-      Board.time = (Board.time + SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600) % 24;
+      Board.time += SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600;
+      if (Board.time >= 24) {
+         Board.time -= 24;
+      }
 
       if (OPTIONS.logging) {
          const tickEndTime = performance.now();
@@ -454,21 +457,16 @@ class GameServer {
             const player = new Player(spawnPosition, playerData.username, null);
             playerData.instance = player;
 
-            const tiles = Board.getTiles();
-            const serverTileData = new Array<Array<ServerTileData>>();
-            for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-               serverTileData[y] = new Array<ServerTileData>();
-               const row = tiles[y];
-               for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-                  const tile = row[x];
-                  serverTileData[y][x] = {
-                     x: tile.x,
-                     y: tile.y,
-                     type: tile.type as unknown as TileType,
-                     biomeName: tile.biomeName,
-                     isWall: tile.isWall
-                  };
-               }
+            const serverTileData = new Array<ServerTileData>();
+            for (let tileIndex = 0; tileIndex < SETTINGS.BOARD_DIMENSIONS * SETTINGS.BOARD_DIMENSIONS; tileIndex++) {
+               const tile = Board.tiles[tileIndex];
+               serverTileData.push({
+                  x: tile.x,
+                  y: tile.y,
+                  type: tile.type as unknown as TileType,
+                  biomeName: tile.biomeName,
+                  isWall: tile.isWall
+               });
             }
 
             const visibleEntities = getPlayerVisibleEntities(playerData.visibleChunkBounds);

@@ -1,8 +1,8 @@
-import { SETTINGS, TileInfoConst, TileType, TileTypeConst, randFloat } from "webgl-test-shared";
+import { SETTINGS, TileInfoConst, TileTypeConst, randFloat } from "webgl-test-shared";
 import Mob from "../entities/mobs/Mob";
-import Tile from "../Tile";
 import AI from "./AI";
 import { MobAIType } from "../mob-ai-types";
+import Board from "../Board";
 
 interface FoodSource {
    /** Amount of food given by eating the source */
@@ -80,7 +80,7 @@ class TileConsumeAI extends AI implements TileConsumeAIParams {
          biomeName: previousTile.biomeName,
          isWall: previousTile.isWall
       };
-      new Tile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall, 0);
+      Board.replaceTile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall, 0);
 
       this.grazeCooldown = randFloat(TileConsumeAI.GRAZE_COOLDOWN_RANGE[0], TileConsumeAI.GRAZE_COOLDOWN_RANGE[1]);
    }
