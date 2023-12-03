@@ -52,25 +52,6 @@ const getBiome = (height: number, temperature: number, humidity: number): BiomeN
    throw new Error(`Couldn't find a valid biome! Height: ${height}, temperature: ${temperature}, humidity: ${humidity}`);
 }
 
-const generateBiomeInfo = (tileArray: Array<Array<Partial<TileInfoConst>>>): void => {
-   // Generate the noise
-   const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
-   const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, TEMPERATURE_NOISE_SCALE);
-   const humidityMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS, SETTINGS.BOARD_DIMENSIONS, HUMIDITY_NOISE_SCALE);
-   
-   for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-      // Fill the tile array using the noise
-      for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-         const height = heightMap[x][y];
-         const temperature = temperatureMap[x][y];
-         const humidity = humidityMap[x][y];
-
-         const biomeName = getBiome(height, temperature, humidity);
-         tileArray[x][y].biomeName = biomeName;
-      }
-   }
-}
-
 const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: number, dist: number): boolean => {
    if (typeof generationInfo.noiseRequirements !== "undefined") {
       if (typeof generationInfo.noiseRequirements.minWeight !== "undefined" && weight < generationInfo.noiseRequirements.minWeight) return false;
@@ -83,13 +64,12 @@ const matchesTileRequirements = (generationInfo: TileGenerationInfo, weight: num
    return true;
 }
 
-const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): Omit<TileInfoConst, "biomeName" | "fogAmount"> => {
+const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): Omit<TileInfoConst, "biomeName"> => {
    const biomeGenerationInfo = BIOME_GENERATION_INFO[biomeName];
    for (const tileGenerationInfo of biomeGenerationInfo.tiles) {
       let weight = 0;
       if (typeof tileGenerationInfo.noiseRequirements !== "undefined") {
-         // weight = generatePointPerlinNoise(x, y, tileGenerationInfo.noiseRequirements.scale, tileGenerationInfo.tileType + "-" + tileGenerationInfo.noiseRequirements.scale);
-         weight = generatePointPerlinNoise(x, y, 5, tileGenerationInfo.tileType + "-" + 5);
+         weight = generatePointPerlinNoise(x, y, tileGenerationInfo.noiseRequirements.scale, tileGenerationInfo.tileType + "-" + tileGenerationInfo.noiseRequirements.scale);
       }
       
       if (matchesTileRequirements(tileGenerationInfo, weight, dist)) {
@@ -267,16 +247,18 @@ export interface TerrainGenerationInfo {
    readonly riverFlowDirections: Record<number, Record<number, number>>;
    readonly waterRocks: ReadonlyArray<WaterRockData>;
    readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
+   readonly edgeTiles: Array<Tile>;
+   readonly edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
 }
 
-export function generateTerrain(): TerrainGenerationInfo {
+function generateTerrain(): TerrainGenerationInfo {
    // Seed the random number generator
    if (OPTIONS.inBenchmarkMode) {
       SRandom.seed(40404040404);
    } else {
       SRandom.seed(randInt(0, 9999999999));
    }
-   
+
    // Initialise the tile info array
    const tileInfoArray = new Array<Array<Partial<TileInfoConst>>>();
    for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
@@ -286,8 +268,32 @@ export function generateTerrain(): TerrainGenerationInfo {
          tileInfoArray[x][y] = {};
       }
    }
+   
+   const edgeTiles = new Array<Tile>();
 
-   generateBiomeInfo(tileInfoArray);
+   // Generate the noise
+   const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
+   const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, TEMPERATURE_NOISE_SCALE);
+   const humidityMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HUMIDITY_NOISE_SCALE);
+   
+   // Generate biome info
+   for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
+      // Fill the tile array using the noise
+      for (let tileY = -SETTINGS.EDGE_GENERATION_DISTANCE; tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileY++) {
+         const height = heightMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         const temperature = temperatureMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         const humidity = humidityMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+
+         const biomeName = getBiome(height, temperature, humidity);
+
+         if (tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS) {
+            tileInfoArray[tileX][tileY].biomeName = biomeName;
+         } else {
+            const tileInfo = getTileInfo(biomeName, 0, tileX, tileY);
+            edgeTiles.push(new Tile(tileX, tileY, tileInfo.type, biomeName, tileInfo.isWall, 0));
+         }
+      }
+   }
 
    // Generate rivers
    let riverTiles: ReadonlyArray<WaterTileGenerationInfo>;
@@ -297,21 +303,33 @@ export function generateTerrain(): TerrainGenerationInfo {
       riverTiles = [];
    }
 
-   const riverFlowDirections: Record<number, Record<number, number>> = {};
-
-   for (const waterTileGenerationInfo of riverTiles) {
-      tileInfoArray[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY].biomeName = "river";
-
-      if (!riverFlowDirections.hasOwnProperty(waterTileGenerationInfo.tileX)) {
-         riverFlowDirections[waterTileGenerationInfo.tileX] = {};
+   // Categorise the water tiles
+   const inBoardRiverTiles = new Array<WaterTileGenerationInfo>();
+   const edgeRiverTiles = new Array<WaterTileGenerationInfo>();
+   for (const riverTileInfo of riverTiles) {
+      if (riverTileInfo.tileX >= 0 && riverTileInfo.tileX < SETTINGS.BOARD_DIMENSIONS && riverTileInfo.tileY >= 0 && riverTileInfo.tileY < SETTINGS.BOARD_DIMENSIONS) {
+         inBoardRiverTiles.push(riverTileInfo);
+      } else if (riverTileInfo.tileX >= -SETTINGS.EDGE_GENERATION_DISTANCE && riverTileInfo.tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && riverTileInfo.tileY >= -SETTINGS.EDGE_GENERATION_DISTANCE && riverTileInfo.tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
+         edgeRiverTiles.push(riverTileInfo);
       }
-      riverFlowDirections[waterTileGenerationInfo.tileX][waterTileGenerationInfo.tileY] = waterTileGenerationInfo.flowDirection;
    }
 
+   const riverFlowDirections: Record<number, Record<number, number>> = {};
+
+   for (const riverTileInfo of inBoardRiverTiles) {
+      tileInfoArray[riverTileInfo.tileX][riverTileInfo.tileY].biomeName = "river";
+
+      if (!riverFlowDirections.hasOwnProperty(riverTileInfo.tileX)) {
+         riverFlowDirections[riverTileInfo.tileX] = {};
+      }
+      riverFlowDirections[riverTileInfo.tileX][riverTileInfo.tileY] = riverTileInfo.flowDirection;
+   }
+
+   // Set edge flow directions
 
    const waterRocks = new Array<WaterRockData>();
 
-   for (const tile of riverTiles) {
+   for (const tile of inBoardRiverTiles) {
       if (SRandom.next() < 0.075) {
          const x = (tile.tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
          const y = (tile.tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
@@ -321,11 +339,14 @@ export function generateTerrain(): TerrainGenerationInfo {
             size: SRandom.randInt(0, 1),
             opacity: SRandom.next()
          });
+         if (x < 0 || y < 0) {
+            throw new Error();
+         }
       }
    }
 
    // Calculate potential river crossing positions
-   const potentialRiverCrossings = calculateRiverCrossingPositions(riverTiles);
+   const potentialRiverCrossings = calculateRiverCrossingPositions(inBoardRiverTiles);
 
    const riverCrossings = new Array<RiverCrossingInfo>();
    mainLoop:
@@ -377,7 +398,7 @@ export function generateTerrain(): TerrainGenerationInfo {
          // Only spawn stepping stones on water
          const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
          const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
-         if (!tileIsWater(tileX, tileY, riverTiles)) {
+         if (!tileIsWater(tileX, tileY, inBoardRiverTiles)) {
             continue;
          }
 
@@ -423,7 +444,7 @@ export function generateTerrain(): TerrainGenerationInfo {
          // Only generate water rocks in water
          const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
          const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
-         if (!tileIsWater(tileX, tileY, riverTiles)) {
+         if (!tileIsWater(tileX, tileY, inBoardRiverTiles)) {
             continue;
          }
 
@@ -476,11 +497,15 @@ export function generateTerrain(): TerrainGenerationInfo {
       }
    }
 
+   const edgeTileRiverFlowDirections: Record<number, Record<number, number>> = {};
+
    return {
       tiles: tiles,
       waterRocks: waterRocks,
       riverSteppingStones: riverSteppingStones,
-      riverFlowDirections: riverFlowDirections
+      riverFlowDirections: riverFlowDirections,
+      edgeTiles: edgeTiles,
+      edgeTileRiverFlowDirections: edgeTileRiverFlowDirections
    };
 }
 

@@ -2,7 +2,6 @@ import { BiomeName, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingSt
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import generateTerrain from "./terrain-generation/terrain-generation";
 import Tile from "./Tile";
 import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -12,6 +11,7 @@ import Tribe from "./Tribe";
 import GameObject from "./GameObject";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
+import generateTerrain from "./terrain-generation/terrain-generation";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -58,6 +58,9 @@ abstract class Board {
 
    private static tribes = new Array<Tribe>();
 
+   public static edgeTiles = new Array<Tile>();
+   public static edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
+
    public static reset(): void {
       this.gameObjects = [];
       this.entities = {};
@@ -73,6 +76,9 @@ abstract class Board {
       this.riverFlowDirections = generationInfo.riverFlowDirections;
       this.waterRocks = generationInfo.waterRocks;
       this.riverSteppingStones = generationInfo.riverSteppingStones;
+      this.edgeTiles = generationInfo.edgeTiles;
+      console.log("board", this.edgeTiles.length);
+      this.edgeTileRiverFlowDirections = generationInfo.edgeTileRiverFlowDirections;
 
       this.tileUpdateCoordinates = new Set<number>();
 

@@ -403,44 +403,6 @@ class GameServer {
          // Spawn the player in a random position in the world
          const spawnPosition = SERVER.generatePlayerSpawnPosition();
 
-         // let spawnPosition: Point;
-         // do {
-         //    spawnPosition = new Point(SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random(), SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random());
-         // } while (Board.getTile(Math.floor(spawnPosition.x / SETTINGS.TILE_SIZE), Math.floor(spawnPosition.y / SETTINGS.TILE_SIZE)).biomeName !== "tundra");
-
-         // new FrozenYeti(new Point(spawnPosition.x, spawnPosition.y + 250));
-         // new Krumblid(new Point(spawnPosition.x, spawnPosition.y + 250));
-         // new BerryBush(new Point(spawnPosition.x + 100, spawnPosition.y));
-
-         // new Tombstone(new Point(spawnPosition.x + 100, spawnPosition.y), false);
-
-         // const totem = new TribeTotem(new Point(spawnPosition.x + 600, spawnPosition.y));
-         // const tribe = new Tribe(TribeType.barbarians, totem);
-
-         // const hut = new TribeHut(new Point(spawnPosition.x + 300, spawnPosition.y + 100), tribe);
-         // hut.rotation = 2 * Math.PI * Math.random();
-         // tribe.registerNewHut(hut);
-         // const hut2 = new TribeHut(new Point(spawnPosition.x + 390, spawnPosition.y + 300), tribe);
-         // hut2.rotation = 2 * Math.PI * Math.random();
-         // tribe.registerNewHut(hut2);
-         // const hut3 = new TribeHut(new Point(spawnPosition.x + 530, spawnPosition.y + 200), tribe);
-         // hut3.rotation = Math.PI * 3/2;
-         // hut3.rotation = 2 * Math.PI * Math.random();
-         // tribe.registerNewHut(hut3);
-         // const hut4 = new TribeHut(new Point(spawnPosition.x + 520, spawnPosition.y - 100), tribe);
-         // hut4.rotation = Math.PI * 3/2;
-         // hut4.rotation = 2 * Math.PI * Math.random();
-         // tribe.registerNewHut(hut4);
-         // const hut5 = new TribeHut(new Point(spawnPosition.x + 420, spawnPosition.y - 60), tribe);
-         // hut5.rotation = Math.PI * 3/2;
-         // hut5.rotation = 2 * Math.PI * Math.random();
-         // tribe.registerNewHut(hut5);
-
-         // const item = new Item(ItemType.berry, 1);
-         // new DroppedItem(new Point(spawnPosition.x, spawnPosition.y + 200), item);
-
-         // new Tree(new Point(spawnPosition.x + 200, spawnPosition.y), false);
-
          socket.on("spawn_position_request", () => {
             socket.emit("spawn_position", spawnPosition.package());
          });
@@ -470,6 +432,19 @@ class GameServer {
                });
             }
 
+            const edgeTileData = new Array<ServerTileData>();
+            for (let i = 0; i < Board.edgeTiles.length; i++) {
+               const tile = Board.edgeTiles[i];
+               edgeTileData.push({
+                  x: tile.x,
+                  y: tile.y,
+                  type: tile.type as unknown as TileType,
+                  biomeName: tile.biomeName,
+                  isWall: tile.isWall
+               });
+            }
+            console.log(Board.edgeTiles.length, edgeTileData.length);
+
             const visibleEntities = getPlayerVisibleEntities(playerData.visibleChunkBounds);
 
             const initialGameDataPacket: InitialGameDataPacket = {
@@ -478,6 +453,8 @@ class GameServer {
                waterRocks: Board.waterRocks,
                riverSteppingStones: Board.riverSteppingStones,
                riverFlowDirections: Board.getRiverFlowDirections(),
+               edgeTiles: edgeTileData,
+               edgeTileRiverFlowDirections: Board.edgeTileRiverFlowDirections,
                entityDataArray: bundleEntityDataArray(visibleEntities),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),

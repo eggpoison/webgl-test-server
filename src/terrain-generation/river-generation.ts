@@ -17,7 +17,7 @@ const NEIGHBOUR_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> 
 ];
 
 /** Amount of tiles of padding around the edge of the border */
-const BORDER_PADDING = 5;
+const BORDER_PADDING = 16 + 5;
 
 export interface WaterTileGenerationInfo {
    readonly tileX: number;
@@ -82,35 +82,44 @@ export function generateRiverTiles(): ReadonlyArray<WaterTileGenerationInfo> {
             flowDirection = startPos.calculateAngleBetween(endPos);
          }
 
-         if (Board.tileIsInBoard(currentTileCoordinates.x, currentTileCoordinates.y)) {
-            rootTiles.push({
-               tileX: currentTileCoordinates.x,
-               tileY: currentTileCoordinates.y,
-               flowDirection: flowDirection
-            });
-         }
-         currentTileCoordinates = minTileCoordinates;
-      }
-
-      if (Board.tileIsInBoard(currentTileCoordinates.x, currentTileCoordinates.y)) {
          rootTiles.push({
             tileX: currentTileCoordinates.x,
             tileY: currentTileCoordinates.y,
-            flowDirection: rootTiles[rootTiles.length - 2].flowDirection
+            flowDirection: flowDirection
          });
+         currentTileCoordinates = minTileCoordinates;
       }
+
+      rootTiles.push({
+         tileX: currentTileCoordinates.x,
+         tileY: currentTileCoordinates.y,
+         flowDirection: rootTiles[rootTiles.length - 2].flowDirection
+      });
    }
 
    const tiles = new Array<WaterTileGenerationInfo>();
    
    for (const rootTile of rootTiles) {
-      const minTileX = clampToBoardDimensions(rootTile.tileX - 1);
-      const maxTileX = clampToBoardDimensions(rootTile.tileX + 1);
-      const minTileY = clampToBoardDimensions(rootTile.tileY - 1);
-      const maxTileY = clampToBoardDimensions(rootTile.tileY + 1);
+      let minTileX = rootTile.tileX - 1;
+      if (minTileX < -BORDER_PADDING) {
+         minTileX = -BORDER_PADDING;
+      }
+      let maxTileX = rootTile.tileX + 1;
+      if (maxTileX >= SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING) {
+         maxTileX = SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING - 1;
+      }
+      let minTileY = rootTile.tileY - 1;
+      if (minTileY < -BORDER_PADDING) {
+         minTileY = -BORDER_PADDING;
+      }
+      let maxTileY = rootTile.tileY + 1;
+      if (maxTileY >= SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING) {
+         maxTileY = SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING - 1;
+      }
       for (let x = minTileX; x <= maxTileX; x++) {
          outerLoop: for (let y = minTileY; y <= maxTileY; y++) {
             // Make sure the tile isn't already in the tiles array
+            // @Speed
             for (const tile of tiles) {
                if (tile.tileX === x && tile.tileY === 0) {
                   continue outerLoop;
