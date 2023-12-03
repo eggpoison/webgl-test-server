@@ -133,6 +133,9 @@ abstract class TribeMember extends Mob {
 
    private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityTypeConst> = [EntityTypeConst.yeti, EntityTypeConst.frozen_yeti, EntityTypeConst.zombie, EntityTypeConst.slime];
 
+   private static readonly VACUUM_RANGE = 80;
+   private static readonly VACUUM_STRENGTH = 20;
+
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;
 
@@ -278,6 +281,27 @@ abstract class TribeMember extends Mob {
       if (this.immunityTimer <= 0) {
          this.attemptToBecomeImmune();
          this.immunityTimer = 0;
+      }
+
+      // Vacuum nearby items to the tribe member
+      // @Incomplete: Don't vacuum items which the tribe member doesn't have the inventory space for
+      // @Incomplete: Don't vacuum items which were just thrown out by the player
+      const minChunkX = Math.max(Math.floor((this.position.x - TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
+      const maxChunkX = Math.min(Math.floor((this.position.x + TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+      const minChunkY = Math.max(Math.floor((this.position.y - TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
+      const maxChunkY = Math.min(Math.floor((this.position.y + TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+      for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+         for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+            const chunk = Board.getChunk(chunkX, chunkY);
+            for (const droppedItem of chunk.droppedItems) {
+               const distance = this.position.calculateDistanceBetween(droppedItem.position);
+               if (distance <= TribeMember.VACUUM_RANGE) {
+                  const vacuumDirection = droppedItem.position.calculateAngleBetween(this.position);
+                  droppedItem.velocity.x += TribeMember.VACUUM_STRENGTH * Math.sin(vacuumDirection);
+                  droppedItem.velocity.y += TribeMember.VACUUM_STRENGTH * Math.cos(vacuumDirection);
+               }
+            }
+         }
       }
    }
 

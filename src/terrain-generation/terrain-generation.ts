@@ -279,12 +279,15 @@ function generateTerrain(): TerrainGenerationInfo {
    const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, TEMPERATURE_NOISE_SCALE);
    const humidityMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HUMIDITY_NOISE_SCALE);
    
-   // Push humidity towards the extremes
+   // Push humidity and temperature towards the extremes
    for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
       // Fill the tile array using the noise
       for (let j = -SETTINGS.EDGE_GENERATION_DISTANCE; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; j++) {
          const humidity = humidityMap[i][j];
          humidityMap[i][j] = smoothstep(humidity);
+
+         const temperature = temperatureMap[i][j];
+         temperatureMap[i][j] = smoothstep(temperature);
       }
    }
    
