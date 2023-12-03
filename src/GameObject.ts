@@ -24,6 +24,7 @@ export function findAvailableEntityID(): number {
 }
 
 export interface GameObjectEvents {
+   // @Cleanup: Rename to on_remove
    on_destroy: () => void;
    enter_collision: (collidingGameObject: GameObject) => void;
    during_collision: (collidingGameObject: GameObject) => void;
@@ -357,7 +358,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
             }
          }
       // Friction
-      } else if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+      } else if ((this.velocity.x !== 0 || this.velocity.y !== 0) && this.isAffectedByFriction) {
          // 
          // Apply friction
          // 
@@ -963,6 +964,9 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 
    public remove(): void {
+      if (!this.isRemoved) {
+         (this.callEvents as any)("on_destroy");
+      }
       this.isRemoved = true;
    }
 

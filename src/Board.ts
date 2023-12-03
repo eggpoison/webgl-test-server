@@ -33,6 +33,7 @@ abstract class Board {
    /** This is an array as game objects get created/removed fairly slowly */
    public static gameObjects = new Array<GameObject>();
 
+   // @Cleanup: Why are these different types?
    public static entities: { [id: number]: Entity } = {};
    public static droppedItems: { [id: number]: DroppedItem } = {};
    public static projectiles = new Set<Projectile>();
@@ -373,7 +374,10 @@ abstract class Board {
    }
 
    public static addDroppedItemToJoinBuffer(droppedItem: DroppedItem): void {
-      this.droppedItemJoinBuffer.push(droppedItem);
+      const numDroppedItems = Object.keys(this.droppedItems).length + this.droppedItemJoinBuffer.length;
+      if (numDroppedItems < 500) {
+         this.droppedItemJoinBuffer.push(droppedItem);
+      }
    }
 
    public static addProjectileToJoinBuffer(projectile: Projectile): void {

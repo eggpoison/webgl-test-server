@@ -2,19 +2,15 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./terrain-generation-info";
 import Tile from "../Tile";
-import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, WaterRockData, lerp } from "webgl-test-shared";
+import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, WaterRockData, lerp, randInt } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
 import Board from "../Board";
 import SRandom from "../SRandom";
 import OPTIONS from "../options";
 
-// @Temporary (remove after vid 2 is done)
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
 const HUMIDITY_NOISE_SCALE = 30;
-// const HEIGHT_NOISE_SCALE = 25;
-// const TEMPERATURE_NOISE_SCALE = 30;
-// const HUMIDITY_NOISE_SCALE = 15;
 
 const ADJACENT_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
    [1, 0],
@@ -273,12 +269,12 @@ export interface TerrainGenerationInfo {
    readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
 }
 
-function generateTerrain(): TerrainGenerationInfo {
+export function generateTerrain(): TerrainGenerationInfo {
    // Seed the random number generator
    if (OPTIONS.inBenchmarkMode) {
       SRandom.seed(40404040404);
    } else {
-      SRandom.seed(123456789);
+      SRandom.seed(randInt(0, 9999999999));
    }
    
    // Initialise the tile info array

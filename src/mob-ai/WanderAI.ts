@@ -64,6 +64,10 @@ class WanderAI extends AI implements WanderAIParams {
 
    private wander(): void {
       // @Speed: This always checks a very large number of tiles
+      // @Incomplete
+      // Randomly picks a position to wander to until a valid position is found.
+      // Usually the majority of positions surroundign the mob are valid wander positions, so typically
+      // this will not repeat that many times.
       
       const wanderTiles = getAllowedPositionRadialTiles(this.mob.position, this.mob.visionRange, this.validTileTargets);
       if (wanderTiles.length === 0) {

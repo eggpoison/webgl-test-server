@@ -1,11 +1,11 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, TribeType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, TribeType, ProjectileType, EntityTypeConst, PlayerCauseOfDeath, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
+import { runSpawnAttempt, spawnInitialEntities, spawnPositionIsValid } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
@@ -16,6 +16,7 @@ import Item from "./items/Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import { resetYetiTerritoryTiles } from "./entities/mobs/Yeti";
+import IceSpikes from "./entities/resources/IceSpikes";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;

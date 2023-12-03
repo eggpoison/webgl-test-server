@@ -87,14 +87,15 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxPackSize: 1,
       onlySpawnsInNight: false
    },
-   // {
-   //    entityType: EntityTypeConst.ice_spikes,
-   //    spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
-   //    spawnRate: 0.015,
-   //    maxDensity: 0.06,
-   //    // spawnRate: 0.015 * 50,
-   //    // maxDensity: 0.06 * 50
-   // },
+   {
+      entityType: EntityTypeConst.ice_spikes,
+      spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
+      spawnRate: 0.015,
+      maxDensity: 0.06,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
+   },
    {
       entityType: EntityTypeConst.slimewisp,
       spawnableTiles: [TileTypeConst.slime],
@@ -179,7 +180,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    
    const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
    
-   const entity = new entityClass(new Point(spawnOriginX, spawnOriginY), true);
+   const entity = new entityClass(new Point(spawnOriginX, spawnOriginY));
    addEntityToCensus(entity);
 
    // Pack spawning
@@ -219,7 +220,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
 
       if (spawnPositionIsValid(spawnPositionX, spawnPositionY)) {
          const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
-         const entity = new entityClass(spawnPosition, true);
+         const entity = new entityClass(spawnPosition);
          addEntityToCensus(entity);
          i++;
       }

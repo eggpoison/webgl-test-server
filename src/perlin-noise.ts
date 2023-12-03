@@ -126,6 +126,7 @@ export function generateOctavePerlinNoise(width: number, height: number, startin
    return totalNoise;
 }
 
+// @Cleanup: Name
 const a: Record<string, Record<string, Vector>> = {};
 
 export function generatePointPerlinNoise(x: number, y: number, scale: number, name: string): number {

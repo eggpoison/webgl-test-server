@@ -3,6 +3,7 @@ import DroppedItem from "../items/DroppedItem";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 import Item from "../items/Item";
+import Board from "../Board";
 
 class ItemCreationComponent extends Component {
    /** Max units that an item can spawn away from the entity when dead */

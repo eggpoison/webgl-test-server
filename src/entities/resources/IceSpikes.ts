@@ -15,7 +15,8 @@ class IceSpikes extends Entity {
    private static readonly CONTACT_DAMAGE = 1;
    private static readonly CONTACT_KNOCKBACK = 180;
 
-   private static readonly TICKS_TO_GROW = 1/5 * SETTINGS.TPS;
+   // private static readonly TICKS_TO_GROW = 1/5 * SETTINGS.TPS;
+   private static readonly TICKS_TO_GROW = 0;
    private static readonly GROWTH_TICK_CHANCE = 0.5;
    private static readonly GROWTH_OFFSET = 60;
 
@@ -94,6 +95,8 @@ class IceSpikes extends Entity {
    }
 
    private grow(): void {
+      // @Speed: Garbage collection
+
       // Calculate the spawn position for the new ice spikes
       const position = this.position.copy();
       const offsetDirection = 2 * Math.PI * Math.random();
@@ -105,9 +108,9 @@ class IceSpikes extends Entity {
          return;
       }
 
-      // Don't grow into rivers
+      // Only grow into tundra
       const tile = Board.getTileAtPosition(position);
-      if (tile.type === TileTypeConst.water) {
+      if (tile.biomeName !== "tundra") {
          return;
       }
 
@@ -138,7 +141,7 @@ class IceSpikes extends Entity {
          projectile.velocity.y = IceSpikes.ICE_SHARD_EXPLODE_SPEED * Math.cos(moveDirection);
          projectile.terminalVelocity = IceSpikes.ICE_SHARD_EXPLODE_SPEED;
 
-         const hitbox = new RectangularHitbox(this, 0, 0, 24, 24);
+         const hitbox = new RectangularHitbox(projectile, 0, 0, 24, 24);
          projectile.addHitbox(hitbox);
 
          projectile.createEvent("during_entity_collision", (collidingEntity: Entity) => {
