@@ -443,7 +443,6 @@ class GameServer {
                   isWall: tile.isWall
                });
             }
-            console.log(Board.edgeTiles.length, edgeTileData.length);
 
             const visibleEntities = getPlayerVisibleEntities(playerData.visibleChunkBounds);
 

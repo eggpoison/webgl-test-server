@@ -345,6 +345,12 @@ function generateTerrain(): TerrainGenerationInfo {
       }
    }
 
+   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
+   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
+   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
+   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
+   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
+
    // Calculate potential river crossing positions
    const potentialRiverCrossings = calculateRiverCrossingPositions(inBoardRiverTiles);
 

@@ -77,7 +77,6 @@ abstract class Board {
       this.waterRocks = generationInfo.waterRocks;
       this.riverSteppingStones = generationInfo.riverSteppingStones;
       this.edgeTiles = generationInfo.edgeTiles;
-      console.log("board", this.edgeTiles.length);
       this.edgeTileRiverFlowDirections = generationInfo.edgeTileRiverFlowDirections;
 
       this.tileUpdateCoordinates = new Set<number>();
