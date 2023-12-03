@@ -2,7 +2,7 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./terrain-generation-info";
 import Tile from "../Tile";
-import { BiomeName, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, WaterRockData, lerp, randInt } from "webgl-test-shared";
+import { BiomeName, GrassTileInfo, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, TileTypeConst, WaterRockData, lerp, randInt, smoothstep } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
 import Board from "../Board";
 import SRandom from "../SRandom";
@@ -249,6 +249,7 @@ export interface TerrainGenerationInfo {
    readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
    readonly edgeTiles: Array<Tile>;
    readonly edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
+   readonly grassInfo: Record<number, Record<number, GrassTileInfo>>;
 }
 
 function generateTerrain(): TerrainGenerationInfo {
@@ -271,10 +272,21 @@ function generateTerrain(): TerrainGenerationInfo {
    
    const edgeTiles = new Array<Tile>();
 
+   const grassInfo: Record<number, Record<number, GrassTileInfo>> = {};
+
    // Generate the noise
    const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
    const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, TEMPERATURE_NOISE_SCALE);
    const humidityMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HUMIDITY_NOISE_SCALE);
+   
+   // Push humidity towards the extremes
+   for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
+      // Fill the tile array using the noise
+      for (let j = -SETTINGS.EDGE_GENERATION_DISTANCE; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; j++) {
+         const humidity = humidityMap[i][j];
+         humidityMap[i][j] = smoothstep(humidity);
+      }
+   }
    
    // Generate biome info
    for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
@@ -291,6 +303,16 @@ function generateTerrain(): TerrainGenerationInfo {
          } else {
             const tileInfo = getTileInfo(biomeName, 0, tileX, tileY);
             edgeTiles.push(new Tile(tileX, tileY, tileInfo.type, biomeName, tileInfo.isWall, 0));
+            
+            if (tileInfo.type === TileTypeConst.grass) {
+               if (!grassInfo.hasOwnProperty(tileX)) {
+                  grassInfo[tileX] = {};
+               }
+               grassInfo[tileX][tileY] = {
+                  temperature: temperature,
+                  humidity: humidity
+               };
+            }
          }
       }
    }
@@ -500,6 +522,20 @@ function generateTerrain(): TerrainGenerationInfo {
          const isWall = OPTIONS.generateWalls ? tileInfo.isWall : false;
          const tile = new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, isWall, riverFlowDirection);
          tiles.push(tile);
+            
+         if (tileInfo.type === TileTypeConst.grass) {
+            if (!grassInfo.hasOwnProperty(tileX)) {
+               grassInfo[tileX] = {};
+            }
+            
+            // @Cleanup: Repeated code
+            const temperature = temperatureMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            const humidity = humidityMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            grassInfo[tileX][tileY] = {
+               temperature: temperature,
+               humidity: humidity
+            };
+         }
       }
    }
 
@@ -511,7 +547,8 @@ function generateTerrain(): TerrainGenerationInfo {
       riverSteppingStones: riverSteppingStones,
       riverFlowDirections: riverFlowDirections,
       edgeTiles: edgeTiles,
-      edgeTileRiverFlowDirections: edgeTileRiverFlowDirections
+      edgeTileRiverFlowDirections: edgeTileRiverFlowDirections,
+      grassInfo: grassInfo
    };
 }
 

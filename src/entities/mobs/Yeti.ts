@@ -181,8 +181,8 @@ class Yeti extends Mob {
 
       // Regular chase AI
       this.addAI(new ChaseAI(this, {
-         acceleration: 400,
-         terminalVelocity: 300,
+         acceleration: 375,
+         terminalVelocity: 250,
          entityIsChased: (entity: Entity) => {
             // Don't chase ice spikes or snowballs or frozen yetis who aren't attacking the yeti
             if (entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball || (entity.type === EntityTypeConst.frozen_yeti && !this.attackingEntities.hasOwnProperty(entity.id))) {

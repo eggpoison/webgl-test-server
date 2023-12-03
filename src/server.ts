@@ -454,6 +454,7 @@ class GameServer {
                riverFlowDirections: Board.getRiverFlowDirections(),
                edgeTiles: edgeTileData,
                edgeTileRiverFlowDirections: Board.edgeTileRiverFlowDirections,
+               grassInfo: Board.grassInfo,
                entityDataArray: bundleEntityDataArray(visibleEntities),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),

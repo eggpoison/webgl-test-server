@@ -1,4 +1,4 @@
-import { BiomeName, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
+import { BiomeName, GrassTileInfo, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -61,6 +61,8 @@ abstract class Board {
    public static edgeTiles = new Array<Tile>();
    public static edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
 
+   public static grassInfo: Record<number, Record<number, GrassTileInfo>>;
+
    public static reset(): void {
       this.gameObjects = [];
       this.entities = {};
@@ -78,6 +80,7 @@ abstract class Board {
       this.riverSteppingStones = generationInfo.riverSteppingStones;
       this.edgeTiles = generationInfo.edgeTiles;
       this.edgeTileRiverFlowDirections = generationInfo.edgeTileRiverFlowDirections;
+      this.grassInfo = generationInfo.grassInfo;
 
       this.tileUpdateCoordinates = new Set<number>();
 
@@ -379,10 +382,7 @@ abstract class Board {
    }
 
    public static addDroppedItemToJoinBuffer(droppedItem: DroppedItem): void {
-      const numDroppedItems = Object.keys(this.droppedItems).length + this.droppedItemJoinBuffer.length;
-      if (numDroppedItems < 500) {
-         this.droppedItemJoinBuffer.push(droppedItem);
-      }
+      this.droppedItemJoinBuffer.push(droppedItem);
    }
 
    public static addProjectileToJoinBuffer(projectile: Projectile): void {
