@@ -78,28 +78,28 @@ const getTileDist = (biomeNames: Array<Array<BiomeName>>, tileX: number, tileY: 
    for (let dist = 1; dist <= MAX_SEARCH_DIST; dist++) {
       for (let i = 0; i <= dist; i++) {
          // Top right
-         if (tileX + i >= 0 && tileX + i < SETTINGS.BOARD_DIMENSIONS && tileY - dist + i >= 0 && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS) {
+         if (tileX + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
             const topRightBiome = biomeNames[tileX + i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE];
             if (topRightBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Bottom right
-         if (tileX + dist - i >= 0 && tileX + dist - i < SETTINGS.BOARD_DIMENSIONS && tileY + i >= 0 && tileY + i < SETTINGS.BOARD_DIMENSIONS) {
+         if (tileX + dist - i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX + dist - i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
             const bottomRightBiome = biomeNames[tileX + dist - i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + i + SETTINGS.EDGE_GENERATION_DISTANCE];
             if (bottomRightBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Bottom left
-         if (tileX - dist + i >= 0 && tileX - dist + i < SETTINGS.BOARD_DIMENSIONS && tileY + i >= 0 && tileY + i < SETTINGS.BOARD_DIMENSIONS) {
+         if (tileX - dist + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX - dist + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
             const bottomLeftBiome = biomeNames[tileX - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + i + SETTINGS.EDGE_GENERATION_DISTANCE];
             if (bottomLeftBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Top left
-         if (tileX - i >= 0 && tileX - i < SETTINGS.BOARD_DIMENSIONS && tileY - dist + i >= 0 && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS) {
+         if (tileX - i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX - i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
             const topLeftBiome = biomeNames[tileX - i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE];
             if (topLeftBiome !== tileBiome) {
                return dist - 1;
