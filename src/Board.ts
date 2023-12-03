@@ -58,6 +58,7 @@ abstract class Board {
 
    private static tribes = new Array<Tribe>();
 
+   // @Incomplete @Bug: These shouldn't be tiles but instead serverdata, so that they aren't counted in the census
    public static edgeTiles = new Array<Tile>();
    public static edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
 

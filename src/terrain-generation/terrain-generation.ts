@@ -2,29 +2,14 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./terrain-generation-info";
 import Tile from "../Tile";
-import { BiomeName, GrassTileInfo, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, TileInfoConst, TileTypeConst, WaterRockData, lerp, randInt, smoothstep } from "webgl-test-shared";
-import { WaterTileGenerationInfo, generateRiverTiles } from "./river-generation";
-import Board from "../Board";
+import { BiomeName, GrassTileInfo, RiverSteppingStoneData, TileInfoConst, TileType, TileTypeConst, WaterRockData, randInt, smoothstep } from "webgl-test-shared";
+import { WaterTileGenerationInfo, generateRiverFeatures, generateRiverTiles } from "./river-generation";
 import SRandom from "../SRandom";
 import OPTIONS from "../options";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
 const HUMIDITY_NOISE_SCALE = 30;
-
-const ADJACENT_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> = [
-   [1, 0],
-   [0, -1],
-   [0, 1],
-   [-1, 0]
-];
-
-/** Minimum distance between crossings */
-const MIN_CROSSING_DISTANCE = 325;
-const RIVER_CROSSING_WIDTH = 100;
-const RIVER_CROSSING_WATER_ROCK_WIDTH = 150;
-const NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER = 25;
-const RIVER_STEPPING_STONE_SPACING = -5;
 
 const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height: number, temperature: number, humidity: number): boolean => {
    // Height
@@ -83,39 +68,40 @@ const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): 
    throw new Error(`Couldn't find a valid tile info! Biome: ${biomeName}`);
 }
 
-const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfoConst>>>, tileX: number, tileY: number): number => {
+const getTileDist = (biomeNames: Array<Array<BiomeName>>, tileX: number, tileY: number): number => {
    /** The maximum distance that the algorithm will search for */
    const MAX_SEARCH_DIST = 10;
 
-   const tileBiome = tileInfoArray[tileX][tileY].biomeName;
+   // @Incomplete
+   const tileBiome = biomeNames[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
 
    for (let dist = 1; dist <= MAX_SEARCH_DIST; dist++) {
       for (let i = 0; i <= dist; i++) {
          // Top right
          if (tileX + i >= 0 && tileX + i < SETTINGS.BOARD_DIMENSIONS && tileY - dist + i >= 0 && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS) {
-            const tile = tileInfoArray[tileX + i][tileY - dist + i];
-            if (tile.biomeName !== tileBiome) {
+            const topRightBiome = biomeNames[tileX + i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+            if (topRightBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Bottom right
          if (tileX + dist - i >= 0 && tileX + dist - i < SETTINGS.BOARD_DIMENSIONS && tileY + i >= 0 && tileY + i < SETTINGS.BOARD_DIMENSIONS) {
-            const tile = tileInfoArray[tileX + dist - i][tileY + i];
-            if (tile.biomeName !== tileBiome) {
+            const bottomRightBiome = biomeNames[tileX + dist - i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+            if (bottomRightBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Bottom left
          if (tileX - dist + i >= 0 && tileX - dist + i < SETTINGS.BOARD_DIMENSIONS && tileY + i >= 0 && tileY + i < SETTINGS.BOARD_DIMENSIONS) {
-            const tile = tileInfoArray[tileX - dist + i][tileY + i];
-            if (tile.biomeName !== tileBiome) {
+            const bottomLeftBiome = biomeNames[tileX - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+            if (bottomLeftBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Top left
          if (tileX - i >= 0 && tileX - i < SETTINGS.BOARD_DIMENSIONS && tileY - dist + i >= 0 && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS) {
-            const tile = tileInfoArray[tileX - i][tileY - dist + i];
-            if (tile.biomeName !== tileBiome) {
+            const topLeftBiome = biomeNames[tileX - i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+            if (topLeftBiome !== tileBiome) {
                return dist - 1;
             }
          }
@@ -126,120 +112,18 @@ const getTileDist = (tileInfoArray: Array<Array<Partial<TileInfoConst>>>, tileX:
 }
 
 /** Generate the tile array's tile types based on their biomes */
-export function generateTileInfo(tileInfoArray: Array<Array<Partial<TileInfoConst>>>): void {
-   for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-      for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-         const tileInfo = tileInfoArray[x][y];
-         const dist = getTileDist(tileInfoArray, x, y);
+export function generateTileInfo(biomeNames: Array<Array<BiomeName>>, tileTypeArray: Array<Array<TileTypeConst>>, tileIsWallArray: Array<Array<boolean>>): void {
+   for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
+      for (let tileY = -SETTINGS.EDGE_GENERATION_DISTANCE; tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileY++) {
+         const dist = getTileDist(biomeNames, tileX, tileY);
 
-         Object.assign(tileInfo, getTileInfo(tileInfo.biomeName!, dist, x, y));
+         const biomeName = biomeNames[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         // @Speed: Garbage collection
+         const tileInfo = getTileInfo(biomeName, dist, tileX, tileY);
+         tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = tileInfo.type;
+         tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = tileInfo.isWall;
       }
    }
-}
-
-const tileIsWater = (tileX: number, tileY: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
-   for (const tile of riverTiles) {
-      if (tile.tileX === tileX && tile.tileY === tileY) {
-         return true;
-      }
-   }
-   return false;
-}
-
-const tileIsAdjacentToLand = (tileX: number, tileY: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
-   for (const offset of ADJACENT_TILE_OFFSETS) {
-      const currentTileX = tileX + offset[0];
-      const currentTileY = tileY + offset[1];
-      if (Board.tileIsInBoard(currentTileX, currentTileY)) {
-         if (!tileIsWater(currentTileX, currentTileY, riverTiles)) {
-            return true;
-         }
-      }
-   }
-
-   return false;
-}
-
-const tileAtOffsetIsWater = (startTileX: number, startTileY: number, direction: number, riverTiles: ReadonlyArray<WaterTileGenerationInfo>): boolean => {
-   const tileX = Math.floor(startTileX + 0.5 + Math.sin(direction));
-   const tileY = Math.floor(startTileY + 0.5 + Math.cos(direction));
-   return tileIsWater(tileX, tileY, riverTiles);
-}
-
-interface RiverCrossingInfo {
-   readonly startTileX: number;
-   readonly startTileY: number;
-   readonly endTileX: number;
-   readonly endTileY: number;
-   readonly direction: number;
-}
-
-const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGenerationInfo>): ReadonlyArray<RiverCrossingInfo> => {
-   const riverCrossings = new Array<RiverCrossingInfo>();
-   
-   for (const startTile of riverTiles) {
-      if (!tileIsAdjacentToLand(startTile.tileX, startTile.tileY, riverTiles)) {
-         continue;
-      }
-
-      const sign = SRandom.next() < 0.5 ? 1 : -1;
-      const directionOffset = SRandom.randFloat(0, Math.PI/10) * sign;
-
-      let crossingDirection: number | undefined;
-      const clockwiseIsWater = tileAtOffsetIsWater(startTile.tileX, startTile.tileY, startTile.flowDirection + directionOffset + Math.PI/2, riverTiles);
-      const anticlockwiseIsWater = tileAtOffsetIsWater(startTile.tileX, startTile.tileY, startTile.flowDirection + directionOffset - Math.PI/2, riverTiles);
-
-      // Only generate a river if only one side of the river is water
-      if ((!clockwiseIsWater && !anticlockwiseIsWater) || (clockwiseIsWater && anticlockwiseIsWater)) {
-         continue;
-      }
-      if (clockwiseIsWater) {
-         crossingDirection = startTile.flowDirection + directionOffset + Math.PI/2;
-      } else {
-         crossingDirection = startTile.flowDirection + directionOffset - Math.PI/2;
-      }
-
-      // Calculate distance of crossing
-      let currentTileX = startTile.tileX + 0.5;
-      let currentTileY = startTile.tileY + 0.5;
-      let endTileIsValid = true;
-      while (true) {
-         const newTileX = currentTileX + Math.sin(crossingDirection);
-         const newTileY = currentTileY + Math.cos(crossingDirection);
-
-         if (!Board.tileIsInBoard(newTileX - 0.5, newTileY - 0.5)) {
-            endTileIsValid = false;
-            break;
-         }
-
-         if (!tileIsWater(Math.floor(newTileX - 0.5), Math.floor(newTileY - 0.5), riverTiles)) {
-            break;
-         }
-
-         currentTileX = newTileX;
-         currentTileY = newTileY;
-      }
-      if (!endTileIsValid) {
-         continue;
-      }
-
-      const crossingDistance = Math.sqrt(Math.pow(startTile.tileX + 0.5 - currentTileX, 2) + Math.pow(startTile.tileY + 0.5 - currentTileY, 2));
-      
-      // Don't try to make a crossing if the crossing would be too short or too long
-      if (crossingDistance < 2.5 || crossingDistance > 5) {
-         continue;
-      }
-
-      riverCrossings.push({
-         startTileX: startTile.tileX,
-         startTileY: startTile.tileY,
-         endTileX: Math.floor(currentTileX - 0.5),
-         endTileY: Math.floor(currentTileY - 0.5),
-         direction: crossingDirection
-      });
-   }
-
-   return riverCrossings;
 }
 
 export interface TerrainGenerationInfo {
@@ -260,19 +144,17 @@ function generateTerrain(): TerrainGenerationInfo {
       SRandom.seed(randInt(0, 9999999999));
    }
 
-   // Initialise the tile info array
-   const tileInfoArray = new Array<Array<Partial<TileInfoConst>>>();
-   for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-      tileInfoArray.push(new Array<TileInfoConst>(SETTINGS.BOARD_DIMENSIONS));
+   const biomeNameArray = new Array<Array<BiomeName>>();
+   const tileTypeArray = new Array<Array<TileTypeConst>>();
+   const tileIsWallArray = new Array<Array<boolean>>();
 
-      for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
-         tileInfoArray[x][y] = {};
-      }
+   const setBiomeName = (tileX: number, tileY: number, biomeName: BiomeName): void => {
+      biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = biomeName;
+   } 
+
+   const tileIsInBoard = (tileX: number, tileY: number): boolean => {
+      return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
    }
-   
-   const edgeTiles = new Array<Tile>();
-
-   const grassInfo: Record<number, Record<number, GrassTileInfo>> = {};
 
    // Generate the noise
    const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
@@ -291,32 +173,20 @@ function generateTerrain(): TerrainGenerationInfo {
       }
    }
    
-   // Generate biome info
-   for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
-      // Fill the tile array using the noise
-      for (let tileY = -SETTINGS.EDGE_GENERATION_DISTANCE; tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileY++) {
-         const height = heightMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-         const temperature = temperatureMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-         const humidity = humidityMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+   // Generate biome info using the noise
+   for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
+      biomeNameArray.push([]);
+      tileTypeArray.push([]);
+      tileIsWallArray.push([]);
+      for (let j = 0; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; j++) {
+         const height = heightMap[i][j];
+         const temperature = temperatureMap[i][j];
+         const humidity = humidityMap[i][j];
 
          const biomeName = getBiome(height, temperature, humidity);
-
-         if (tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS) {
-            tileInfoArray[tileX][tileY].biomeName = biomeName;
-         } else {
-            const tileInfo = getTileInfo(biomeName, 0, tileX, tileY);
-            edgeTiles.push(new Tile(tileX, tileY, tileInfo.type, biomeName, tileInfo.isWall, 0));
-            
-            if (tileInfo.type === TileTypeConst.grass) {
-               if (!grassInfo.hasOwnProperty(tileX)) {
-                  grassInfo[tileX] = {};
-               }
-               grassInfo[tileX][tileY] = {
-                  temperature: temperature,
-                  humidity: humidity
-               };
-            }
-         }
+         biomeNameArray[i].push(biomeName);
+         tileTypeArray[i].push(0);
+         tileIsWallArray[i].push(false);
       }
    }
 
@@ -328,205 +198,85 @@ function generateTerrain(): TerrainGenerationInfo {
       riverTiles = [];
    }
 
+   const riverFlowDirections: Record<number, Record<number, number>> = {};
+   for (const tileInfo of riverTiles) {
+      // Override biome names for river tiles
+      setBiomeName(tileInfo.tileX, tileInfo.tileY, "river");
+
+      // Set river flow directions
+      if (tileIsInBoard(tileInfo.tileX, tileInfo.tileY)) {
+         if (!riverFlowDirections.hasOwnProperty(tileInfo.tileX)) {
+            riverFlowDirections[tileInfo.tileX] = {};
+         }
+         riverFlowDirections[tileInfo.tileX][tileInfo.tileY] = tileInfo.flowDirection;
+      }
+   }
+
+   // @Cleanup: This is only done so that we only generate features for in-board rivers,
+   // but once we want to generate features for edge rivers, this won't be necessary
    // Categorise the water tiles
    const inBoardRiverTiles = new Array<WaterTileGenerationInfo>();
-   const edgeRiverTiles = new Array<WaterTileGenerationInfo>();
    for (const riverTileInfo of riverTiles) {
-      if (riverTileInfo.tileX >= 0 && riverTileInfo.tileX < SETTINGS.BOARD_DIMENSIONS && riverTileInfo.tileY >= 0 && riverTileInfo.tileY < SETTINGS.BOARD_DIMENSIONS) {
+      if (tileIsInBoard(riverTileInfo.tileX, riverTileInfo.tileY)) {
          inBoardRiverTiles.push(riverTileInfo);
-      } else if (riverTileInfo.tileX >= -SETTINGS.EDGE_GENERATION_DISTANCE && riverTileInfo.tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && riverTileInfo.tileY >= -SETTINGS.EDGE_GENERATION_DISTANCE && riverTileInfo.tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
-         edgeRiverTiles.push(riverTileInfo);
       }
    }
 
-   const riverFlowDirections: Record<number, Record<number, number>> = {};
-
-   for (const riverTileInfo of inBoardRiverTiles) {
-      tileInfoArray[riverTileInfo.tileX][riverTileInfo.tileY].biomeName = "river";
-
-      if (!riverFlowDirections.hasOwnProperty(riverTileInfo.tileX)) {
-         riverFlowDirections[riverTileInfo.tileX] = {};
-      }
-      riverFlowDirections[riverTileInfo.tileX][riverTileInfo.tileY] = riverTileInfo.flowDirection;
-   }
-
-   // Set edge flow directions
+   generateTileInfo(biomeNameArray, tileTypeArray, tileIsWallArray);
 
    const waterRocks = new Array<WaterRockData>();
-
-   for (const tile of inBoardRiverTiles) {
-      if (SRandom.next() < 0.075) {
-         const x = (tile.tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
-         const y = (tile.tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
-         waterRocks.push({
-            position: [x, y],
-            rotation: 2 * Math.PI * SRandom.next(),
-            size: SRandom.randInt(0, 1),
-            opacity: SRandom.next()
-         });
-         if (x < 0 || y < 0) {
-            throw new Error();
-         }
-      }
-   }
-
-   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
-   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
-   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
-   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
-   // @Cleanup: All the following river-related stuff should be done in river-generation.ts
-
-   // Calculate potential river crossing positions
-   const potentialRiverCrossings = calculateRiverCrossingPositions(inBoardRiverTiles);
-
-   const riverCrossings = new Array<RiverCrossingInfo>();
-   mainLoop:
-   for (const crossingInfo of potentialRiverCrossings) {
-      if (SRandom.next() >= 0.15) {
-         continue;
-      }
-      
-      // Make sure the crossing isn't too close to another crossing
-      for (const otherCrossing of riverCrossings) {
-         const dist = Math.sqrt(Math.pow(crossingInfo.startTileX - otherCrossing.startTileX, 2) + Math.pow(crossingInfo.startTileY - otherCrossing.startTileY, 2));
-         if (dist < MIN_CROSSING_DISTANCE / SETTINGS.TILE_SIZE) {
-            continue mainLoop;
-         }
-      }
-
-      riverCrossings.push(crossingInfo);
-   }
-
    const riverSteppingStones = new Array<RiverSteppingStoneData>();
-
-   // Generate features for the crossings
-   let currentCrossingGroupID = 0;
-   for (const crossing of riverCrossings) {
-      const minX = (crossing.startTileX + 0.5) * SETTINGS.TILE_SIZE;
-      const maxX = (crossing.endTileX + 0.5) * SETTINGS.TILE_SIZE;
-      const minY = (crossing.startTileY + 0.5) * SETTINGS.TILE_SIZE;
-      const maxY = (crossing.endTileY + 0.5) * SETTINGS.TILE_SIZE;
-
-      const localCrossingStones = new Array<RiverSteppingStoneData>();
-
-      stoneCreationLoop:
-      for (let i = 0; i < NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER; i++) {
-         const dist = i / (NUM_STONE_SPAWN_ATTEMPTS_PER_RIVER - 1);
-         
-         // Start the stone between the start and end of the crossing
-         let x = lerp(minX, maxX, dist);
-         let y = lerp(minY, maxY, dist);
-
-         const offsetMultiplier = SRandom.randFloat(-1, 1);
-         x += RIVER_CROSSING_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
-         y += RIVER_CROSSING_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
-
-         // Make sure the stepping stone would be in the board
-         if (!Board.positionIsInBoard(x, y)) {
-            continue;
-         }
-
-         // Only spawn stepping stones on water
-         const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
-         const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
-         if (!tileIsWater(tileX, tileY, inBoardRiverTiles)) {
-            continue;
-         }
-
-         const stoneSize: RiverSteppingStoneSize = SRandom.randInt(0, 2);
-         const radius = RIVER_STEPPING_STONE_SIZES[stoneSize]/2;
-
-         // Don't overlap with existing stones in the crossing
-         for (const stone of localCrossingStones) {
-            const dist = Math.sqrt(Math.pow(x - stone.positionX, 2) + Math.pow(y - stone.positionY, 2));
-            if (dist - RIVER_STEPPING_STONE_SIZES[stone.size]/2 - radius < RIVER_STEPPING_STONE_SPACING) {
-               continue stoneCreationLoop;
-            }
-         }
-
-         const data: RiverSteppingStoneData = {
-            positionX: x,
-            positionY: y,
-            size: stoneSize,
-            rotation: 2 * Math.PI * SRandom.next(),
-            groupID: currentCrossingGroupID
-         };
-         localCrossingStones.push(data);
-         riverSteppingStones.push(data);
-      }
-
-      // Create water rocks
-      const crossingDist = Math.sqrt(Math.pow(minX - maxX, 2) + Math.pow(minY - maxY, 2));
-      const numWaterRocks = Math.floor(crossingDist / 6);
-      for (let i = 0; i < numWaterRocks; i++) {
-         const dist = SRandom.next();
-         
-         let x = lerp(minX, maxX, dist);
-         let y = lerp(minY, maxY, dist);
-
-         const offsetMultiplier = SRandom.randFloat(-1, 1);
-         x += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
-         y += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
-
-         if (!Board.positionIsInBoard(x, y)) {
-            continue;
-         }
-
-         // Only generate water rocks in water
-         const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
-         const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
-         if (!tileIsWater(tileX, tileY, inBoardRiverTiles)) {
-            continue;
-         }
-
-         waterRocks.push({
-            position: [x, y],
-            size: SRandom.randInt(0, 1),
-            rotation: 2 * Math.PI * SRandom.next(),
-            opacity: SRandom.next()
-         });
-      }
-
-      currentCrossingGroupID++;
-   }
-
-   generateTileInfo(tileInfoArray);
+   generateRiverFeatures(inBoardRiverTiles, waterRocks, riverSteppingStones);
 
    // Make an array of tiles from the tile info array
+   // The outer loop has to be tileY so that the tiles array is filled properly
    const tiles = new Array<Tile>();
-   for (let tileY = 0; tileY < SETTINGS.BOARD_DIMENSIONS; tileY++) {
-      for (let tileX = 0; tileX < SETTINGS.BOARD_DIMENSIONS; tileX++) {
-         let riverFlowDirection: number;
-         if (riverFlowDirections.hasOwnProperty(tileX) && riverFlowDirections[tileX].hasOwnProperty(tileY)) {
-            let desired = riverFlowDirections[tileX][tileY];
-            if (desired >= 2 * Math.PI) {
-               desired -= 2 * Math.PI;
-            } else if (desired < 0) {
-               desired += 2 * Math.PI;
-            }
+   const edgeTiles = new Array<Tile>();
+   const grassInfo: Record<number, Record<number, GrassTileInfo>> = {};
+   for (let tileY = -SETTINGS.EDGE_GENERATION_DISTANCE; tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileY++) {
+      for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
+         const tileType = tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
 
-            for (let i = 0; i < 8; i++) {
-               const angle = i / 4 * Math.PI;
-               if (Math.abs(angle - desired) < 0.01) {
-                  riverFlowDirection = i;
-                  break;
+         if (tileIsInBoard(tileX, tileY)) {
+            let riverFlowDirection: number; 
+            // @Cleanup: This seems awful
+            if (riverFlowDirections.hasOwnProperty(tileX) && riverFlowDirections[tileX].hasOwnProperty(tileY)) {
+               let desired = riverFlowDirections[tileX][tileY];
+               if (desired >= 2 * Math.PI) {
+                  desired -= 2 * Math.PI;
+               } else if (desired < 0) {
+                  desired += 2 * Math.PI;
                }
+   
+               for (let i = 0; i < 8; i++) {
+                  const angle = i / 4 * Math.PI;
+                  if (Math.abs(angle - desired) < 0.01) {
+                     riverFlowDirection = i;
+                     break;
+                  }
+               }
+               if (typeof riverFlowDirection! === "undefined") {
+                  console.log(riverFlowDirections[tileX][tileY]);
+                  throw new Error();
+               }
+            } else {
+               riverFlowDirection = 0;
             }
-            if (typeof riverFlowDirection! === "undefined") {
-               console.log(riverFlowDirections[tileX][tileY]);
-               throw new Error();
-            }
+            
+            // Create the tile
+            const biomeName = biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            const isWall = tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            const tile = new Tile(tileX, tileY, tileType, biomeName, isWall, riverFlowDirection);
+            tiles.push(tile);
          } else {
-            riverFlowDirection = 0;
+            // Create the tile
+            const biomeName = biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            const isWall = tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            const tile = new Tile(tileX, tileY, tileType, biomeName, isWall, 0);
+            edgeTiles.push(tile);
          }
          
-         // Create the tile
-         const tileInfo = tileInfoArray[tileX][tileY] as TileInfoConst;
-         const isWall = OPTIONS.generateWalls ? tileInfo.isWall : false;
-         const tile = new Tile(tileX, tileY, tileInfo.type, tileInfo.biomeName, isWall, riverFlowDirection);
-         tiles.push(tile);
-            
-         if (tileInfo.type === TileTypeConst.grass) {
+         if (tileType === TileTypeConst.grass) {
             if (!grassInfo.hasOwnProperty(tileX)) {
                grassInfo[tileX] = {};
             }
