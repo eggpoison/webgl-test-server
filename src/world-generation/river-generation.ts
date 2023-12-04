@@ -254,7 +254,7 @@ const calculateRiverCrossingPositions = (riverTiles: ReadonlyArray<WaterTileGene
    return riverCrossings;
 }
 
-export function generateRiverFeatures(boardRiverTiles: ReadonlyArray<WaterTileGenerationInfo>, waterRocks: Array<WaterRockData>, riverSteppingStones: Array<RiverSteppingStoneData>): void {
+export function generateRiverFeatures(riverTiles: ReadonlyArray<WaterTileGenerationInfo>, waterRocks: Array<WaterRockData>, riverSteppingStones: Array<RiverSteppingStoneData>, edgeRiverSteppingStones: Array<RiverSteppingStoneData>): void {
    const MIN_CROSSING_DISTANCE = 325;
    /** Minimum distance between crossings */
    const RIVER_CROSSING_WIDTH = 100;
@@ -263,7 +263,7 @@ export function generateRiverFeatures(boardRiverTiles: ReadonlyArray<WaterTileGe
    const RIVER_STEPPING_STONE_SPACING = -5;
 
    // Generate random water rocks throughout all river tiles
-   for (const tile of boardRiverTiles) {
+   for (const tile of riverTiles) {
       if (SRandom.next() < 0.075) {
          const x = (tile.tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
          const y = (tile.tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
@@ -273,14 +273,11 @@ export function generateRiverFeatures(boardRiverTiles: ReadonlyArray<WaterTileGe
             size: SRandom.randInt(0, 1),
             opacity: SRandom.next()
          });
-         if (x < 0 || y < 0) {
-            throw new Error();
-         }
       }
    }
    
    // Calculate potential river crossing positions
-   const potentialRiverCrossings = calculateRiverCrossingPositions(boardRiverTiles);
+   const potentialRiverCrossings = calculateRiverCrossingPositions(riverTiles);
 
    const riverCrossings = new Array<RiverCrossingInfo>();
    mainLoop:
@@ -322,15 +319,15 @@ export function generateRiverFeatures(boardRiverTiles: ReadonlyArray<WaterTileGe
          x += RIVER_CROSSING_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
          y += RIVER_CROSSING_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
-         // Make sure the stepping stone would be in the board
-         if (!Board.positionIsInBoard(x, y)) {
+         // Don't create stepping stones which would be outside the world
+         if (x < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || x >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE) {
             continue;
          }
 
          // Only spawn stepping stones on water
          const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
          const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
-         if (!tileIsWater(tileX, tileY, boardRiverTiles)) {
+         if (!tileIsWater(tileX, tileY, riverTiles)) {
             continue;
          }
 
@@ -353,7 +350,12 @@ export function generateRiverFeatures(boardRiverTiles: ReadonlyArray<WaterTileGe
             groupID: currentCrossingGroupID
          };
          localCrossingStones.push(data);
-         riverSteppingStones.push(data);
+
+         if (Board.positionIsInBoard(x, y)) {
+            riverSteppingStones.push(data);
+         } else {
+            edgeRiverSteppingStones.push(data);
+         }
       }
 
       // Create water rocks
@@ -369,14 +371,15 @@ export function generateRiverFeatures(boardRiverTiles: ReadonlyArray<WaterTileGe
          x += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.sin(crossing.direction + Math.PI/2) * offsetMultiplier;
          y += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
-         if (!Board.positionIsInBoard(x, y)) {
+         // Don't create water rocks outside the world
+         if (x < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || x >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE) {
             continue;
          }
 
          // Only generate water rocks in water
          const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
          const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
-         if (!tileIsWater(tileX, tileY, boardRiverTiles)) {
+         if (!tileIsWater(tileX, tileY, riverTiles)) {
             continue;
          }
 

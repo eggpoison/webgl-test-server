@@ -8,7 +8,7 @@ class Campfire extends HeatingEntity {
    
    public static readonly SIZE = 104;
 
-   private static readonly LIFETIME_SECONDS = 15;
+   private static readonly LIFETIME_SECONDS = 30;
 
    public mass = 2;
 

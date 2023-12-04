@@ -515,6 +515,11 @@ class Tribesman extends TribeMember {
             bestToolSlot = this.getBestAxeSlot();
             break;
          }
+         case null: {
+            // In case the entity has no best tool, just stick with the already selected slot
+            bestToolSlot = this.selectedItemSlot;
+            break;
+         }
       }
 
       if (bestToolSlot !== null) {

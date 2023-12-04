@@ -133,7 +133,8 @@ export interface TerrainGenerationInfo {
    readonly waterRocks: ReadonlyArray<WaterRockData>;
    readonly riverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
    readonly edgeTiles: Array<Tile>;
-   readonly edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
+   readonly edgeRiverFlowDirections: Record<number, Record<number, number>>;
+   readonly edgeRiverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
    readonly grassInfo: Record<number, Record<number, GrassTileInfo>>;
    readonly decorations: ReadonlyArray<DecorationInfo>;
 }
@@ -201,6 +202,7 @@ function generateTerrain(): TerrainGenerationInfo {
    }
 
    const riverFlowDirections: Record<number, Record<number, number>> = {};
+   const edgeRiverFlowDirections: Record<number, Record<number, number>> = {};
    for (const tileInfo of riverTiles) {
       // Override biome names for river tiles
       setBiomeName(tileInfo.tileX, tileInfo.tileY, "river");
@@ -211,16 +213,11 @@ function generateTerrain(): TerrainGenerationInfo {
             riverFlowDirections[tileInfo.tileX] = {};
          }
          riverFlowDirections[tileInfo.tileX][tileInfo.tileY] = tileInfo.flowDirection;
-      }
-   }
-
-   // @Cleanup: This is only done so that we only generate features for in-board rivers,
-   // but once we want to generate features for edge rivers, this won't be necessary
-   // Categorise the water tiles
-   const inBoardRiverTiles = new Array<WaterTileGenerationInfo>();
-   for (const riverTileInfo of riverTiles) {
-      if (tileIsInBoard(riverTileInfo.tileX, riverTileInfo.tileY)) {
-         inBoardRiverTiles.push(riverTileInfo);
+      } else {
+         if (!edgeRiverFlowDirections.hasOwnProperty(tileInfo.tileX)) {
+            edgeRiverFlowDirections[tileInfo.tileX] = {};
+         }
+         edgeRiverFlowDirections[tileInfo.tileX][tileInfo.tileY] = tileInfo.flowDirection;
       }
    }
 
@@ -228,7 +225,8 @@ function generateTerrain(): TerrainGenerationInfo {
 
    const waterRocks = new Array<WaterRockData>();
    const riverSteppingStones = new Array<RiverSteppingStoneData>();
-   generateRiverFeatures(inBoardRiverTiles, waterRocks, riverSteppingStones);
+   const edgeRiverSteppingStones = new Array<RiverSteppingStoneData>();
+   generateRiverFeatures(riverTiles, waterRocks, riverSteppingStones, edgeRiverSteppingStones);
 
    // Make an array of tiles from the tile info array
    // The outer loop has to be tileY so that the tiles array is filled properly
@@ -239,42 +237,38 @@ function generateTerrain(): TerrainGenerationInfo {
       for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
          const tileType = tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
 
-         if (tileIsInBoard(tileX, tileY)) {
-            let riverFlowDirection: number; 
-            // @Cleanup: This seems awful
-            if (riverFlowDirections.hasOwnProperty(tileX) && riverFlowDirections[tileX].hasOwnProperty(tileY)) {
-               let desired = riverFlowDirections[tileX][tileY];
-               if (desired >= 2 * Math.PI) {
-                  desired -= 2 * Math.PI;
-               } else if (desired < 0) {
-                  desired += 2 * Math.PI;
-               }
-   
-               for (let i = 0; i < 8; i++) {
-                  const angle = i / 4 * Math.PI;
-                  if (Math.abs(angle - desired) < 0.01) {
-                     riverFlowDirection = i;
-                     break;
-                  }
-               }
-               if (typeof riverFlowDirection! === "undefined") {
-                  console.log(riverFlowDirections[tileX][tileY]);
-                  throw new Error();
-               }
-            } else {
-               riverFlowDirection = 0;
+         let riverFlowDirection: number; 
+         // @Cleanup: This seems awful
+         if (riverFlowDirections.hasOwnProperty(tileX) && riverFlowDirections[tileX].hasOwnProperty(tileY)) {
+            let desired = riverFlowDirections[tileX][tileY];
+            if (desired >= 2 * Math.PI) {
+               desired -= 2 * Math.PI;
+            } else if (desired < 0) {
+               desired += 2 * Math.PI;
             }
-            
-            // Create the tile
-            const biomeName = biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-            const isWall = tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-            const tile = new Tile(tileX, tileY, tileType, biomeName, isWall, riverFlowDirection);
+
+            for (let i = 0; i < 8; i++) {
+               const angle = i / 4 * Math.PI;
+               if (Math.abs(angle - desired) < 0.01) {
+                  riverFlowDirection = i;
+                  break;
+               }
+            }
+            if (typeof riverFlowDirection! === "undefined") {
+               console.log(riverFlowDirections[tileX][tileY]);
+               throw new Error();
+            }
+         } else {
+            riverFlowDirection = 0;
+         }
+         
+         // Create the tile
+         const biomeName = biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         const isWall = tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         const tile = new Tile(tileX, tileY, tileType, biomeName, isWall, riverFlowDirection);
+         if (tileIsInBoard(tileX, tileY)) {
             tiles.push(tile);
          } else {
-            // Create the tile
-            const biomeName = biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-            const isWall = tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-            const tile = new Tile(tileX, tileY, tileType, biomeName, isWall, 0);
             edgeTiles.push(tile);
          }
          
@@ -294,15 +288,14 @@ function generateTerrain(): TerrainGenerationInfo {
       }
    }
 
-   const edgeTileRiverFlowDirections: Record<number, Record<number, number>> = {};
-
    return {
       tiles: tiles,
       waterRocks: waterRocks,
       riverSteppingStones: riverSteppingStones,
       riverFlowDirections: riverFlowDirections,
       edgeTiles: edgeTiles,
-      edgeTileRiverFlowDirections: edgeTileRiverFlowDirections,
+      edgeRiverFlowDirections: edgeRiverFlowDirections,
+      edgeRiverSteppingStones: edgeRiverSteppingStones,
       grassInfo: grassInfo,
       decorations: generateDecorations(tileTypeArray)
    };

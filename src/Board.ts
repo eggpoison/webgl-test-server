@@ -11,7 +11,7 @@ import Tribe from "./Tribe";
 import GameObject from "./GameObject";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
-import generateTerrain from "./terrain-generation/terrain-generation";
+import generateTerrain from "./world-generation/terrain-generation";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -60,7 +60,8 @@ abstract class Board {
 
    // @Incomplete @Bug: These shouldn't be tiles but instead serverdata, so that they aren't counted in the census
    public static edgeTiles = new Array<Tile>();
-   public static edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
+   public static edgeRiverFlowDirections: Record<number, Record<number, number>>;
+   public static edgeRiverSteppingStones: ReadonlyArray<RiverSteppingStoneData>;
 
    public static grassInfo: Record<number, Record<number, GrassTileInfo>>;
 
@@ -82,7 +83,8 @@ abstract class Board {
       this.waterRocks = generationInfo.waterRocks;
       this.riverSteppingStones = generationInfo.riverSteppingStones;
       this.edgeTiles = generationInfo.edgeTiles;
-      this.edgeTileRiverFlowDirections = generationInfo.edgeTileRiverFlowDirections;
+      this.edgeRiverFlowDirections = generationInfo.edgeRiverFlowDirections;
+      this.edgeRiverSteppingStones = generationInfo.edgeRiverSteppingStones;
       this.grassInfo = generationInfo.grassInfo;
       this.decorations = generationInfo.decorations;
 

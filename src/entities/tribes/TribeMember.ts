@@ -28,7 +28,7 @@ export enum AttackToolType {
    axe
 }
 
-export function getEntityAttackToolType(entity: Entity): AttackToolType {
+export function getEntityAttackToolType(entity: Entity): AttackToolType | null {
    // @Cleanup: This shouldn't be hardcoded ideally
    
    if (entity instanceof Mob || entity.hasOwnProperty("tribe") || entity.type === EntityTypeConst.berry_bush || entity.type === EntityTypeConst.cactus || entity.type === EntityTypeConst.snowball) {
@@ -40,7 +40,8 @@ export function getEntityAttackToolType(entity: Entity): AttackToolType {
    if (axeDamageableEntities.includes(entity.type)) {
       return AttackToolType.axe;
    }
-   throw new Error(`Can't find action tool type for entity type '${entity.type}'.`);
+
+   return null;
 }
 
 enum PlaceableItemHitboxType {

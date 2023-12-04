@@ -29,7 +29,12 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
       {
          decorationType: DecorationType.sandstoneRock,
          spawnableTileTypes: [TileTypeConst.sand],
-         spawnChancePerTile: 0.02
+         spawnChancePerTile: 0.01
+      },
+      {
+         decorationType: DecorationType.sandstoneRockBig,
+         spawnableTileTypes: [TileTypeConst.sand],
+         spawnChancePerTile: 0.01
       },
       {
          decorationType: DecorationType.blackRock,
