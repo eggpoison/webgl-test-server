@@ -2,10 +2,11 @@ import { SETTINGS } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./terrain-generation-info";
 import Tile from "../Tile";
-import { BiomeName, GrassTileInfo, RiverSteppingStoneData, TileInfoConst, TileType, TileTypeConst, WaterRockData, randInt, smoothstep } from "webgl-test-shared";
+import { BiomeName, DecorationInfo, GrassTileInfo, RiverSteppingStoneData, TileInfoConst, TileType, TileTypeConst, WaterRockData, randInt, smoothstep } from "webgl-test-shared";
 import { WaterTileGenerationInfo, generateRiverFeatures, generateRiverTiles } from "./river-generation";
 import SRandom from "../SRandom";
 import OPTIONS from "../options";
+import { generateDecorations } from "./decoration-generation";
 
 const HEIGHT_NOISE_SCALE = 50;
 const TEMPERATURE_NOISE_SCALE = 80;
@@ -134,6 +135,7 @@ export interface TerrainGenerationInfo {
    readonly edgeTiles: Array<Tile>;
    readonly edgeTileRiverFlowDirections: Record<number, Record<number, number>>;
    readonly grassInfo: Record<number, Record<number, GrassTileInfo>>;
+   readonly decorations: ReadonlyArray<DecorationInfo>;
 }
 
 function generateTerrain(): TerrainGenerationInfo {
@@ -301,7 +303,8 @@ function generateTerrain(): TerrainGenerationInfo {
       riverFlowDirections: riverFlowDirections,
       edgeTiles: edgeTiles,
       edgeTileRiverFlowDirections: edgeTileRiverFlowDirections,
-      grassInfo: grassInfo
+      grassInfo: grassInfo,
+      decorations: generateDecorations(tileTypeArray)
    };
 }
 

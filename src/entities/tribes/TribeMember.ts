@@ -133,8 +133,8 @@ abstract class TribeMember extends Mob {
 
    private static readonly HOSTILE_MOB_TYPES: ReadonlyArray<EntityTypeConst> = [EntityTypeConst.yeti, EntityTypeConst.frozen_yeti, EntityTypeConst.zombie, EntityTypeConst.slime];
 
-   private static readonly VACUUM_RANGE = 80;
-   private static readonly VACUUM_STRENGTH = 20;
+   private static readonly VACUUM_RANGE = 85;
+   private static readonly VACUUM_STRENGTH = 25;
 
    public readonly tribeType: TribeType;
    public tribe: Tribe | null = null;

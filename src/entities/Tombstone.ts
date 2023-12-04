@@ -105,7 +105,7 @@ class Tombstone extends Entity {
 
    private spawnZombie(): void {
       // Note: tombstone type 0 is the golden tombstone
-      const isGolden = this.tombstoneType === 0 && Math.random() < 0.001;
+      const isGolden = this.tombstoneType === 0 && Math.random() < 0.005;
       
       // Spawn zombie
       // Copy the position to avoid having multiple zombies quantum entangled together

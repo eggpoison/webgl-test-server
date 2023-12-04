@@ -1,4 +1,4 @@
-import { BiomeName, GrassTileInfo, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
+import { BiomeName, DecorationInfo, GrassTileInfo, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
@@ -64,6 +64,8 @@ abstract class Board {
 
    public static grassInfo: Record<number, Record<number, GrassTileInfo>>;
 
+   public static decorations: ReadonlyArray<DecorationInfo>;
+
    public static reset(): void {
       this.gameObjects = [];
       this.entities = {};
@@ -82,6 +84,7 @@ abstract class Board {
       this.edgeTiles = generationInfo.edgeTiles;
       this.edgeTileRiverFlowDirections = generationInfo.edgeTileRiverFlowDirections;
       this.grassInfo = generationInfo.grassInfo;
+      this.decorations = generationInfo.decorations;
 
       this.tileUpdateCoordinates = new Set<number>();
 
