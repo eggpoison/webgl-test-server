@@ -672,6 +672,8 @@ class GameServer {
    }
 
    public registerEntityHit(hitData: HitData): void {
+      // @Incomplete: Consider all chunks the entity is in instead of just the one at its position
+      
       const chunkX = Math.floor(hitData.entityPositionX / SETTINGS.CHUNK_UNITS);
       const chunkY = Math.floor(hitData.entityPositionY / SETTINGS.CHUNK_UNITS);
       for (const playerData of Object.values(this.playerDataRecord)) {

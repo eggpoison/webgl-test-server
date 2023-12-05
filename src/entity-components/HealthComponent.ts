@@ -1,9 +1,8 @@
-import { EntityTypeConst, GameObjectDebugData, HitData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
+import { EntityTypeConst, GameObjectDebugData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
 import Component from "./Component";
 import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";
 import Player from "../entities/tribes/Player";
-import Board from "../Board";
 import { SERVER } from "../server";
 
 class HealthComponent extends Component {
