@@ -1,11 +1,11 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, TribeType, ProjectileType, EntityTypeConst, PlayerCauseOfDeath, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import Player from "./entities/tribes/Player";
 import Entity from "./entities/Entity";
 import DroppedItem from "./items/DroppedItem";
-import { runSpawnAttempt, spawnInitialEntities, spawnPositionIsValid } from "./entity-spawning";
+import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
@@ -16,7 +16,6 @@ import Item from "./items/Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import { resetYetiTerritoryTiles } from "./entities/mobs/Yeti";
-import IceSpikes from "./entities/resources/IceSpikes";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;
@@ -79,7 +78,6 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       type: entity.type as unknown as EntityType,
       clientArgs: entity.getClientArgs(),
       statusEffects: entity.getStatusEffectData(),
-      hitsTaken: healthComponent !== null ? healthComponent.hitsTaken : [],
       amountHealed: healthComponent !== null ? healthComponent.amountHealedThisTick : 0
    };
 }
@@ -214,6 +212,7 @@ interface PlayerData {
    clientIsActive: boolean;
    visibleChunkBounds: VisibleChunkBounds;
    tribe: Tribe | null;
+   hitsTaken: Array<HitData>;
 }
 
 /** Communicates between the server and players */
@@ -392,7 +391,8 @@ class GameServer {
          const playerData: Mutable<Partial<PlayerData>> = {
             socket: socket,
             clientIsActive: true,
-            tribe: null
+            tribe: null,
+            hitsTaken: []
          };
          
          socket.on("initial_player_data", (username: string, visibleChunkBounds: VisibleChunkBounds) => {
@@ -460,6 +460,7 @@ class GameServer {
                entityDataArray: bundleEntityDataArray(visibleEntities),
                droppedItemDataArray: bundleDroppedItemDataArray(playerData.visibleChunkBounds),
                projectileDataArray: bundleProjectileDataArray(playerData.visibleChunkBounds),
+               hitsTaken: [],
                inventory: {
                   hotbar: {
                      itemSlots: {},
@@ -653,6 +654,7 @@ class GameServer {
             droppedItemDataArray: bundleDroppedItemDataArray(extendedVisibleChunkBounds),
             projectileDataArray: bundleProjectileDataArray(extendedVisibleChunkBounds),
             inventory: SERVER.bundlePlayerInventoryData(player),
+            hitsTaken: playerData.hitsTaken,
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
@@ -664,6 +666,18 @@ class GameServer {
 
          // Send the game data to the player
          playerData.socket.emit("game_data_packet", gameDataPacket);
+
+         playerData.hitsTaken = [];
+      }
+   }
+
+   public registerEntityHit(hitData: HitData): void {
+      const chunkX = Math.floor(hitData.entityPositionX / SETTINGS.CHUNK_UNITS);
+      const chunkY = Math.floor(hitData.entityPositionY / SETTINGS.CHUNK_UNITS);
+      for (const playerData of Object.values(this.playerDataRecord)) {
+         if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
+            playerData.hitsTaken.push(hitData);
+         }
       }
    }
 

@@ -286,7 +286,6 @@ abstract class TribeMember extends Mob {
 
       // Vacuum nearby items to the tribe member
       // @Incomplete: Don't vacuum items which the tribe member doesn't have the inventory space for
-      // @Incomplete: Don't vacuum items which were just thrown out by the player
       const minChunkX = Math.max(Math.floor((this.position.x - TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
       const maxChunkX = Math.min(Math.floor((this.position.x + TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
       const minChunkY = Math.max(Math.floor((this.position.y - TribeMember.VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
@@ -295,6 +294,10 @@ abstract class TribeMember extends Mob {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
             for (const droppedItem of chunk.droppedItems) {
+               if (!droppedItem.canBePickedUp(this.id)) {
+                  continue;
+               }
+               
                const distance = this.position.calculateDistanceBetween(droppedItem.position);
                if (distance <= TribeMember.VACUUM_RANGE) {
                   const vacuumDirection = droppedItem.position.calculateAngleBetween(this.position);

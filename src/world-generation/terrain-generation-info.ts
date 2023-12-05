@@ -62,24 +62,24 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
          maxHumidity: 0.4
       },
       tiles: [
-         // {
-         //    tileType: TileTypeConst.fimbultur,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 8,
-         //       minWeight: 0.2
-         //    },
-         //    minDist: 8
-         // },
-         // {
-         //    tileType: TileTypeConst.permafrost,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 7,
-         //       minWeight: 0.2,
-         //    },
-         //    minDist: 4
-         // },
+         {
+            tileType: TileTypeConst.fimbultur,
+            isWall: false,
+            noiseRequirements: {
+               scale: 8,
+               minWeight: 0.2
+            },
+            minDist: 8
+         },
+         {
+            tileType: TileTypeConst.permafrost,
+            isWall: false,
+            noiseRequirements: {
+               scale: 7,
+               minWeight: 0.2,
+            },
+            minDist: 4
+         },
          {
             tileType: TileTypeConst.ice,
             isWall: false,

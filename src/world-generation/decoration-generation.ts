@@ -6,6 +6,7 @@ interface DecorationGenerationInfo {
    readonly spawnChancePerTile: number;
    readonly minGroupSize: number;
    readonly maxGroupSize: number;
+   readonly numVariants: number;
 }
 // rock,
 // sandstoneRock,
@@ -17,78 +18,88 @@ interface DecorationGenerationInfo {
 // flower4
 
 export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<TileTypeConst>>): ReadonlyArray<DecorationInfo> {
-   const GROUP_SPAWN_RANGE = 100;
+   const GROUP_SPAWN_RANGE = 256;
    
    const DECORATION_GENERATION_INFO: ReadonlyArray<DecorationGenerationInfo> = [
       {
          decorationType: DecorationType.pebble,
          spawnableTileTypes: [TileTypeConst.grass],
          spawnChancePerTile: 0.007,
-         minGroupSize: 1,
-         maxGroupSize: 1
+         minGroupSize: 2,
+         maxGroupSize: 4,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.rock,
          spawnableTileTypes: [TileTypeConst.grass, TileTypeConst.rock],
          spawnChancePerTile: 0.003,
          minGroupSize: 1,
-         maxGroupSize: 1
+         maxGroupSize: 2,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.sandstoneRock,
          spawnableTileTypes: [TileTypeConst.sand],
-         spawnChancePerTile: 0.01,
+         spawnChancePerTile: 0.02,
          minGroupSize: 1,
-         maxGroupSize: 1
+         maxGroupSize: 3,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.sandstoneRockBig,
          spawnableTileTypes: [TileTypeConst.sand],
          spawnChancePerTile: 0.01,
          minGroupSize: 1,
-         maxGroupSize: 1
+         maxGroupSize: 2,
+         numVariants: 2
       },
       {
          decorationType: DecorationType.blackRock,
          spawnableTileTypes: [TileTypeConst.snow, TileTypeConst.permafrost],
          spawnChancePerTile: 0.02,
          minGroupSize: 1,
-         maxGroupSize: 1
+         maxGroupSize: 1,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.snowPile,
-         spawnableTileTypes: [TileTypeConst.snow, TileTypeConst.permafrost],
+         spawnableTileTypes: [TileTypeConst.ice, TileTypeConst.permafrost],
          spawnChancePerTile: 0.02,
          minGroupSize: 1,
-         maxGroupSize: 1
+         maxGroupSize: 1,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.flower1,
          spawnableTileTypes: [TileTypeConst.grass],
          spawnChancePerTile: 0.0015,
          minGroupSize: 2,
-         maxGroupSize: 6
+         maxGroupSize: 6,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.flower2,
          spawnableTileTypes: [TileTypeConst.grass],
          spawnChancePerTile: 0.0015,
          minGroupSize: 2,
-         maxGroupSize: 6
+         maxGroupSize: 6,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.flower3,
          spawnableTileTypes: [TileTypeConst.grass],
          spawnChancePerTile: 0.0015,
          minGroupSize: 2,
-         maxGroupSize: 6
+         maxGroupSize: 6,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.flower4,
          spawnableTileTypes: [TileTypeConst.grass],
          spawnChancePerTile: 0.0015,
          minGroupSize: 2,
-         maxGroupSize: 6
+         maxGroupSize: 6,
+         numVariants: 1
       }
    ];
 
@@ -121,7 +132,8 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
                positionX: x,
                positionY: y,
                rotation: 2 * Math.PI * Math.random(),
-               type: generationInfo.decorationType
+               type: generationInfo.decorationType,
+               variant: randInt(0, generationInfo.numVariants - 1)
             });
 
             const numOthers = randInt(generationInfo.minGroupSize, generationInfo.maxGroupSize) - 1;
@@ -136,9 +148,9 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
                   continue;
                }
 
-               // Don't spawn in water
-               const tileType = tileTypeArray[Math.floor(spawnX / SETTINGS.TILE_SIZE) + SETTINGS.EDGE_GENERATION_DISTANCE][Math.floor(spawnY / SETTINGS.TILE_SIZE) + SETTINGS.EDGE_GENERATION_DISTANCE];
-               if (tileType === TileTypeConst.water) {
+               // Don't spawn in different tile types
+               const currentTileType = tileTypeArray[Math.floor(spawnX / SETTINGS.TILE_SIZE) + SETTINGS.EDGE_GENERATION_DISTANCE][Math.floor(spawnY / SETTINGS.TILE_SIZE) + SETTINGS.EDGE_GENERATION_DISTANCE];
+               if (currentTileType !== tileType) {
                   continue;
                }
                
@@ -146,7 +158,8 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
                   positionX: spawnX,
                   positionY: spawnY,
                   rotation: 2 * Math.PI * Math.random(),
-                  type: generationInfo.decorationType
+                  type: generationInfo.decorationType,
+                  variant: randInt(0, generationInfo.numVariants - 1)
                });
             }
          }

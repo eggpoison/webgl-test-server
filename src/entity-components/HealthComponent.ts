@@ -4,6 +4,7 @@ import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";
 import Player from "../entities/tribes/Player";
 import Board from "../Board";
+import { SERVER } from "../server";
 
 class HealthComponent extends Component {
    private static readonly INVULNERABILITY_DURATION = 0.3;
@@ -23,8 +24,6 @@ class HealthComponent extends Component {
 
    /** Amount of seconds that has passed since the entity was last hit */
    private secondsSinceLastHit: number | null = null;
-
-   public hitsTaken = new Array<HitData>();
 
    public amountHealedThisTick = 0;
 
@@ -76,14 +75,6 @@ class HealthComponent extends Component {
       if (this.globalInvulnerabilityTimer > 0) {
          this.globalInvulnerabilityTimer -= 1 / SETTINGS.TPS;
       }
-
-      // Remove old hit data
-      for (let i = 0; i < this.hitsTaken.length; i++) {
-         if (this.hitsTaken[i].tick !== Board.ticks) {
-            this.hitsTaken.splice(i, 1);
-            i--;
-         }
-      }
    }
 
    /**
@@ -114,11 +105,15 @@ class HealthComponent extends Component {
          }
       }
 
-      this.hitsTaken.push({
+      SERVER.registerEntityHit({
+         entityPositionX: this.entity.position.x,
+         entityPositionY: this.entity.position.y,
+         hitEntityID: this.entity.id,
+         damage: damage,
          knockback: knockback,
          angleFromAttacker: hitDirection,
-         flags: hitFlags,
-         tick: Board.ticks
+         attackerID: attackingEntity !== null ? attackingEntity.id : -1,
+         flags: hitFlags
       });
       
       if (this.hasGlobalInvulnerability) {
