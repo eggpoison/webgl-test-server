@@ -29,13 +29,11 @@ const HUT_MIN_DISTANCES: Record<TribeType, number> = {
 }
 
 const getTribeTypeForTile = (position: Point): TribeType | null => {
-   const tile = Board.getTileAtPosition(position);
-
-   const isGoblin = Math.random() < 0.25;
-   if (isGoblin) {
+   if (Math.random() < 0.25) {
       return TribeType.goblins;
    }
 
+   const tile = Board.getTileAtPosition(position);
    switch (tile.biomeName) {
       case "grasslands": {
          return TribeType.plainspeople;

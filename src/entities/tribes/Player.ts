@@ -8,7 +8,6 @@ import TribeMember from "./TribeMember";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
 import { serializeInventoryData } from "../../entity-components/InventoryComponent";
-import TombstoneDeathManager from "src/tombstone-deaths";
 
 class Player extends TribeMember {
    private static readonly THROWN_ITEM_PICKUP_COOLDOWN = 1;
@@ -43,6 +42,11 @@ class Player extends TribeMember {
       this.username = username;
 
       this.tribe = tribe;
+
+      this.createEvent("during_dropped_item_collision", (droppedItem: DroppedItem): void => {
+         this.forceGetComponent("inventory").pickupDroppedItem(droppedItem);
+         SERVER.registerPlayerDroppedItemPickup(this);
+      });
    }
 
    public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, username: string] {

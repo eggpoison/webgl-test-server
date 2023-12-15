@@ -213,6 +213,7 @@ interface PlayerData {
    visibleChunkBounds: VisibleChunkBounds;
    tribe: Tribe | null;
    hitsTaken: Array<HitData>;
+   pickedUpItem: boolean;
 }
 
 /** Communicates between the server and players */
@@ -504,7 +505,8 @@ class GameServer {
                serverTime: Board.time,
                playerHealth: 20,
                tribeData: null,
-               hasFrostShield: false
+               hasFrostShield: false,
+               pickedUpItem: false
             };
 
             SERVER.playerDataRecord[socket.id] = playerData as PlayerData;
@@ -661,13 +663,15 @@ class GameServer {
             playerHealth: player.forceGetComponent("health").health,
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
-            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour
+            hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
+            pickedUpItem: playerData.pickedUpItem
          };
 
          // Send the game data to the player
          playerData.socket.emit("game_data_packet", gameDataPacket);
 
          playerData.hitsTaken = [];
+         playerData.pickedUpItem = false;
       }
    }
 
@@ -681,6 +685,18 @@ class GameServer {
             playerData.hitsTaken.push(hitData);
          }
       }
+   }
+
+   public registerPlayerDroppedItemPickup(player: Player): void {
+      for (const playerData of Object.values(this.playerDataRecord)) {
+         if (playerData.instance === player) {
+            playerData.pickedUpItem = true;
+            
+            return;
+         }
+      }
+
+      console.warn("Couldn't find player to pickup item!");
    }
 
    private bundlePlayerInventoryData(player: Player): PlayerInventoryData {

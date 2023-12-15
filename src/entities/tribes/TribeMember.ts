@@ -163,7 +163,7 @@ abstract class TribeMember extends Mob {
       const inventoryComponent = new InventoryComponent();
       
       super(position, {
-         health: new HealthComponent(tribeInfo.maxHealth, true),
+         health: new HealthComponent(entityType === EntityTypeConst.player ? tribeInfo.maxHealthPlayer : tribeInfo.maxHealthWorker, true),
          inventory: inventoryComponent
       }, entityType, visionRange);
 

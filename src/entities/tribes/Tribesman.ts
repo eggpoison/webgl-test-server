@@ -60,7 +60,7 @@ const barrelHasFood = (barrel: Barrel): boolean => {
 }
 
 class Tribesman extends TribeMember {
-   private static readonly RADIUS = 32;
+   private static readonly RADIUS = 28;
    
    private static readonly INVENTORY_SIZE = 3;
    
@@ -114,6 +114,10 @@ class Tribesman extends TribeMember {
       }
 
       this.tribe = tribe;
+
+      this.createEvent("during_dropped_item_collision", (droppedItem: DroppedItem): void => {
+         this.forceGetComponent("inventory").pickupDroppedItem(droppedItem);
+      });
    }
 
    public tick(): void {

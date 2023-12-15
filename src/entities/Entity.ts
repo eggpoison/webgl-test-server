@@ -34,6 +34,8 @@ interface EntityEvents extends GameObjectEvents {
    death: (attackingEntity: Entity | null) => void;
 }
 
+// @Cleanup: Instead of passing components through constructor, have function to add them
+
 abstract class Entity extends GameObject<EntityEvents> {
    private readonly components: Partial<{ [key in keyof EntityComponents]: EntityComponents[key] }> = {};
    private readonly tickableComponents: ReadonlyArray<Component>;

@@ -48,12 +48,6 @@ class InventoryComponent extends Component {
     */
    private readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 
-   public onLoad(): void {
-      this.entity.createEvent("during_dropped_item_collision", (droppedItem: DroppedItem): void => {
-         this.pickupDroppedItem(droppedItem);
-      });
-   }
-
    /** Creates and stores a new inventory in the component. */
    public createNewInventory(name: string, width: number, height: number, acceptsPickedUpItems: boolean): void {
       if (this.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
@@ -106,10 +100,10 @@ class InventoryComponent extends Component {
 
    /**
     * Attempts to pick up an item and add it to the inventory
-    * @param droppedItem The item entit to attempt to pick up
+    * @param droppedItem The dropped item to attempt to pick up
     * @returns Whether the item was picked up or not
     */
-   private pickupDroppedItem(droppedItem: DroppedItem): void {
+   public pickupDroppedItem(droppedItem: DroppedItem): void {
       // Don't pick up dropped items which are on pickup cooldown
       if (!droppedItem.canBePickedUp(this.entity.id)) return;
 
