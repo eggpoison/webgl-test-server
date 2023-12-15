@@ -101,11 +101,11 @@ class InventoryComponent extends Component {
    /**
     * Attempts to pick up an item and add it to the inventory
     * @param droppedItem The dropped item to attempt to pick up
-    * @returns Whether the item was picked up or not
+    * @returns Whether some non-zero amount of the item was picked up or not
     */
-   public pickupDroppedItem(droppedItem: DroppedItem): void {
+   public pickupDroppedItem(droppedItem: DroppedItem): boolean {
       // Don't pick up dropped items which are on pickup cooldown
-      if (!droppedItem.canBePickedUp(this.entity.id)) return;
+      if (!droppedItem.canBePickedUp(this.entity.id)) return false;
 
       for (const [inventoryName, _inventory] of this.inventoryArray) {
          if (!_inventory.acceptsPickedUpItems) {
@@ -125,7 +125,10 @@ class InventoryComponent extends Component {
       // If all of the item was added, destroy it
       if (droppedItem.item.count === 0) {
          droppedItem.remove();
+         return true;
       }
+
+      return false;
    }
 
    /**

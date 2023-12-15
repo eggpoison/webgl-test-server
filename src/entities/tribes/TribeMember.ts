@@ -9,7 +9,7 @@ import TribeTotem from "./TribeTotem";
 import Mob from "../mobs/Mob";
 import TribeBuffer from "../../TribeBuffer";
 import Barrel from "./Barrel";
-import Item from "../../items/Item";
+import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 import Hitbox from "../../hitboxes/Hitbox";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -294,7 +294,7 @@ abstract class TribeMember extends Mob {
          for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
             const chunk = Board.getChunk(chunkX, chunkY);
             for (const droppedItem of chunk.droppedItems) {
-               if (!droppedItem.canBePickedUp(this.id)) {
+               if (!droppedItem.canBePickedUp(this.id) || !this.canPickUpItem(droppedItem.item.type)) {
                   continue;
                }
                
@@ -787,6 +787,24 @@ abstract class TribeMember extends Mob {
             return this.lastAttackTicks;
          }
       }
+   }
+
+   protected canPickUpItem(itemType: ItemType): boolean {
+      const inventoryComponent = this.forceGetComponent("inventory");
+      const inventory = inventoryComponent.getInventory("hotbar");
+      
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            return true;
+         }
+
+         const item = inventory.itemSlots[itemSlot];
+         if (item.type === itemType && itemIsStackable(item.type) && getItemStackSize(item) - item.count > 0) {
+            return true;
+         }
+      }
+
+      return false;
    }
 }
 

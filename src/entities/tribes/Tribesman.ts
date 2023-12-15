@@ -641,24 +641,6 @@ class Tribesman extends TribeMember {
       }
    }
 
-   private canPickUpItem(itemType: ItemType): boolean {
-      const inventoryComponent = this.forceGetComponent("inventory");
-      const inventory = inventoryComponent.getInventory("hotbar");
-      
-      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
-         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
-            return true;
-         }
-
-         const item = inventory.itemSlots[itemSlot];
-         if (item.type === itemType && itemIsStackable(item.type) && getItemStackSize(item) - item.count > 0) {
-            return true;
-         }
-      }
-
-      return false;
-   }
-
    private findNearestBarrel(): Barrel | null {
       if (this.tribe === null) return null;
       

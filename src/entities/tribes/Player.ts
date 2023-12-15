@@ -44,8 +44,10 @@ class Player extends TribeMember {
       this.tribe = tribe;
 
       this.createEvent("during_dropped_item_collision", (droppedItem: DroppedItem): void => {
-         this.forceGetComponent("inventory").pickupDroppedItem(droppedItem);
-         SERVER.registerPlayerDroppedItemPickup(this);
+         const wasPickedUp = this.forceGetComponent("inventory").pickupDroppedItem(droppedItem);
+         if (wasPickedUp) {
+            SERVER.registerPlayerDroppedItemPickup(this);
+         }
       });
    }
 
