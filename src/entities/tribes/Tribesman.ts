@@ -1,4 +1,4 @@
-import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, angle, distance, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, TribesmanState, angle, distance, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -910,9 +910,29 @@ class Tribesman extends TribeMember {
       barrelInventoryComponent.consumeItem("inventory", foodItemSlot, 999);
    }
 
-   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, inventory: InventoryData, activeItemSlot: number] {
+   public getClientArgs(): [tribeID: number | null, tribeType: TribeType, armourSlotInventory: InventoryData, backpackSlotInventory: InventoryData, backpackInventory: InventoryData, activeItem: ItemType | null, action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, inventory: InventoryData, activeItemSlot: number, state: TribesmanState] {
       const inventoryComponent = this.forceGetComponent("inventory");
       const hotbarInventory = this.forceGetComponent("inventory").getInventory("hotbar");
+
+      let state: TribesmanState;
+      switch (this.lastAIType) {
+         case TribesmanAIType.attacking: {
+            state = TribesmanState.chasing;
+            break;
+         }
+         case TribesmanAIType.escaping: {
+            state = TribesmanState.escaping;
+            break;
+         }
+         case TribesmanAIType.idle:
+         case TribesmanAIType.patrolling:
+         case TribesmanAIType.haulingResources:
+         case TribesmanAIType.pickingUpDroppedItems:
+         case TribesmanAIType.harvestingResources:
+         case TribesmanAIType.grabbingFood: {
+            state = TribesmanState.normal;
+         }
+      }
 
       return [
          this.tribe !== null ? this.tribe.id : null,
@@ -927,7 +947,8 @@ class Tribesman extends TribeMember {
          this.hasFrostShield(),
          this.warPaintType,
          serializeInventoryData(hotbarInventory, "hotbar"),
-         this.selectedItemSlot
+         this.selectedItemSlot,
+         state
       ];
    }
 

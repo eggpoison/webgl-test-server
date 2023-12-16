@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, veryBadHash } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityType, EntityTypeConst, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, TribeType, veryBadHash } from "webgl-test-shared";
 import HealthComponent from "../../entity-components/HealthComponent";
 import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 import HungerComponent from "../../entity-components/HungerComponent";
@@ -12,6 +12,7 @@ import ItemConsumeAI from "../../mob-ai/ItemConsumeAI";
 import Board from "../../Board";
 import Snowball from "../Snowball";
 import { MobAIType } from "../../mob-ai-types";
+import TribeMember from "../tribes/TribeMember";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -188,9 +189,19 @@ class Yeti extends Mob {
             if (entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball || (entity.type === EntityTypeConst.frozen_yeti && !this.attackingEntities.hasOwnProperty(entity.id))) {
                return false;
             }
-            
-            // Chase the entity if they are in the yeti's territory or have recently attacked the yeti
-            return this.territory.includes(entity.tile) || this.attackingEntities.hasOwnProperty(entity.id);
+
+            // Chase entities which have recently attacked the yeti
+            if (this.attackingEntities.hasOwnProperty(entity.id)) {
+               return true;
+            }
+
+            // Don't chase frostlings which aren't attacking the yeti
+            if ((entity.type === EntityTypeConst.tribesman || entity.type === EntityTypeConst.player) && (entity as TribeMember).tribeType === TribeType.frostlings) {
+               return false;
+            }
+
+            // Chase the entity if they are in the yeti's territory
+            return this.territory.includes(entity.tile);
          }
       }));
 

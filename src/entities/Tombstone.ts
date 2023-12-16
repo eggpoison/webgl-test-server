@@ -1,10 +1,11 @@
-import { COLLISION_BITS, DeathInfo, DEFAULT_COLLISION_MASK, EntityTypeConst, Point, randItem, SETTINGS, Vector } from "webgl-test-shared";
+import { COLLISION_BITS, DeathInfo, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, randInt, randItem, SETTINGS, Vector } from "webgl-test-shared";
 import HealthComponent from "../entity-components/HealthComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import Entity from "./Entity";
 import Zombie from "./mobs/Zombie";
 import Board from "../Board";
 import TombstoneDeathManager from "../tombstone-deaths";
+import ItemCreationComponent from "../entity-components/ItemCreationComponent";
 
 class Tombstone extends Entity {
    private static readonly MAX_HEALTH = 50;
@@ -40,7 +41,8 @@ class Tombstone extends Entity {
 
    constructor(position: Point) {
       super(position, {
-         health: new HealthComponent(Tombstone.MAX_HEALTH, false)
+         health: new HealthComponent(Tombstone.MAX_HEALTH, false),
+         item_creation: new ItemCreationComponent(40)
       }, EntityTypeConst.tombstone);
 
       this.deathInfo = TombstoneDeathManager.popDeath();
@@ -54,9 +56,12 @@ class Tombstone extends Entity {
  
       this.rotation = Math.PI * 2 * Math.random();
 
+      this.forceGetComponent("item_creation").createItemOnDeath(ItemType.rock, randInt(2, 3), true);
+
       // Calculate the zombie spawn positions based off the tombstone's position and rotation
       const zombieSpawnPositions = new Array<Point>();
       for (let i = 0, angleFromTombstone = this.rotation; i < 4; i++, angleFromTombstone += Math.PI / 2) {
+         // @Speed: Garbage collection
          const offset = Point.fromVectorForm(Tombstone.ZOMBIE_SPAWN_DISTANCE + (i % 2 === 0 ? 15 : 0), angleFromTombstone);
          const spawnPosition = this.position.copy();
          spawnPosition.add(offset);
@@ -69,6 +74,11 @@ class Tombstone extends Entity {
          zombieSpawnPositions.push(spawnPosition);
       }
       this.zombieSpawnPositions = zombieSpawnPositions;
+
+      this.createEvent("death", () => {
+         this.zombieSpawnPosition = this.position.copy();
+         this.spawnZombie();
+      });
    }
 
    public tick(): void {

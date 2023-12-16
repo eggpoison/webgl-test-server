@@ -29,8 +29,7 @@ class Boulder extends Entity {
 
       this.boulderType = Math.floor(Math.random() * 2);
 
-      const rockDropCount = randInt(3, 7);
-      itemCreationComponent.createItemOnDeath(ItemType.rock, rockDropCount, true);
+      itemCreationComponent.createItemOnDeath(ItemType.rock, randInt(3, 7), true);
 
       this.isStatic = true;
    }
