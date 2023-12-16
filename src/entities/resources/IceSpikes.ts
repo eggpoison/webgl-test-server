@@ -63,7 +63,7 @@ class IceSpikes extends Entity {
       });
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
-         if (collidingEntity.type === EntityTypeConst.yeti || collidingEntity.type === EntityTypeConst.ice_spikes || collidingEntity.type === EntityTypeConst.snowball) {
+         if (collidingEntity.type === EntityTypeConst.yeti || collidingEntity.type === EntityTypeConst.ice_spikes || collidingEntity.type === EntityTypeConst.berry_snowbush || collidingEntity.type === EntityTypeConst.snowball) {
             return;
          }
          

@@ -131,6 +131,15 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minPackSize: 3,
       maxPackSize: 4,
       onlySpawnsInNight: false
+   },
+   {
+      entityType: EntityTypeConst.berry_snowbush,
+      spawnableTiles: [TileTypeConst.snow, TileTypeConst.permafrost],
+      spawnRate: 0.001,
+      maxDensity: 0.0025,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false
    }
 ];
 

@@ -185,8 +185,8 @@ class Yeti extends Mob {
          acceleration: 375,
          terminalVelocity: 250,
          entityIsChased: (entity: Entity) => {
-            // Don't chase ice spikes or snowballs or frozen yetis who aren't attacking the yeti
-            if (entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball || (entity.type === EntityTypeConst.frozen_yeti && !this.attackingEntities.hasOwnProperty(entity.id))) {
+            // Don't chase natural tundra resources or snowballs or frozen yetis who aren't attacking the yeti
+            if (entity.type === EntityTypeConst.berry_snowbush || entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball || (entity.type === EntityTypeConst.frozen_yeti && !this.attackingEntities.hasOwnProperty(entity.id))) {
                return false;
             }
 
@@ -234,7 +234,7 @@ class Yeti extends Mob {
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity): void => {
          // Don't damage ice spikes
-         if (collidingEntity.type === EntityTypeConst.ice_spikes) return;
+         if (collidingEntity.type === EntityTypeConst.ice_spikes || collidingEntity.type === EntityTypeConst.berry_snowbush) return;
 
          // Don't damage snowballs thrown by the yeti
          if (collidingEntity.type === EntityTypeConst.snowball && this.snowballIDs.has(collidingEntity.id)) {
