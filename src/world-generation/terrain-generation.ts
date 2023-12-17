@@ -297,7 +297,7 @@ function generateTerrain(): TerrainGenerationInfo {
       edgeRiverFlowDirections: edgeRiverFlowDirections,
       edgeRiverSteppingStones: edgeRiverSteppingStones,
       grassInfo: grassInfo,
-      decorations: generateDecorations(tileTypeArray)
+      decorations: generateDecorations(tileTypeArray, temperatureMap)
    };
 }
 

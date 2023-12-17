@@ -126,12 +126,11 @@ export function generateOctavePerlinNoise(width: number, height: number, startin
    return totalNoise;
 }
 
-// @Cleanup: Name
-const a: Record<string, Record<string, Vector>> = {};
+const pointPerlinNoiseGrids: Record<string, Record<string, Vector>> = {};
 
 export function generatePointPerlinNoise(x: number, y: number, scale: number, name: string): number {
-   if (!a.hasOwnProperty(name)) {
-      a[name] = {};
+   if (!pointPerlinNoiseGrids.hasOwnProperty(name)) {
+      pointPerlinNoiseGrids[name] = {};
    }
 
    const sampleX = x / scale;
@@ -151,11 +150,11 @@ export function generatePointPerlinNoise(x: number, y: number, scale: number, na
 
       let corner: Vector;
       const key = coords[0] + "-" + coords[1];
-      if (!a[name].hasOwnProperty(key)) {
+      if (!pointPerlinNoiseGrids[name].hasOwnProperty(key)) {
          corner = new Vector(1, 2 * Math.PI * SRandom.next());
-         a[name][key] = corner;
+         pointPerlinNoiseGrids[name][key] = corner;
       } else {
-         corner = a[name][key];
+         corner = pointPerlinNoiseGrids[name][key];
       }
 
       const cornerPos = new Point(coords[1], coords[0]);

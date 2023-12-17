@@ -138,7 +138,19 @@ class Slime extends Mob {
          acceleration: 100 * speedMultiplier,
          terminalVelocity: 50 * speedMultiplier,
          entityIsChased: (entity: Entity) => {
-            return entity.type !== EntityTypeConst.slime && entity.type !== EntityTypeConst.slimewisp && !RESOURCE_ENTITY_TYPES_CONST.includes(entity.type) && entity.getComponent("health") !== null;
+            // Don't chase entities without health, other slimes, slimewisps or resources
+            if (entity.type === EntityTypeConst.slime || entity.type === EntityTypeConst.slimewisp || RESOURCE_ENTITY_TYPES_CONST.includes(entity.type) || entity.getComponent("health") === null) {
+               return false;
+            }
+            
+            // Chase entities the slime is angry at
+            for (const angerInfo of this.angeredEntities) {
+               if (angerInfo.target === entity) {
+                  return true;
+               }
+            }
+
+            return entity.tile.biomeName === "swamp";
          }
       }));
 

@@ -8,16 +8,8 @@ interface DecorationGenerationInfo {
    readonly maxGroupSize: number;
    readonly numVariants: number;
 }
-// rock,
-// sandstoneRock,
-// blackRock,
-// snowPile,
-// flower1,
-// flower2,
-// flower3,
-// flower4
 
-export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<TileTypeConst>>): ReadonlyArray<DecorationInfo> {
+export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<TileTypeConst>>, temperatureMap: ReadonlyArray<ReadonlyArray<number>>): ReadonlyArray<DecorationInfo> {
    const GROUP_SPAWN_RANGE = 256;
    
    const DECORATION_GENERATION_INFO: ReadonlyArray<DecorationGenerationInfo> = [
@@ -52,6 +44,14 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
          minGroupSize: 1,
          maxGroupSize: 2,
          numVariants: 2
+      },
+      {
+         decorationType: DecorationType.blackRockSmall,
+         spawnableTileTypes: [TileTypeConst.snow, TileTypeConst.permafrost],
+         spawnChancePerTile: 0.02,
+         minGroupSize: 1,
+         maxGroupSize: 2,
+         numVariants: 1
       },
       {
          decorationType: DecorationType.blackRock,
@@ -103,10 +103,17 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
       }
    ];
 
-   const getDecorationGenerationInfoIndex = (tileType: TileTypeConst): number => {
+   const getDecorationGenerationInfoIndex = (tileType: TileTypeConst, temperature: number): number => {
       for (let i = 0; i < DECORATION_GENERATION_INFO.length; i++) {
          const generationInfo = DECORATION_GENERATION_INFO[i];
          if (generationInfo.spawnableTileTypes.includes(tileType)) {
+            // Flowers spawn less frequently the colder the tile is
+            if (generationInfo.decorationType >= DecorationType.flower1 && generationInfo.decorationType <= DecorationType.flower2) {
+               if (Math.random() > Math.pow(temperature, 0.3)) {
+                  continue;
+               }
+            }
+            
             if (Math.random() < generationInfo.spawnChancePerTile) {
                return i;
             }
@@ -121,7 +128,8 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
    for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
       for (let j = 0; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; j++) {
          const tileType = tileTypeArray[i][j];
-         const generationInfoIndex = getDecorationGenerationInfoIndex(tileType);
+         const temperature = temperatureMap[i][j];
+         const generationInfoIndex = getDecorationGenerationInfoIndex(tileType, temperature);
          if (generationInfoIndex !== 99999) {
             const generationInfo = DECORATION_GENERATION_INFO[generationInfoIndex];
             // Spawn a group of that decoration

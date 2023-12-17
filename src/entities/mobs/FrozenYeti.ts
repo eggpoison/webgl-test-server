@@ -123,7 +123,7 @@ class FrozenYeti extends Mob {
       );
 
       this.createEvent("during_entity_collision", (collidingEntity: Entity) => {
-         if (collidingEntity === null || collidingEntity.type === EntityTypeConst.ice_spikes || collidingEntity.type === EntityTypeConst.berry_snowbush) {
+         if (collidingEntity === null || collidingEntity.type === EntityTypeConst.ice_spikes) {
             return;
          }
 
@@ -517,7 +517,7 @@ class FrozenYeti extends Mob {
       for (let i = 0; i < targets.length; i++) {
          const entity = targets[i];
          // Don't attack entities which aren't in the tundra or the entity is native to the tundra
-         if (entity.tile.biomeName !== "tundra" || entity.type === EntityTypeConst.frozen_yeti || entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.berry_snowbush || entity.type === EntityTypeConst.snowball) {
+         if (entity.tile.biomeName !== "tundra" || entity.type === EntityTypeConst.frozen_yeti || entity.type === EntityTypeConst.ice_spikes || entity.type === EntityTypeConst.snowball) {
             targets.splice(i, 1);
             i--;
          }

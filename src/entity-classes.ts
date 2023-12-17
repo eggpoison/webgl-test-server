@@ -23,7 +23,6 @@ import Snowball from "./entities/Snowball";
 import Krumblid from "./entities/mobs/Krumblid";
 import FrozenYeti from "./entities/mobs/FrozenYeti";
 import Fish from "./entities/mobs/Fish";
-import BerrySnowbush from "./entities/resources/BerrySnowbush";
 
 const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...args: any[]) => Entity)> = {
    [EntityTypeConst.cow]: () => Cow,
@@ -48,8 +47,7 @@ const ENTITY_CLASS_RECORD: Record<EntityType, () => (new (position: Point, ...ar
    [EntityTypeConst.snowball]: () => Snowball,
    [EntityTypeConst.krumblid]: () => Krumblid,
    [EntityTypeConst.frozen_yeti]: () => FrozenYeti,
-   [EntityTypeConst.fish]: () => Fish,
-   [EntityTypeConst.berry_snowbush]: () => BerrySnowbush,
+   [EntityTypeConst.fish]: () => Fish
 };
 
 export default ENTITY_CLASS_RECORD;

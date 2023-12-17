@@ -498,7 +498,7 @@ class Tribesman extends TribeMember {
 
    private huntEntity(entity: Entity): void {
       // Find the best tool for the job
-      let bestToolSlot: number | null;
+      let bestToolSlot: number | null = null;
       const attackToolType = getEntityAttackToolType(entity);
       switch (attackToolType) {
          case AttackToolType.weapon: {
@@ -517,11 +517,6 @@ class Tribesman extends TribeMember {
          }
          case AttackToolType.axe: {
             bestToolSlot = this.getBestAxeSlot();
-            break;
-         }
-         case null: {
-            // In case the entity has no best tool, just stick with the already selected slot
-            bestToolSlot = this.selectedItemSlot;
             break;
          }
       }

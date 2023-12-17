@@ -795,7 +795,6 @@ class GameServer {
       if (playerData.tribe !== null) {
          spawnPosition = playerData.tribe.totem.position.copy();
          const offsetDirection = 2 * Math.PI * Math.random();
-         // @Cleanup: Don't hardcode
          spawnPosition.x += 100 * Math.sin(offsetDirection);
          spawnPosition.y += 100 * Math.cos(offsetDirection);
       } else {
