@@ -161,8 +161,7 @@ class Zombie extends Mob {
       if (!Board.isNight()) {
          // Ignite randomly or stay on fire if already on fire
          if (super.hasStatusEffect(StatusEffectConst.burning) || Math.random() < Zombie.SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
-            // super.applyStatusEffect(StatusEffectConst.burning, 5 * SETTINGS.TPS);
-            super.applyStatusEffect(StatusEffectConst.burning, 50 * SETTINGS.TPS);
+            super.applyStatusEffect(StatusEffectConst.burning, 5 * SETTINGS.TPS);
          }
       }
    }

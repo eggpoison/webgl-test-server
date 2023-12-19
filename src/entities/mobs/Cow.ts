@@ -90,7 +90,8 @@ class Cow extends Mob {
          acceleration: 100,
          terminalVelocity: 50,
          strictValidation: false,
-         tileValidationPadding: 0
+         tileValidationPadding: 0,
+         validTileTargets: [TileTypeConst.grass, TileTypeConst.dirt]
       }));
 
       const hitbox = new RectangularHitbox(this, 0, 0, 50, 100);
