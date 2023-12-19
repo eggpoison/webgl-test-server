@@ -1,66 +1,44 @@
 import { BiomeName, EntityType, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
-import Player from "./entities/tribes/Player";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Item from "./items/Item";
 import Tile from "./Tile";
+import { damageEntity, healEntity } from "./components/HealthComponent";
+import Entity from "./GameObject";
+import { InventoryComponentArray } from "./components/ComponentArray";
+import { addItem } from "./components/InventoryComponent";
 
 const ENTITY_SPAWN_RANGE = 200;
 
-const killPlayer = (username: string): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
-   // Kill the player
-   player.forceGetComponent("health").damage(999999, 0, null, null, PlayerCauseOfDeath.god, 0);
+const killPlayer = (player: Entity): void => {
+   damageEntity(player, 999999, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
-const damagePlayer = (username: string, damage: number): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
-   // Damage the player
-   player.forceGetComponent("health").damage(damage, 0, null, null, PlayerCauseOfDeath.god, 0);
-}
-
-const healPlayer = (username: string, healing: number): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
-   // Damage the player
-   player.forceGetComponent("health").heal(healing);
+const damagePlayer = (player: Entity, damage: number): void => {
+   damageEntity(player, damage, 0, null, null, PlayerCauseOfDeath.god, 0);
 }
 
 const setTime = (time: number): void => {
    Board.time = time;
 }
 
-const giveItem = (username: string, itemType: ItemType, amount: number): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
+const giveItem = (player: Entity, itemType: ItemType, amount: number): void => {
    if (amount === 0) {
       return;
    }
 
    const item = new Item(itemType, amount);
-   player.forceGetComponent("inventory").addItem(item);
+   addItem(InventoryComponentArray.getComponent(player), item);
 }
 
-const tp = (username: string, x: number, y: number): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
+const tp = (player: Entity, x: number, y: number): void => {
    const newPosition = new Point(x, y);
-   SERVER.sendForcePositionUpdatePacket(username, newPosition);
+   SERVER.sendForcePositionUpdatePacket(player, newPosition);
 }
 
-const tpBiome = (username: string, biomeName: BiomeName): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
+const tpBiome = (player: Entity, biomeName: BiomeName): void => {
    const potentialTiles = getTilesOfBiome(biomeName);
    if (potentialTiles.length === 0) {
       console.warn(`No available tiles of biome '${biomeName}' to teleport to.`);
@@ -80,13 +58,10 @@ const tpBiome = (username: string, biomeName: BiomeName): void => {
    const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
 
    const newPosition = new Point(x, y);
-   SERVER.sendForcePositionUpdatePacket(username, newPosition);
+   SERVER.sendForcePositionUpdatePacket(player, newPosition);
 }
 
-const summonEntities = (username: string, unguardedEntityType: number, amount: number): void => {
-   const player = SERVER.getPlayerFromUsername(username);
-   if (player === null) return;
-
+const summonEntities = (player: Entity, unguardedEntityType: number, amount: number): void => {
    if (!ENTITY_CLASS_RECORD.hasOwnProperty(unguardedEntityType)) {
       return;
    }
@@ -106,17 +81,20 @@ const summonEntities = (username: string, unguardedEntityType: number, amount: n
    }
 }
 
-export function registerCommand(command: string, player: Player): void {
+export function registerCommand(command: string, player: Entity): void {
    const commandComponents = parseCommand(command);
    const numParameters = commandComponents.length - 1;
 
    switch (commandComponents[0]) {
       case "kill": {
          if (numParameters === 0) {
-            killPlayer(player.username);
+            killPlayer(player);
          } else if (numParameters === 1) {
             const targetPlayerName = commandComponents[1] as string;
-            killPlayer(targetPlayerName);
+            const player = SERVER.getPlayerFromUsername(targetPlayerName);
+            if (player !== null) {
+               killPlayer(player);
+            }
          }
 
          break;
@@ -125,11 +103,15 @@ export function registerCommand(command: string, player: Player): void {
       case "damage": {
          if (numParameters === 1) {
             const damage = commandComponents[1] as number;
-            damagePlayer(player.username, damage);
+            damagePlayer(player, damage);
          } else if (numParameters === 2) {
             const username = commandComponents[1] as string;
             const damage = commandComponents[2] as number;
-            damagePlayer(username, damage);
+
+            const player = SERVER.getPlayerFromUsername(username);
+            if (player !== null) {
+               damagePlayer(player, damage);
+            }
          }
 
          break;
@@ -137,14 +119,18 @@ export function registerCommand(command: string, player: Player): void {
 
       case "heal": {
          if (numParameters === 0) {
-            healPlayer(player.username, 99999);
+            healEntity(player, 99999);
          } else if (numParameters === 1) {
             const healing = commandComponents[1] as number;
-            healPlayer(player.username, healing);
+            healEntity(player, healing);
          } else if (numParameters === 2) {
             const username = commandComponents[1] as string;
             const healing = commandComponents[2] as number;
-            healPlayer(username, healing);
+
+            const player = SERVER.getPlayerFromUsername(username);
+            if (player !== null) {
+               healEntity(player, healing);
+            }
          }
 
          break;
@@ -166,10 +152,10 @@ export function registerCommand(command: string, player: Player): void {
          const confirmedItemType = ItemType[itemType as keyof typeof ItemType];
 
          if (numParameters === 1) {
-            giveItem(player.username, confirmedItemType, 1);
+            giveItem(player, confirmedItemType, 1);
          } else if (numParameters === 2) {
             const amount = commandComponents[2] as number;
-            giveItem(player.username, confirmedItemType, amount);
+            giveItem(player, confirmedItemType, amount);
          }
          
          break;
@@ -178,23 +164,23 @@ export function registerCommand(command: string, player: Player): void {
       case "tp": {
          const x = commandComponents[1] as number;
          const y = commandComponents[2] as number;
-         tp(player.username, x, y);
+         tp(player, x, y);
          break;
       }
 
       case "tpbiome": {
          const biomeName = commandComponents[1] as BiomeName;
-         tpBiome(player.username, biomeName);
+         tpBiome(player, biomeName);
          break;
       }
       
       case "summon": {
          const unguardedEntityType = EntityType[commandComponents[1] as EntityType] as unknown as number;
          if (numParameters === 1) {
-            summonEntities(player.username, unguardedEntityType, 1);
+            summonEntities(player, unguardedEntityType, 1);
          } else {
             const amount = commandComponents[2] as number;
-            summonEntities(player.username, unguardedEntityType, amount);
+            summonEntities(player, unguardedEntityType, amount);
          }
          break;
       }

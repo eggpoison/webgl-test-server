@@ -1,13 +1,11 @@
 import { EntityTypeConst, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
-import TribeMember from "./entities/tribes/TribeMember";
-import TribeHut from "./entities/tribes/TribeHut";
-import Tribesman from "./entities/tribes/Tribesman";
-import TribeTotem from "./entities/tribes/TribeTotem";
 import Board from "./Board";
 import Tile from "./Tile";
-import Barrel from "./entities/tribes/Barrel";
 import Chunk from "./Chunk";
-import Entity from "./entities/Entity";
+import Entity, { IEntityType } from "./GameObject";
+import { TotemBannerComponentArray, TribeComponentArray } from "./components/ComponentArray";
+import { createTribesman } from "./entities/tribes/tribesman";
+import { addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 
 let idCounter = 0;
 
@@ -43,14 +41,14 @@ class Tribe {
    
    public readonly tribeType: TribeType;
 
-   public readonly totem: TribeTotem;
+   public readonly totem: Entity;
    
-   private readonly members = new Array<TribeMember>();
+   private readonly members = new Array<Entity>();
 
    // /** Stores all tribe huts belonging to the tribe */
-   private readonly huts = new Array<TribeHut>();
+   private readonly huts = new Array<Entity>();
 
-   private barrels = new Set<Barrel>();
+   private barrels = new Set<Entity>();
 
    /** Stores all tiles in the tribe's zone of influence */
    private area: Record<number, TileInfluence> = {};
@@ -60,12 +58,12 @@ class Tribe {
 
    public readonly reinforcementInfoArray = new Array<ReinforcementInfo>();
    
-   constructor(tribeType: TribeType, totem: TribeTotem) {
+   constructor(tribeType: TribeType, totem: Entity) {
       this.id = getAvailableID();
       
       this.tribeType = tribeType;
       this.totem = totem;
-      totem.setTribe(this);
+      TribeComponentArray.getComponent(totem).tribe = this;
 
       totem.createEvent("death", () => {
          this.destroy();
@@ -96,11 +94,11 @@ class Tribe {
       }
    }
 
-   public addTribeMember(member: TribeMember): void {
+   public addTribeMember(member: Entity): void {
       this.members.push(member);
    }
 
-   public registerNewHut(hut: TribeHut): void {
+   public registerNewHut(hut: Entity): void {
       this.huts.push(hut);
 
       // Create a tribesman for the hut
@@ -113,39 +111,41 @@ class Tribe {
       hut.createEvent("death", () => {
          this.removeHut(hut);
       });
-
-      this.totem.createNewBanner(this.huts.length - 1);
+      
+      const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+      addBannerToTotem(bannerComponent, this.huts.length - 1);
    }
 
-   public removeHut(hut: TribeHut): void {
+   public removeHut(hut: Entity): void {
       const idx = this.huts.indexOf(hut);
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
 
-      this.totem.removeBanner(idx);
+      const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+      removeBannerFromTotem(bannerComponent, idx);
 
       this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
       
       this.tribesmanCap--;
    }
 
-   public hasHut(hut: TribeHut): boolean {
+   public hasHut(hut: Entity): boolean {
       return this.huts.includes(hut);
    }
 
-   public hasTotem(totem: TribeTotem): boolean {
+   public hasTotem(totem: Entity): boolean {
       return this.totem === totem;
    }
 
-   private createNewTribesman(hut: TribeHut): void {
+   private createNewTribesman(hut: Entity): void {
       const position = hut.position.copy();
 
       // Offset the spawn position so the tribesman comes out of the correct side of the hut
       const offset = Point.fromVectorForm(10, hut.rotation);
       position.add(offset);
       
-      const tribesman = new Tribesman(position, this.tribeType, this);
+      const tribesman = createTribesman(position, this.tribeType, this);
       tribesman.rotation = hut.rotation;
 
       this.members.push(tribesman);
@@ -166,7 +166,7 @@ class Tribe {
    /** Destroys the tribe and all its associated buildings */
    private destroy(): void {
       for (const tribeMember of this.members) {
-         tribeMember.setTribe(null);
+         TribeComponentArray.getComponent(tribeMember).tribe = null;
       }
 
       // Remove huts
@@ -269,26 +269,28 @@ class Tribe {
    /** Updates which barrels belong to the tribe */
    private updateBarrels(): void {
       for (const barrel of this.barrels) {
-         barrel.setTribe(null);
+         const tribeComponent = TribeComponentArray.getComponent(barrel);
+         tribeComponent.tribe = null;
       }
       
-      const barrels = new Set<Barrel>();
+      const barrels = new Set<Entity>();
       for (const chunkInfluence of Object.values(this.chunkArea)) {
          for (const entity of chunkInfluence.chunk.entities) {
-            if (entity.type === EntityTypeConst.barrel) {
-               (entity as Barrel).setTribe(this);
-               barrels.add(entity as Barrel);
+            if (entity.type === IEntityType.barrel) {
+               const tribeComponent = TribeComponentArray.getComponent(entity);
+               tribeComponent.tribe = this;
+               barrels.add(entity as Entity);
             }
          }
       }
       this.barrels = barrels;
    }
 
-   public hasBarrel(barrel: Barrel): boolean {
+   public hasBarrel(barrel: Entity): boolean {
       return this.barrels.has(barrel);
    }
 
-   public getBarrels(): ReadonlySet<Barrel> {
+   public getBarrels(): ReadonlySet<Entity> {
       return this.barrels;
    }
 

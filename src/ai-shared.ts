@@ -2,7 +2,7 @@ import { Point, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Entity from "./entities/Entity";
+import Entity from "./GameObject";
    
 const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1);
 

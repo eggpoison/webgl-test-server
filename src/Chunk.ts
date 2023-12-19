@@ -1,20 +1,16 @@
 import { RiverSteppingStoneData } from "webgl-test-shared";
-import Projectile from "./Projectile";
-import Entity from "./entities/Entity";
-import DroppedItem from "./items/DroppedItem";
-import Mob from "./entities/mobs/Mob";
-import GameObject from "./GameObject";
+import Entity from "./GameObject";
 
 class Chunk {
    /** Stores all game objects inside the chunk */
-   public readonly gameObjects = new Array<GameObject>();
+   public readonly gameObjects = new Array<Entity>();
    
    public readonly entities = new Set<Entity>();
-   public readonly droppedItems = new Set<DroppedItem>();
-   public readonly projectiles = new Set<Projectile>();
+   public readonly droppedItems = new Set<Entity>();
+   public readonly projectiles = new Set<Entity>();
 
    /** Stores all mobs which have the chunk in their vision range */
-   public readonly viewingMobs = new Array<Mob>();
+   public readonly viewingMobs = new Array<Entity>();
 
    public readonly riverSteppingStones = new Array<RiverSteppingStoneData>();
 

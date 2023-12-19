@@ -1,11 +1,11 @@
-import { EntityType, EntityTypeConst, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
-import Entity from "./entities/Entity";
+import { EntityTypeConst, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import ENTITY_CLASS_RECORD from "./entity-classes";
 import Board from "./Board";
-import Yeti, { yetiSpawnPositionIsValid } from "./entities/mobs/Yeti";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
+import Entity from "./GameObject";
+import { yetiSpawnPositionIsValid } from "./entities/mobs/Yeti";
 
 const PACK_SPAWN_RANGE = 200;
 
@@ -132,15 +132,6 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxPackSize: 4,
       onlySpawnsInNight: false
    }
-   // {
-   //    entityType: EntityTypeConst.berry_snowbush,
-   //    spawnableTiles: [TileTypeConst.snow, TileTypeConst.permafrost],
-   //    spawnRate: 0.001,
-   //    maxDensity: 0.0025,
-   //    minPackSize: 1,
-   //    maxPackSize: 1,
-   //    onlySpawnsInNight: false
-   // }
 ];
 
 /** Minimum distance a spawn event can occur from another entity */

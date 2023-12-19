@@ -1,17 +1,16 @@
-import { EntityType, TribeType } from "webgl-test-shared";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import TribeMember from "./entities/tribes/TribeMember";
+import { TribeType } from "webgl-test-shared";
+import Entity from "./GameObject";
 
 interface TribeJoinInfo {
    readonly tribeType: TribeType;
-   readonly totem: TribeTotem;
-   readonly startingTribeMember: TribeMember;
+   readonly totem: Entity;
+   readonly startingTribeMember: Entity;
 }
 
 abstract class TribeBuffer {
    private static joinBuffer = new Array<TribeJoinInfo>();
    
-   public static addTribe(type: TribeType, totem: TribeTotem, startingTribeMember: TribeMember): void {
+   public static addTribe(type: TribeType, totem: Entity, startingTribeMember: Entity): void {
       this.joinBuffer.push({
          tribeType: type,
          totem: totem,

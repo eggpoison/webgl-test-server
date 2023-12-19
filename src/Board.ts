@@ -1,9 +1,6 @@
 import { BiomeName, DecorationInfo, GrassTileInfo, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
-import Entity from "./entities/Entity";
-import DroppedItem from "./items/DroppedItem";
 import Tile from "./Tile";
-import Projectile from "./Projectile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { addTileToCensus, getTilesOfType, removeEntityFromCensus, removeTileFromCensus } from "./census";
 import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
@@ -12,6 +9,9 @@ import GameObject from "./GameObject";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
+import { TribeComponent } from "./components/TribeComponent";
+import Entity from "./GameObject";
+import { ItemComponentArray } from "./components/ComponentArray";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -35,8 +35,8 @@ abstract class Board {
 
    // @Cleanup: Why are these different types?
    public static entities: { [id: number]: Entity } = {};
-   public static droppedItems: { [id: number]: DroppedItem } = {};
-   public static projectiles = new Set<Projectile>();
+   public static droppedItems: { [id: number]: Entity } = {};
+   public static projectiles = new Set<Entity>();
 
    public static tiles: Array<Tile>;
    private static chunks1d = new Array<Chunk>();
@@ -49,12 +49,12 @@ abstract class Board {
    private static tileUpdateCoordinates: Set<number>;
 
    private static entityJoinBuffer = new Array<Entity>();
-   private static droppedItemJoinBuffer = new Array<DroppedItem>();
-   private static projectileJoinBuffer = new Array<Projectile>();
+   private static droppedItemJoinBuffer = new Array<Entity>();
+   private static projectileJoinBuffer = new Array<Entity>();
 
    private static entityRemoveBuffer = new Array<Entity>();
-   private static droppedItemRemoveBuffer = new Array<DroppedItem>();
-   private static projectileRemoveBuffer = new Array<Projectile>();
+   private static droppedItemRemoveBuffer = new Array<Entity>();
+   private static projectileRemoveBuffer = new Array<Entity>();
 
    private static tribes = new Array<Tribe>();
 
@@ -66,6 +66,8 @@ abstract class Board {
    public static grassInfo: Record<number, Record<number, GrassTileInfo>>;
 
    public static decorations: ReadonlyArray<DecorationInfo>;
+
+   public static tribeComponents = new Array<TribeComponent>();
 
    public static reset(): void {
       this.gameObjects = [];
@@ -203,7 +205,9 @@ abstract class Board {
       for (const droppedItem of this.droppedItemRemoveBuffer) {
          this.removeGameObject(droppedItem);
          delete this.droppedItems[droppedItem.id];
-         if (droppedItem.item.type === ItemType.flesh_sword) {
+
+         const itemComponent = ItemComponentArray.getComponent(droppedItem);
+         if (itemComponent.type === ItemType.flesh_sword) {
             removeFleshSword(droppedItem);
          }
       }
@@ -215,8 +219,8 @@ abstract class Board {
       }
 
       this.entityRemoveBuffer = new Array<Entity>();
-      this.droppedItemRemoveBuffer = new Array<DroppedItem>();
-      this.projectileRemoveBuffer = new Array<Projectile>();
+      this.droppedItemRemoveBuffer = new Array<Entity>();
+      this.projectileRemoveBuffer = new Array<Entity>();
    }
 
    private static removeGameObject(gameObject: GameObject): void {
@@ -387,11 +391,11 @@ abstract class Board {
       this.entityJoinBuffer.push(entity);
    }
 
-   public static addDroppedItemToJoinBuffer(droppedItem: DroppedItem): void {
+   public static addDroppedItemToJoinBuffer(droppedItem: Entity): void {
       this.droppedItemJoinBuffer.push(droppedItem);
    }
 
-   public static addProjectileToJoinBuffer(projectile: Projectile): void {
+   public static addProjectileToJoinBuffer(projectile: Entity): void {
       this.projectileJoinBuffer.push(projectile);
    }
 
@@ -402,14 +406,14 @@ abstract class Board {
       }
    }
 
-   public static removeDroppedItemFromJoinBuffer(droppedItem: DroppedItem): void {
+   public static removeDroppedItemFromJoinBuffer(droppedItem: Entity): void {
       const idx = this.droppedItemJoinBuffer.indexOf(droppedItem);
       if (idx !== -1) {
          this.droppedItemJoinBuffer.splice(idx, 1);
       }
    }
 
-   public static removeProjectileFromJoinBuffer(projectile: Projectile): void {
+   public static removeProjectileFromJoinBuffer(projectile: Entity): void {
       const idx = this.projectileJoinBuffer.indexOf(projectile);
       if (idx !== -1) {
          this.projectileJoinBuffer.splice(idx, 1);
@@ -420,11 +424,11 @@ abstract class Board {
       this.entityRemoveBuffer.push(entity);
    }
 
-   public static addDroppedItemToRemoveBuffer(droppedItem: DroppedItem): void {
+   public static addDroppedItemToRemoveBuffer(droppedItem: Entity): void {
       this.droppedItemRemoveBuffer.push(droppedItem);
    }
 
-   public static addProjectileToRemoveBuffer(projectile: Projectile): void {
+   public static addProjectileToRemoveBuffer(projectile: Entity): void {
       this.projectileRemoveBuffer.push(projectile);
    }
 
@@ -437,7 +441,9 @@ abstract class Board {
       for (const droppedItem of this.droppedItemJoinBuffer) {
          this.addGameObjectToBoard(droppedItem);
          this.droppedItems[droppedItem.id] = droppedItem;
-         if (droppedItem.item.type === ItemType.flesh_sword) {
+
+         const itemComponent = ItemComponentArray.getComponent(droppedItem);
+         if (itemComponent.type === ItemType.flesh_sword) {
             addFleshSword(droppedItem);
          }
       }
@@ -448,8 +454,8 @@ abstract class Board {
       }
 
       this.entityJoinBuffer = new Array<Entity>();
-      this.droppedItemJoinBuffer = new Array<DroppedItem>();
-      this.projectileJoinBuffer = new Array<Projectile>();
+      this.droppedItemJoinBuffer = new Array<Entity>();
+      this.projectileJoinBuffer = new Array<Entity>();
    }
 
    private static addGameObjectToBoard(gameObject: GameObject): void {

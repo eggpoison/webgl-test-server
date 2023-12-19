@@ -2,11 +2,7 @@ import { Server, Socket } from "socket.io";
 import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, DroppedItemData, ProjectileData, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
-import Player from "./entities/tribes/Player";
-import Entity from "./entities/Entity";
-import DroppedItem from "./items/DroppedItem";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
-import Projectile from "./Projectile";
 import Tribe from "./Tribe";
 import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
@@ -16,6 +12,10 @@ import Item from "./items/Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import { resetYetiTerritoryTiles } from "./entities/mobs/Yeti";
+import Entity from "./GameObject";
+import { HealthComponentArray, InventoryComponentArray, ItemComponentArray, TribeComponentArray } from "./components/ComponentArray";
+import { getInventory, getItem } from "./components/InventoryComponent";
+import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, throwItem } from "./entities/tribes/player";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;
@@ -52,7 +52,7 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
 }
 
 const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
-   const healthComponent = entity.getComponent("health");
+   const healthComponent = HealthComponentArray.getComponent(entity);
 
    const circularHitboxes = new Array<CircularHitboxData>();
    const rectangularHitboxes = new Array<RectangularHitboxData>();
@@ -82,12 +82,12 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
    };
 }
 
-const bundleDroppedItemData = (droppedItem: DroppedItem): DroppedItemData => {
+const bundleItemEntityData = (itemEntity: Entity): DroppedItemData => {
    const circularHitboxes = new Array<CircularHitboxData>();
    const rectangularHitboxes = new Array<RectangularHitboxData>();
 
-   for (let i = 0; i < droppedItem.hitboxes.length; i++) {
-      const hitbox = droppedItem.hitboxes[i];
+   for (let i = 0; i < itemEntity.hitboxes.length; i++) {
+      const hitbox = itemEntity.hitboxes[i];
       if (hitbox.hasOwnProperty("radius")) {
          circularHitboxes.push(bundleCircularHitboxData(hitbox as CircularHitbox));
       } else {
@@ -96,19 +96,19 @@ const bundleDroppedItemData = (droppedItem: DroppedItem): DroppedItemData => {
    }
 
    return {
-      id: droppedItem.id,
-      position: droppedItem.position.package(),
-      velocity: droppedItem.velocity.package(),
-      rotation: droppedItem.rotation,
-      mass: droppedItem.mass,
+      id: itemEntity.id,
+      position: itemEntity.position.package(),
+      velocity: itemEntity.velocity.package(),
+      rotation: itemEntity.rotation,
+      mass: itemEntity.mass,
       circularHitboxes: circularHitboxes,
       rectangularHitboxes: rectangularHitboxes,
-      ageTicks: droppedItem.ageTicks,
-      type: droppedItem.item.type
+      ageTicks: itemEntity.ageTicks,
+      type: ItemComponentArray.getComponent(itemEntity).type
    };
 }
 
-const bundleProjectileData = (projectile: Projectile): ProjectileData => {
+const bundleProjectileData = (projectile: Entity): ProjectileData => {
    const circularHitboxes = new Array<CircularHitboxData>();
    const rectangularHitboxes = new Array<RectangularHitboxData>();
 
@@ -174,7 +174,7 @@ const bundleDroppedItemDataArray = (visibleChunkBounds: VisibleChunkBounds): Rea
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const droppedItem of chunk.droppedItems) {
             if (!seenIDs.has(droppedItem.id)) {
-               droppedItemDataArray.push(bundleDroppedItemData(droppedItem));
+               droppedItemDataArray.push(bundleItemEntityData(droppedItem));
                seenIDs.add(droppedItem.id);
             }
          }
@@ -208,7 +208,7 @@ type ISocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEve
 interface PlayerData {
    readonly username: string;
    readonly socket: ISocket;
-   instance: Player;
+   instance: Entity;
    clientIsActive: boolean;
    visibleChunkBounds: VisibleChunkBounds;
    tribe: Tribe | null;
@@ -299,7 +299,9 @@ class GameServer {
          const tribeJoinInfo = TribeBuffer.popTribe();
          const tribe = new Tribe(tribeJoinInfo.tribeType, tribeJoinInfo.totem);
          Board.addTribe(tribe);
-         tribeJoinInfo.startingTribeMember.setTribe(tribe);
+
+         const tribeComponent = TribeComponentArray.getComponent(tribeJoinInfo.startingTribeMember);
+         tribeComponent.tribe = tribe;
       }
 
       Board.spreadGrass();
@@ -363,7 +365,7 @@ class GameServer {
       }
    }
 
-   public getPlayerFromUsername(username: string): Player | null {
+   public getPlayerFromUsername(username: string): Entity | null {
       for (const data of Object.values(SERVER.playerDataRecord)) {
          if (data.username === username) {
             // Found the player!
@@ -375,9 +377,9 @@ class GameServer {
       return null;
    }
 
-   private getPlayerDataFromUsername(username: string): PlayerData | null {
+   public getPlayerDataFromInstance(instance: Entity): PlayerData | null {
       for (const data of Object.values(SERVER.playerDataRecord)) {
-         if (data.username === username) {
+         if (data.instance === instance) {
             // Found the player!
             return data;
          }
@@ -418,7 +420,7 @@ class GameServer {
             }
             
             // Spawn the player entity
-            const player = new Player(spawnPosition, playerData.username, null);
+            const player = createPlayer(spawnPosition, null);
             playerData.instance = player;
 
             const serverTileData = new Array<ServerTileData>();
@@ -543,7 +545,7 @@ class GameServer {
             }
 
             const player = SERVER.playerDataRecord[socket.id].instance;
-            player.processAttackPacket(attackPacket);
+            processPlayerAttackPacket(player, attackPacket);
          });
 
          socket.on("crafting_packet", (recipeIndex: number) => {
@@ -552,41 +554,41 @@ class GameServer {
             }
 
             const playerData = SERVER.playerDataRecord[socket.id];
-            playerData.instance.processCraftingPacket(recipeIndex);
+            processPlayerCraftingPacket(playerData.instance, recipeIndex);
          });
 
          socket.on("item_pickup", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
             if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                const playerData = SERVER.playerDataRecord[socket.id];
-               playerData.instance.processItemPickupPacket(entityID, inventoryName, itemSlot, amount);
+               processItemPickupPacket(playerData.instance, entityID, inventoryName, itemSlot, amount);
             }
          });
 
          socket.on("item_release", (entityID: number, inventoryName: string, itemSlot: number, amount: number) => {
             if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                const playerData = SERVER.playerDataRecord[socket.id];
-               playerData.instance.processItemReleasePacket(entityID, inventoryName, itemSlot, amount);
+               processItemReleasePacket(playerData.instance, entityID, inventoryName, itemSlot, amount);
             }
          });
 
          socket.on("item_use_packet", (itemSlot: number) => {
             if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                const player = SERVER.playerDataRecord[socket.id].instance;
-               player.processItemUsePacket(itemSlot);
+               processItemUsePacket(player, itemSlot);
             }
          });
 
          socket.on("held_item_drop", (dropAmount: number, throwDirection: number) => {
             if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                const player = SERVER.playerDataRecord[socket.id].instance;
-               player.dropItem("heldItemSlot", 1, dropAmount, throwDirection);
+               throwItem(player, "heldItemSlot", 1, dropAmount, throwDirection);
             }
          });
 
          socket.on("item_drop", (itemSlot: number, dropAmount: number, throwDirection: number) => {
             if (SERVER.playerDataRecord.hasOwnProperty(socket.id)) {
                const player = SERVER.playerDataRecord[socket.id].instance;
-               player.dropItem("hotbar", itemSlot, dropAmount, throwDirection);
+               throwItem(player, "hotbar", itemSlot, dropAmount, throwDirection);
             }
          });
 
@@ -638,17 +640,18 @@ class GameServer {
             Math.min(playerData.visibleChunkBounds[3] + 1, SETTINGS.BOARD_SIZE - 1)
          ];
 
-         const tribeData: TribeData | null = player.tribe !== null ? {
-            id: player.tribe.id,
-            tribeType: player.tribe.tribeType,
-            numHuts: player.tribe.getNumHuts(),
-            tribesmanCap: player.tribe.tribesmanCap,
-            area: player.tribe.getArea().map(tile => [tile.x, tile.y])
+         const tribeComponent = TribeComponentArray.getComponent(player);
+         const tribeData: TribeData | null = tribeComponent.tribe !== null ? {
+            id: tribeComponent.tribe.id,
+            tribeType: tribeComponent.tribe.tribeType,
+            numHuts: tribeComponent.tribe.getNumHuts(),
+            tribesmanCap: tribeComponent.tribe.tribesmanCap,
+            area: tribeComponent.tribe.getArea().map(tile => [tile.x, tile.y])
          } : null;
 
          const visibleEntities = getPlayerVisibleEntities(extendedVisibleChunkBounds);
 
-         const playerArmour = player.forceGetComponent("inventory").getItem("armourSlot", 1);
+         const playerArmour = getItem(InventoryComponentArray.getComponent(player), "armourSlot", 1);
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
@@ -660,7 +663,7 @@ class GameServer {
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
-            playerHealth: player.forceGetComponent("health").health,
+            playerHealth: HealthComponentArray.getComponent(player).health,
             gameObjectDebugData: gameObjectDebugData,
             tribeData: tribeData,
             hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
@@ -687,7 +690,7 @@ class GameServer {
       }
    }
 
-   public registerPlayerDroppedItemPickup(player: Player): void {
+   public registerPlayerDroppedItemPickup(player: Entity): void {
       for (const playerData of Object.values(this.playerDataRecord)) {
          if (playerData.instance === player) {
             playerData.pickedUpItem = true;
@@ -699,7 +702,7 @@ class GameServer {
       console.warn("Couldn't find player to pickup item!");
    }
 
-   private bundlePlayerInventoryData(player: Player): PlayerInventoryData {
+   private bundlePlayerInventoryData(player: Entity): PlayerInventoryData {
       const inventoryData: PlayerInventoryData = {
          hotbar: SERVER.bundleInventory(player, "hotbar"),
          backpackInventory: SERVER.bundleInventory(player, "backpack"),
@@ -712,8 +715,9 @@ class GameServer {
       return inventoryData;
    }
 
-   private bundleInventory(player: Player, inventoryName: string): InventoryData {
-      const inventory = player.forceGetComponent("inventory").getInventory(inventoryName);
+   private bundleInventory(player: Entity, inventoryName: string): InventoryData {
+      const inventoryComponent = InventoryComponentArray.getComponent(player);
+      const inventory = getInventory(inventoryComponent, inventoryName);
 
       const inventoryData: InventoryData = {
          itemSlots: {},
@@ -751,7 +755,7 @@ class GameServer {
             acceleration: player.acceleration.package(),
             rotation: player.rotation,
             terminalVelocity: player.terminalVelocity,
-            health: player.forceGetComponent("health").health,
+            health: HealthComponentArray.getComponent(player).health,
             inventory: SERVER.bundlePlayerInventoryData(player)
          };
 
@@ -801,21 +805,21 @@ class GameServer {
          spawnPosition = SERVER.generatePlayerSpawnPosition();
       }
 
-      const playerEntity = new Player(spawnPosition, playerData.username, playerData.tribe);
+      const player = createPlayer(spawnPosition, playerData.tribe);
 
       // Update the player data's instance
-      SERVER.playerDataRecord[socket.id].instance = playerEntity;
+      SERVER.playerDataRecord[socket.id].instance = player;
 
       const dataPacket: RespawnDataPacket = {
-         playerID: playerEntity.id,
+         playerID: player.id,
          spawnPosition: spawnPosition.package()
       };
 
       socket.emit("respawn_data_packet", dataPacket);
    }
 
-   public sendForcePositionUpdatePacket(playerUsername: string, position: Point): void {
-      const playerData = SERVER.getPlayerDataFromUsername(playerUsername);
+   public sendForcePositionUpdatePacket(player: Entity, position: Point): void {
+      const playerData = SERVER.getPlayerDataFromInstance(player);
       if (playerData === null) {
          return;
       }
@@ -823,8 +827,8 @@ class GameServer {
       playerData.socket.emit("force_position_update", position.package());
    }
 
-   public updatePlayerTribe(player: Player, tribe: Tribe | null): void {
-      const playerData = SERVER.getPlayerDataFromUsername(player.username);
+   public updatePlayerTribe(player: Entity, tribe: Tribe | null): void {
+      const playerData = SERVER.getPlayerDataFromInstance(player);
       if (playerData === null) {
          return;
       }

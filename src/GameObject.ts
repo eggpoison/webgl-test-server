@@ -2,11 +2,9 @@ import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
-import Entity from "./entities/Entity";
-import DroppedItem from "./items/DroppedItem";
+// import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Mob from "./entities/mobs/Mob";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -23,15 +21,15 @@ export function findAvailableEntityID(): number {
    return idCounter++;
 }
 
-export interface GameObjectEvents {
-   // @Cleanup: Rename to on_remove
-   on_destroy: () => void;
-   enter_collision: (collidingGameObject: GameObject) => void;
-   during_collision: (collidingGameObject: GameObject) => void;
-   enter_entity_collision: (collidingEntity: Entity) => void;
-   during_entity_collision: (collidingEntity: Entity) => void;
-   during_dropped_item_collision: (droppedItem: DroppedItem) => void;
-}
+// export interface GameObjectEvents {
+//    // @Cleanup: Rename to on_remove
+//    on_destroy: () => void;
+//    enter_collision: (collidingGameObject: GameObject) => void;
+//    during_collision: (collidingGameObject: GameObject) => void;
+//    enter_entity_collision: (collidingEntity: Entity) => void;
+//    during_entity_collision: (collidingEntity: Entity) => void;
+//    during_dropped_item_collision: (droppedItem: DroppedItem) => void;
+// }
 
 // @Cleanup: Remove this and just do all collision stuff in one function
 enum TileCollisionAxis {
@@ -41,18 +39,52 @@ enum TileCollisionAxis {
    diagonal = 3
 }
 
-export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
+// export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
 
 export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
 
-/** A generic class for any object in the world which has hitbox(es) */
-abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents> {
+export const enum IEntityType {
+   cow,
+   zombie,
+   tombstone,
+   tree,
+   workbench,
+   boulder,
+   berryBush,
+   cactus,
+   yeti,
+   iceSpikes,
+   slime,
+   slimewisp,
+   tribesman,
+   player,
+   tribeTotem,
+   tribeHut,
+   barrel,
+   campfire,
+   furnace,
+   snowball,
+   krumblid,
+   frozenYeti,
+   fish,
+   itemEntity,
+   projectile
+}
+
+/** A generic class for any object in the world */
+class Entity {
+   // @Cleanup: Remove
    private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1);
    
-   /** Unique identifier for each game object */
+   /** Unique identifier for each entity */
    public readonly id: number;
 
+   public readonly type: IEntityType;
+
    public ageTicks = 0;
+
+   /** Bitset representing which components the entity has */
+   public components = 0;
 
    /** Position of the object in the world */
    public position: Point;
@@ -69,7 +101,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    /** Affects the force the game object experiences during collisions */
    public mass = 1;
 
-   protected moveSpeedMultiplier = 1;
+   public moveSpeedMultiplier = 1;
 
    public collisionPushForceMultiplier = 1;
 
@@ -83,9 +115,9 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
    public collidingObjectTicks = new Array<number>();
-   public collidingObjects = new Array<GameObject>();
+   public collidingObjects = new Array<Entity>();
    
-   protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
+   // protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
 
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
@@ -113,11 +145,12 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
-   public abstract readonly collisionBit: number;
-   public abstract readonly collisionMask: number;
+   public readonly collisionBit = 0;
+   public readonly collisionMask = 0;
 
-   constructor(position: Point) {
+   constructor(position: Point, type: IEntityType) {
       this.position = position;
+      this.type = type;
 
       this.id = findAvailableEntityID();
 
@@ -131,8 +164,8 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       this.isInRiver = this.checkIsInRiver();
    }
 
-   public abstract callCollisionEvent(gameObject: GameObject): void;
-   public abstract addToMobVisibleGameObjects(mob: Mob): void;
+   // public abstract callCollisionEvent(gameObject: GameObject): void;
+   // public abstract addToMobVisibleGameObjects(mob: Mob): void;
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
       this.hitboxes.push(hitbox);
@@ -438,17 +471,18 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    protected addToChunk(chunk: Chunk): void {
       chunk.gameObjects.push(this);
 
-      const numViewingMobs = chunk.viewingMobs.length;
-      for (let i = 0; i < numViewingMobs; i++) {
-         const mob = chunk.viewingMobs[i];
-         const idx = mob.potentialVisibleGameObjects.indexOf(this);
-         if (idx === -1) {
-            mob.potentialVisibleGameObjects.push(this);
-            mob.potentialVisibleGameObjectAppearances.push(1);
-         } else {
-            mob.potentialVisibleGameObjectAppearances[idx]++;
-         }
-      }
+      // @Incomplete
+      // const numViewingMobs = chunk.viewingMobs.length;
+      // for (let i = 0; i < numViewingMobs; i++) {
+      //    const mob = chunk.viewingMobs[i];
+      //    const idx = mob.potentialVisibleGameObjects.indexOf(this);
+      //    if (idx === -1) {
+      //       mob.potentialVisibleGameObjects.push(this);
+      //       mob.potentialVisibleGameObjectAppearances.push(1);
+      //    } else {
+      //       mob.potentialVisibleGameObjectAppearances[idx]++;
+      //    }
+      // }
    }
 
    public removeFromChunk(chunk: Chunk): void {
@@ -457,19 +491,20 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          chunk.gameObjects.splice(idx, 1);
       }
 
-      const numViewingMobs = chunk.viewingMobs.length;
-      for (let i = 0; i < numViewingMobs; i++) {
-         const mob = chunk.viewingMobs[i];
-         const idx = mob.potentialVisibleGameObjects.indexOf(this);
-         if (idx === -1) {
-            throw new Error("Tried to remove game object from visible game objects when it wasn't in it");
-         }
-         mob.potentialVisibleGameObjectAppearances[idx]--;
-         if (mob.potentialVisibleGameObjectAppearances[idx] === 0) {
-            mob.potentialVisibleGameObjects.splice(idx, 1);
-            mob.potentialVisibleGameObjectAppearances.splice(idx, 1);
-         }
-      }
+      // @Incomplete
+      // const numViewingMobs = chunk.viewingMobs.length;
+      // for (let i = 0; i < numViewingMobs; i++) {
+      //    const mob = chunk.viewingMobs[i];
+      //    const idx = mob.potentialVisibleGameObjects.indexOf(this);
+      //    if (idx === -1) {
+      //       throw new Error("Tried to remove game object from visible game objects when it wasn't in it");
+      //    }
+      //    mob.potentialVisibleGameObjectAppearances[idx]--;
+      //    if (mob.potentialVisibleGameObjectAppearances[idx] === 0) {
+      //       mob.potentialVisibleGameObjects.splice(idx, 1);
+      //       mob.potentialVisibleGameObjectAppearances.splice(idx, 1);
+      //    }
+      // }
    }
 
    private checkForCircularTileCollision(tile: Tile, hitbox: CircularHitbox): TileCollisionAxis {
@@ -560,12 +595,12 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       // Check for diagonal collisions
       // 
       
-      GameObject.rectangularTestHitbox.width = SETTINGS.TILE_SIZE;
-      GameObject.rectangularTestHitbox.height = SETTINGS.TILE_SIZE;
-      GameObject.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SETTINGS.TILE_SIZE;
-      GameObject.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SETTINGS.TILE_SIZE;
+      Entity.rectangularTestHitbox.width = SETTINGS.TILE_SIZE;
+      Entity.rectangularTestHitbox.height = SETTINGS.TILE_SIZE;
+      Entity.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SETTINGS.TILE_SIZE;
+      Entity.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SETTINGS.TILE_SIZE;
 
-      if (GameObject.rectangularTestHitbox.isColliding(hitbox)) {
+      if (Entity.rectangularTestHitbox.isColliding(hitbox)) {
          return TileCollisionAxis.diagonal;
       }
 
@@ -853,7 +888,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       }
    }
 
-   public isColliding(gameObject: GameObject): boolean {
+   public isColliding(gameObject: Entity): boolean {
       // AABB bounding area check
       if (this.boundingArea[0] > gameObject.boundingArea[1] || // minX(1) > maxX(2)
           this.boundingArea[1] < gameObject.boundingArea[0] || // maxX(1) < minX(2)
@@ -879,7 +914,7 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
       return false;
    }
 
-   public collide(gameObject: GameObject): void {
+   public collide(gameObject: Entity): void {
       if ((gameObject.collisionMask & this.collisionBit) === 0 || (this.collisionMask & gameObject.collisionBit) === 0) {
          return;
       }
@@ -902,17 +937,17 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
          // New colliding game object
          this.collidingObjects.push(gameObject);
          this.collidingObjectTicks.push(Board.ticks);
-         (this.callEvents as any)("enter_collision", gameObject);
+         // (this.callEvents as any)("enter_collision", gameObject);
       } else {
          // Existing colliding game object
          this.collidingObjectTicks[idx] = Board.ticks;
       }
 
-      (this.callEvents as any)("during_collision", gameObject);
-      gameObject.callCollisionEvent(this as any);
+      // (this.callEvents as any)("during_collision", gameObject);
+      // gameObject.callCollisionEvent(this as any);
    }
 
-   private calculateMaxDistanceFromGameObject(gameObject: GameObject): number {
+   private calculateMaxDistanceFromGameObject(gameObject: Entity): number {
       // @Speed
       
       let maxDist = 0;
@@ -943,30 +978,30 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 
    // Type parameters confuse me ;-;... This works somehow
-   public callEvents<T extends keyof EventsType>(type: T, ...params: EventsType[T] extends (...args: any) => void ? Parameters<EventsType[T]> : never): void {
-      for (const event of this.events[type]) {
-         // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
-         (event as any)(...params as any[]);
-      }
-   }
+   // public callEvents<T extends keyof EventsType>(type: T, ...params: EventsType[T] extends (...args: any) => void ? Parameters<EventsType[T]> : never): void {
+   //    for (const event of this.events[type]) {
+   //       // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
+   //       (event as any)(...params as any[]);
+   //    }
+   // }
 
-   public createEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
-      this.events[type].push(event);
-   }
+   // public createEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
+   //    this.events[type].push(event);
+   // }
 
-   public removeEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
-      const idx = this.events[type].indexOf(event);
-      if (idx !== -1) {
-         this.events[type].splice(idx, 1);
-      } else {
-         console.warn("cant remove");
-      }
-   }
+   // public removeEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
+   //    const idx = this.events[type].indexOf(event);
+   //    if (idx !== -1) {
+   //       this.events[type].splice(idx, 1);
+   //    } else {
+   //       console.warn("cant remove");
+   //    }
+   // }
 
    public remove(): void {
-      if (!this.isRemoved) {
-         (this.callEvents as any)("on_destroy");
-      }
+      // if (!this.isRemoved) {
+      //    (this.callEvents as any)("on_destroy");
+      // }
       this.isRemoved = true;
    }
 
@@ -981,4 +1016,4 @@ abstract class GameObject<EventsType extends GameObjectEvents = GameObjectEvents
    }
 }
 
-export default GameObject;
+export default Entity;
