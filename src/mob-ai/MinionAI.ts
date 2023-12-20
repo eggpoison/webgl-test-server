@@ -1,6 +1,6 @@
 import { MobAIType } from "../mob-ai-types";
 // import AI from "./AI";
-import { EntityTypeConst, ItemType, PlayerCauseOfDeath, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
+import { ItemType, PlayerCauseOfDeath, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
 // import Entity from "../entities/Entity";
 // import Mob from "../entities/mobs/Mob";
 // import Fish from "../entities/mobs/Fish";

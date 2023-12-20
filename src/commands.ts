@@ -1,14 +1,14 @@
-import { BiomeName, EntityType, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
-import ENTITY_CLASS_RECORD from "./entity-classes";
 import Item from "./items/Item";
 import Tile from "./Tile";
 import { damageEntity, healEntity } from "./components/HealthComponent";
-import Entity from "./GameObject";
+import Entity, { NUM_ENTITY_TYPES } from "./GameObject";
 import { InventoryComponentArray } from "./components/ComponentArray";
 import { addItem } from "./components/InventoryComponent";
+import { createEntity } from "./entity-creation";
 
 const ENTITY_SPAWN_RANGE = 200;
 
@@ -62,12 +62,9 @@ const tpBiome = (player: Entity, biomeName: BiomeName): void => {
 }
 
 const summonEntities = (player: Entity, unguardedEntityType: number, amount: number): void => {
-   if (!ENTITY_CLASS_RECORD.hasOwnProperty(unguardedEntityType)) {
+   if (!Number.isInteger(unguardedEntityType) || unguardedEntityType < 0 || unguardedEntityType >= NUM_ENTITY_TYPES) {
       return;
    }
-
-   const entityType = unguardedEntityType as EntityTypeConst;
-   const entityClass = ENTITY_CLASS_RECORD[entityType]();
    
    for (let i = 0; i < amount; i++) {
       const spawnPosition = player.position.copy();
@@ -77,7 +74,7 @@ const summonEntities = (player: Entity, unguardedEntityType: number, amount: num
       spawnPosition.x += spawnOffsetMagnitude * Math.sin(spawnOffsetDirection);
       spawnPosition.y += spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
 
-      new entityClass(spawnPosition);
+      createEntity(spawnPosition, unguardedEntityType as IEntityType);
    }
 }
 

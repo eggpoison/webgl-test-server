@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
+import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, ItemType, Point, randFloat, randInt, RESOURCE_ENTITY_TYPES, SETTINGS, TileType, TileTypeConst } from "webgl-test-shared";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 // import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 // import HungerComponent from "../../entity-components/HungerComponent";

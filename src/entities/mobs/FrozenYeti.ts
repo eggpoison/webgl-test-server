@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, angle, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, angle, randFloat, randInt, randItem } from "webgl-test-shared";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 // import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 // import Mob from "./Mob";

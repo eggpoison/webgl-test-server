@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point } from "webgl-test-shared";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 // import Entity from "./Entity";
 

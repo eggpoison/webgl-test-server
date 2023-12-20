@@ -1,4 +1,4 @@
-import { angle, curveWeight, EntityTypeConst, Point, SETTINGS } from "webgl-test-shared";
+import { angle, curveWeight, Point, SETTINGS } from "webgl-test-shared";
 // import Entity from "../entities/Entity";
 // import Mob from "../entities/mobs/Mob";
 // import AI from "./AI";

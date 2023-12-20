@@ -1,7 +1,9 @@
-import { Point, TribeType } from "webgl-test-shared";
-import Entity, { IEntityType } from "../../GameObject";
+import { IEntityType, Point, TribeType } from "webgl-test-shared";
+import Entity from "../../GameObject";
 import { TotemBannerComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { TotemBannerPosition } from "../../components/TotemBannerComponent";
+
+export const TRIBE_TOTEM_SIZE = 120;
 
 const NUM_TOTEM_POSITIONS = [4, 6, 8];
 

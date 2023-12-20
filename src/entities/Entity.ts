@@ -1,4 +1,4 @@
-import { EntityInfoClientArgs, EntityTypeConst, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
+import { EntityInfoClientArgs, GameObjectDebugData, PlayerCauseOfDeath, Point, SETTINGS, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
 // import Component from "../entity-components/Component";
 // import HealthComponent from "../entity-components/OldHealthComponent";
 // import InventoryComponent from "../entity-components/OldInventoryComponent";

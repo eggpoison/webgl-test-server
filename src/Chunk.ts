@@ -3,14 +3,11 @@ import Entity from "./GameObject";
 
 class Chunk {
    /** Stores all game objects inside the chunk */
-   public readonly gameObjects = new Array<Entity>();
-   
-   public readonly entities = new Set<Entity>();
-   public readonly droppedItems = new Set<Entity>();
-   public readonly projectiles = new Set<Entity>();
+   public readonly entities = new Array<Entity>();
 
    /** Stores all mobs which have the chunk in their vision range */
-   public readonly viewingMobs = new Array<Entity>();
+   // @Incomplete
+   // public readonly viewingMobs = new Array<Entity>();
 
    public readonly riverSteppingStones = new Array<RiverSteppingStoneData>();
 

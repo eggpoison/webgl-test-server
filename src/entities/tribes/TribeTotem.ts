@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GameObjectDebugData, Point, TribeTotemBanner, TribeType, randInt } from "webgl-test-shared";
 // import Entity from "../Entity";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";

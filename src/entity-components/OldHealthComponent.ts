@@ -1,4 +1,4 @@
-import { EntityTypeConst, GameObjectDebugData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
+import { GameObjectDebugData, Mutable, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
 // import Component from "./Component";
 // import Entity from "../entities/Entity";
 import TombstoneDeathManager from "../tombstone-deaths";

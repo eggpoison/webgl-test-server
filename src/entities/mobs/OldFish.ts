@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishColour, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileType, TileTypeConst, customTickIntervalHasPassed } from "webgl-test-shared";
 // import Mob from "./Mob";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 // import ItemCreationComponent from "../../entity-components/ItemCreationComponent";

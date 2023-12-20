@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Board from "../../Board";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";

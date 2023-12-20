@@ -1,12 +1,16 @@
-import { AttackPacket, CRAFTING_RECIPES, ItemType, Point, TribeType, canCraftRecipe } from "webgl-test-shared";
-import Entity, { IEntityType } from "../../GameObject";
-import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, useItem } from "./tribe-member";
+import { AttackPacket, CRAFTING_RECIPES, IEntityType, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeType, canCraftRecipe } from "webgl-test-shared";
+import Entity from "../../GameObject";
+import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, pickupItemEntity, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { InventoryComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { addItemToSlot, consumeItem, consumeItemTypeFromInventory, getInventory, getItem } from "../../components/InventoryComponent";
-import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { InventoryComponent, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, getInventory, getItem } from "../../components/InventoryComponent";
+import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import Board from "../../Board";
-import { addItemEntityPlayerPickupCooldown, createItemEntity } from "../../items/item-entity";
+import { addItemEntityPlayerPickupCooldown, createItemEntity, itemEntityCanBePickedUp } from "../../items/item-entity";
+import { HealthComponent } from "../../components/HealthComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { InventoryUseComponent } from "../../components/InventoryUseComponent";
+import { SERVER } from "../../server";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -17,13 +21,75 @@ const ITEM_THROW_FORCE = 100;
 const ITEM_THROW_OFFSET = 32;
 const THROWN_ITEM_PICKUP_COOLDOWN = 1;
 
-export function createPlayer(position: Point, tribe: Tribe | null): Entity {
+const VACUUM_RANGE = 85;
+const VACUUM_STRENGTH = 25;
+
+export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe | null): Entity {
    const player = new Entity(position, IEntityType.player);
+
+   const hitbox = new CircularHitbox(player, 0, 0, 32);
+   player.addHitbox(hitbox);
+
+   const tribeInfo = TRIBE_INFO_RECORD[tribeType];
+   HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
+
    TribeComponentArray.addComponent(player, {
       tribeType: TribeType.plainspeople,
       tribe: tribe
    });
+
+   const inventoryComponent = new InventoryComponent();
+   InventoryComponentArray.addComponent(player, inventoryComponent);
+   const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
+   createNewInventory(inventoryComponent, "craftingOutputSlot", 1, 1, false);
+   createNewInventory(inventoryComponent, "heldItemSlot", 1, 1, false);
+   createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
+   createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
+   createNewInventory(inventoryComponent, "backpack", -1, -1, false);
+
+   InventoryUseComponentArray.addComponent(player, new InventoryUseComponent(hotbarInventory));
+
    return player;
+}
+
+export function tickPlayer(player: Entity): void {
+   // Vacuum nearby items to the player
+   // @Incomplete: Don't vacuum items which the player doesn't have the inventory space for
+   const minChunkX = Math.max(Math.floor((player.position.x - VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((player.position.x + VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((player.position.y - VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((player.position.y + VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+         for (const itemEntity of chunk.entities) {
+            if (itemEntity.type !== IEntityType.itemEntity || !itemEntityCanBePickedUp(itemEntity, player.id)) {
+               continue;
+            }
+
+            const itemComponent = ItemComponentArray.getComponent(itemEntity);
+            if (!tribeMemberCanPickUpItem(player, itemComponent.itemType)) {
+               continue;
+            }
+            
+            const distance = player.position.calculateDistanceBetween(itemEntity.position);
+            if (distance <= VACUUM_RANGE) {
+               const vacuumDirection = itemEntity.position.calculateAngleBetween(player.position);
+               itemEntity.velocity.x += VACUUM_STRENGTH * Math.sin(vacuumDirection);
+               itemEntity.velocity.y += VACUUM_STRENGTH * Math.cos(vacuumDirection);
+            }
+         }
+      }
+   }
+}
+
+export function onPlayerCollision(player: Entity, collidingEntity: Entity): void {
+   if (collidingEntity.type === IEntityType.itemEntity) {
+      const wasPickedUp = pickupItemEntity(player, collidingEntity);
+      if (wasPickedUp) {
+         SERVER.registerPlayerDroppedItemPickup(player);
+      }
+   }
 }
 
 export function processPlayerCraftingPacket(player: Entity, recipeIndex: number): void {
@@ -64,7 +130,7 @@ export function processPlayerCraftingPacket(player: Entity, recipeIndex: number)
 }
 
 export function processItemPickupPacket(player: Entity, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
-   if (!Board.entities.hasOwnProperty(entityID)) {
+   if (!Board.entityRecord.hasOwnProperty(entityID)) {
       return;
    }
 
@@ -75,7 +141,7 @@ export function processItemPickupPacket(player: Entity, entityID: number, invent
       return;
    }
 
-   const targetInventoryComponent = InventoryComponentArray.getComponent(Board.entities[entityID]);
+   const targetInventoryComponent = InventoryComponentArray.getComponent(Board.entityRecord[entityID]);
 
    const pickedUpItem = getItem(targetInventoryComponent, inventoryName, itemSlot);
    if (pickedUpItem === null) return;
@@ -88,7 +154,7 @@ export function processItemPickupPacket(player: Entity, entityID: number, invent
 }
 
 export function processItemReleasePacket(player: Entity, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
-   if (!Board.entities.hasOwnProperty(entityID)) {
+   if (!Board.entityRecord.hasOwnProperty(entityID)) {
       return;
    }
 
@@ -98,7 +164,7 @@ export function processItemReleasePacket(player: Entity, entityID: number, inven
    const heldItemInventory = getInventory(inventoryComponent, "heldItemSlot");
    if (!heldItemInventory.itemSlots.hasOwnProperty(1)) return;
 
-   const targetInventoryComponent = InventoryComponentArray.getComponent(Board.entities[entityID]);
+   const targetInventoryComponent = InventoryComponentArray.getComponent(Board.entityRecord[entityID]);
 
    const heldItem = heldItemInventory.itemSlots[1];
    

@@ -1,4 +1,4 @@
-import { EntityTypeConst, ItemType } from "webgl-test-shared";
+import { ItemType } from "webgl-test-shared";
 // import DroppedItem from "../items/DroppedItem";
 // import Component from "./Component";
 // import Entity from "../entities/Entity";

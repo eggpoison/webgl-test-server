@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, canCraftRecipe, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, EntityTypeConst, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, canCraftRecipe, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, InventoryData, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TribeMemberAction, TribeType, Vector } from "webgl-test-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 // import DroppedItem from "../../items/DroppedItem";

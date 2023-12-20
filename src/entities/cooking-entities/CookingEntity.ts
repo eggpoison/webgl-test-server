@@ -1,4 +1,4 @@
-import { CookingIngredientItemType, EntityTypeConst, FuelSourceItemType, InventoryData, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { CookingIngredientItemType, FuelSourceItemType, InventoryData, ItemType, Point, SETTINGS } from "webgl-test-shared";
 // import Entity, { EntityComponents } from "../Entity";
 // import InventoryComponent, { serializeInventoryData } from "../../entity-components/OldInventoryComponent";
 import Item from "../../items/Item";

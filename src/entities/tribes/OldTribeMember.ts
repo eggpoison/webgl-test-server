@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, EntityTypeConst, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, RESOURCE_ENTITY_TYPES_CONST, SETTINGS, StatusEffectConst, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffectConst, SwordItemInfo, TRIBE_INFO_RECORD, TileTypeConst, ToolItemInfo, TribeMemberAction, TribeType, Vector, randInt } from "webgl-test-shared";
 import Board from "../../Board";
 // import Entity from "../Entity";
 // import InventoryComponent from "../../entity-components/OldInventoryComponent";
@@ -103,8 +103,6 @@ import { getEntitiesInVisionRange } from "../../ai-shared";
 // }
 
 // abstract class TribeMember extends Mob {
-//    private static readonly testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1);
-//    private static readonly testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1);
    
 //    private static readonly DEATH_ITEM_DROP_RANGE = 38;
    

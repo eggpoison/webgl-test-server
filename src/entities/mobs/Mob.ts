@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, circleAndRectangleDoIntersectWithOffset, circlesDoIntersect, circulesDoIntersectWithOffset, EntityTypeConst, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circleAndRectangleDoIntersectWithOffset, circlesDoIntersect, circulesDoIntersectWithOffset, GameObjectDebugData, Point, randInt, SETTINGS } from "webgl-test-shared";
 // import AI from "../../mob-ai/AI";
 // import Entity, { EntityComponents } from "../Entity";
 import Board from "../../Board";

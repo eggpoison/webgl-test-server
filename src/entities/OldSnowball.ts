@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat, randSign } from "webgl-test-shared";
 // import Entity from "./Entity";
 // import HealthComponent from "../entity-components/OldHealthComponent";
 import CircularHitbox from "../hitboxes/CircularHitbox";

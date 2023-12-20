@@ -1,5 +1,5 @@
-import { Point, TribeType } from "webgl-test-shared";
-import Entity, { IEntityType } from "../../GameObject";
+import { IEntityType, Point, TribeType } from "webgl-test-shared";
+import Entity from "../../GameObject";
 import Tribe from "../../Tribe";
 import { TribeComponentArray } from "../../components/ComponentArray";
 

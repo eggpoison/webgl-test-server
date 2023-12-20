@@ -1,4 +1,4 @@
-import { EntityTypeConst, GameObjectDebugData, SETTINGS } from "webgl-test-shared";
+import { GameObjectDebugData, SETTINGS } from "webgl-test-shared";
 // import BerryBush from "../entities/resources/BerryBush";
 // import AI from "./AI";
 import Board from "../Board";

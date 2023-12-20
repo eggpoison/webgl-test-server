@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, Vector, lerp, randFloat, randInt } from "webgl-test-shared";
 // import Entity from "../Entity";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 // import ItemCreationComponent from "../../entity-components/ItemCreationComponent";

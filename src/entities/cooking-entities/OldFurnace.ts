@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, Point } from "webgl-test-shared";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 // import HeatingEntity from "./CookingEntity";

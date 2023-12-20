@@ -1,10 +1,9 @@
-import { BiomeName, EntityTypeConst, TileType, TileTypeConst } from "webgl-test-shared";
+import { BiomeName, IEntityType, TileType, TileTypeConst } from "webgl-test-shared";
 import Tile from "./Tile";
-import ENTITY_CLASS_RECORD from "./entity-classes";
-import Entity from "./GameObject";
+import Entity, { NUM_ENTITY_TYPES } from "./GameObject";
 
-const entityCounts = new Array<EntityTypeConst>();
-for (let i = 0; i < Object.keys(ENTITY_CLASS_RECORD).length; i++) {
+const entityCounts = new Array<IEntityType>();
+for (let i = 0; i < NUM_ENTITY_TYPES; i++) {
    entityCounts.push(0);
 }
 
@@ -40,7 +39,7 @@ export function removeEntityFromCensus(entity: Entity): void {
    trackedEntityIDs.delete(entity.id);
 }
 
-export function getEntityCount(entityType: EntityTypeConst): number {
+export function getEntityCount(entityType: IEntityType): number {
    return entityCounts[entityType];
 }
 
@@ -99,7 +98,7 @@ export function getTilesOfType(type: TileType): ReadonlyArray<Tile> {
 }
 
 export function resetCensus(): void {
-   for (let i = 0; i < Object.keys(ENTITY_CLASS_RECORD).length; i++) {
+   for (let i = 0; i < NUM_ENTITY_TYPES; i++) {
       entityCounts[i] = 0;
    }
 

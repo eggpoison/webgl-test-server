@@ -1,17 +1,17 @@
-import { EntityTypeConst, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
-import ENTITY_CLASS_RECORD from "./entity-classes";
+import { IEntityType, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
 import Entity from "./GameObject";
-import { yetiSpawnPositionIsValid } from "./entities/mobs/Yeti";
+import { yetiSpawnPositionIsValid } from "./entities/mobs/OldYeti";
+import { createEntity } from "./entity-creation";
 
 const PACK_SPAWN_RANGE = 200;
 
 export interface EntitySpawnInfo {
    /** The type of entity to spawn */
-   readonly entityType: EntityTypeConst;
+   readonly entityType: IEntityType;
    /** Array of all tile types in which the entity is able to be spawned in */
    readonly spawnableTiles: ReadonlyArray<TileTypeConst>;
    /** Average number of spawn attempts that happen each second per chunk. */
@@ -25,7 +25,7 @@ export interface EntitySpawnInfo {
 
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
-      entityType: EntityTypeConst.cow,
+      entityType: IEntityType.cow,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.01,
@@ -34,7 +34,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.berry_bush,
+      entityType: IEntityType.berryBush,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.001,
       maxDensity: 0.0025,
@@ -43,7 +43,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.tree,
+      entityType: IEntityType.tree,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.015,
@@ -52,7 +52,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.tombstone,
+      entityType: IEntityType.tombstone,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.003,
@@ -61,7 +61,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: true
    },
    {
-      entityType: EntityTypeConst.boulder,
+      entityType: IEntityType.boulder,
       spawnableTiles: [TileTypeConst.rock],
       spawnRate: 0.005,
       maxDensity: 0.025,
@@ -70,7 +70,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.cactus,
+      entityType: IEntityType.cactus,
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.03,
@@ -79,7 +79,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.yeti,
+      entityType: IEntityType.yeti,
       spawnableTiles: [TileTypeConst.snow],
       spawnRate: 0.004,
       maxDensity: 0.008,
@@ -88,7 +88,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.ice_spikes,
+      entityType: IEntityType.iceSpikes,
       spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
       spawnRate: 0.015,
       maxDensity: 0.06,
@@ -97,7 +97,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.slimewisp,
+      entityType: IEntityType.slimewisp,
       spawnableTiles: [TileTypeConst.slime],
       spawnRate: 0.2,
       maxDensity: 0.3,
@@ -106,7 +106,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.krumblid,
+      entityType: IEntityType.krumblid,
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.015,
@@ -115,7 +115,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.frozen_yeti,
+      entityType: IEntityType.frozenYeti,
       spawnableTiles: [TileTypeConst.fimbultur],
       spawnRate: 0.004,
       maxDensity: 0.008,
@@ -124,7 +124,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       onlySpawnsInNight: false
    },
    {
-      entityType: EntityTypeConst.fish,
+      entityType: IEntityType.fish,
       spawnableTiles: [TileTypeConst.water],
       spawnRate: 0.015,
       maxDensity: 0.03,
@@ -140,7 +140,7 @@ const MIN_SPAWN_DISTANCE_SQUARED = MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE;
 
 const customSpawnConditionsAreMet = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOriginY: number) => {
    switch (spawnInfo.entityType) {
-      case EntityTypeConst.yeti: {
+      case IEntityType.yeti: {
          return yetiSpawnPositionIsValid(spawnOriginX, spawnOriginY);
       }
    }
@@ -178,9 +178,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    
    // const cowSpecies = randInt(0, 1);
    
-   const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
-   
-   const entity = new entityClass(new Point(spawnOriginX, spawnOriginY));
+   const entity = createEntity(new Point(spawnOriginX, spawnOriginY), spawnInfo.entityType);
    addEntityToCensus(entity);
 
    // Pack spawning
@@ -220,7 +218,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
 
       if (spawnPositionIsValid(spawnPositionX, spawnPositionY)) {
          const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
-         const entity = new entityClass(spawnPosition);
+         const entity = createEntity(spawnPosition, spawnInfo.entityType);
          addEntityToCensus(entity);
          i++;
       }

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityType, EntityTypeConst, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, TribeType, veryBadHash } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityType, GameObjectDebugData, ItemType, PlayerCauseOfDeath, Point, randFloat, randInt, randItem, SETTINGS, SnowballSize, TileTypeConst, TribeType, veryBadHash } from "webgl-test-shared";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 // import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 // import HungerComponent from "../../entity-components/HungerComponent";

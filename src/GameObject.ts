@@ -1,10 +1,16 @@
-import { GameObjectDebugData, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, TribeMemberAction, Vector, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { DEFAULT_COLLISION_MASK, GameObjectDebugData, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, TribeMemberAction, Vector, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 // import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
+import { onCowDeath } from "./entities/mobs/cow";
+import { onTreeDeath } from "./entities/resources/tree";
+import { onPlayerCollision } from "./entities/tribes/player";
+import { onBoulderDeath } from "./entities/resources/boulder";
+import { onIceSpikesCollision } from "./entities/resources/ice-spikes";
+import { onIceShardCollision } from "./entities/projectiles/ice-shards";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -39,52 +45,23 @@ enum TileCollisionAxis {
    diagonal = 3
 }
 
-// export type GameEvent<T extends GameObjectEvents, E extends keyof T> = T[E];
-
 export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
 
-export const enum IEntityType {
-   cow,
-   zombie,
-   tombstone,
-   tree,
-   workbench,
-   boulder,
-   berryBush,
-   cactus,
-   yeti,
-   iceSpikes,
-   slime,
-   slimewisp,
-   tribesman,
-   player,
-   tribeTotem,
-   tribeHut,
-   barrel,
-   campfire,
-   furnace,
-   snowball,
-   krumblid,
-   frozenYeti,
-   fish,
-   itemEntity,
-   projectile
-}
+export const RESOURCE_ENTITY_TYPES: ReadonlyArray<IEntityType> = [IEntityType.krumblid, IEntityType.fish, IEntityType.cow, IEntityType.tree, IEntityType.boulder, IEntityType.cactus, IEntityType.iceSpikes, IEntityType.berryBush];
+
+export const NUM_ENTITY_TYPES = 25;
 
 /** A generic class for any object in the world */
-class Entity {
+class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
    private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1);
    
    /** Unique identifier for each entity */
    public readonly id: number;
 
-   public readonly type: IEntityType;
+   public readonly type: T;
 
    public ageTicks = 0;
-
-   /** Bitset representing which components the entity has */
-   public components = 0;
 
    /** Position of the object in the world */
    public position: Point;
@@ -96,7 +73,7 @@ class Entity {
    public terminalVelocity = 0;
 
    /** Direction the object is facing in radians */
-   public rotation = 0;
+   public rotation = 0.0001;
 
    /** Affects the force the game object experiences during collisions */
    public mass = 1;
@@ -139,16 +116,17 @@ class Entity {
    /** Indicates whether the game object could potentially collide with a wall tile */
    public hasPotentialWallTileCollisions = false;
 
-   public isInRiver: boolean;
+   public isInRiver = false;
 
    protected overrideMoveSpeedMultiplier = false;
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
-   public readonly collisionBit = 0;
-   public readonly collisionMask = 0;
+   // @Incomplete
+   public readonly collisionBit = 1;
+   public readonly collisionMask = DEFAULT_COLLISION_MASK;
 
-   constructor(position: Point, type: IEntityType) {
+   constructor(position: Point, type: T) {
       this.position = position;
       this.type = type;
 
@@ -162,6 +140,8 @@ class Entity {
 
       this.updateTile();
       this.isInRiver = this.checkIsInRiver();
+
+      Board.addEntityToJoinBuffer(this);
    }
 
    // public abstract callCollisionEvent(gameObject: GameObject): void;
@@ -469,7 +449,7 @@ class Entity {
    }
 
    protected addToChunk(chunk: Chunk): void {
-      chunk.gameObjects.push(this);
+      chunk.entities.push(this);
 
       // @Incomplete
       // const numViewingMobs = chunk.viewingMobs.length;
@@ -486,9 +466,9 @@ class Entity {
    }
 
    public removeFromChunk(chunk: Chunk): void {
-      const idx = chunk.gameObjects.indexOf(this);
+      const idx = chunk.entities.indexOf(this);
       if (idx !== -1) {
-         chunk.gameObjects.splice(idx, 1);
+         chunk.entities.splice(idx, 1);
       }
 
       // @Incomplete
@@ -695,7 +675,8 @@ class Entity {
 
          if (offsetPair[0].x === offsetPair[1].x) {
             // Division by 0 error
-            throw new Error();
+            // @Incomplete: Do stuff
+            return;
          }
 
          const leftPointX = leftPoint.x + this.position.x;
@@ -882,8 +863,7 @@ class Entity {
       }
 
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_UNITS || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_UNITS) {
-         console.log(this.boundingArea);
-         console.log(this.position.x, this.position.y);
+         console.log(this);
          throw new Error("Unable to properly resolve wall collisions.");
       }
    }
@@ -914,37 +894,48 @@ class Entity {
       return false;
    }
 
-   public collide(gameObject: Entity): void {
-      if ((gameObject.collisionMask & this.collisionBit) === 0 || (this.collisionMask & gameObject.collisionBit) === 0) {
+   public collide(collidingEntity: Entity): void {
+      if ((collidingEntity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & collidingEntity.collisionBit) === 0) {
          return;
       }
       
       if (!this.isStatic) {
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
-         const distanceBetweenEntities = this.position.calculateDistanceBetween(gameObject.position);
-         const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(gameObject);
+         const distanceBetweenEntities = this.position.calculateDistanceBetween(collidingEntity.position);
+         const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
          const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
          
-         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * gameObject.mass / this.mass * gameObject.collisionPushForceMultiplier;
-         const pushAngle = this.position.calculateAngleBetween(gameObject.position) + Math.PI;
+         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingEntity.mass / this.mass * collidingEntity.collisionPushForceMultiplier;
+         const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
          this.velocity.x += force * Math.sin(pushAngle);
          this.velocity.y += force * Math.cos(pushAngle);
       }
 
-      const idx = this.collidingObjects.indexOf(gameObject);
+      const idx = this.collidingObjects.indexOf(collidingEntity);
       if (idx === -1) {
          // New colliding game object
-         this.collidingObjects.push(gameObject);
+         this.collidingObjects.push(collidingEntity);
          this.collidingObjectTicks.push(Board.ticks);
-         // (this.callEvents as any)("enter_collision", gameObject);
       } else {
          // Existing colliding game object
          this.collidingObjectTicks[idx] = Board.ticks;
       }
 
-      // (this.callEvents as any)("during_collision", gameObject);
-      // gameObject.callCollisionEvent(this as any);
+      switch (this.type) {
+         case IEntityType.player: {
+            onPlayerCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.iceSpikes: {
+            onIceSpikesCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.iceShardProjectile: {
+            onIceShardCollision(this, collidingEntity);
+            break;
+         }
+      }
    }
 
    private calculateMaxDistanceFromGameObject(gameObject: Entity): number {
@@ -977,31 +968,27 @@ class Entity {
       return maxDist;
    }
 
-   // Type parameters confuse me ;-;... This works somehow
-   // public callEvents<T extends keyof EventsType>(type: T, ...params: EventsType[T] extends (...args: any) => void ? Parameters<EventsType[T]> : never): void {
-   //    for (const event of this.events[type]) {
-   //       // Unfortunate that this unsafe solution has to be used, but I couldn't find an alternative
-   //       (event as any)(...params as any[]);
-   //    }
-   // }
-
-   // public createEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
-   //    this.events[type].push(event);
-   // }
-
-   // public removeEvent<T extends keyof EventsType>(type: T, event: EventsType[T]): void {
-   //    const idx = this.events[type].indexOf(event);
-   //    if (idx !== -1) {
-   //       this.events[type].splice(idx, 1);
-   //    } else {
-   //       console.warn("cant remove");
-   //    }
-   // }
-
    public remove(): void {
-      // if (!this.isRemoved) {
-      //    (this.callEvents as any)("on_destroy");
-      // }
+      if (!this.isRemoved) {
+         Board.addEntityToRemoveBuffer(this);
+         Board.removeEntityFromJoinBuffer(this);
+
+         switch (this.type) {
+            case IEntityType.cow: {
+               onCowDeath(this);
+               break;
+            }
+            case IEntityType.tree: {
+               onTreeDeath(this);
+               break;
+            }
+            case IEntityType.boulder: {
+               onBoulderDeath(this);
+               break;
+            }
+         }
+      }
+
       this.isRemoved = true;
    }
 

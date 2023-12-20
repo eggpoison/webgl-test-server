@@ -1,8 +1,8 @@
-import { EntityTypeConst, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
+import { IEntityType, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
-import Entity, { IEntityType } from "./GameObject";
+import Entity from "./GameObject";
 import { TotemBannerComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { createTribesman } from "./entities/tribes/tribesman";
 import { addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
@@ -14,9 +14,9 @@ const getAvailableID = (): number => {
 }
 
 const TRIBE_BUILDING_AREA_INFLUENCES = {
-   [EntityTypeConst.tribe_totem]: 200,
-   [EntityTypeConst.tribe_hut]: 150
-} satisfies Partial<Record<EntityTypeConst, number>>;
+   [IEntityType.tribeTotem]: 200,
+   [IEntityType.tribeHut]: 150
+} satisfies Partial<Record<IEntityType, number>>;
 
 interface TileInfluence {
    readonly tile: Tile;
@@ -65,11 +65,12 @@ class Tribe {
       this.totem = totem;
       TribeComponentArray.getComponent(totem).tribe = this;
 
-      totem.createEvent("death", () => {
-         this.destroy();
-      });
+      // @Incomplete
+      // totem.createEvent("death", () => {
+      //    this.destroy();
+      // });
 
-      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_totem]);
+      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeTotem]);
    }
 
    public tick(): void {
@@ -104,13 +105,13 @@ class Tribe {
       // Create a tribesman for the hut
       this.createNewTribesman(hut);
 
-      this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
+      this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeHut]);
       
       this.tribesmanCap++;
 
-      hut.createEvent("death", () => {
-         this.removeHut(hut);
-      });
+      // hut.createEvent("death", () => {
+      //    this.removeHut(hut);
+      // });
       
       const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
       addBannerToTotem(bannerComponent, this.huts.length - 1);
@@ -125,7 +126,7 @@ class Tribe {
       const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
       removeBannerFromTotem(bannerComponent, idx);
 
-      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
+      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeHut]);
       
       this.tribesmanCap--;
    }
@@ -150,13 +151,14 @@ class Tribe {
 
       this.members.push(tribesman);
 
-      // Attempt to respawn the tribesman when it  is killed
-      tribesman.createEvent("death", () => {
-         // Only respawn the tribesman if their hut is alive
-         if (!hut.isRemoved) {
-            this.createNewTribesman(hut);
-         }
-      });
+      // Attempt to respawn the tribesman when it is killed
+      // @Incomplete
+      // tribesman.createEvent("death", () => {
+      //    // Only respawn the tribesman if their hut is alive
+      //    if (!hut.isRemoved) {
+      //       this.createNewTribesman(hut);
+      //    }
+      // });
    }
 
    public getNumHuts(): number {

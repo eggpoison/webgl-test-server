@@ -1,14 +1,20 @@
-import { ItemType, Point } from "webgl-test-shared";
-import Entity, { IEntityType } from "../GameObject";
+import { IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import Entity from "../GameObject";
 import { ItemComponentArray } from "../components/ComponentArray";
+import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
 export function createItemEntity(position: Point, itemType: ItemType, amount: number): Entity {
    const itemEntity = new Entity(position, IEntityType.itemEntity);
+
+   const hitbox = new RectangularHitbox(itemEntity, 0, 0, SETTINGS.ITEM_SIZE, SETTINGS.ITEM_SIZE);
+   itemEntity.addHitbox(hitbox);
+
    ItemComponentArray.addComponent(itemEntity, {
-      type: itemType,
+      itemType: itemType,
       amount: amount,
       entityPickupCooldowns: {}
    });
+
    return itemEntity;
 }
 

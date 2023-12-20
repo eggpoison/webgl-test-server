@@ -1,18 +1,37 @@
-import { PlayerCauseOfDeath, clamp } from "webgl-test-shared";
-import Entity, { IEntityType } from "../GameObject";
+import { IEntityType, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
+import Entity from "../GameObject";
 import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { SERVER } from "../server";
 
-export interface HealthComponent {
-   readonly maxHealth: number;
-   health: number;
+export class HealthComponent {
+   public readonly maxHealth: number;
+   public health: number;
    /** How much that incoming damage gets reduced. 0 = none, 1 = all */
-   defence: number;
-   readonly localIframeHashes: Array<string>;
-   readonly localIframeDurations: Array<number>;
+   public defence = 0;
+   public readonly localIframeHashes = new Array<string>();
+   public readonly localIframeDurations = new Array<number>();
    // @Cleanup @Memory: This is only used to send to the player, does it have to be stored here??? (expensive)
-   amountHealedThisTick: number;
+   public amountHealedThisTick = 0;
+
+   constructor(maxHealth: number) {
+      this.maxHealth = maxHealth;
+      this.health = maxHealth;
+   }
+}
+
+export function tickHealthComponent(healthComponent: HealthComponent): void {
+   healthComponent.amountHealedThisTick = 0;
+
+   // Update local invulnerability hashes
+   for (let i = 0; i < healthComponent.localIframeHashes.length; i++) {
+      healthComponent.localIframeDurations[i] -= 1 / SETTINGS.TPS;
+      if (healthComponent.localIframeDurations[i] <= 0) {
+         healthComponent.localIframeHashes.splice(i, 1);
+         healthComponent.localIframeDurations.splice(i, 1);
+         i--;
+      }
+   }
 }
 
 /**
@@ -23,7 +42,9 @@ export interface HealthComponent {
 export function damageEntity(entity: Entity, damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, hitFlags: number, attackHash?: string): boolean {
    const healthComponent = HealthComponentArray.getComponent(entity);
    
-   if (entityIsInvulnerable(healthComponent, attackHash) || healthComponent.health <= 0) return false;
+   if (entityIsInvulnerable(healthComponent, attackHash) || healthComponent.health <= 0) {
+      return false;
+   }
 
    const absorbedDamage = damage * clamp(healthComponent.defence, 0, 1);
    const actualDamage = damage - absorbedDamage;

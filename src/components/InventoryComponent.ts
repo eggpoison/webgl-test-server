@@ -37,20 +37,18 @@ export function serializeInventoryData(inventory: Inventory, inventoryName: stri
    return inventoryData;
 }
 
-interface InventoryComponent {
+export class InventoryComponent {
    /** Stores a record of all inventories associated with the inventory component. */
-   readonly inventories: Record<string, Inventory>;
+   public readonly inventories: Record<string, Inventory> = {};
    /**
     * Stores all inventories associated with the inventory component in the order of when they were added.
     * Note: the order the inventories were added affects which inventory picked up items are added to.
     */
-   readonly inventoryArray: Array<[name: string, inventory: Inventory]>;
-   bowCooldownTicks: number;
-   readonly itemAttackCooldowns: Record<number, number>;
+   public readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
 }
 
 /** Creates and stores a new inventory in the component. */
-export function createNewInventory(inventoryComponent: InventoryComponent, name: string, width: number, height: number, acceptsPickedUpItems: boolean): void {
+export function createNewInventory(inventoryComponent: InventoryComponent, name: string, width: number, height: number, acceptsPickedUpItems: boolean): Inventory {
    if (inventoryComponent.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
    
    const inventory: Inventory = {
@@ -62,6 +60,8 @@ export function createNewInventory(inventoryComponent: InventoryComponent, name:
 
    inventoryComponent.inventories[name] = inventory;
    inventoryComponent.inventoryArray.push([name, inventory]);
+
+   return inventory;
 }
 
 export function resizeInventory(inventoryComponent: InventoryComponent, name: string, width: number, height: number): void {
@@ -117,7 +117,7 @@ export function pickupItemEntity(entity: Entity, itemEntity: Entity): boolean {
       }
 
       
-      const amountPickedUp = addItemToInventory(inventoryComponent, inventoryName, itemComponent.type, itemComponent.amount);
+      const amountPickedUp = addItemToInventory(inventoryComponent, inventoryName, itemComponent.itemType, itemComponent.amount);
       itemComponent.amount -= amountPickedUp;
 
       // When all of the item stack is picked up, don't attempt to add to any other inventories.
@@ -340,5 +340,3 @@ export function dropInventory(entity: Entity, inventoryComponent: InventoryCompo
       }
    }
 }
-
-export default InventoryComponent;

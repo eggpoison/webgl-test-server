@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, ItemType, PlayerCauseOfDeath, Point, ProjectileType, SETTINGS, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 // import Entity from "../Entity";
 // import ItemCreationComponent from "../../entity-components/ItemCreationComponent";
 // import HealthComponent from "../../entity-components/OldHealthComponent";

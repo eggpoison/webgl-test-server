@@ -1,4 +1,4 @@
-import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, TribesmanState, angle, distance, randItem } from "webgl-test-shared";
+import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, FoodItemInfo, GameObjectDebugData, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, InventoryData, ItemType, Point, SETTINGS, ToolItemInfo, TribeMemberAction, TribeType, TribesmanState, angle, distance, randItem } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 // import TribeMember, { AttackToolType, EntityRelationship, getEntityAttackToolType } from "./TribeMember";
 import CircularHitbox from "../../hitboxes/CircularHitbox";

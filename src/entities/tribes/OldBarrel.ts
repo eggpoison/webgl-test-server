@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityTypeConst, InventoryData, ItemSlotsData, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, InventoryData, ItemSlotsData, Point } from "webgl-test-shared";
 // import Entity from "../Entity";
 // import HealthComponent from "../../entity-components/OldHealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";

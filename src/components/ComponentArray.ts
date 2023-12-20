@@ -1,13 +1,17 @@
 import Entity from "../GameObject";
 import { HealthComponent } from "./HealthComponent";
-import InventoryComponent from "./InventoryComponent";
 import { ItemComponent } from "./ItemComponent";
 import { StatusEffectComponent } from "./StatusEffectComponent";
 import { TribeComponent } from "./TribeComponent";
 import { TotemBannerComponent } from "./TotemBannerComponent";
+import { InventoryComponent } from "./InventoryComponent";
+import { TreeComponent } from "./TreeComponent";
+import { BerryBushComponent } from "./BerryBushComponent";
+import { InventoryUseComponent } from "./InventoryUseComponent";
+import { BoulderComponent } from "./BoulderComponent";
 
 class ComponentArray<T extends {}> {
-   private components = new Array<T>();
+   public components = new Array<T>();
    
    /** Maps entity IDs to component indexes */
    private entityToIndexMap: Record<number, number> = {};
@@ -42,3 +46,7 @@ export const HealthComponentArray = new ComponentArray<HealthComponent>();
 export const ItemComponentArray = new ComponentArray<ItemComponent>();
 export const StatusEffectComponentArray = new ComponentArray<StatusEffectComponent>();
 export const TotemBannerComponentArray = new ComponentArray<TotemBannerComponent>();
+export const TreeComponentArray = new ComponentArray<TreeComponent>();
+export const BerryBushComponentArray = new ComponentArray<BerryBushComponent>();
+export const InventoryUseComponentArray = new ComponentArray<InventoryUseComponent>();
+export const BoulderComponentArray = new ComponentArray<BoulderComponent>();
