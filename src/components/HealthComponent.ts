@@ -3,6 +3,7 @@ import Entity from "../GameObject";
 import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { SERVER } from "../server";
+import { hurtBerryBush } from "../entities/resources/berry-bush";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -53,7 +54,6 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
 
    // If the entity was killed by the attack, destroy the entity
    if (healthComponent.health <= 0) {
-      // this.entity.callEvents("death", attackingEntity);
       entity.remove();
 
       // @Cleanup: This should instead just be an event created in the player class
@@ -75,6 +75,12 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
 
    if (hitDirection !== null && !entity.isStatic) {
       applyKnockback(entity, knockback, hitDirection);
+   }
+
+   switch (entity.type) {
+      case IEntityType.berryBush: {
+         hurtBerryBush(entity);
+      }
    }
 
    return true;

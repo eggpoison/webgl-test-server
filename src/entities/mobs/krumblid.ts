@@ -1,8 +1,9 @@
-import { IEntityType, Point } from "webgl-test-shared";
+import { IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
+import { createItemsOverEntity } from "../../entity-shared";
 
 const MAX_HEALTH = 15;
 
@@ -17,4 +18,8 @@ export function createKrumblid(position: Point): Entity {
    HealthComponentArray.addComponent(krumblid, new HealthComponent(MAX_HEALTH));
 
    return krumblid;
+}
+
+export function onKrumblidDeath(krumblid: Entity): void {
+   createItemsOverEntity(krumblid, ItemType.leather, randInt(2, 3));
 }

@@ -67,7 +67,12 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
    let clientArgs: EntityData<EntityType>["clientArgs"];
    switch (entity.type) {
       case IEntityType.barrel: {
-         clientArgs = [];
+         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
+            serializeInventoryData(getInventory(inventoryComponent, "inventory"), "inventory")
+         ];
          break;
       }
       case IEntityType.berryBush: {

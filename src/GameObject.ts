@@ -11,6 +11,7 @@ import { onPlayerCollision } from "./entities/tribes/player";
 import { onBoulderDeath } from "./entities/resources/boulder";
 import { onIceSpikesCollision } from "./entities/resources/ice-spikes";
 import { onIceShardCollision } from "./entities/projectiles/ice-shards";
+import { onKrumblidDeath } from "./entities/mobs/krumblid";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -984,6 +985,10 @@ class Entity<T extends IEntityType = IEntityType> {
             }
             case IEntityType.boulder: {
                onBoulderDeath(this);
+               break;
+            }
+            case IEntityType.krumblid: {
+               onKrumblidDeath(this);
                break;
             }
          }

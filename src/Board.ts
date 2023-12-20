@@ -14,6 +14,7 @@ import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { tickPlayer } from "./entities/tribes/player";
 import Entity from "./GameObject";
 import { tickHealthComponent } from "./components/HealthComponent";
+import { tickBerryBush } from "./entities/resources/berry-bush";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -238,6 +239,10 @@ abstract class Board {
          switch (entity.type) {
             case IEntityType.player: {
                tickPlayer(entity);
+               break;
+            }
+            case IEntityType.berryBush: {
+               tickBerryBush(entity);
                break;
             }
          }

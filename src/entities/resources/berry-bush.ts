@@ -1,10 +1,15 @@
-import { IEntityType, Point } from "webgl-test-shared";
+import { IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BerryBushComponentArray, HealthComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
+import { createItemEntity } from "../../items/item-entity";
+import Board from "../../Board";
 
 const BERRY_BUSH_RADIUS = 40;
+
+/** Number of seconds it takes for a berry bush to regrow one of its berries */
+const BERRY_GROW_TIME = 30;
 
 export function createBerryBush(position: Point): Entity {
    const berryBush = new Entity(position, IEntityType.berryBush);
@@ -15,10 +20,53 @@ export function createBerryBush(position: Point): Entity {
    HealthComponentArray.addComponent(berryBush, new HealthComponent(10));
 
    BerryBushComponentArray.addComponent(berryBush, {
-      numBerries: 5
+      numBerries: 5,
+      berryGrowTimer: 0
    });
 
    berryBush.isStatic = true;
 
    return berryBush;
+}
+
+export function tickBerryBush(berryBush: Entity): void {
+   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+   if (berryBushComponent.numBerries >= 5) {
+      return;
+   }
+
+   berryBushComponent.berryGrowTimer += 1 / SETTINGS.TPS;
+   if (berryBushComponent.berryGrowTimer >= BERRY_GROW_TIME) {
+      // Grow a new berry
+      berryBushComponent.berryGrowTimer = 0;
+      berryBushComponent.numBerries++;
+   }
+}
+
+export function hurtBerryBush(berryBush: Entity): void {
+   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+   if (berryBushComponent.numBerries === 0) {
+      return;
+   }
+
+   berryBushComponent.numBerries--;
+
+   // Generate new spawn positions until we find one inside the board
+   let position: Point;
+   let spawnDirection: number;
+   do {
+      // @Speed: Garbage collection
+      position = berryBush.position.copy();
+
+      spawnDirection = 2 * Math.PI * Math.random();
+      const spawnOffset = Point.fromVectorForm(40, spawnDirection);
+
+      position.add(spawnOffset);
+   } while (!Board.isInBoard(position));
+
+   const itemEntity = createItemEntity(position, ItemType.berry, 1);
+   
+   const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
+   itemEntity.velocity.x = 40 * Math.sin(spawnDirection + velocityDirectionOffset);
+   itemEntity.velocity.y = 40 * Math.cos(spawnDirection + velocityDirectionOffset);
 }
