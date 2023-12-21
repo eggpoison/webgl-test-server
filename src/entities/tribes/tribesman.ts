@@ -1,4 +1,4 @@
-import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Point, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, angle } from "webgl-test-shared";
+import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Point, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, angle, distance } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -7,8 +7,8 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, addItemToSlot, createNewInventory, getInventory, getItem, pickupItemEntity, removeItemFromInventory } from "../../components/InventoryComponent";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { AttackToolType, EntityRelationship, getEntityAttackToolType, getTribeMemberRelationship, tickTribeMember, useItem } from "./tribe-member";
-import { getEntitiesInVisionRange, willStopAtDesiredDistance } from "../../ai-shared";
+import { AttackToolType, EntityRelationship, attackEntity, calculateAttackTarget, calculateRadialAttackTargets, getEntityAttackToolType, getTribeMemberRelationship, tickTribeMember, useItem } from "./tribe-member";
+import { getClosestEntity, getEntitiesInVisionRange, willStopAtDesiredDistance } from "../../ai-shared";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 
 const RADIUS = 28;
@@ -20,6 +20,15 @@ const SLOW_ACCELERATION = 150;
 
 const TERMINAL_VELOCITY = 150;
 const ACCELERATION = 300;
+
+/** How far away from the entity the attack is done */
+const ATTACK_OFFSET = 50;
+/** Max distance from the attack position that the attack will be registered from */
+const ATTACK_RADIUS = 50;
+
+/** How far the tribesmen will try to stay away from the entity they're attacking */
+const DESIRED_MELEE_ATTACK_DISTANCE = 60;
+const DESIRED_RANGED_ATTACK_DISTANCE = 260;
 
 export function createTribesman(position: Point, tribeType: TribeType, tribe: Tribe): Entity {
    const tribesman = new Entity(position, IEntityType.tribesman, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
@@ -150,24 +159,24 @@ export function tickTribesman(tribesman: Entity): void {
       
    // Attack enemies
    if (visibleEnemies.length > 0) {
-      this.huntEntity(this.getClosestEntity(this.enemiesInVisionRange));
-         // @Incomplete
+      huntEntity(tribesman, getClosestEntity(tribesman, visibleEnemies));
+      // @Incomplete
       // this.lastAIType = TribesmanAIType.attacking;
       return;
    }
    
    // Attack enemy buildings
    if (visibleEnemyBuildings.length > 0) {
-      this.huntEntity(this.getClosestEntity(this.enemyBuildingsInVisionRange));
-         // @Incomplete
+      huntEntity(tribesman, getClosestEntity(tribesman, visibleEnemyBuildings));
+      // @Incomplete
       // this.lastAIType = TribesmanAIType.attacking;
       return;
    }
    
    // Attack hostile mobs
    if (visibleHostileMobs.length > 0) {
-      this.huntEntity(this.getClosestEntity(this.hostileMobsInVisionRange));
-         // @Incomplete
+      huntEntity(tribesman, getClosestEntity(tribesman, visibleHostileMobs));
+      // @Incomplete
       // this.lastAIType = TribesmanAIType.attacking;
       return;
    }
@@ -297,6 +306,64 @@ const getBestAxeSlot = (tribesman: Entity): number | null => {
    return null;
 }
 
+const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number => {
+   let minDistance = tribesman.position.calculateDistanceBetween(entity.position);
+   for (const hitbox of entity.hitboxes) {
+      if (hitbox.hasOwnProperty("radius")) {
+         const rawDistance = distance(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.offset.x, hitbox.object.position.y + hitbox.offset.y);
+         const hitboxDistance = rawDistance - RADIUS - (hitbox as CircularHitbox).radius;
+         if (hitboxDistance < minDistance) {
+            minDistance = hitboxDistance;
+         }
+      } else {
+         // @Incomplete: Rectangular hitbox dist
+      }
+   }
+   return minDistance;
+}
+
+const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
+   const distance = calculateDistanceFromEntity(tribesman, target);
+   tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
+   tribesman.hitboxesAreDirty = true;
+   if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
+      tribesman.terminalVelocity = SLOW_TERMINAL_VELOCITY;
+      tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation + Math.PI);
+      tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation + Math.PI);
+   } else {
+      tribesman.terminalVelocity = SLOW_TERMINAL_VELOCITY;
+      tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation);
+      tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation);
+   }
+}
+
+const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
+   const distance = calculateDistanceFromEntity(tribesman, target);
+   tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
+   tribesman.hitboxesAreDirty = true;
+   if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
+      tribesman.terminalVelocity = SLOW_TERMINAL_VELOCITY;
+      tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation + Math.PI);
+      tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation + Math.PI);
+   } else {
+      tribesman.terminalVelocity = TERMINAL_VELOCITY;
+      tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
+      tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+   }
+}
+
+const doMeleeAttack = (tribesman: Entity): void => {
+   // Find the attack target
+   const attackTargets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
+   const target = calculateAttackTarget(tribesman, attackTargets);
+
+   // Register the hit
+   if (target !== null) {
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      attackEntity(tribesman, target, inventoryUseComponent.selectedItemSlot);
+   }
+}
+
 const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    // Find the best tool for the job
    let bestToolSlot: number | null = null;
@@ -305,7 +372,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
       case AttackToolType.weapon: {
          bestToolSlot = getBestWeaponSlot(tribesman);
          if (bestToolSlot === null) {
-            bestToolSlot = .getBestPickaxeSlot(tribesman);
+            bestToolSlot = getBestPickaxeSlot(tribesman);
             if (bestToolSlot === null) {
                bestToolSlot = getBestAxeSlot(tribesman);
             }
@@ -340,7 +407,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          }
          inventoryUseComponent.currentAction = TribeMemberAction.charge_bow;
          
-         this.engageTargetRanged(huntedEntity);
+         engageTargetRanged(tribesman, huntedEntity);
 
          // If the bow is fully charged, fire it
          if (inventoryUseComponent.bowCooldownTicks === 0) {
@@ -352,11 +419,11 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    }
 
    // If a melee attack is being done, update to attack at melee distance
-   this.engageTargetMelee(huntedEntity);
+   engageTargetMelee(tribesman, huntedEntity);
 
    inventoryUseComponent.currentAction = TribeMemberAction.none;
    
-   this.doMeleeAttack();
+   doMeleeAttack(tribesman);
 }
 
 export function onTribesmanCollision(player: Entity, collidingEntity: Entity): void {

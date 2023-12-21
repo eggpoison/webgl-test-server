@@ -10,6 +10,23 @@ const WALL_AVOIDANCE_MULTIPLIER = 1.5;
 const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1);
 
 
+export function getClosestEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
+   if (entities.length === 0) {
+      throw new Error("No entities in array");
+   }
+
+   let closestEntity!: Entity;
+   let minDistance = Number.MAX_SAFE_INTEGER;
+   for (const entity of entities) {
+      const dist = entity.position.calculateDistanceBetween(entity.position);
+      if (dist < minDistance) {
+         closestEntity = entity;
+         minDistance = dist;
+      }
+   }
+   return closestEntity;
+}
+
 /** Estimates the distance it will take for the entity to stop */
 const estimateStopDistance = (entity: Entity): number => {
    // Estimate time it will take for the entity to stop
