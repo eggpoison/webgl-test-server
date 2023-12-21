@@ -1,4 +1,4 @@
-import { IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -9,7 +9,7 @@ import { createIceShard } from "../projectiles/ice-shards";
 const ICE_SPIKE_RADIUS = 40;
 
 export function createIceSpikes(position: Point): Entity {
-   const iceSpikes = new Entity(position, IEntityType.iceSpikes);
+   const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(iceSpikes, 0, 0, ICE_SPIKE_RADIUS);
    iceSpikes.addHitbox(hitbox);
@@ -17,6 +17,7 @@ export function createIceSpikes(position: Point): Entity {
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));
 
    iceSpikes.isStatic = true;
+   iceSpikes.rotation = 2 * Math.PI * Math.random();
 
    return iceSpikes;
 }

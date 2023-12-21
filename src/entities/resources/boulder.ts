@@ -1,4 +1,4 @@
-import { IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BoulderComponentArray, HealthComponentArray } from "../../components/ComponentArray";
@@ -8,7 +8,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 const RADIUS = 40;
 
 export function createBoulder(position: Point): Entity {
-   const boulder = new Entity(position, IEntityType.boulder);
+   const boulder = new Entity(position, IEntityType.boulder, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(boulder, 0, 0, RADIUS);
    boulder.addHitbox(hitbox);
@@ -20,6 +20,7 @@ export function createBoulder(position: Point): Entity {
    });
    
    boulder.isStatic = true;
+   boulder.rotation = 2 * Math.PI * Math.random();
    
    return boulder;
 }

@@ -1,23 +1,28 @@
-import { IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, IceShardComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 
 export function createIceShard(position: Point): Entity {
-   const iceShard = new Entity(position, IEntityType.iceShardProjectile);
+   const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new RectangularHitbox(iceShard, 0, 0, 24, 24);
    iceShard.addHitbox(hitbox);
+   
+   IceShardComponentArray.addComponent(iceShard, {
+      lifetime: randFloat(0.1, 0.2)
+   });
 
    return iceShard;
 }
 
-// const lifetime = randFloat(0.1, 0.2);
-
 export function tickIceShard(iceShard: Entity): void {
-
+   const iceShardComponent = IceShardComponentArray.getComponent(iceShard);
+   if (iceShard.ageTicks / SETTINGS.TPS >= iceShardComponent.lifetime) {
+      iceShard.remove();
+   }
 }
 
 export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): void {

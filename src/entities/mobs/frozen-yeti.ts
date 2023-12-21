@@ -1,4 +1,4 @@
-import { IEntityType, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 
@@ -10,7 +10,7 @@ const PAW_OFFSET = 80;
 const PAW_RESTING_ANGLE = Math.PI / 3.5;
 
 export function createFrozenYeti(position: Point): Entity {
-   const frozenYeti = new Entity(position, IEntityType.frozenYeti);
+   const frozenYeti = new Entity(position, IEntityType.frozenYeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const bodyHitbox = new CircularHitbox(frozenYeti, 0, 0, FROZEN_YETI_SIZE / 2);
    frozenYeti.addHitbox(bodyHitbox);

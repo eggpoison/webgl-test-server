@@ -1,4 +1,4 @@
-import { IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BerryBushComponentArray, HealthComponentArray } from "../../components/ComponentArray";
@@ -12,7 +12,7 @@ const BERRY_BUSH_RADIUS = 40;
 const BERRY_GROW_TIME = 30;
 
 export function createBerryBush(position: Point): Entity {
-   const berryBush = new Entity(position, IEntityType.berryBush);
+   const berryBush = new Entity(position, IEntityType.berryBush, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(berryBush, 0, 0, BERRY_BUSH_RADIUS);
    berryBush.addHitbox(hitbox);
@@ -25,6 +25,7 @@ export function createBerryBush(position: Point): Entity {
    });
 
    berryBush.isStatic = true;
+   berryBush.rotation = 2 * Math.PI * Math.random();
 
    return berryBush;
 }
@@ -43,7 +44,7 @@ export function tickBerryBush(berryBush: Entity): void {
    }
 }
 
-export function hurtBerryBush(berryBush: Entity): void {
+export function dropBerry(berryBush: Entity): void {
    const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
    if (berryBushComponent.numBerries === 0) {
       return;
@@ -69,4 +70,8 @@ export function hurtBerryBush(berryBush: Entity): void {
    const velocityDirectionOffset = (Math.random() - 0.5) * Math.PI * 0.15
    itemEntity.velocity.x = 40 * Math.sin(spawnDirection + velocityDirectionOffset);
    itemEntity.velocity.y = 40 * Math.cos(spawnDirection + velocityDirectionOffset);
+}
+
+export function onBerryBushHurt(berryBush: Entity): void {
+   dropBerry(berryBush);
 }

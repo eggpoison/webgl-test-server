@@ -9,9 +9,11 @@ import { onCowDeath } from "./entities/mobs/cow";
 import { onTreeDeath } from "./entities/resources/tree";
 import { onPlayerCollision } from "./entities/tribes/player";
 import { onBoulderDeath } from "./entities/resources/boulder";
-import { onIceSpikesCollision } from "./entities/resources/ice-spikes";
+import { onIceSpikesCollision, onIceSpikesDeath } from "./entities/resources/ice-spikes";
 import { onIceShardCollision } from "./entities/projectiles/ice-shards";
 import { onKrumblidDeath } from "./entities/mobs/krumblid";
+import { onCactusCollision, onCactusDeath } from "./entities/resources/cactus";
+import { onTribesmanCollision } from "./entities/tribes/tribesman";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -20,6 +22,9 @@ for (let i = 0; i < 8; i++) {
    a.push(Math.sin(angle));
    b.push(Math.cos(angle));
 }
+
+export const ID_SENTINEL_VALUE = 99999999;
+
 
 let idCounter = 0;
 
@@ -93,7 +98,7 @@ class Entity<T extends IEntityType = IEntityType> {
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
    public collidingObjectTicks = new Array<number>();
-   public collidingObjects = new Array<Entity>();
+   public collidingObjectIDs = new Array<number>();
    
    // protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
 
@@ -123,13 +128,14 @@ class Entity<T extends IEntityType = IEntityType> {
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
-   // @Incomplete
-   public readonly collisionBit = 1;
-   public readonly collisionMask = DEFAULT_COLLISION_MASK;
+   public readonly collisionBit: number;
+   public readonly collisionMask: number;
 
-   constructor(position: Point, type: T) {
+   constructor(position: Point, type: T, collisionBit: number, collisionMask: number) {
       this.position = position;
       this.type = type;
+      this.collisionBit = collisionBit;
+      this.collisionMask = collisionMask;
 
       this.id = findAvailableEntityID();
 
@@ -913,10 +919,10 @@ class Entity<T extends IEntityType = IEntityType> {
          this.velocity.y += force * Math.cos(pushAngle);
       }
 
-      const idx = this.collidingObjects.indexOf(collidingEntity);
+      const idx = this.collidingObjectIDs.indexOf(collidingEntity.id);
       if (idx === -1) {
          // New colliding game object
-         this.collidingObjects.push(collidingEntity);
+         this.collidingObjectIDs.push(collidingEntity.id);
          this.collidingObjectTicks.push(Board.ticks);
       } else {
          // Existing colliding game object
@@ -928,12 +934,20 @@ class Entity<T extends IEntityType = IEntityType> {
             onPlayerCollision(this, collidingEntity);
             break;
          }
+         case IEntityType.tribesman: {
+            onTribesmanCollision(this, collidingEntity);
+            break;
+         }
          case IEntityType.iceSpikes: {
             onIceSpikesCollision(this, collidingEntity);
             break;
          }
          case IEntityType.iceShardProjectile: {
             onIceShardCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.cactus: {
+            onCactusCollision(this, collidingEntity);
             break;
          }
       }
@@ -989,6 +1003,14 @@ class Entity<T extends IEntityType = IEntityType> {
             }
             case IEntityType.krumblid: {
                onKrumblidDeath(this);
+               break;
+            }
+            case IEntityType.iceSpikes: {
+               onIceSpikesDeath(this);
+               break;
+            }
+            case IEntityType.cactus: {
+               onCactusDeath(this);
                break;
             }
          }

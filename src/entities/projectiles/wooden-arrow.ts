@@ -1,4 +1,4 @@
-import { BowItemInfo, IEntityType, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
+import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../GameObject";
 import { HealthComponentArray } from "../../components/ComponentArray";
@@ -14,7 +14,7 @@ export function createWoodenArrow(position: Point, tribeMember: Entity): void {
 
    const itemInfo = ITEM_INFO_RECORD[ItemType.wooden_bow] as BowItemInfo;
    
-   const arrowProjectile = new Entity(position, IEntityType.woodenArrowProjectile);
+   const arrowProjectile = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
    arrowProjectile.velocity.x = itemInfo.projectileSpeed * Math.sin(tribeMember.rotation);
    arrowProjectile.velocity.y = itemInfo.projectileSpeed * Math.cos(tribeMember.rotation);
    arrowProjectile.rotation = tribeMember.rotation;

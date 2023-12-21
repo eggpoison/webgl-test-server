@@ -9,6 +9,15 @@ import { TreeComponent } from "./TreeComponent";
 import { BerryBushComponent } from "./BerryBushComponent";
 import { InventoryUseComponent } from "./InventoryUseComponent";
 import { BoulderComponent } from "./BoulderComponent";
+import { IceShardComponent } from "./IceSpikesComponent";
+import { CowComponent } from "./CowComponent";
+import { WanderAIComponent } from "./WanderAIComponent";
+import { EscapeAIComponent } from "./EscapeAIComponent";
+import { AIHelperComponent } from "./AIHelperComponent";
+import { FollowAIComponent } from "./FollowAIComponent";
+import { CactusComponent } from "./CactusComponent";
+import { TribeMemberComponent } from "./TribeMemberComponent";
+import { PlayerComponent } from "./PlayerComponent";
 
 class ComponentArray<T extends {}> {
    public components = new Array<T>();
@@ -50,3 +59,12 @@ export const TreeComponentArray = new ComponentArray<TreeComponent>();
 export const BerryBushComponentArray = new ComponentArray<BerryBushComponent>();
 export const InventoryUseComponentArray = new ComponentArray<InventoryUseComponent>();
 export const BoulderComponentArray = new ComponentArray<BoulderComponent>();
+export const IceShardComponentArray = new ComponentArray<IceShardComponent>();
+export const CowComponentArray = new ComponentArray<CowComponent>();
+export const WanderAIComponentArray = new ComponentArray<WanderAIComponent>();
+export const EscapeAIComponentArray = new ComponentArray<EscapeAIComponent>();
+export const AIHelperComponentArray = new ComponentArray<AIHelperComponent>();
+export const FollowAIComponentArray = new ComponentArray<FollowAIComponent>();
+export const CactusComponentArray = new ComponentArray<CactusComponent>();
+export const TribeMemberComponentArray = new ComponentArray<TribeMemberComponent>();
+export const PlayerComponentArray = new ComponentArray<PlayerComponent>();

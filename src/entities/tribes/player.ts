@@ -1,8 +1,8 @@
-import { AttackPacket, CRAFTING_RECIPES, IEntityType, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeType, canCraftRecipe } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeMemberAction, TribeType, canCraftRecipe } from "webgl-test-shared";
 import Entity from "../../GameObject";
-import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, pickupItemEntity, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, getInventory, getItem } from "../../components/InventoryComponent";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import Board from "../../Board";
@@ -11,6 +11,8 @@ import { HealthComponent } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
 import { SERVER } from "../../server";
+import { TribeMemberComponent } from "../../components/TribeMemberComponent";
+import { PlayerComponent } from "../../components/PlayerComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -25,7 +27,7 @@ const VACUUM_RANGE = 85;
 const VACUUM_STRENGTH = 25;
 
 export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe | null): Entity {
-   const player = new Entity(position, IEntityType.player);
+   const player = new Entity(position, IEntityType.player, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(player, 0, 0, 32);
    player.addHitbox(hitbox);
@@ -37,6 +39,8 @@ export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe
       tribeType: TribeType.plainspeople,
       tribe: tribe
    });
+   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribeType));
+   PlayerComponentArray.addComponent(player, new PlayerComponent());
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(player, inventoryComponent);
@@ -53,6 +57,8 @@ export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe
 }
 
 export function tickPlayer(player: Entity): void {
+   tickTribeMember(player);
+   
    // Vacuum nearby items to the player
    // @Incomplete: Don't vacuum items which the player doesn't have the inventory space for
    const minChunkX = Math.max(Math.floor((player.position.x - VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
@@ -218,4 +224,33 @@ export function throwItem(player: Entity, inventoryName: string, itemSlot: numbe
    // Throw the dropped item away from the player
    itemEntity.velocity.x += ITEM_THROW_FORCE * Math.sin(throwDirection);
    itemEntity.velocity.y += ITEM_THROW_FORCE * Math.cos(throwDirection);
+}
+
+export function startEating(player: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+   
+   // Reset the food timer so that the food isn't immediately eaten
+   const foodItem = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+   if (foodItem !== null) {
+      const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
+      inventoryUseComponent.foodEatingTimer = itemInfo.eatTime;
+   }
+   
+   inventoryUseComponent.currentAction = TribeMemberAction.eat;
+}
+
+export function startChargingBow(player: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+
+   // Reset the cooldown so the bow doesn't fire immediately
+   const bow = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+   if (bow !== null) {
+      const itemInfo = ITEM_INFO_RECORD[bow.type] as BowItemInfo;
+      inventoryUseComponent.bowCooldownTicks = itemInfo.shotCooldownTicks;
+      inventoryUseComponent.lastBowChargeTicks = Board.ticks;
+   }
+   
+   inventoryUseComponent.currentAction = TribeMemberAction.eat;
 }

@@ -15,7 +15,7 @@ import { createPlayer } from "./entities/tribes/player";
 import { createSlime } from "./entities/mobs/slime";
 import { createSlimewisp } from "./entities/mobs/slimewisp";
 import { createSnowball } from "./entities/snowball";
-import { createTombstone } from "./tombstone";
+import { createTombstone } from "./entities/tombstone";
 import { createTree } from "./entities/resources/tree";
 import { createWorkbench } from "./entities/workbench";
 import { createYeti } from "./entities/mobs/yeti";

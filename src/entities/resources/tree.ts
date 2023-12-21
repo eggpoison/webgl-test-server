@@ -1,4 +1,4 @@
-import { IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, TreeComponentArray } from "../../components/ComponentArray";
@@ -15,7 +15,7 @@ const WOOD_DROP_AMOUNTS: ReadonlyArray<[number, number]> = [
 export function createTree(position: Point): Entity {
    const size = Math.random() > 1/3 ? 1 : 0;
 
-   const tree = new Entity(position, IEntityType.tree);
+   const tree = new Entity(position, IEntityType.tree, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(tree, 0, 0, TREE_RADII[size]);
    tree.addHitbox(hitbox);
@@ -27,6 +27,7 @@ export function createTree(position: Point): Entity {
    });
 
    tree.isStatic = true;
+   tree.rotation = 2 * Math.PI * Math.random();
 
    return tree;
 }

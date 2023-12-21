@@ -1,4 +1,4 @@
-import { AxeItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo } from "webgl-test-shared";
+import { AxeItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../GameObject";
 import Board from "../../Board";
 import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
@@ -94,7 +94,7 @@ function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is Plac
    }
 }
 
-enum AttackToolType {
+export enum AttackToolType {
    weapon,
    pickaxe,
    axe
@@ -162,7 +162,7 @@ export function getTribeMemberRelationship(tribeMember: Entity, entity: Entity):
    return EntityRelationship.neutral;
 }
 
-const getEntityAttackToolType = (entity: Entity): AttackToolType | null => {
+export function getEntityAttackToolType(entity: Entity): AttackToolType | null {
    // @Cleanup: This shouldn't be hardcoded ideally
    
    if (SWORD_DAMAGEABLE_ENTITIES.includes(entity.type)) {
@@ -269,8 +269,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
       applyStatusEffect(targetEntity, StatusEffectConst.poisoned, 3 * SETTINGS.TPS);
    }
 
-   // @Incomplete
-   // this.lastAttackTicks = Board.ticks;
+   inventoryUseComponent.lastAttackTicks = Board.ticks;
 }
 
 export function calculateAttackTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>): Entity | null {
@@ -399,8 +398,8 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          healEntity(tribeMember, itemInfo.healAmount);
          consumeItem(inventoryComponent, "hotbar", itemSlot, 1);
 
-         // @Incomplete
-         // this.lastEatTicks = Board.ticks;
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         inventoryUseComponent.lastEatTicks = Board.ticks;
          break;
       }
       case "placeable": {
@@ -471,8 +470,7 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
             return;
          }
 
-         // @Incomplete
-         // this.lastBowChargeTicks = Board.ticks;
+         inventoryUseComponent.lastBowChargeTicks = Board.ticks;
 
          const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
          inventoryUseComponent.bowCooldownTicks = itemInfo.shotCooldownTicks;
@@ -542,4 +540,26 @@ export function pickupItemEntity(tribeMember: Entity, itemEntity: Entity): boole
    }
 
    return false;
+}
+
+export function tickTribeMember(tribeMember: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+
+   if (inventoryUseComponent.currentAction === TribeMemberAction.eat) {
+      inventoryUseComponent.foodEatingTimer -= 1 / SETTINGS.TPS;
+
+      if (inventoryUseComponent.foodEatingTimer <= 0) {
+         const selectedItem = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+         if (selectedItem !== null) {
+            const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];
+            if (itemCategory === "food") {
+               useItem(tribeMember, selectedItem, inventoryUseComponent.selectedItemSlot);
+
+               const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as FoodItemInfo;
+               inventoryUseComponent.foodEatingTimer = itemInfo.eatTime;
+            }
+         }
+      }
+   }
 }

@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -12,10 +12,11 @@ import Item from "./items/Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import { resetYetiTerritoryTiles } from "./entities/mobs/OldYeti";
-import Entity from "./GameObject";
-import { BerryBushComponentArray, BoulderComponentArray, HealthComponentArray, InventoryComponentArray, ItemComponentArray, TreeComponentArray, TribeComponentArray } from "./components/ComponentArray";
+import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray } from "./components/ComponentArray";
 import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
-import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, throwItem } from "./entities/tribes/player";
+import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, startChargingBow, startEating, throwItem } from "./entities/tribes/player";
+import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;
@@ -64,6 +65,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
    }
 
+   // @Cleanup @Robustness: Somehow make this automatically require the correct type for each entity type
    let clientArgs: EntityData<EntityType>["clientArgs"];
    switch (entity.type) {
       case IEntityType.barrel: {
@@ -86,7 +88,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.cactus: {
-         clientArgs = [];
+         const cactusComponent = CactusComponentArray.getComponent(entity);
+         clientArgs = [cactusComponent.flowers, cactusComponent.limbs];
          break;
       }
       case IEntityType.campfire: {
@@ -94,7 +97,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.cow: {
-         clientArgs = [];
+         const cowComponent = CowComponentArray.getComponent(entity);
+         clientArgs = [cowComponent.species, cowComponent.grazeProgressTicks > 0 ? cowComponent.grazeProgressTicks / COW_GRAZE_TIME_TICKS : -1];
          break;
       }
       case IEntityType.fish: {
@@ -102,7 +106,9 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.frozenYeti: {
-         clientArgs = [];
+         // @Incomplete
+         // attackType: FrozenYetiAttackType, attackStage: number, stageProgress: number, rockSpikePositions: Array<[number, number]>
+         clientArgs = [FrozenYetiAttackType.none, 0, 0, []];
          break;
       }
       case IEntityType.furnace: {
@@ -122,9 +128,12 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [];
          break;
       }
+      // @Cleanup: Copy and paste between tribesman and player
       case IEntityType.player: {
          const tribeComponent = TribeComponentArray.getComponent(entity);
          const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
+         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
 
          const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
@@ -134,26 +143,59 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          }
 
          let activeItem: ItemType | null = null;
-         // @Incomplete
-         // if (hotbarInventory.itemSlots.hasOwnProperty(this.selectedItemSlot)) {
-         //    const item = hotbarInventory.itemSlots[this.selectedItemSlot];
-         //    activeItem = item.type;
-         // }
+         if (hotbarInventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
+            const item = hotbarInventory.itemSlots[inventoryUseComponent.selectedItemSlot];
+            activeItem = item.type;
+         }
          
-         // action: TribeMemberAction, foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, username: string
+         // @Incomplete
+         // foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, username: string
          clientArgs = [
-            null,
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             tribeComponent.tribeType,
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
             activeItem,
-            TribeMemberAction.none,
+            inventoryUseComponent.currentAction,
             -1,
             0,
             false,
-            -1,
+            tribeMemberComponent.warPaintType,
             playerData.username
+         ];
+         break;
+      }
+      case IEntityType.tribesman: {
+         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
+         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
+
+         const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+
+         let activeItem: ItemType | null = null;
+         if (hotbarInventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
+            const item = hotbarInventory.itemSlots[inventoryUseComponent.selectedItemSlot];
+            activeItem = item.type;
+         }
+         
+         // @Incomplete
+         clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
+            tribeComponent.tribeType,
+            serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
+            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
+            serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
+            activeItem,
+            inventoryUseComponent.currentAction,
+            -1,
+            0,
+            false,
+            tribeMemberComponent.warPaintType,
+            serializeInventoryData(hotbarInventory, "hotbar"),
+            inventoryUseComponent.selectedItemSlot,
+            0
          ];
          break;
       }
@@ -183,11 +225,15 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.tribeTotem: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.tribesman: {
-         clientArgs = [];
+         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const totemBannerComponent = TotemBannerComponentArray.getComponent(entity);
+
+         clientArgs = [
+            tribeComponent.tribe!.id, // Totems always have a tribe
+            tribeComponent.tribeType,
+            // @Speed
+            Object.values(totemBannerComponent.banners)
+         ];
          break;
       }
       case IEntityType.woodenArrowProjectile: {
@@ -849,6 +895,8 @@ class GameServer {
    private processPlayerDataPacket(socket: ISocket, playerDataPacket: PlayerDataPacket): void {
       const playerData = SERVER.playerDataRecord[socket.id];
 
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(playerData.instance);
+
       playerData.instance.position.x = playerDataPacket.position[0];
       playerData.instance.position.y = playerDataPacket.position[1];
       playerData.instance.velocity = Point.unpackage(playerDataPacket.velocity);
@@ -857,16 +905,18 @@ class GameServer {
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.instance.hitboxesAreDirty = true;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
-      // @Incomplete
-      // playerData.instance.setSelectedItemSlot(playerDataPacket.selectedItemSlot);
-      // playerData.instance.interactingEntityID = playerDataPacket.interactingEntityID;
+      
+      inventoryUseComponent.selectedItemSlot = playerDataPacket.selectedItemSlot;
 
-      // if (playerDataPacket.action === TribeMemberAction.eat && playerData.instance.currentAction !== TribeMemberAction.eat) {
-      //    playerData.instance.startEating();
-      // } else if (playerDataPacket.action === TribeMemberAction.charge_bow && playerData.instance.currentAction !== TribeMemberAction.charge_bow) {
-      //    playerData.instance.startChargingBow();
-      // }
-      // playerData.instance.currentAction = playerDataPacket.action;
+      const playerComponent = PlayerComponentArray.getComponent(playerData.instance);
+      playerComponent.interactingEntityID = playerDataPacket.interactingEntityID !== null ? playerDataPacket.interactingEntityID : ID_SENTINEL_VALUE;
+
+      if (playerDataPacket.action === TribeMemberAction.eat && inventoryUseComponent.currentAction !== TribeMemberAction.eat) {
+         startEating(playerData.instance);
+      } else if (playerDataPacket.action === TribeMemberAction.charge_bow && inventoryUseComponent.currentAction !== TribeMemberAction.charge_bow) {
+         startChargingBow(playerData.instance);
+      }
+      inventoryUseComponent.currentAction = playerDataPacket.action;
    }
 
    private generatePlayerSpawnPosition(): Point {

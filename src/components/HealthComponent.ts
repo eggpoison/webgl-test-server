@@ -3,7 +3,9 @@ import Entity from "../GameObject";
 import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { SERVER } from "../server";
-import { hurtBerryBush } from "../entities/resources/berry-bush";
+import { onBerryBushHurt } from "../entities/resources/berry-bush";
+import { onCowHurt } from "../entities/mobs/cow";
+import { onKrumblidHurt } from "../entities/mobs/krumblid";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -79,7 +81,20 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
 
    switch (entity.type) {
       case IEntityType.berryBush: {
-         hurtBerryBush(entity);
+         onBerryBushHurt(entity);
+         break;
+      }
+      case IEntityType.cow: {
+         if (attackingEntity !== null) {
+            onCowHurt(entity, attackingEntity);
+         }
+         break;
+      }
+      case IEntityType.krumblid: {
+         if (attackingEntity !== null) {
+            onKrumblidHurt(entity, attackingEntity);
+         }
+         break;
       }
    }
 
@@ -129,4 +144,9 @@ export function addLocalInvulnerabilityHash(healthComponent: HealthComponent, ha
       healthComponent.localIframeHashes.push(hash);
       healthComponent.localIframeDurations.push(invulnerabilityDurationSeconds);
    }
+}
+
+export function getEntityHealth(entity: Entity): number {
+   const healthComponent = HealthComponentArray.getComponent(entity);
+   return healthComponent.health;
 }

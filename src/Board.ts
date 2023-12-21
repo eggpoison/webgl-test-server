@@ -9,12 +9,17 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { HealthComponentArray, InventoryUseComponentArray, ItemComponentArray } from "./components/ComponentArray";
+import { HealthComponentArray, IceShardComponentArray, InventoryUseComponentArray, ItemComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { tickPlayer } from "./entities/tribes/player";
 import Entity from "./GameObject";
 import { tickHealthComponent } from "./components/HealthComponent";
 import { tickBerryBush } from "./entities/resources/berry-bush";
+import { tickIceShard } from "./entities/projectiles/ice-shards";
+import { tickCow } from "./entities/mobs/cow";
+import { tickKrumblid } from "./entities/mobs/krumblid";
+import { tickItemComponent } from "./components/ItemComponent";
+import { tickTribesman } from "./entities/tribes/tribesman";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -241,8 +246,24 @@ abstract class Board {
                tickPlayer(entity);
                break;
             }
+            case IEntityType.tribesman: {
+               tickTribesman(entity);
+               break;
+            }
             case IEntityType.berryBush: {
                tickBerryBush(entity);
+               break;
+            }
+            case IEntityType.iceShardProjectile: {
+               tickIceShard(entity);
+               break;
+            }
+            case IEntityType.cow: {
+               tickCow(entity);
+               break;
+            }
+            case IEntityType.krumblid: {
+               tickKrumblid(entity);
                break;
             }
          }
@@ -259,6 +280,11 @@ abstract class Board {
          const healthComponent = HealthComponentArray.components[i];
          tickHealthComponent(healthComponent);
       }
+
+      for (let i = 0; i < ItemComponentArray.components.length; i++) {
+         const itemComponent = ItemComponentArray.components[i];
+         tickItemComponent(itemComponent);
+      }
    }
 
    public static resolveOtherCollisions(): void {
@@ -268,10 +294,10 @@ abstract class Board {
 
          // Remove old collisions
          // @Speed
-         let numCollisions = gameObject.collidingObjects.length;
+         let numCollisions = gameObject.collidingObjectIDs.length;
          for (let i = 0; i < numCollisions; i++) {
             if (gameObject.collidingObjectTicks[i] !== Board.ticks) {
-               gameObject.collidingObjects.splice(i, 1);
+               gameObject.collidingObjectIDs.splice(i, 1);
                gameObject.collidingObjectTicks.splice(i, 1);
                i--;
                numCollisions--;
@@ -329,7 +355,7 @@ abstract class Board {
             const gameObject1 = chunk.entities[j];
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const gameObject2 = chunk.entities[k];
-               if (gameObject1.collidingObjects.indexOf(gameObject2) === -1 && gameObject1.isColliding(gameObject2)) {
+               if (gameObject1.collidingObjectIDs.indexOf(gameObject2.id) === -1 && gameObject1.isColliding(gameObject2)) {
                   gameObject1.collide(gameObject2);
                   gameObject2.collide(gameObject1);
                }

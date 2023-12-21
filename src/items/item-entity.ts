@@ -1,10 +1,10 @@
-import { IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../GameObject";
 import { ItemComponentArray } from "../components/ComponentArray";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
 export function createItemEntity(position: Point, itemType: ItemType, amount: number): Entity {
-   const itemEntity = new Entity(position, IEntityType.itemEntity);
+   const itemEntity = new Entity(position, IEntityType.itemEntity, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new RectangularHitbox(itemEntity, 0, 0, SETTINGS.ITEM_SIZE, SETTINGS.ITEM_SIZE);
    itemEntity.addHitbox(hitbox);
@@ -14,6 +14,8 @@ export function createItemEntity(position: Point, itemType: ItemType, amount: nu
       amount: amount,
       entityPickupCooldowns: {}
    });
+
+   itemEntity.rotation = 2 * Math.PI * Math.random();
 
    return itemEntity;
 }

@@ -1,4 +1,4 @@
-import { IEntityType, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, InventoryComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -8,7 +8,7 @@ import { InventoryComponent, createNewInventory } from "../../components/Invento
 export const BARREL_SIZE = 80;
 
 export function createBarrel(position: Point): Entity {
-   const barrel = new Entity(position, IEntityType.barrel);
+   const barrel = new Entity(position, IEntityType.barrel, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(barrel, 0, 0, BARREL_SIZE / 2);
    barrel.addHitbox(hitbox);

@@ -1,10 +1,252 @@
-import { Point, SETTINGS, TileTypeConst } from "webgl-test-shared";
+import { Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity from "./GameObject";
+
+const TURN_CONSTANT = Math.PI / SETTINGS.TPS;
+const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
 const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1);
+
+
+/** Estimates the distance it will take for the entity to stop */
+const estimateStopDistance = (entity: Entity): number => {
+   // Estimate time it will take for the entity to stop
+   const stopTime = Math.pow(entity.velocity.length(), 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
+   const stopDistance = (Math.pow(stopTime, 2) + stopTime) * entity.velocity.length();
+   return stopDistance;
+}
+
+export function willStopAtDesiredDistance(entity: Entity, desiredDistance: number, distance: number): boolean {
+   // If the entity has a desired distance from its target, try to stop at that desired distance
+   const stopDistance = estimateStopDistance(entity);
+   return distance - stopDistance <= desiredDistance;
+}
+
+export function chaseAndEatItemEntity(entity: Entity, itemEntity: Entity, acceleration: number, terminalVelocity: number): boolean {
+   if (entity.isColliding(itemEntity)) {
+      itemEntity.remove();
+      return true;
+   }
+
+   moveEntityToPosition(entity, itemEntity.position.x, itemEntity.position.y, acceleration, terminalVelocity);
+   return false;
+}
+
+export function stopEntity(entity: Entity): void {
+   entity.acceleration.x = 0;
+   entity.acceleration.y = 0;
+   entity.terminalVelocity = 0;
+}
+
+export function moveEntityToPosition(entity: Entity, positionX: number, positionY: number, acceleration: number, terminalVelocity: number): void {
+   const direction = angle(positionX - entity.position.x, positionY - entity.position.y);
+   entity.acceleration.x = acceleration * Math.sin(direction);
+   entity.acceleration.y = acceleration * Math.cos(direction);
+   entity.terminalVelocity = terminalVelocity;
+   entity.rotation = direction;
+}
+
+export function entityHasReachedPosition(entity: Entity, positionX: number, positionY: number): boolean {
+   // @Speed: garbage
+   const relativeTargetPosition = entity.position.copy();
+   relativeTargetPosition.x -= positionX;
+   relativeTargetPosition.y -= positionY;
+
+   const dotProduct = entity.velocity.calculateDotProduct(relativeTargetPosition);
+   return dotProduct > 0;
+}
+
+// @Cleanup @Robustness: Maybe separate this into 4 different functions? (for separation, alignment, etc.)
+export function runHerdAI(entity: Entity, herdMembers: ReadonlyArray<Entity>, visionRange: number, turnRate: number, minSeparationDistance: number, separationInfluence: number, alignmentInfluence: number, cohesionInfluence: number): void {
+   // 
+   // Find the closest herd member and calculate other data
+   // 
+
+   // Average angle of nearby entities
+   let totalXVal: number = 0;
+   let totalYVal: number = 0;
+
+   let centerX = 0;
+   let centerY = 0;
+
+   let closestHerdMember: Entity | undefined;
+   let minDist = Number.MAX_SAFE_INTEGER;
+   let numHerdMembers = 0;
+   for (let i = 0; i < herdMembers.length; i++) {
+      const herdMember = herdMembers[i];
+
+      const distance = entity.position.calculateDistanceBetween(herdMember.position);
+      if (distance < minDist) {
+         closestHerdMember = herdMember;
+         minDist = distance;
+      }
+
+      totalXVal += Math.sin(herdMember.rotation);
+      totalYVal += Math.cos(herdMember.rotation);
+
+      centerX += herdMember.position.x;
+      centerY += herdMember.position.y;
+      numHerdMembers++;
+   }
+   if (typeof closestHerdMember === "undefined") {
+      return;
+   }
+
+   centerX /= numHerdMembers;
+   centerY /= numHerdMembers;
+
+   // @Cleanup: We can probably clean up a lot of this code by using Entity's built in turn functions
+   let angularVelocity = 0;
+   
+   const headingPrincipalValue = ((entity.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+   
+   // SEPARATION
+   // Steer away from herd members who are too close
+   if (minDist < minSeparationDistance) {
+      // Calculate the weight of the separation
+      let weight = 1 - minDist / minSeparationDistance;
+      weight = curveWeight(weight, 2, 0.2);
+      
+      // @Speed: Garbage collection
+      const distanceVector = closestHerdMember.position.convertToVector(entity.position);
+
+      const clockwiseDist = (distanceVector.direction - entity.rotation + Math.PI * 2) % (Math.PI * 2);
+      const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
+
+      if (clockwiseDist > counterclockwiseDist) {
+         // Turn clockwise
+         angularVelocity += turnRate * separationInfluence * weight * TURN_CONSTANT;
+      } else {
+         // Turn counterclockwise
+         angularVelocity -= turnRate * separationInfluence * weight * TURN_CONSTANT;
+      }
+   }
+
+   // ALIGNMENT
+   // Orientate to nearby herd members' headings
+
+   {
+      let averageHeading = angle(totalXVal, totalYVal);
+      if (averageHeading < 0) {
+         averageHeading += Math.PI * 2;
+      }
+
+      // Calculate the weight of the alignment
+      let angleDifference: number;
+      if (averageHeading < headingPrincipalValue) {
+         angleDifference = Math.min(Math.abs(averageHeading - headingPrincipalValue), Math.abs(averageHeading + Math.PI * 2 - headingPrincipalValue))
+      } else {
+         angleDifference = Math.min(Math.abs(headingPrincipalValue - averageHeading), Math.abs(headingPrincipalValue + Math.PI * 2 - averageHeading))
+      }
+      let weight = angleDifference / Math.PI;
+      weight = curveWeight(weight, 2, 0.1);
+      
+      const clockwiseDist = (averageHeading - headingPrincipalValue + Math.PI * 2) % (Math.PI * 2);
+      const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
+
+      if (clockwiseDist < counterclockwiseDist) {
+         // Turn clockwise
+         angularVelocity += turnRate * alignmentInfluence * weight * TURN_CONSTANT;
+      } else {
+         // Turn counterclockwise
+         angularVelocity -= turnRate * alignmentInfluence * weight * TURN_CONSTANT;
+      }
+
+   }
+
+   // COHESION
+   // Steer to move towards the local center of mass
+   
+   {
+      // @Speed: Garbage collection
+      
+      // Calculate average position
+      const centerOfMass = new Point(centerX, centerY);
+      
+      const toCenter = centerOfMass.convertToVector(entity.position);
+      const directionToCenter = ((toCenter.direction % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+
+      let weight = 1 - toCenter.magnitude / visionRange;
+      weight = curveWeight(weight, 2, 0.2);
+
+      const clockwiseDist = (directionToCenter - headingPrincipalValue + Math.PI * 2) % (Math.PI * 2);
+      const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
+
+      if (clockwiseDist > counterclockwiseDist) {
+         // Turn clockwise
+         angularVelocity -= turnRate * cohesionInfluence * weight * TURN_CONSTANT;
+      } else {
+         // Turn counterclockwise
+         angularVelocity += turnRate * cohesionInfluence * weight * TURN_CONSTANT;
+      }
+   }
+
+   // Wall avoidance (turn away from the nearest wall)
+
+   {
+   
+      // Start by finding the direction to the nearest wall
+
+      // The rotation to try and get away from
+      let directionToNearestWall!: number;
+      let distanceFromWall!: number;
+
+      // Top wall
+      if (entity.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - visionRange) {
+         directionToNearestWall = Math.PI / 2;
+         distanceFromWall = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - entity.position.y;
+      // Right wall
+      } else if (entity.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - visionRange) {
+         directionToNearestWall = 0;
+         distanceFromWall = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - entity.position.x;
+      // Bottom wall
+      } else if (entity.position.y <= visionRange) {
+         directionToNearestWall = Math.PI * 3 / 2;
+         distanceFromWall = entity.position.y;
+      // Left wall
+      } else if (entity.position.x <= visionRange) {
+         directionToNearestWall = Math.PI;
+         distanceFromWall = entity.position.x;
+      }
+
+      if (typeof directionToNearestWall !== "undefined") {
+         // Calculate the direction to turn
+         const clockwiseDist = (directionToNearestWall - headingPrincipalValue + Math.PI * 2) % (Math.PI * 2);
+         const counterclockwiseDist = (Math.PI * 2) - clockwiseDist;
+
+         // Direction to turn (1 or -1)
+         let turnDirection: number;
+         if (counterclockwiseDist > clockwiseDist) {
+            // Turn clockwise
+            turnDirection = -1;
+         } else {
+            // Turn counterclockwise
+            turnDirection = 1;
+         }
+         
+         // Calculate turn direction weight
+         let angleDifference: number;
+         if (directionToNearestWall < headingPrincipalValue) {
+            angleDifference = Math.min(Math.abs(directionToNearestWall - headingPrincipalValue), Math.abs(directionToNearestWall + Math.PI * 2 - headingPrincipalValue))
+         } else {
+            angleDifference = Math.min(Math.abs(headingPrincipalValue - directionToNearestWall), Math.abs(headingPrincipalValue + Math.PI * 2 - directionToNearestWall))
+         }
+         let turnDirectionWeight = angleDifference / Math.PI;
+         turnDirectionWeight = curveWeight(turnDirectionWeight, 2, 0.2);
+
+         // Calculate distance from wall weight
+         let distanceWeight = 1 - distanceFromWall / visionRange;
+         distanceWeight = curveWeight(distanceWeight, 2, 0.2);
+
+         const wallAvoidanceInfluence = Math.max(separationInfluence, alignmentInfluence, cohesionInfluence) * WALL_AVOIDANCE_MULTIPLIER;
+         angularVelocity += turnRate * turnDirection * wallAvoidanceInfluence * turnDirectionWeight * distanceWeight * TURN_CONSTANT;
+      }
+   }
+
+   entity.rotation += angularVelocity;
+}
 
 /** Gets all tiles within a given distance from a position */
 export function getPositionRadialTiles(position: Point, radius: number): Array<Tile> {

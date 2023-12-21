@@ -600,26 +600,6 @@ Priorities while in a tribe:
 //       return minDistance;
 //    }
 
-//    // @Cleanup: Move the following 2 functions to ai-shared
-
-//    private willStopAtDesiredDistance(desiredDistance: number, distance: number): boolean {
-//       // If the entity has a desired distance from its target, try to stop at that desired distance
-//       const stopDistance = this.estimateStopDistance();
-//       return distance - stopDistance <= desiredDistance;
-//    }
-
-//    /** Estimates the distance it will take for the entity to stop */
-//    private estimateStopDistance(): number {
-//       if (this.velocity === null) {
-//          return 0;
-//       }
-
-//       // Estimate time it will take for the entity to stop
-//       const stopTime = Math.pow(this.velocity.length(), 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
-//       const stopDistance = (Math.pow(stopTime, 2) + stopTime) * this.velocity.length();
-//       return stopDistance;
-//    }
-
 //    private inventoryIsFull(): boolean {
 //       return this.forceGetComponent("inventory").inventoryIsFull("hotbar");
 //    }

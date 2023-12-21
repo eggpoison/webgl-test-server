@@ -1,7 +1,8 @@
-import { IEntityType, Point, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, TribeType } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import { TotemBannerComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { TotemBannerPosition } from "../../components/TotemBannerComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 export const TRIBE_TOTEM_SIZE = 120;
 
@@ -20,7 +21,10 @@ for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
 }
 
 export function createTribeTotem(position: Point, tribeType: TribeType): Entity {
-   const totem = new Entity(position, IEntityType.tribeTotem);
+   const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   
+   const hitbox = new CircularHitbox(totem, 0, 0, TRIBE_TOTEM_SIZE / 2);
+   totem.addHitbox(hitbox);
 
    TribeComponentArray.addComponent(totem, {
       tribeType: tribeType,
@@ -30,7 +34,9 @@ export function createTribeTotem(position: Point, tribeType: TribeType): Entity 
       banners: {},
       // @Speed: Garbage collection
       availableBannerPositions: Array.from(new Set(TRIBE_TOTEM_POSITIONS))
-   })
+   });
+
+   totem.isStatic = true;
    
    return totem;
 }

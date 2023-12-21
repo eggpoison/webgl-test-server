@@ -1,10 +1,18 @@
-import { SETTINGS } from "webgl-test-shared";
+import { SETTINGS, TribeMemberAction } from "webgl-test-shared";
 import { Inventory } from "./InventoryComponent";
 
 export class InventoryUseComponent {
    public readonly inventory: Inventory;
    public bowCooldownTicks = 0;
    public readonly itemAttackCooldowns: Record<number, number> = {};
+   public foodEatingTimer = 0;
+
+   public selectedItemSlot = 1;
+
+   public currentAction = TribeMemberAction.none;
+   public lastAttackTicks = -99999;
+   public lastEatTicks = -99999;
+   public lastBowChargeTicks = -99999;
 
    constructor(inventory: Inventory) {
       this.inventory = inventory;
