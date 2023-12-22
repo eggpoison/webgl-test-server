@@ -18,6 +18,9 @@ import { FollowAIComponent } from "./FollowAIComponent";
 import { CactusComponent } from "./CactusComponent";
 import { TribeMemberComponent } from "./TribeMemberComponent";
 import { PlayerComponent } from "./PlayerComponent";
+import { TribesmanComponent } from "./TribesmanComponent";
+import { TombstoneComponent } from "./TombstoneComponent";
+import { ZombieComponent } from "./ZombieComponent";
 
 class ComponentArray<T extends {}> {
    public components = new Array<T>();
@@ -68,3 +71,6 @@ export const FollowAIComponentArray = new ComponentArray<FollowAIComponent>();
 export const CactusComponentArray = new ComponentArray<CactusComponent>();
 export const TribeMemberComponentArray = new ComponentArray<TribeMemberComponent>();
 export const PlayerComponentArray = new ComponentArray<PlayerComponent>();
+export const TribesmanComponentArray = new ComponentArray<TribesmanComponent>();
+export const TombstoneComponentArray = new ComponentArray<TombstoneComponent>();
+export const ZombieComponentArray = new ComponentArray<ZombieComponent>();

@@ -13,7 +13,8 @@ import { onIceSpikesCollision, onIceSpikesDeath } from "./entities/resources/ice
 import { onIceShardCollision } from "./entities/projectiles/ice-shards";
 import { onKrumblidDeath } from "./entities/mobs/krumblid";
 import { onCactusCollision, onCactusDeath } from "./entities/resources/cactus";
-import { onTribesmanCollision } from "./entities/tribes/tribesman";
+import { onTribesmanCollision, onTribesmanDeath } from "./entities/tribes/tribesman";
+import { onZombieCollision } from "./entities/mobs/zombie";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -950,6 +951,10 @@ class Entity<T extends IEntityType = IEntityType> {
             onCactusCollision(this, collidingEntity);
             break;
          }
+         case IEntityType.zombie: {
+            onZombieCollision(this, collidingEntity);
+            break;
+         }
       }
    }
 
@@ -1011,6 +1016,10 @@ class Entity<T extends IEntityType = IEntityType> {
             }
             case IEntityType.cactus: {
                onCactusDeath(this);
+               break;
+            }
+            case IEntityType.tribesman: {
+               onTribesmanDeath(this);
                break;
             }
          }

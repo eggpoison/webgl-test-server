@@ -114,6 +114,11 @@ export function tickCow(cow: Entity): void {
       }
    }
 
+   // If the target berry bush was killed, don't try to shake it
+   if (cowComponent.targetBushID !== ID_SENTINEL_VALUE && !Board.entityRecord.hasOwnProperty(cowComponent.targetBushID)) {
+      cowComponent.targetBushID = ID_SENTINEL_VALUE;
+   }
+
    // Shake berries off berry bushes
    if (getEntityHealth(cow) < MAX_HEALTH) {
       if (cowComponent.targetBushID === ID_SENTINEL_VALUE) {

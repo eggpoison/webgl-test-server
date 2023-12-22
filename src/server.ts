@@ -13,10 +13,11 @@ import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import { resetYetiTerritoryTiles } from "./entities/mobs/OldYeti";
 import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, startChargingBow, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
+import { getZombieSpawnProgress } from "./entities/tombstone";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;
@@ -212,7 +213,14 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.tombstone: {
-         clientArgs = [];
+         const tombstoneComponent = TombstoneComponentArray.getComponent(entity);
+         clientArgs = [
+            tombstoneComponent.tombstoneType,
+            getZombieSpawnProgress(tombstoneComponent),
+            tombstoneComponent.zombieSpawnPositionX,
+            tombstoneComponent.zombieSpawnPositionY,
+            tombstoneComponent.deathInfo
+         ];
          break;
       }
       case IEntityType.tree: {
@@ -257,7 +265,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.zombie: {
-         clientArgs = [];
+         const zombieComponent = ZombieComponentArray.getComponent(entity);
+         clientArgs = [zombieComponent.zombieType];
          break;
       }
    }

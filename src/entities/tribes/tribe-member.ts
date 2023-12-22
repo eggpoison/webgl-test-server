@@ -1,9 +1,9 @@
-import { AxeItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction } from "webgl-test-shared";
+import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../GameObject";
 import Board from "../../Board";
 import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, removeItemFromInventory } from "../../components/InventoryComponent";
+import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { damageEntity, healEntity } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
@@ -561,5 +561,15 @@ export function tickTribeMember(tribeMember: Entity): void {
             }
          }
       }
+   }
+
+   // @Speed: Shouldn't be done every tick, only do when the backpack changes
+   // Update backpack
+   const backpackSlotInventory = getInventory(inventoryComponent, "backpackSlot");
+   if (backpackSlotInventory.itemSlots.hasOwnProperty(1)) {
+      const itemInfo = ITEM_INFO_RECORD[backpackSlotInventory.itemSlots[1].type] as BackpackItemInfo;
+      resizeInventory(inventoryComponent, "backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
+   } else {
+      resizeInventory(inventoryComponent, "backpack", -1, -1);
    }
 }

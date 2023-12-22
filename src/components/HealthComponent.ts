@@ -6,6 +6,8 @@ import { SERVER } from "../server";
 import { onBerryBushHurt } from "../entities/resources/berry-bush";
 import { onCowHurt } from "../entities/mobs/cow";
 import { onKrumblidHurt } from "../entities/mobs/krumblid";
+import { onTombstoneDeath } from "../entities/tombstone";
+import { onZombieHurt } from "../entities/mobs/zombie";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -58,6 +60,13 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
    if (healthComponent.health <= 0) {
       entity.remove();
 
+      switch (entity.type) {
+         case IEntityType.tombstone: {
+            onTombstoneDeath(entity, attackingEntity);
+            break;
+         }
+      }
+
       // @Cleanup: This should instead just be an event created in the player class
       if (entity.type === IEntityType.player) {
          TombstoneDeathManager.registerNewDeath(entity, causeOfDeath);
@@ -95,6 +104,11 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
             onKrumblidHurt(entity, attackingEntity);
          }
          break;
+      }
+      case IEntityType.zombie: {
+         if (attackingEntity !== null) {
+            onZombieHurt(entity, attackingEntity);
+         }
       }
    }
 

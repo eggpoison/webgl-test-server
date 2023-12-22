@@ -139,26 +139,17 @@ class Tribe {
       return this.totem === totem;
    }
 
-   private createNewTribesman(hut: Entity): void {
-      const position = hut.position.copy();
-
+   public createNewTribesman(hut: Entity): void {
+      // @Speed: garbage
       // Offset the spawn position so the tribesman comes out of the correct side of the hut
+      const position = hut.position.copy();
       const offset = Point.fromVectorForm(10, hut.rotation);
       position.add(offset);
       
-      const tribesman = createTribesman(position, this.tribeType, this);
+      const tribesman = createTribesman(position, this.tribeType, this, hut.id);
       tribesman.rotation = hut.rotation;
 
       this.members.push(tribesman);
-
-      // Attempt to respawn the tribesman when it is killed
-      // @Incomplete
-      // tribesman.createEvent("death", () => {
-      //    // Only respawn the tribesman if their hut is alive
-      //    if (!hut.isRemoved) {
-      //       this.createNewTribesman(hut);
-      //    }
-      // });
    }
 
    public getNumHuts(): number {
@@ -166,6 +157,7 @@ class Tribe {
    }
 
    /** Destroys the tribe and all its associated buildings */
+   // @Incomplete
    private destroy(): void {
       for (const tribeMember of this.members) {
          TribeComponentArray.getComponent(tribeMember).tribe = null;

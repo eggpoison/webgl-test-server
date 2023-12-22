@@ -20,6 +20,8 @@ import { tickCow } from "./entities/mobs/cow";
 import { tickKrumblid } from "./entities/mobs/krumblid";
 import { tickItemComponent } from "./components/ItemComponent";
 import { tickTribesman } from "./entities/tribes/tribesman";
+import { tickTombstone } from "./entities/tombstone";
+import { tickZombie } from "./entities/mobs/zombie";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -264,6 +266,14 @@ abstract class Board {
             }
             case IEntityType.krumblid: {
                tickKrumblid(entity);
+               break;
+            }
+            case IEntityType.tombstone: {
+               tickTombstone(entity);
+               break;
+            }
+            case IEntityType.zombie: {
+               tickZombie(entity);
                break;
             }
          }

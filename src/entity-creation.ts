@@ -1,5 +1,5 @@
 import { IEntityType, Point, TribeType } from "webgl-test-shared";
-import Entity from "./GameObject";
+import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
 import { createBarrel } from "./entities/tribes/barrel";
 import { createBerryBush } from "./entities/resources/berry-bush";
 import { createBoulder } from "./entities/resources/boulder";
@@ -42,7 +42,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.tree: return createTree(position);
       case IEntityType.workbench: return createWorkbench(position);
       case IEntityType.yeti: return createYeti(position);
-      case IEntityType.zombie: return createZombie(position);
+      case IEntityType.zombie: return createZombie(position, false, ID_SENTINEL_VALUE);
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceShardProjectile:
       case IEntityType.rockSpikeProjectile:
