@@ -18,6 +18,8 @@ import { onSlimeCollision, onSlimeDeath } from "./entities/mobs/slime";
 import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
 import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
+import { onFishDeath } from "./entities/mobs/fish";
+import { AIHelperComponentArray } from "./components/ComponentArray";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -80,7 +82,7 @@ class Entity<T extends IEntityType = IEntityType> {
    /** Acceleration of the object */
    public acceleration = new Point(0, 0);
    /** Limit to the object's velocity */
-   public terminalVelocity = 0;
+   public terminalVelocity = Number.EPSILON;
 
    /** Direction the object is facing in radians */
    public rotation = 0.0001;
@@ -88,7 +90,7 @@ class Entity<T extends IEntityType = IEntityType> {
    /** Affects the force the game object experiences during collisions */
    public mass = 1;
 
-   public moveSpeedMultiplier = 1;
+   public moveSpeedMultiplier = 1 + Number.EPSILON;
 
    public collisionPushForceMultiplier = 1;
 
@@ -462,18 +464,19 @@ class Entity<T extends IEntityType = IEntityType> {
    protected addToChunk(chunk: Chunk): void {
       chunk.entities.push(this);
 
-      // @Incomplete
-      // const numViewingMobs = chunk.viewingMobs.length;
-      // for (let i = 0; i < numViewingMobs; i++) {
-      //    const mob = chunk.viewingMobs[i];
-      //    const idx = mob.potentialVisibleGameObjects.indexOf(this);
-      //    if (idx === -1) {
-      //       mob.potentialVisibleGameObjects.push(this);
-      //       mob.potentialVisibleGameObjectAppearances.push(1);
-      //    } else {
-      //       mob.potentialVisibleGameObjectAppearances[idx]++;
-      //    }
-      // }
+      const numViewingMobs = chunk.viewingEntities.length;
+      for (let i = 0; i < numViewingMobs; i++) {
+         const viewingEntity = chunk.viewingEntities[i];
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+
+         const idx = aiHelperComponent.potentialVisibleEntities.indexOf(this);
+         if (idx === -1) {
+            aiHelperComponent.potentialVisibleEntities.push(this);
+            aiHelperComponent.potentialVisibleEntityAppearances.push(1);
+         } else {
+            aiHelperComponent.potentialVisibleEntityAppearances[idx]++;
+         }
+      }
    }
 
    public removeFromChunk(chunk: Chunk): void {
@@ -483,19 +486,22 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       // @Incomplete
-      // const numViewingMobs = chunk.viewingMobs.length;
-      // for (let i = 0; i < numViewingMobs; i++) {
-      //    const mob = chunk.viewingMobs[i];
-      //    const idx = mob.potentialVisibleGameObjects.indexOf(this);
-      //    if (idx === -1) {
-      //       throw new Error("Tried to remove game object from visible game objects when it wasn't in it");
-      //    }
-      //    mob.potentialVisibleGameObjectAppearances[idx]--;
-      //    if (mob.potentialVisibleGameObjectAppearances[idx] === 0) {
-      //       mob.potentialVisibleGameObjects.splice(idx, 1);
-      //       mob.potentialVisibleGameObjectAppearances.splice(idx, 1);
-      //    }
-      // }
+      // Remove the entity from the potential visible entities of all entities viewing the chunk
+      const numViewingMobs = chunk.viewingEntities.length;
+      for (let i = 0; i < numViewingMobs; i++) {
+         const viewingEntity = chunk.viewingEntities[i];
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+
+         const idx = aiHelperComponent.potentialVisibleEntities.indexOf(this);
+         if (idx === -1) {
+            throw new Error("Tried to remove entity from visible entities when it wasn't in it");
+         }
+         aiHelperComponent.potentialVisibleEntityAppearances[idx]--;
+         if (aiHelperComponent.potentialVisibleEntityAppearances[idx] === 0) {
+            aiHelperComponent.potentialVisibleEntities.splice(idx, 1);
+            aiHelperComponent.potentialVisibleEntityAppearances.splice(idx, 1);
+         }
+      }
    }
 
    private checkForCircularTileCollision(tile: Tile, hitbox: CircularHitbox): TileCollisionAxis {
@@ -1025,10 +1031,6 @@ class Entity<T extends IEntityType = IEntityType> {
                onTreeDeath(this);
                break;
             }
-            case IEntityType.boulder: {
-               onBoulderDeath(this);
-               break;
-            }
             case IEntityType.krumblid: {
                onKrumblidDeath(this);
                break;
@@ -1045,12 +1047,12 @@ class Entity<T extends IEntityType = IEntityType> {
                onTribesmanDeath(this);
                break;
             }
-            case IEntityType.slime: {
-               onSlimeDeath(this);
-               break;
-            }
             case IEntityType.yeti: {
                onYetiDeath(this);
+               break;
+            }
+            case IEntityType.fish: {
+               onFishDeath(this);
                break;
             }
          }

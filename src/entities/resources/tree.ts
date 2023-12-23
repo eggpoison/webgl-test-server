@@ -1,9 +1,10 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, TreeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, StatusEffectComponentArray, TreeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 const TREE_MAX_HEALTH = 10;
 const TREE_RADII: ReadonlyArray<number> = [40, 50];
@@ -21,7 +22,7 @@ export function createTree(position: Point): Entity {
    tree.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tree, new HealthComponent(TREE_MAX_HEALTH));
-
+   StatusEffectComponentArray.addComponent(tree, new StatusEffectComponent());
    TreeComponentArray.addComponent(tree, {
       treeSize: size
    });
@@ -35,4 +36,10 @@ export function createTree(position: Point): Entity {
 export function onTreeDeath(tree: Entity): void {
    const treeComponent = TreeComponentArray.getComponent(tree);
    createItemsOverEntity(tree, ItemType.wood, randInt(...WOOD_DROP_AMOUNTS[treeComponent.treeSize]));
+}
+
+export function onTreeRemove(tree: Entity): void {
+   HealthComponentArray.removeComponent(tree);
+   StatusEffectComponentArray.removeComponent(tree);
+   TreeComponentArray.removeComponent(tree);
 }

@@ -1,9 +1,10 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { BoulderComponentArray, HealthComponentArray } from "../../components/ComponentArray";
+import { BoulderComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 const RADIUS = 40;
 
@@ -14,7 +15,7 @@ export function createBoulder(position: Point): Entity {
    boulder.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(boulder, new HealthComponent(40));
-
+   StatusEffectComponentArray.addComponent(boulder, new StatusEffectComponent());
    BoulderComponentArray.addComponent(boulder, {
       boulderType: Math.floor(Math.random() * 2)
    });
@@ -25,6 +26,14 @@ export function createBoulder(position: Point): Entity {
    return boulder;
 }
 
-export function onBoulderDeath(boulder: Entity): void {
-   createItemsOverEntity(boulder, ItemType.rock, randInt(5, 7));
+export function onBoulderDeath(boulder: Entity, attackingEntity: Entity): void {
+   if (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribesman) {
+      createItemsOverEntity(boulder, ItemType.rock, randInt(5, 7));
+   }
+}
+
+export function onBoulderRemove(boulder: Entity): void {
+   HealthComponentArray.removeComponent(boulder);
+   StatusEffectComponentArray.removeComponent(boulder);
+   BoulderComponentArray.removeComponent(boulder);
 }

@@ -26,13 +26,14 @@ import { SlimeComponent } from "./SlimeComponent";
 import { ArrowComponent } from "./ArrowComponent";
 import { YetiComponent } from "./YetiComponent";
 import { SnowballComponent } from "./SnowballComponent";
+import { FishComponent } from "./FishComponent";
+import Board from "../Board";
 
 class ComponentArray<T extends {}> {
    public components = new Array<T>();
    
    /** Maps entity IDs to component indexes */
    private entityToIndexMap: Record<number, number> = {};
-   // @Cleanup: Do we need this?
    /** Maps component indexes to entity IDs */
    private indexToEntityMap: Record<number, number> = {};
    
@@ -52,8 +53,28 @@ class ComponentArray<T extends {}> {
       return this.components[this.entityToIndexMap[entity.id]];
    }
 
+   public removeComponent(entity: Entity): void {
+		// Copy element at end into deleted element's place to maintain density
+      const indexOfRemovedEntity = this.entityToIndexMap[entity.id];
+      this.components[indexOfRemovedEntity] = this.components[this.components.length - 1];
+
+		// Update map to point to moved spot
+      const entityOfLastElement = this.indexToEntityMap[this.components.length - 1];
+      this.entityToIndexMap[entityOfLastElement] = indexOfRemovedEntity;
+      this.indexToEntityMap[indexOfRemovedEntity] = entityOfLastElement;
+
+      delete this.entityToIndexMap[entity.id];
+      delete this.indexToEntityMap[this.components.length - 1];
+      this.components.pop();
+   }
+
    public hasComponent(entity: Entity): boolean {
       return this.entityToIndexMap.hasOwnProperty(entity.id);
+   }
+
+   public getEntity(index: number): Entity {
+      const id = this.indexToEntityMap[index];
+      return Board.entityRecord[id];
    }
 }
 
@@ -84,3 +105,4 @@ export const SlimeComponentArray = new ComponentArray<SlimeComponent>();
 export const ArrowComponentArray = new ComponentArray<ArrowComponent>();
 export const YetiComponentArray = new ComponentArray<YetiComponent>();
 export const SnowballComponentArray = new ComponentArray<SnowballComponent>();
+export const FishComponentArray = new ComponentArray<FishComponent>();

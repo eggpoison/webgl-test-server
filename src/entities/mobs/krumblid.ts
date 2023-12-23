@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -13,6 +13,7 @@ import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } f
 import Board from "../../Board";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 15;
 const KRUMBLID_SIZE = 48;
@@ -32,6 +33,7 @@ export function createKrumblid(position: Point): Entity {
    WanderAIComponentArray.addComponent(krumblid, new WanderAIComponent());
    FollowAIComponentArray.addComponent(krumblid, new FollowAIComponent(randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN)));
    EscapeAIComponentArray.addComponent(krumblid, new EscapeAIComponent());
+   AIHelperComponentArray.addComponent(krumblid, new AIHelperComponent());
 
    krumblid.rotation = 2 * Math.PI * Math.random();
 
@@ -39,14 +41,9 @@ export function createKrumblid(position: Point): Entity {
 }
 
 export function tickKrumblid(krumblid: Entity): void {
-   const visibleEntities = getEntitiesInVisionRange(krumblid.position.x, krumblid.position.y, VISION_RANGE);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(krumblid);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(krumblid);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(krumblid);
+   updateAIHelperComponent(krumblid, VISION_RANGE);
+   const visibleEntities = calculateVisibleEntities(krumblid, aiHelperComponent, VISION_RANGE);
    
    // Escape AI
    const escapeAIComponent = EscapeAIComponentArray.getComponent(krumblid);
@@ -92,7 +89,9 @@ export function tickKrumblid(krumblid: Entity): void {
          targetTile = getWanderTargetTile(krumblid, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "desert"));
 
-      wander(krumblid, targetTile, 100, 50);
+      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      wander(krumblid, x, y, 100, 50);
    } else {
       stopEntity(krumblid);
    }
@@ -104,4 +103,13 @@ export function onKrumblidHurt(cow: Entity, attackingEntity: Entity): void {
 
 export function onKrumblidDeath(krumblid: Entity): void {
    createItemsOverEntity(krumblid, ItemType.leather, randInt(2, 3));
+}
+
+export function onKrumblidRemove(krumblid: Entity): void {
+   HealthComponentArray.removeComponent(krumblid);
+   StatusEffectComponentArray.removeComponent(krumblid);
+   WanderAIComponentArray.removeComponent(krumblid);
+   FollowAIComponentArray.removeComponent(krumblid);
+   EscapeAIComponentArray.removeComponent(krumblid);
+   AIHelperComponentArray.removeComponent(krumblid);
 }

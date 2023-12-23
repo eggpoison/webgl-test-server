@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Mutable, PlayerCauseOfDeath, Point, SETTINGS, SlimeOrbData, SlimeSize, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { SlimeComponent } from "../../components/SlimeComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
@@ -11,6 +11,7 @@ import Tile from "../../Tile";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import Board from "../../Board";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
 const MAX_HEALTH: ReadonlyArray<number> = [10, 15, 25];
@@ -62,6 +63,7 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small):
    StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent());
    SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size]));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
+   AIHelperComponentArray.addComponent(slime, new AIHelperComponent());
 
    return slime;
 }
@@ -160,14 +162,9 @@ export function tickSlime(slime: Entity): void {
       return;
    }
 
-   const visibleEntities = getEntitiesInVisionRange(slime.position.x, slime.position.y, visionRange);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(slime);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(slime);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
+   updateAIHelperComponent(slime, visionRange);
+   const visibleEntities = calculateVisibleEntities(slime, aiHelperComponent, visionRange);
 
    // Chase entities intruding on the slimes' land
    {
@@ -176,6 +173,11 @@ export function tickSlime(slime: Entity): void {
       for (let i = 0; i < visibleEntities.length; i++) {
          const entity = visibleEntities[i];
          if (entity.type === IEntityType.slime || entity.type === IEntityType.slimewisp || entity.tile.biomeName !== "swamp") {
+            continue;
+         }
+
+         // Don't attack entities which can't be damaged
+         if (!HealthComponentArray.hasComponent(entity)) {
             continue;
          }
 
@@ -229,7 +231,9 @@ export function tickSlime(slime: Entity): void {
          targetTile = getWanderTargetTile(slime, visionRange);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "swamp"));
 
-      wander(slime, targetTile, ACCELERATION * speedMultiplier, TERMINAL_VELOCITY * speedMultiplier);
+      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      wander(slime, x, y, ACCELERATION * speedMultiplier, TERMINAL_VELOCITY * speedMultiplier);
    } else {
       stopEntity(slime);
    }
@@ -371,7 +375,17 @@ export function onSlimeHurt(slime: Entity, attackingEntity: Entity): void {
    propagateAnger(slime, attackingEntity, 1);
 }
 
-export function onSlimeDeath(slime: Entity): void {
-   const slimeComponent = SlimeComponentArray.getComponent(slime);
-   createItemsOverEntity(slime, ItemType.slimeball, randInt(...SLIME_DROP_AMOUNTS[slimeComponent.size]));
+export function onSlimeDeath(slime: Entity, attackingEntity: Entity): void {
+   if (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribesman) {
+      const slimeComponent = SlimeComponentArray.getComponent(slime);
+      createItemsOverEntity(slime, ItemType.slimeball, randInt(...SLIME_DROP_AMOUNTS[slimeComponent.size]));
+   }
+}
+
+export function onSlimeRemove(slime: Entity): void {
+   HealthComponentArray.removeComponent(slime);
+   StatusEffectComponentArray.removeComponent(slime);
+   SlimeComponentArray.removeComponent(slime);
+   WanderAIComponentArray.removeComponent(slime);
+   AIHelperComponentArray.removeComponent(slime);
 }

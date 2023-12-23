@@ -8,8 +8,10 @@ import { onCowHurt } from "../entities/mobs/cow";
 import { onKrumblidHurt } from "../entities/mobs/krumblid";
 import { onTombstoneDeath } from "../entities/tombstone";
 import { onZombieHurt } from "../entities/mobs/zombie";
-import { onSlimeHurt } from "../entities/mobs/slime";
+import { onSlimeDeath, onSlimeHurt } from "../entities/mobs/slime";
 import { onYetiHurt } from "../entities/mobs/yeti";
+import { onFishHurt } from "../entities/mobs/fish";
+import { onBoulderDeath } from "../entities/resources/boulder";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -67,6 +69,18 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
             onTombstoneDeath(entity, attackingEntity);
             break;
          }
+         case IEntityType.slime: {
+            if (attackingEntity !== null) {
+               onSlimeDeath(entity, attackingEntity);
+            }
+            break;
+         }
+         case IEntityType.boulder: {
+            if (attackingEntity !== null) {
+               onBoulderDeath(entity, attackingEntity);
+            }
+            break;
+         }
       }
 
       // @Cleanup: This should instead just be an event created in the player class
@@ -122,6 +136,12 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
       case IEntityType.yeti: {
          if (attackingEntity !== null) {
             onYetiHurt(entity, attackingEntity);
+         }
+         break;
+      }
+      case IEntityType.fish: {
+         if (attackingEntity !== null) {
+            onFishHurt(entity, attackingEntity);
          }
          break;
       }

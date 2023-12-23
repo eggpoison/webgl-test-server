@@ -3,6 +3,8 @@ import Entity from "../GameObject";
 import { ItemComponentArray } from "../components/ComponentArray";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
+const TICKS_TO_DESPAWN = 300 * SETTINGS.TPS;
+
 export function createItemEntity(position: Point, itemType: ItemType, amount: number): Entity {
    const itemEntity = new Entity(position, IEntityType.itemEntity, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
@@ -18,6 +20,13 @@ export function createItemEntity(position: Point, itemType: ItemType, amount: nu
    itemEntity.rotation = 2 * Math.PI * Math.random();
 
    return itemEntity;
+}
+
+export function tickItemEntity(itemEntity: Entity): void {
+   // Despawn old items
+   if (itemEntity.ageTicks >= TICKS_TO_DESPAWN) {
+      itemEntity.remove();
+   }
 }
 
 export function addItemEntityPlayerPickupCooldown(itemEntity: Entity, entityID: number, cooldownDuration: number): void {

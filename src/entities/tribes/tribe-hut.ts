@@ -1,9 +1,10 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../GameObject";
-import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 export const TRIBE_HUT_SIZE = 88;
 
@@ -14,6 +15,7 @@ export function createTribeHut(position: Point, tribe: Tribe): Entity {
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(20));
+   StatusEffectComponentArray.addComponent(hut, new StatusEffectComponent());
    
    TribeComponentArray.addComponent(hut, {
       tribeType: tribe.tribeType,

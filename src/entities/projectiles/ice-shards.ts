@@ -48,3 +48,7 @@ export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): 
    // Shatter the ice spike
    iceShard.remove();
 }
+
+export function onIceShardRemove(iceShard: Entity): void {
+   IceShardComponentArray.removeComponent(iceShard);
+}

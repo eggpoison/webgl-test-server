@@ -3,7 +3,7 @@ import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { createIceShard } from "../projectiles/ice-shards";
 
 const ICE_SPIKE_RADIUS = 40;
@@ -15,6 +15,7 @@ export function createIceSpikes(position: Point): Entity {
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));
+   StatusEffectComponentArray.addComponent(iceSpikes, new StatusEffectComponent());
 
    iceSpikes.isStatic = true;
    iceSpikes.rotation = 2 * Math.PI * Math.random();
@@ -61,4 +62,9 @@ export function onIceSpikesDeath(iceSpikes: Entity): void {
       iceShard.velocity.y = 700 * Math.cos(moveDirection);
       iceShard.terminalVelocity = 700;
    }
+}
+
+export function onIceSpikesRemove(iceSpikes: Entity): void {
+   HealthComponentArray.removeComponent(iceSpikes);
+   StatusEffectComponentArray.removeComponent(iceSpikes);
 }

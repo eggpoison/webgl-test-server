@@ -1,7 +1,7 @@
 import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, angle, distance, randItem } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { Inventory, InventoryComponent, addItemToInventory, addItemToSlot, consumeItem, createNewInventory, getInventory, getItem, inventoryIsFull, pickupItemEntity, removeItemFromInventory } from "../../components/InventoryComponent";
@@ -14,6 +14,7 @@ import { TribesmanComponent } from "../../components/TribesmanComponent";
 import Board from "../../Board";
 import Item from "../../items/Item";
 import Tile from "../../Tile";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 
 const RADIUS = 28;
 const INVENTORY_SIZE = 3;
@@ -82,6 +83,7 @@ export function createTribesman(position: Point, tribeType: TribeType, tribe: Tr
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
    InventoryUseComponentArray.addComponent(tribesman, new InventoryUseComponent(hotbarInventory));
+   AIHelperComponentArray.addComponent(tribesman, new AIHelperComponent());
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done
@@ -336,14 +338,9 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const visibleEntities = getEntitiesInVisionRange(tribesman.position.x, tribesman.position.y, VISION_RANGE);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(tribesman);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(tribesman);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman);
+   updateAIHelperComponent(tribesman, VISION_RANGE);
+   const visibleEntities = calculateVisibleEntities(tribesman, aiHelperComponent, VISION_RANGE);
 
    // @Cleanup: A nicer way to do this might be to sort the visible entities array based on the 'threat level' of each entity
 
@@ -677,7 +674,7 @@ export function tickTribesman(tribesman: Entity): void {
 
    // If all else fails, don't do anything
    stopEntity(tribesman);
-   
+
    tribesmanComponent.lastAIType = TribesmanAIType.idle;
 }
 
@@ -945,3 +942,5 @@ export function onTribesmanDeath(tribesman: Entity): void {
       tribeComponent.tribe!.createNewTribesman(hut);
    }
 }
+
+// @Incomplete: onTribesmanRemove

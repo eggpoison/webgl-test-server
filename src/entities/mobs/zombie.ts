@@ -1,6 +1,6 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../GameObject";
-import { HealthComponentArray, InventoryComponentArray, ItemComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, ItemComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyKnockback, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -11,6 +11,7 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 20;
 
@@ -36,11 +37,10 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    
    HealthComponentArray.addComponent(zombie, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(zombie, new StatusEffectComponent());
-
    const zombieType = isGolden ? 3 : randInt(0, 2);
    ZombieComponentArray.addComponent(zombie, new ZombieComponent(zombieType, tombstoneID));
-
    WanderAIComponentArray.addComponent(zombie, new WanderAIComponent());
+   AIHelperComponentArray.addComponent(zombie, new AIHelperComponent());
    
    return zombie;
 }
@@ -65,14 +65,9 @@ export function tickZombie(zombie: Entity): void {
       }
    }
 
-   const visibleEntities = getEntitiesInVisionRange(zombie.position.x, zombie.position.y, VISION_RANGE);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(zombie);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(zombie);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(zombie);
+   updateAIHelperComponent(zombie, VISION_RANGE);
+   const visibleEntities = calculateVisibleEntities(zombie, aiHelperComponent, VISION_RANGE);
 
    // @Incomplete: Make the chase AI consider both enemies and food in the same loop
 
@@ -139,7 +134,9 @@ export function tickZombie(zombie: Entity): void {
          targetTile = getWanderTargetTile(zombie, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "grasslands"));
 
-      wander(zombie, targetTile, ACCELERATION_SLOW, TERMINAL_VELOCITY_SLOW);
+      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      wander(zombie, x, y, ACCELERATION_SLOW, TERMINAL_VELOCITY_SLOW);
    } else {
       stopEntity(zombie);
    }
@@ -200,4 +197,12 @@ export function onZombieDeath(zombie: Entity): void {
       const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone);
       tombstoneComponent.numZombies--;
    }
+}
+
+export function onZombieRemove(zombie: Entity): void {
+   HealthComponentArray.removeComponent(zombie);
+   StatusEffectComponentArray.removeComponent(zombie);
+   ZombieComponentArray.removeComponent(zombie);
+   WanderAIComponentArray.removeComponent(zombie);
+   AIHelperComponentArray.removeComponent(zombie);
 }

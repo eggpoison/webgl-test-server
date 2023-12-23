@@ -70,3 +70,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
       }
    }
 }
+
+export function onArrowRemove(arrow: Entity): void {
+   ArrowComponentArray.removeComponent(arrow);
+}

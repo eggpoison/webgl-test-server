@@ -1,7 +1,7 @@
 import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../GameObject";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { AIHelperComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -11,10 +11,11 @@ import Tile from "../../Tile";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
 import Board from "../../Board";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } from "../../components/FollowAIComponent";
 import { CowComponent, updateCowComponent } from "../../components/CowComponent";
 import { dropBerry } from "../resources/berry-bush";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 const MAX_HEALTH = 10;
 const VISION_RANGE = 256;
@@ -42,6 +43,7 @@ export function createCow(position: Point): Entity {
    cow.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));
+   StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent());
    AIHelperComponentArray.addComponent(cow, new AIHelperComponent());
    WanderAIComponentArray.addComponent(cow, new WanderAIComponent());
    EscapeAIComponentArray.addComponent(cow, new EscapeAIComponent());
@@ -52,16 +54,9 @@ export function createCow(position: Point): Entity {
 }
 
 export function tickCow(cow: Entity): void {
-   // const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
-   // updateAIHelperComponent(cow, VISION_RANGE);
-   const visibleEntities = getEntitiesInVisionRange(cow.position.x, cow.position.y, VISION_RANGE);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(cow);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(cow);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
+   updateAIHelperComponent(cow, VISION_RANGE);
+   const visibleEntities = calculateVisibleEntities(cow, aiHelperComponent, VISION_RANGE);
 
    const cowComponent = CowComponentArray.getComponent(cow);
    updateCowComponent(cowComponent);
@@ -223,7 +218,9 @@ export function tickCow(cow: Entity): void {
          targetTile = getWanderTargetTile(cow, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "grasslands"));
 
-      wander(cow, targetTile, 100, 50);
+      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      wander(cow, x, y, 100, 50)
    } else {
       stopEntity(cow);
    }
@@ -236,4 +233,14 @@ export function onCowHurt(cow: Entity, attackingEntity: Entity): void {
 export function onCowDeath(cow: Entity): void {
    createItemsOverEntity(cow, ItemType.raw_beef, randInt(1, 2));
    createItemsOverEntity(cow, ItemType.leather, randInt(0, 2));
+}
+
+export function onCowRemove(cow: Entity): void {
+   HealthComponentArray.removeComponent(cow);
+   StatusEffectComponentArray.removeComponent(cow);
+   AIHelperComponentArray.removeComponent(cow);
+   WanderAIComponentArray.removeComponent(cow);
+   EscapeAIComponentArray.removeComponent(cow);
+   FollowAIComponentArray.removeComponent(cow);
+   CowComponentArray.removeComponent(cow);
 }

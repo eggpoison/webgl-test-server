@@ -6,8 +6,7 @@ class Chunk {
    public readonly entities = new Array<Entity>();
 
    /** Stores all mobs which have the chunk in their vision range */
-   // @Incomplete
-   // public readonly viewingMobs = new Array<Entity>();
+   public readonly viewingEntities = new Array<Entity>();
 
    public readonly riverSteppingStones = new Array<RiverSteppingStoneData>();
 

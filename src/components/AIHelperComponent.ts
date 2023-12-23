@@ -1,4 +1,4 @@
-import { Point, SETTINGS, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset } from "webgl-test-shared";
+import { IEntityType, Point, SETTINGS, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import Entity from "../GameObject";
 import { AIHelperComponentArray } from "./ComponentArray";
@@ -8,8 +8,12 @@ import CircularHitbox from "../hitboxes/CircularHitbox";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
 export class AIHelperComponent {
-   public visibleEntities = new Array<Entity>();
+   public visibleChunkBounds = [999, 999, 999, 999];
    public visibleChunks = new Array<Chunk>();
+
+   public readonly potentialVisibleEntities = new Array<Entity>();
+   /** The number of times each potential visible game object appears in the mob's visible chunks */
+   public readonly potentialVisibleEntityAppearances = new Array<number>();
 }
 
 const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): boolean => {
@@ -27,67 +31,102 @@ const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): b
 
 export function updateAIHelperComponent(entity: Entity, visionRange: number): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
-      
+   
    const minChunkX = Math.max(Math.min(Math.floor((entity.position.x - visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    const maxChunkX = Math.max(Math.min(Math.floor((entity.position.x + visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    const minChunkY = Math.max(Math.min(Math.floor((entity.position.y - visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    const maxChunkY = Math.max(Math.min(Math.floor((entity.position.y + visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-
-   const thisChunkX = Math.max(Math.min(Math.floor(entity.position.x / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const thisChunkY = Math.max(Math.min(Math.floor(entity.position.y / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    
-   aiHelperComponent.visibleChunks = new Array<Chunk>();
-   const potentialVisibleEntities = new Array<Entity>();
+   if (minChunkX === aiHelperComponent.visibleChunkBounds[0] && maxChunkX === aiHelperComponent.visibleChunkBounds[1] && minChunkY === aiHelperComponent.visibleChunkBounds[2] && maxChunkY === aiHelperComponent.visibleChunkBounds[3]) {
+      return;
+   }
+
+   aiHelperComponent.visibleChunkBounds[0] = minChunkX;
+   aiHelperComponent.visibleChunkBounds[1] = maxChunkX;
+   aiHelperComponent.visibleChunkBounds[2] = minChunkY;
+   aiHelperComponent.visibleChunkBounds[3] = maxChunkY;
+
+   const newVisibleChunks = new Array<Chunk>();
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-         // Check if the chunk is actually in the vision range
-         // Find the closest point of the chunk border to the mob
-         let closestChunkPointX: number;
-         let closestChunkPointY: number;
-         if (chunkX === thisChunkX) {
-            closestChunkPointX = entity.position.x;
-         } else {
-            closestChunkPointX = entity.position.x < (chunkX + 0.5) * SETTINGS.CHUNK_UNITS ? chunkX * SETTINGS.CHUNK_UNITS : (chunkX + 1) * SETTINGS.CHUNK_UNITS;
-         }
-         if (chunkY === thisChunkY) {
-            closestChunkPointY = entity.position.y;
-         } else {
-            closestChunkPointY = entity.position.y < (chunkY + 0.5) * SETTINGS.CHUNK_UNITS ? chunkY * SETTINGS.CHUNK_UNITS : (chunkY + 1) * SETTINGS.CHUNK_UNITS;
-         }
+         const chunk = Board.getChunk(chunkX, chunkY);
+         newVisibleChunks.push(chunk);
+      }
+   }
 
-         if (Math.pow(closestChunkPointX - entity.position.x, 2) + Math.pow(closestChunkPointY - entity.position.y, 2) <= visionRange * visionRange) {
-            const chunk = Board.getChunk(chunkX, chunkY);
-            aiHelperComponent.visibleChunks.push(chunk);
-            for (const entity of chunk.entities) {
-               if (potentialVisibleEntities.indexOf(entity) === -1) {
-                  potentialVisibleEntities.push(entity);
-               }
+   // Find all chunks which aren't present in the new chunks and remove them
+   for (const chunk of aiHelperComponent.visibleChunks) {
+      if (newVisibleChunks.indexOf(chunk) === -1) {
+         // Remove previously visible chunk
+         chunk.viewingEntities.splice(chunk.viewingEntities.indexOf(entity), 1);
+         aiHelperComponent.visibleChunks.splice(aiHelperComponent.visibleChunks.indexOf(chunk), 1);
+
+         // Remove game objects in the chunk from the potentially visible list
+         const numGameObjects = chunk.entities.length;
+         for (let i = 0; i < numGameObjects; i++) {
+            const gameObject = chunk.entities[i];
+            const idx = aiHelperComponent.potentialVisibleEntities.indexOf(gameObject);
+            aiHelperComponent.potentialVisibleEntityAppearances[idx]--;
+            if (aiHelperComponent.potentialVisibleEntityAppearances[idx] === 0) {
+               aiHelperComponent.potentialVisibleEntities.splice(idx, 1);
+               aiHelperComponent.potentialVisibleEntityAppearances.splice(idx, 1);
             }
          }
       }
    }
 
-   // @Speed: Garbage collection, and likely uses a whole ton of malloc under the hood
-   aiHelperComponent.visibleEntities = [];
+   // Add all new chunks
+   for (const chunk of newVisibleChunks) {
+      if (aiHelperComponent.visibleChunks.indexOf(chunk) === -1) {
+         // Add new visible chunk
+         chunk.viewingEntities.push(entity);
+         aiHelperComponent.visibleChunks.push(chunk);
 
-   for (let i = 0; i < potentialVisibleEntities.length; i++) {
-      const gameObject = potentialVisibleEntities[i];
-      
-      if (Math.pow(entity.position.x - gameObject.position.x, 2) + Math.pow(entity.position.y - gameObject.position.y, 2) <= visionRange * visionRange) {
-         aiHelperComponent.visibleEntities.push(gameObject);
-         continue;
-      }
-
-      // If the mob can see any of the game object's hitboxes, it is visible
-      const numHitboxes = gameObject.hitboxes.length;
-      for (let j = 0; j < numHitboxes; j++) {
-         const hitbox = gameObject.hitboxes[j];
-         if (hitboxIsVisible(entity, hitbox, visionRange)) {
-            aiHelperComponent.visibleEntities.push(gameObject);
-            break;
+         // Add existing game objects to the potentially visible list
+         const numGameObjects = chunk.entities.length;
+         for (let i = 0; i < numGameObjects; i++) {
+            const gameObject = chunk.entities[i];
+            const idx = aiHelperComponent.potentialVisibleEntities.indexOf(gameObject);
+            if (idx === -1) {
+               aiHelperComponent.potentialVisibleEntities.push(gameObject);
+               aiHelperComponent.potentialVisibleEntityAppearances.push(1);
+            } else {
+               aiHelperComponent.potentialVisibleEntityAppearances[idx]++;
+            }
          }
       }
    }
+}
 
-   aiHelperComponent.visibleEntities.splice(aiHelperComponent.visibleEntities.indexOf(entity), 1);
+const entityIsVisible = (entity: Entity, checkEntity: Entity, visionRange: number): boolean => {
+   const xDiff = entity.position.x - checkEntity.position.x;
+   const yDiff = entity.position.y - checkEntity.position.y;
+   if (xDiff * xDiff + yDiff * yDiff <= visionRange * visionRange) {
+      return true;
+   }
+
+   // If the mob can see any of the game object's hitboxes, it is visible
+   for (let j = 0; j < checkEntity.hitboxes.length; j++) {
+      const hitbox = checkEntity.hitboxes[j];
+      if (hitboxIsVisible(entity, hitbox, visionRange)) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+export function calculateVisibleEntities(entity: Entity, aiHelperComponent: AIHelperComponent, visionRange: number): Array<Entity> {
+   const visibleEntities = new Array<Entity>();
+
+   for (let i = 0; i < aiHelperComponent.potentialVisibleEntities.length; i++) {
+      const currentEntity = aiHelperComponent.potentialVisibleEntities[i];
+      if (entityIsVisible(entity, currentEntity, visionRange)) {
+         visibleEntities.push(currentEntity);
+      }
+   }
+
+   visibleEntities.splice(visibleEntities.indexOf(entity), 1);
+
+   return visibleEntities;
 }

@@ -9,24 +9,32 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { HealthComponentArray, IceShardComponentArray, InventoryUseComponentArray, ItemComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, InventoryUseComponentArray, ItemComponentArray, StatusEffectComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { tickPlayer } from "./entities/tribes/player";
 import Entity from "./GameObject";
 import { tickHealthComponent } from "./components/HealthComponent";
-import { tickBerryBush } from "./entities/resources/berry-bush";
-import { tickIceShard } from "./entities/projectiles/ice-shards";
-import { tickCow } from "./entities/mobs/cow";
-import { tickKrumblid } from "./entities/mobs/krumblid";
+import { onBerryBushRemove, tickBerryBush } from "./entities/resources/berry-bush";
+import { onIceShardRemove, tickIceShard } from "./entities/projectiles/ice-shards";
+import { onCowRemove, tickCow } from "./entities/mobs/cow";
+import { onKrumblidRemove, tickKrumblid } from "./entities/mobs/krumblid";
 import { tickItemComponent } from "./components/ItemComponent";
 import { tickTribesman } from "./entities/tribes/tribesman";
 import { tickTombstone } from "./entities/tombstone";
-import { tickZombie } from "./entities/mobs/zombie";
-import { tickSlimewisp } from "./entities/mobs/slimewisp";
-import { tickSlime } from "./entities/mobs/slime";
-import { tickArrowProjectile } from "./entities/projectiles/wooden-arrow";
-import { tickYeti } from "./entities/mobs/yeti";
+import { onZombieRemove, tickZombie } from "./entities/mobs/zombie";
+import { onSlimewispRemove, tickSlimewisp } from "./entities/mobs/slimewisp";
+import { onSlimeRemove, tickSlime } from "./entities/mobs/slime";
+import { onArrowRemove, tickArrowProjectile } from "./entities/projectiles/wooden-arrow";
+import { onYetiRemove, tickYeti } from "./entities/mobs/yeti";
 import { tickSnowball } from "./entities/snowball";
+import { onFishRemove, tickFish } from "./entities/mobs/fish";
+import { tickStatusEffectComponent } from "./components/StatusEffectComponent";
+import { onTreeRemove } from "./entities/resources/tree";
+import { onBoulderRemove } from "./entities/resources/boulder";
+import { onCactusRemove } from "./entities/resources/cactus";
+import { onIceSpikesRemove } from "./entities/resources/ice-spikes";
+import { onTribeTotemRemove } from "./entities/tribes/tribe-totem";
+import { tickItemEntity } from "./items/item-entity";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -214,6 +222,14 @@ abstract class Board {
             entity.removeFromChunk(chunk);
          }
 
+         if (AIHelperComponentArray.hasComponent(entity)) {
+            const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
+            for (let i = 0; i < aiHelperComponent.visibleChunks.length; i++) {
+               const chunk = aiHelperComponent.visibleChunks[i];
+               chunk.viewingEntities.splice(chunk.viewingEntities.indexOf(entity), 1);
+            }
+         }
+
          delete this.entityRecord[entity.id];
          removeEntityFromCensus(entity);
 
@@ -222,6 +238,69 @@ abstract class Board {
             const itemComponent = ItemComponentArray.getComponent(entity);
             if (itemComponent.itemType === ItemType.flesh_sword) {
                removeFleshSword(entity);
+            }
+         }
+
+         switch (entity.type) {
+            case IEntityType.cow: {
+               onCowRemove(entity);
+               break;
+            }
+            case IEntityType.fish: {
+               onFishRemove(entity);
+               break;
+            }
+            case IEntityType.krumblid: {
+               onKrumblidRemove(entity);
+               break;
+            }
+            case IEntityType.slime: {
+               onSlimeRemove(entity);
+               break;
+            }
+            case IEntityType.slimewisp: {
+               onSlimewispRemove(entity);
+               break;
+            }
+            case IEntityType.woodenArrowProjectile: {
+               onArrowRemove(entity);
+               break;
+            }
+            case IEntityType.iceShardProjectile: {
+               onIceShardRemove(entity);
+               break;
+            }
+            case IEntityType.yeti: {
+               onYetiRemove(entity);
+               break;
+            }
+            case IEntityType.tree: {
+               onTreeRemove(entity);
+               break;
+            }
+            case IEntityType.zombie: {
+               onZombieRemove(entity);
+               break;
+            }
+            case IEntityType.berryBush: {
+               onBerryBushRemove(entity);
+               break;
+            }
+            case IEntityType.boulder: {
+               onBoulderRemove(entity);
+               break;
+            }
+            case IEntityType.cactus: {
+               onCactusRemove(entity);
+               break;
+            }
+            case IEntityType.iceSpikes: {
+               onIceSpikesRemove(entity);
+               break;
+            }
+            case IEntityType.tribeTotem: {
+               onTribeTotemRemove(entity);
+               break;
             }
          }
       }
@@ -286,6 +365,14 @@ abstract class Board {
                tickSnowball(entity);
                break;
             }
+            case IEntityType.fish: {
+               tickFish(entity);
+               break;
+            }
+            case IEntityType.itemEntity: {
+               tickItemEntity(entity);
+               break;
+            }
          }
 
          entity.tick();
@@ -304,6 +391,15 @@ abstract class Board {
       for (let i = 0; i < ItemComponentArray.components.length; i++) {
          const itemComponent = ItemComponentArray.components[i];
          tickItemComponent(itemComponent);
+      }
+
+      for (let i = 0; i < StatusEffectComponentArray.components.length; i++) {
+         const entity = StatusEffectComponentArray.getEntity(i);
+         // @Speed @Cleanup @Hack: When new entities are created they aren't added to the board immediately but their
+         // components are immediately added to the arrays, so we do this hack
+         if (typeof entity !== "undefined") {
+            tickStatusEffectComponent(entity);
+         }
       }
    }
 

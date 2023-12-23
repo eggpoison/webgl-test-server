@@ -1,10 +1,11 @@
 import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { CactusComponentArray, HealthComponentArray } from "../../components/ComponentArray";
+import { CactusComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { CactusComponent } from "../../components/CactusComponent";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 const RADIUS = 40;
 /** Amount the hitbox is brought in. */
@@ -82,6 +83,7 @@ export function createCactus(position: Point): Entity {
    }
 
    HealthComponentArray.addComponent(cactus, new HealthComponent(15));
+   StatusEffectComponentArray.addComponent(cactus, new StatusEffectComponent());
    CactusComponentArray.addComponent(cactus, new CactusComponent(flowers, limbs));
 
    cactus.isStatic = true;
@@ -103,4 +105,10 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
 
 export function onCactusDeath(cactus: Entity): void {
    createItemsOverEntity(cactus, ItemType.cactus_spine, randInt(2, 5));
+}
+
+export function onCactusRemove(cactus: Entity): void {
+   HealthComponentArray.removeComponent(cactus);
+   StatusEffectComponentArray.removeComponent(cactus);
+   CactusComponentArray.removeComponent(cactus);
 }

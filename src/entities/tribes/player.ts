@@ -2,7 +2,7 @@ import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_CO
 import Entity from "../../GameObject";
 import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, getInventory, getItem } from "../../components/InventoryComponent";
 import { getItemStackSize, itemIsStackable } from "../../items/Item";
 import Board from "../../Board";
@@ -13,6 +13,7 @@ import { InventoryUseComponent } from "../../components/InventoryUseComponent";
 import { SERVER } from "../../server";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { PlayerComponent } from "../../components/PlayerComponent";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -34,6 +35,7 @@ export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe
 
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];
    HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
+   StatusEffectComponentArray.addComponent(player, new StatusEffectComponent());
 
    TribeComponentArray.addComponent(player, {
       tribeType: TribeType.plainspeople,

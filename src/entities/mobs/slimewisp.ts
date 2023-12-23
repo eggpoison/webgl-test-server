@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, SlimewispComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
@@ -9,6 +9,8 @@ import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { SlimewispComponent } from "../../components/SlimewispComponent";
 import { createSlime } from "./slime";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 3;
 const RADIUS = 16;
@@ -27,21 +29,18 @@ export function createSlimewisp(position: Point): Entity {
    slimewisp.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slimewisp, new HealthComponent(MAX_HEALTH));
+   StatusEffectComponentArray.addComponent(slimewisp, new StatusEffectComponent());
    SlimewispComponentArray.addComponent(slimewisp, new SlimewispComponent());
    WanderAIComponentArray.addComponent(slimewisp, new WanderAIComponent());
+   AIHelperComponentArray.addComponent(slimewisp, new AIHelperComponent());
    
    return slimewisp;
 }
 
 export function tickSlimewisp(slimewisp: Entity): void {
-   const visibleEntities = getEntitiesInVisionRange(slimewisp.position.x, slimewisp.position.y, VISION_RANGE);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(slimewisp);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(slimewisp);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(slimewisp);
+   updateAIHelperComponent(slimewisp, VISION_RANGE);
+   const visibleEntities = calculateVisibleEntities(slimewisp, aiHelperComponent, VISION_RANGE);
    
    // Merge with other slimewisps
    let minDist = Number.MAX_SAFE_INTEGER;
@@ -91,8 +90,18 @@ export function tickSlimewisp(slimewisp: Entity): void {
          targetTile = getWanderTargetTile(slimewisp, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "swamp"));
 
-      wander(slimewisp, targetTile, ACCELERATION, TERMINAL_VELOCITY);
+      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      wander(slimewisp, x, y, ACCELERATION, TERMINAL_VELOCITY);
    } else {
       stopEntity(slimewisp);
    }
+}
+
+export function onSlimewispRemove(slimewisp: Entity): void {
+   HealthComponentArray.removeComponent(slimewisp);
+   StatusEffectComponentArray.removeComponent(slimewisp);
+   SlimewispComponentArray.removeComponent(slimewisp);
+   WanderAIComponentArray.removeComponent(slimewisp);
+   AIHelperComponentArray.removeComponent(slimewisp);
 }

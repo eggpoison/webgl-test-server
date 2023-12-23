@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, ItemComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity, healEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -12,6 +12,7 @@ import { YetiComponent } from "../../components/YetiComponent";
 import Board from "../../Board";
 import { createItemsOverEntity } from "../../entity-shared";
 import { createSnowball } from "../snowball";
+import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -147,6 +148,7 @@ export function createYeti(position: Point): Entity {
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent());
    WanderAIComponentArray.addComponent(yeti, new WanderAIComponent());
+   AIHelperComponentArray.addComponent(yeti, new AIHelperComponent());
 
    const territory = generateYetiTerritoryTiles(yeti.tile.x, yeti.tile.y);
    registerYetiTerritory(yeti, territory);
@@ -231,14 +233,9 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
 }
 
 export function tickYeti(yeti: Entity): void {
-   const visibleEntities = getEntitiesInVisionRange(yeti.position.x, yeti.position.y, VISION_RANGE);
-
-   // @Cleanup: don't do here
-   let idx = visibleEntities.indexOf(yeti);
-   while (idx !== -1) {
-      visibleEntities.splice(idx, 1);
-      idx = visibleEntities.indexOf(yeti);
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(yeti);
+   updateAIHelperComponent(yeti, VISION_RANGE);
+   const visibleEntities = calculateVisibleEntities(yeti, aiHelperComponent, VISION_RANGE);
    
    const yetiComponent = YetiComponentArray.getComponent(yeti);
 
@@ -357,7 +354,9 @@ export function tickYeti(yeti: Entity): void {
          targetTile = getWanderTargetTile(yeti, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "tundra" || !yetiComponent.territory.includes(targetTile)));
 
-      wander(yeti, targetTile, 100, 50);
+      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      wander(yeti, x, y, 100, 50);
    } else {
       stopEntity(yeti);
    }
@@ -398,4 +397,12 @@ export function onYetiDeath(yeti: Entity): void {
       const territoryTile = yetiComponent.territory[i];
       removeYetiTerritory(territoryTile.x, territoryTile.y);
    }
+}
+
+export function onYetiRemove(yeti: Entity): void {
+   HealthComponentArray.removeComponent(yeti);
+   StatusEffectComponentArray.removeComponent(yeti);
+   WanderAIComponentArray.removeComponent(yeti);
+   YetiComponentArray.removeComponent(yeti);
+   AIHelperComponentArray.removeComponent(yeti);
 }

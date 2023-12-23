@@ -1,9 +1,10 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, TribeType } from "webgl-test-shared";
 import Entity from "../../GameObject";
-import { HealthComponentArray, TotemBannerComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, StatusEffectComponentArray, TotemBannerComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { TotemBannerPosition } from "../../components/TotemBannerComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 export const TRIBE_TOTEM_SIZE = 120;
 
@@ -28,7 +29,7 @@ export function createTribeTotem(position: Point, tribeType: TribeType): Entity 
    totem.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(totem, new HealthComponent(50));
-
+   StatusEffectComponentArray.addComponent(totem, new StatusEffectComponent());
    TribeComponentArray.addComponent(totem, {
       tribeType: tribeType,
       tribe: null
@@ -42,4 +43,11 @@ export function createTribeTotem(position: Point, tribeType: TribeType): Entity 
    totem.isStatic = true;
    
    return totem;
+}
+
+export function onTribeTotemRemove(totem: Entity): void {
+   HealthComponentArray.removeComponent(totem);
+   StatusEffectComponentArray.removeComponent(totem);
+   TribeComponentArray.removeComponent(totem);
+   TotemBannerComponentArray.removeComponent(totem);
 }

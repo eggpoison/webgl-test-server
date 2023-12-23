@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData, StatusEffectData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -12,12 +12,13 @@ import Item from "./items/Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, startChargingBow, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
+import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;
@@ -128,7 +129,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.fish: {
-         clientArgs = [];
+         const fishComponent = FishComponentArray.getComponent(entity);
+         clientArgs = [fishComponent.colour];
          break;
       }
       case IEntityType.frozenYeti: {
@@ -325,6 +327,20 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
    }
 
+   const statusEffectData = new Array<StatusEffectData>();
+   if (StatusEffectComponentArray.hasComponent(entity)) {
+      const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
+      for (let i = 0; i < NUM_STATUS_EFFECTS; i++) {
+         if (statusEffectComponent.ticksRemaining[i] > 0) {
+            statusEffectData.push({
+               type: i,
+               ticksElapsed: statusEffectComponent.ticksElapsed[i]
+            });
+         }
+      }
+   }
+   
+
    return {
       id: entity.id,
       position: entity.position.package(),
@@ -336,9 +352,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       ageTicks: entity.ageTicks,
       type: entity.type as unknown as EntityType,
       clientArgs: clientArgs,
-      // @Incomplete
-      statusEffects: [],
-      // statusEffects: entity.getStatusEffectData(),
+      statusEffects: statusEffectData,
       // @Incomplete
       amountHealed: 0
       // amountHealed: healthComponent !== null ? healthComponent.amountHealedThisTick : 0

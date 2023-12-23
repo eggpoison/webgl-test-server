@@ -1,10 +1,11 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { BerryBushComponentArray, HealthComponentArray } from "../../components/ComponentArray";
+import { BerryBushComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemEntity } from "../../items/item-entity";
 import Board from "../../Board";
+import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 const BERRY_BUSH_RADIUS = 40;
 
@@ -18,7 +19,7 @@ export function createBerryBush(position: Point): Entity {
    berryBush.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(berryBush, new HealthComponent(10));
-
+   StatusEffectComponentArray.addComponent(berryBush, new StatusEffectComponent());
    BerryBushComponentArray.addComponent(berryBush, {
       numBerries: 5,
       berryGrowTimer: 0
@@ -74,4 +75,10 @@ export function dropBerry(berryBush: Entity): void {
 
 export function onBerryBushHurt(berryBush: Entity): void {
    dropBerry(berryBush);
+}
+
+export function onBerryBushRemove(berryBush: Entity): void {
+   HealthComponentArray.removeComponent(berryBush);
+   StatusEffectComponentArray.removeComponent(berryBush);
+   BerryBushComponentArray.removeComponent(berryBush);
 }
