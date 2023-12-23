@@ -22,6 +22,11 @@ import { tickItemComponent } from "./components/ItemComponent";
 import { tickTribesman } from "./entities/tribes/tribesman";
 import { tickTombstone } from "./entities/tombstone";
 import { tickZombie } from "./entities/mobs/zombie";
+import { tickSlimewisp } from "./entities/mobs/slimewisp";
+import { tickSlime } from "./entities/mobs/slime";
+import { tickArrowProjectile } from "./entities/projectiles/wooden-arrow";
+import { tickYeti } from "./entities/mobs/yeti";
+import { tickSnowball } from "./entities/snowball";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -198,7 +203,17 @@ abstract class Board {
    /** Removes game objects flagged for deletion */
    public static removeFlaggedGameObjects(): void {
       for (const entity of this.entityRemoveBuffer) {
-         this.removeGameObject(entity);
+         const idx = this.entities.indexOf(entity);
+         if (idx === -1) {
+            throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
+         }
+   
+         this.entities.splice(idx, 1);
+   
+         for (const chunk of entity.chunks) {
+            entity.removeFromChunk(chunk);
+         }
+
          delete this.entityRecord[entity.id];
          removeEntityFromCensus(entity);
 
@@ -212,31 +227,6 @@ abstract class Board {
       }
 
       this.entityRemoveBuffer = new Array<Entity>();
-   }
-
-   private static removeGameObject(gameObject: Entity): void {
-      const idx = this.entities.indexOf(gameObject);
-      
-      if (idx === -1) {
-         throw new Error("Tried to remove a game object which doesn't exist or was already removed.");
-      }
-
-      this.entities.splice(idx, 1);
-
-      for (const chunk of gameObject.chunks) {
-         gameObject.removeFromChunk(chunk);
-      }
-   }
-
-   public static forceRemoveEntity(entity: Entity): void {
-      const idx = this.entityRemoveBuffer.indexOf(entity);
-      if (idx !== -1) {
-         this.entityRemoveBuffer.splice(idx, 1);
-      }
-
-      this.removeGameObject(entity);
-      delete this.entityRecord[entity.id];
-      removeEntityFromCensus(entity);
    }
 
    public static updateGameObjects(): void {
@@ -274,6 +264,26 @@ abstract class Board {
             }
             case IEntityType.zombie: {
                tickZombie(entity);
+               break;
+            }
+            case IEntityType.slimewisp: {
+               tickSlimewisp(entity);
+               break;
+            }
+            case IEntityType.slime: {
+               tickSlime(entity);
+               break;
+            }
+            case IEntityType.woodenArrowProjectile: {
+               tickArrowProjectile(entity);
+               break;
+            }
+            case IEntityType.yeti: {
+               tickYeti(entity);
+               break;
+            }
+            case IEntityType.snowball: {
+               tickSnowball(entity);
                break;
             }
          }

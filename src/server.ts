@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -11,13 +11,13 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import Item from "./items/Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
-import { resetYetiTerritoryTiles } from "./entities/mobs/OldYeti";
 import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, startChargingBow, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
+import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
 
 const NUM_TESTS = 5;
 const TEST_DURATION_MS = 15000;
@@ -51,6 +51,31 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
       offsetX: hitbox.offset.x,
       offsetY: hitbox.offset.y
    };
+}
+
+const getFoodEatingType = (tribeMember: Entity, activeItemType: ItemType | null): ItemType | -1 => {
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+
+   if (activeItemType !== null && inventoryUseComponent.currentAction === TribeMemberAction.eat) {
+      return activeItemType;
+   }
+   return -1;
+}
+
+const getLastActionTicks = (tribeMember: Entity): number => {
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+
+   switch (inventoryUseComponent.currentAction) {
+      case TribeMemberAction.charge_bow: {
+         return inventoryUseComponent.lastBowChargeTicks;
+      }
+      case TribeMemberAction.eat: {
+         return inventoryUseComponent.lastEatTicks;
+      }
+      case TribeMemberAction.none: {
+         return inventoryUseComponent.lastAttackTicks;
+      }
+   }
 }
 
 const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
@@ -159,8 +184,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
             activeItem,
             inventoryUseComponent.currentAction,
-            -1,
-            0,
+            getFoodEatingType(entity, activeItem),
+            getLastActionTicks(entity),
             false,
             tribeMemberComponent.warPaintType,
             playerData.username
@@ -190,8 +215,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
             activeItem,
             inventoryUseComponent.currentAction,
-            -1,
-            0,
+            getFoodEatingType(entity, activeItem),
+            getLastActionTicks(entity),
             false,
             tribeMemberComponent.warPaintType,
             serializeInventoryData(hotbarInventory, "hotbar"),
@@ -201,7 +226,34 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.slime: {
-         clientArgs = [];
+         const slimeComponent = SlimeComponentArray.getComponent(entity);
+
+         // Convert from moving orbs to regular orbs
+         const orbs = new Array<SlimeOrbData>();
+         for (const orb of slimeComponent.orbs) {
+            orbs.push({
+               offset: orb.offset,
+               rotation: orb.rotation,
+               size: orb.size
+            });
+         }
+
+         let anger = -1;
+         if (slimeComponent.angeredEntities.length > 0) {
+            // Find maximum anger
+            for (const angerInfo of slimeComponent.angeredEntities) {
+               if (angerInfo.angerAmount > anger) {
+                  anger = angerInfo.angerAmount;
+               }
+            }
+         }
+
+         clientArgs = [
+            slimeComponent.size,
+            slimeComponent.eyeRotation,
+            orbs,
+            anger
+         ];
          break;
       }
       case IEntityType.slimewisp: {
@@ -209,7 +261,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.snowball: {
-         clientArgs = [];
+         const snowballComponent = SnowballComponentArray.getComponent(entity);
+         clientArgs = [snowballComponent.size];
          break;
       }
       case IEntityType.tombstone: {
@@ -261,7 +314,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.yeti: {
-         clientArgs = [];
+         const yetiComponent = YetiComponentArray.getComponent(entity);
+         clientArgs = [yetiComponent.snowThrowAttackProgress];
          break;
       }
       case IEntityType.zombie: {
@@ -281,7 +335,6 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       rectangularHitboxes: rectangularHitboxes,
       ageTicks: entity.ageTicks,
       type: entity.type as unknown as EntityType,
-      // @Incomplete
       clientArgs: clientArgs,
       // @Incomplete
       statusEffects: [],

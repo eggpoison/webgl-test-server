@@ -21,6 +21,11 @@ import { PlayerComponent } from "./PlayerComponent";
 import { TribesmanComponent } from "./TribesmanComponent";
 import { TombstoneComponent } from "./TombstoneComponent";
 import { ZombieComponent } from "./ZombieComponent";
+import { SlimewispComponent } from "./SlimewispComponent";
+import { SlimeComponent } from "./SlimeComponent";
+import { ArrowComponent } from "./ArrowComponent";
+import { YetiComponent } from "./YetiComponent";
+import { SnowballComponent } from "./SnowballComponent";
 
 class ComponentArray<T extends {}> {
    public components = new Array<T>();
@@ -74,3 +79,8 @@ export const PlayerComponentArray = new ComponentArray<PlayerComponent>();
 export const TribesmanComponentArray = new ComponentArray<TribesmanComponent>();
 export const TombstoneComponentArray = new ComponentArray<TombstoneComponent>();
 export const ZombieComponentArray = new ComponentArray<ZombieComponent>();
+export const SlimewispComponentArray = new ComponentArray<SlimewispComponent>();
+export const SlimeComponentArray = new ComponentArray<SlimeComponent>();
+export const ArrowComponentArray = new ComponentArray<ArrowComponent>();
+export const YetiComponentArray = new ComponentArray<YetiComponent>();
+export const SnowballComponentArray = new ComponentArray<SnowballComponent>();

@@ -8,6 +8,8 @@ import { onCowHurt } from "../entities/mobs/cow";
 import { onKrumblidHurt } from "../entities/mobs/krumblid";
 import { onTombstoneDeath } from "../entities/tombstone";
 import { onZombieHurt } from "../entities/mobs/zombie";
+import { onSlimeHurt } from "../entities/mobs/slime";
+import { onYetiHurt } from "../entities/mobs/yeti";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -109,6 +111,19 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
          if (attackingEntity !== null) {
             onZombieHurt(entity, attackingEntity);
          }
+         break;
+      }
+      case IEntityType.slime: {
+         if (attackingEntity !== null) {
+            onSlimeHurt(entity, attackingEntity);
+         }
+         break;
+      }
+      case IEntityType.yeti: {
+         if (attackingEntity !== null) {
+            onYetiHurt(entity, attackingEntity);
+         }
+         break;
       }
    }
 

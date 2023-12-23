@@ -15,94 +15,11 @@ import { MobAIType } from "../../mob-ai-types";
 import Entity from "../../GameObject";
 // import TribeMember from "../tribes/OldTribeMember";
 
-const MIN_TERRITORY_SIZE = 50;
-const MAX_TERRITORY_SIZE = 100;
-
 // enum SnowThrowStage {
 //    windup,
 //    hold,
 //    return
 // }
-
-// /** Stores which tiles belong to which yetis' territories */
-let yetiTerritoryTiles: Record<number, Entity> = {};
-
-export function resetYetiTerritoryTiles(): void {
-   yetiTerritoryTiles = {};
-}
-
-const tileBelongsToYetiTerritory = (tileX: number, tileY: number): boolean => {
-   const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
-   return yetiTerritoryTiles.hasOwnProperty(tileIndex);
-}
-
-const generateYetiTerritoryTiles = (originTileX: number, originTileY: number): ReadonlyArray<Tile> => {
-   const territoryTiles = new Array<Tile>();
-   // Tiles to expand the territory from
-   const spreadTiles = new Array<Tile>();
-
-   const tileIsValid = (tile: Tile): boolean => {
-      // Make sure the tile is inside the board
-      if (tile.x < 0 || tile.x >= SETTINGS.BOARD_DIMENSIONS || tile.y < 0 || tile.y >= SETTINGS.BOARD_DIMENSIONS) {
-         return false;
-      }
-
-      return tile.biomeName === "tundra" && !tileBelongsToYetiTerritory(tile.x, tile.y) && !territoryTiles.includes(tile);
-   }
-
-   const originTile = Board.getTile(originTileX, originTileY);
-   territoryTiles.push(originTile);
-   spreadTiles.push(originTile);
-
-   while (spreadTiles.length > 0) {
-      // Pick a random tile to expand from
-      const idx = Math.floor(Math.random() * spreadTiles.length);
-      const tile = spreadTiles[idx];
-
-      const potentialTiles = [
-         [tile.x + 1, tile.y],
-         [tile.x - 1, tile.y],
-         [tile.x, tile.y + 1],
-         [tile.x, tile.y - 1]
-      ];
-
-      // Remove out of bounds tiles
-      for (let i = 3; i >= 0; i--) {
-         const tileCoordinates = potentialTiles[i];
-         if (!Board.tileIsInBoard(tileCoordinates[0], tileCoordinates[1])) {
-            potentialTiles.splice(i, 1);
-         }
-      }
-
-      let numValidTiles = 0;
-
-      for (let i = potentialTiles.length - 1; i >= 0; i--) {
-         const tileCoordinates = potentialTiles[i];
-         const tile = Board.getTile(tileCoordinates[0], tileCoordinates[1]);
-         if (tileIsValid(tile)) {
-            numValidTiles++;
-         } else {
-            potentialTiles.splice(i, 1);
-         }
-      }
-
-      if (numValidTiles === 0) {
-         spreadTiles.splice(idx, 1);
-      } else {
-         // Pick a random tile to expand to
-         const [tileX, tileY] = randItem(potentialTiles);
-         const tile = Board.getTile(tileX, tileY);
-         territoryTiles.push(tile);
-         spreadTiles.push(tile);
-      }
-
-      if (territoryTiles.length >= MAX_TERRITORY_SIZE) {
-         break;
-      }
-   }
-
-   return territoryTiles;
-}
 
 // const registerYetiTerritory = (territory: ReadonlyArray<Tile>, yeti: Yeti): void => {
 //    for (const tile of territory) {
@@ -418,11 +335,3 @@ const generateYetiTerritoryTiles = (originTileX: number, originTileY: number): R
 // }
 
 // export default Yeti;
-
-export function yetiSpawnPositionIsValid(positionX: number, positionY: number): boolean {
-   const originTileX = Math.floor(positionX / SETTINGS.TILE_SIZE);
-   const originTileY = Math.floor(positionY / SETTINGS.TILE_SIZE);
-
-   const territoryTiles = generateYetiTerritoryTiles(originTileX, originTileY);
-   return territoryTiles.length >= MIN_TERRITORY_SIZE;
-}

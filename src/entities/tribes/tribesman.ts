@@ -46,6 +46,17 @@ const RESOURCE_PRODUCTS: Partial<Record<IEntityType, ReadonlyArray<ItemType>>> =
    [IEntityType.krumblid]: [ItemType.leather]
 }
 
+export enum TribesmanAIType {
+   escaping,
+   attacking,
+   harvestingResources,
+   pickingUpDroppedItems,
+   haulingResources,
+   grabbingFood,
+   patrolling,
+   idle
+}
+
 export function createTribesman(position: Point, tribeType: TribeType, tribe: Tribe, hutID: number): Entity {
    const tribesman = new Entity(position, IEntityType.tribesman, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
@@ -371,13 +382,17 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
+
    // Escape from enemies when low on health
    const healthComponent = HealthComponentArray.getComponent(tribesman);
    if (shouldEscape(healthComponent) && visibleEnemies.length > 0) {
       escape(tribesman, visibleEnemies);
-      // @Incomplete
-      // this.lastAIType = TribesmanAIType.escaping;
-      // this.currentAction = TribeMemberAction.none;
+
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      
+      tribesmanComponent.lastAIType = TribesmanAIType.escaping;
+      inventoryUseComponent.currentAction = TribeMemberAction.none;
       return;
    }
 
@@ -402,9 +417,10 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
          }
 
-         // @Incomplete
-         // this.lastAIType = TribesmanAIType.idle;
-         // this.currentAction = TribeMemberAction.none;
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         
+         tribesmanComponent.lastAIType = TribesmanAIType.idle;
+         inventoryUseComponent.currentAction = TribeMemberAction.none;
          return;
       }
    }
@@ -412,24 +428,21 @@ export function tickTribesman(tribesman: Entity): void {
    // Attack enemies
    if (visibleEnemies.length > 0) {
       huntEntity(tribesman, getClosestEntity(tribesman, visibleEnemies));
-      // @Incomplete
-      // this.lastAIType = TribesmanAIType.attacking;
+      tribesmanComponent.lastAIType = TribesmanAIType.attacking;
       return;
    }
    
    // Attack enemy buildings
    if (visibleEnemyBuildings.length > 0) {
       huntEntity(tribesman, getClosestEntity(tribesman, visibleEnemyBuildings));
-      // @Incomplete
-      // this.lastAIType = TribesmanAIType.attacking;
+      tribesmanComponent.lastAIType = TribesmanAIType.attacking;
       return;
    }
    
    // Attack hostile mobs
    if (visibleHostileMobs.length > 0) {
       huntEntity(tribesman, getClosestEntity(tribesman, visibleHostileMobs));
-      // @Incomplete
-      // this.lastAIType = TribesmanAIType.attacking;
+      tribesmanComponent.lastAIType = TribesmanAIType.attacking;
       return;
    }
 
@@ -469,8 +482,8 @@ export function tickTribesman(tribesman: Entity): void {
       }
 
       huntEntity(tribesman, closestTarget);
-      // @Incomplete
-      // this.lastAIType = TribesmanAIType.attacking;
+
+      tribesmanComponent.lastAIType = TribesmanAIType.attacking;
       return;
    }
 
@@ -500,8 +513,7 @@ export function tickTribesman(tribesman: Entity): void {
          tribesman.terminalVelocity = TERMINAL_VELOCITY;
          tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
-         // @Incomplete
-         // this.lastAIType = TribesmanAIType.pickingUpDroppedItems;
+         tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
          inventoryUseComponent.currentAction = TribeMemberAction.none;
          return;
       }
@@ -514,8 +526,7 @@ export function tickTribesman(tribesman: Entity): void {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
          
          haulToBarrel(tribesman, closestBarrel);
-         // @Incomplete
-         // this.lastAIType = TribesmanAIType.haulingResources;
+         tribesmanComponent.lastAIType = TribesmanAIType.haulingResources;
          inventoryUseComponent.currentAction = TribeMemberAction.none;
          return;
       }
@@ -600,8 +611,7 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.y = 0;
             tribesman.terminalVelocity = 0;
          }
-         // @Incomplete
-         // this.lastAIType = TribesmanAIType.grabbingFood;
+         tribesmanComponent.lastAIType = TribesmanAIType.grabbingFood;
          return;
       }
    }
@@ -612,7 +622,6 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // If nothing else to do, patrol tribe area
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
    if (tribesmanComponent.targetPatrolPositionX === -1 && Math.random() < 0.3 / SETTINGS.TPS) {
       const tileTargets = getPositionRadialTiles(tribesman.position, VISION_RANGE);
       if (tileTargets.length > 0) {
@@ -641,15 +650,15 @@ export function tickTribesman(tribesman: Entity): void {
          tribesman.terminalVelocity = TERMINAL_VELOCITY;
          tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
-         // @Incomplete
-         // this.lastAIType = TribesmanAIType.patrolling;
+
+         tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
          return;
       }
    } else if (tribesmanComponent.targetPatrolPositionX !== -1) {
       if (hasReachedPatrolPosition(tribesman, tribesmanComponent)) {
          stopEntity(tribesman);
-         // @Incomplete
-         // this.lastAIType = TribesmanAIType.idle;
+
+         tribesmanComponent.lastAIType = TribesmanAIType.idle;
          tribesmanComponent.targetPatrolPositionX = -1
          return;
       }
@@ -661,15 +670,15 @@ export function tickTribesman(tribesman: Entity): void {
       tribesman.terminalVelocity = TERMINAL_VELOCITY;
       tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
-      // @Incomplete
-      // this.lastAIType = TribesmanAIType.patrolling;
+
+      tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
       return;
    }
 
    // If all else fails, don't do anything
    stopEntity(tribesman);
-   // @Incomplete
-   // this.lastAIType = TribesmanAIType.idle;
+   
+   tribesmanComponent.lastAIType = TribesmanAIType.idle;
 }
 
 const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void => {

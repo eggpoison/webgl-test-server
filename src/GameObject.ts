@@ -1,8 +1,7 @@
-import { DEFAULT_COLLISION_MASK, GameObjectDebugData, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, TribeMemberAction, Vector, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { GameObjectDebugData, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, TribeMemberAction, Vector, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
-// import DroppedItem from "./items/DroppedItem";
 import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { onCowDeath } from "./entities/mobs/cow";
@@ -15,6 +14,10 @@ import { onKrumblidDeath } from "./entities/mobs/krumblid";
 import { onCactusCollision, onCactusDeath } from "./entities/resources/cactus";
 import { onTribesmanCollision, onTribesmanDeath } from "./entities/tribes/tribesman";
 import { onZombieCollision } from "./entities/mobs/zombie";
+import { onSlimeCollision, onSlimeDeath } from "./entities/mobs/slime";
+import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
+import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
+import { onSnowballCollision } from "./entities/snowball";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -125,7 +128,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
    public isInRiver = false;
 
-   protected overrideMoveSpeedMultiplier = false;
+   public overrideMoveSpeedMultiplier = false;
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
 
@@ -955,6 +958,22 @@ class Entity<T extends IEntityType = IEntityType> {
             onZombieCollision(this, collidingEntity);
             break;
          }
+         case IEntityType.slime: {
+            onSlimeCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.woodenArrowProjectile: {
+            onWoodenArrowCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.yeti: {
+            onYetiCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.snowball: {
+            onSnowballCollision(this, collidingEntity);
+            break;
+         }
       }
    }
 
@@ -989,6 +1008,10 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public remove(): void {
+      if (!Board.entityRecord.hasOwnProperty(this.id)) {
+         throw new Error("Tried to remove an entity before it was added to the board.");
+      }
+      
       if (!this.isRemoved) {
          Board.addEntityToRemoveBuffer(this);
          Board.removeEntityFromJoinBuffer(this);
@@ -1020,6 +1043,14 @@ class Entity<T extends IEntityType = IEntityType> {
             }
             case IEntityType.tribesman: {
                onTribesmanDeath(this);
+               break;
+            }
+            case IEntityType.slime: {
+               onSlimeDeath(this);
+               break;
+            }
+            case IEntityType.yeti: {
+               onYetiDeath(this);
                break;
             }
          }

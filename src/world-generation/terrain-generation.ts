@@ -73,7 +73,6 @@ const getTileDist = (biomeNames: Array<Array<BiomeName>>, tileX: number, tileY: 
    /** The maximum distance that the algorithm will search for */
    const MAX_SEARCH_DIST = 10;
 
-   // @Incomplete
    const tileBiome = biomeNames[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
 
    for (let dist = 1; dist <= MAX_SEARCH_DIST; dist++) {

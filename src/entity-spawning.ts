@@ -4,8 +4,8 @@ import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
 import Entity from "./GameObject";
-import { yetiSpawnPositionIsValid } from "./entities/mobs/OldYeti";
 import { createEntity } from "./entity-creation";
+import { yetiSpawnPositionIsValid } from "./entities/mobs/yeti";
 
 const PACK_SPAWN_RANGE = 200;
 

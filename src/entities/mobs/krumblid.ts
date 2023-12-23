@@ -33,6 +33,8 @@ export function createKrumblid(position: Point): Entity {
    FollowAIComponentArray.addComponent(krumblid, new FollowAIComponent(randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN)));
    EscapeAIComponentArray.addComponent(krumblid, new EscapeAIComponent());
 
+   krumblid.rotation = 2 * Math.PI * Math.random();
+
    return krumblid;
 }
 
