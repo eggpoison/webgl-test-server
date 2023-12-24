@@ -23,7 +23,6 @@ import { createZombie } from "./entities/mobs/zombie";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
-      case IEntityType.barrel: return createBarrel(position);
       case IEntityType.berryBush: return createBerryBush(position);
       case IEntityType.boulder: return createBoulder(position);
       case IEntityType.cactus: return createCactus(position);
@@ -46,6 +45,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceShardProjectile:
       case IEntityType.rockSpikeProjectile:
+      case IEntityType.barrel:
       case IEntityType.tribesman:
       case IEntityType.tribeTotem:
       case IEntityType.tribeHut:

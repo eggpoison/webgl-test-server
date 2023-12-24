@@ -8,7 +8,7 @@ import { getInventory } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { StatusEffectComponent, applyStatusEffect, hasStatusEffect } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
@@ -17,11 +17,8 @@ const MAX_HEALTH = 20;
 
 const VISION_RANGE = 270;
 
-const ACCELERATION = 200;
-const TERMINAL_VELOCITY = 100;
-
-const ACCELERATION_SLOW = 100;
-const TERMINAL_VELOCITY_SLOW = 50;
+const ACCELERATION = 275;
+const ACCELERATION_SLOW = 150;
 
 const ATTACK_PURSUE_TIME = 5;
 
@@ -86,7 +83,7 @@ export function tickZombie(zombie: Entity): void {
          }
       }
       if (chasedEntity !== null) {
-         moveEntityToPosition(zombie, chasedEntity.position.x, chasedEntity.position.y, ACCELERATION, TERMINAL_VELOCITY);
+         moveEntityToPosition(zombie, chasedEntity.position.x, chasedEntity.position.y, ACCELERATION);
          return;
       }
    }
@@ -111,7 +108,7 @@ export function tickZombie(zombie: Entity): void {
          }
       }
       if (closestFoodItem !== null) {
-         moveEntityToPosition(zombie, closestFoodItem.position.x, closestFoodItem.position.y, ACCELERATION, TERMINAL_VELOCITY);
+         moveEntityToPosition(zombie, closestFoodItem.position.x, closestFoodItem.position.y, ACCELERATION);
          if (zombie.isColliding(closestFoodItem)) {
             healEntity(zombie, 3);
             closestFoodItem.remove();
@@ -136,7 +133,7 @@ export function tickZombie(zombie: Entity): void {
 
       const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-      wander(zombie, x, y, ACCELERATION_SLOW, TERMINAL_VELOCITY_SLOW);
+      wander(zombie, x, y, ACCELERATION_SLOW);
    } else {
       stopEntity(zombie);
    }

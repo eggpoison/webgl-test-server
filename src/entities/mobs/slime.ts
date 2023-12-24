@@ -28,7 +28,6 @@ const MAX_MERGE_WANT: ReadonlyArray<number> = [15, 40, 75];
 const VISION_RANGES = [200, 250, 300];
 
 const ACCELERATION = 60;
-const TERMINAL_VELOCITY = 30;
 
 export const SLIME_MERGE_TIME = 7.5;
 
@@ -64,6 +63,9 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small):
    SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size]));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slime, new AIHelperComponent());
+
+   slime.rotation = 2 * Math.PI * Math.random();
+   slime.collisionPushForceMultiplier = 0.5;
 
    return slime;
 }
@@ -129,6 +131,8 @@ export function tickSlime(slime: Entity): void {
       }
    }
 
+   // @Speed: Combine the two following loops
+
    // Remove anger at an entity if the entity is dead
    for (let i = 0; i < slimeComponent.angeredEntities.length; i++) {
       const angerInfo = slimeComponent.angeredEntities[i];
@@ -158,7 +162,7 @@ export function tickSlime(slime: Entity): void {
    const angerTarget = getAngerTarget(slime);
    if (angerTarget !== null) {
       slimeComponent.eyeRotation = slime.position.calculateAngleBetween(angerTarget.position);
-      moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier, TERMINAL_VELOCITY * speedMultiplier);
+      moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier);
       return;
    }
 
@@ -189,7 +193,7 @@ export function tickSlime(slime: Entity): void {
       }
       if (closestEnemy !== null) {
          slimeComponent.eyeRotation = slime.position.calculateAngleBetween(closestEnemy.position);
-         moveEntityToPosition(slime, closestEnemy.position.x, closestEnemy.position.y, ACCELERATION * speedMultiplier, TERMINAL_VELOCITY * speedMultiplier);
+         moveEntityToPosition(slime, closestEnemy.position.x, closestEnemy.position.y, ACCELERATION * speedMultiplier);
          return;
       }
    }
@@ -212,7 +216,7 @@ export function tickSlime(slime: Entity): void {
       }
       if (mergeTarget !== null) {
          slimeComponent.eyeRotation = slime.position.calculateAngleBetween(mergeTarget.position);
-         moveEntityToPosition(slime, mergeTarget.position.x, mergeTarget.position.y, ACCELERATION * speedMultiplier, TERMINAL_VELOCITY * speedMultiplier);
+         moveEntityToPosition(slime, mergeTarget.position.x, mergeTarget.position.y, ACCELERATION * speedMultiplier);
          return;
       }
    }
@@ -233,7 +237,7 @@ export function tickSlime(slime: Entity): void {
 
       const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-      wander(slime, x, y, ACCELERATION * speedMultiplier, TERMINAL_VELOCITY * speedMultiplier);
+      wander(slime, x, y, ACCELERATION * speedMultiplier);
    } else {
       stopEntity(slime);
    }

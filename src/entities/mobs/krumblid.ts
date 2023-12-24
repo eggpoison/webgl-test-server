@@ -51,7 +51,7 @@ export function tickKrumblid(krumblid: Entity): void {
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(krumblid, visibleEntities);
       if (escapeEntity !== null) {
-         runFromAttackingEntity(krumblid, escapeEntity, 200, 200);
+         runFromAttackingEntity(krumblid, escapeEntity, 500);
          return;
       }
    }
@@ -62,14 +62,14 @@ export function tickKrumblid(krumblid: Entity): void {
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
       const followedEntity = Board.entityRecord[followAIComponent.followTargetID];
-      moveEntityToPosition(krumblid, followedEntity.position.x, followedEntity.position.y, 100, 50);
+      moveEntityToPosition(krumblid, followedEntity.position.x, followedEntity.position.y, 200);
       return;
    } else if (canFollow(followAIComponent)) {
       for (let i = 0; i < visibleEntities.length; i++) {
          const entity = visibleEntities[i];
          if (entity.type === IEntityType.player) {
             // Follow the entity
-            followEntity(krumblid, entity, 100, 50, randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN));
+            followEntity(krumblid, entity, 200, randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN));
             return;
          }
       }
@@ -91,7 +91,7 @@ export function tickKrumblid(krumblid: Entity): void {
 
       const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-      wander(krumblid, x, y, 100, 50);
+      wander(krumblid, x, y, 200);
    } else {
       stopEntity(krumblid);
    }

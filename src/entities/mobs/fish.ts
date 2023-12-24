@@ -22,7 +22,6 @@ const FISH_WIDTH = 7 * 4;
 const FISH_HEIGHT = 14 * 4;
 
 const ACCELERATION = 40;
-const TERMINAL_VELOCITY = 40;
 
 const TURN_RATE = 0.5;
 const SEPARATION_INFLUENCE = 0.7;
@@ -83,7 +82,6 @@ const move = (fish: Entity, direction: number): void => {
 
       fish.acceleration.x = 40 * Math.sin(direction);
       fish.acceleration.y = 40 * Math.cos(direction);
-      fish.terminalVelocity = 40;
       fish.rotation = direction;
    } else {
       // 
@@ -197,7 +195,7 @@ export function tickFish(fish: Entity): void {
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(fish, visibleEntities);
       if (escapeEntity !== null) {
-         runFromAttackingEntity(fish, escapeEntity, 200, 200);
+         runFromAttackingEntity(fish, escapeEntity, 200);
          return;
       }
    }
@@ -215,7 +213,6 @@ export function tickFish(fish: Entity): void {
       runHerdAI(fish, herdMembers, VISION_RANGE, TURN_RATE, MIN_SEPARATION_DISTANCE, SEPARATION_INFLUENCE, ALIGNMENT_INFLUENCE, COHESION_INFLUENCE);
       fish.acceleration.x = 100 * Math.sin(fish.rotation);
       fish.acceleration.y = 100 * Math.cos(fish.rotation);
-      fish.terminalVelocity = 50;
       return;
    }
 
@@ -254,7 +251,7 @@ export function tickFish(fish: Entity): void {
       }
 
       if (attempts <= 10) {
-         wander(fish, x, y, ACCELERATION, TERMINAL_VELOCITY);
+         wander(fish, x, y, ACCELERATION);
       } else {
          stopEntity(fish);
       }

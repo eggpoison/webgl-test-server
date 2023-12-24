@@ -199,7 +199,7 @@ const throwSnow = (yeti: Entity, target: Entity): void => {
 const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
    const yetiComponent = YetiComponentArray.getComponent(yeti);
    
-   let minDist = Number.MAX_SAFE_INTEGER;
+   let minDistSquared = Number.MAX_SAFE_INTEGER;
    let closestTarget: Entity | null = null;
    for (let i = 0; i < visibleEntities.length; i++) {
       const entity = visibleEntities[i];
@@ -222,9 +222,9 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
          continue;
       }
 
-      const distance = yeti.position.calculateDistanceBetween(entity.position);
-      if (distance < minDist) {
-         minDist = distance;
+      const distanceSquared = yeti.position.calculateDistanceSquaredBetween(entity.position);
+      if (distanceSquared < minDistSquared) {
+         minDistSquared = distanceSquared;
          closestTarget = entity;
       }
    }
@@ -307,7 +307,7 @@ export function tickYeti(yeti: Entity): void {
    // Chase AI
    const chaseTarget = getYetiTarget(yeti, visibleEntities);
    if (chaseTarget !== null) {
-      moveEntityToPosition(yeti, chaseTarget.position.x, chaseTarget.position.y, 375, 250);
+      moveEntityToPosition(yeti, chaseTarget.position.x, chaseTarget.position.y, 375);
       return;
    }
 
@@ -331,7 +331,7 @@ export function tickYeti(yeti: Entity): void {
          }
       }
       if (closestFoodItem !== null) {
-         moveEntityToPosition(yeti, closestFoodItem.position.x, closestFoodItem.position.y, 100, 50);
+         moveEntityToPosition(yeti, closestFoodItem.position.x, closestFoodItem.position.y, 100);
          if (yeti.isColliding(closestFoodItem)) {
             healEntity(yeti, 3);
             closestFoodItem.remove();
@@ -356,7 +356,7 @@ export function tickYeti(yeti: Entity): void {
 
       const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-      wander(yeti, x, y, 100, 50);
+      wander(yeti, x, y, 100);
    } else {
       stopEntity(yeti);
    }

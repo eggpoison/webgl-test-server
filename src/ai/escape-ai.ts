@@ -14,11 +14,10 @@ export function registerAttackingEntity(entity: Entity, attackingEntity: Entity)
    }
 }
 
-export function runFromAttackingEntity(entity: Entity, attackingEntity: Entity, acceleration: number, terminalVelocity: number): void {
+export function runFromAttackingEntity(entity: Entity, attackingEntity: Entity, acceleration: number): void {
    const direction = attackingEntity.position.calculateAngleBetween(entity.position);
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
-   entity.terminalVelocity = terminalVelocity;
    entity.rotation = direction;
 }
 

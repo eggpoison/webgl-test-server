@@ -48,7 +48,7 @@ class Tribe {
    // /** Stores all tribe huts belonging to the tribe */
    private readonly huts = new Array<Entity>();
 
-   private barrels = new Set<Entity>();
+   public barrels = new Array<Entity>();
 
    /** Stores all tiles in the tribe's zone of influence */
    private area: Record<number, TileInfluence> = {};
@@ -70,12 +70,10 @@ class Tribe {
       //    this.destroy();
       // });
 
-      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeTotem]);
+      this.createTribeAreaAroundBuilding(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeTotem]);
    }
 
    public tick(): void {
-      this.updateBarrels();
-
       for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
          const info = this.reinforcementInfoArray[i];
 
@@ -105,7 +103,7 @@ class Tribe {
       // Create a tribesman for the hut
       this.createNewTribesman(hut);
 
-      this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeHut]);
+      this.createTribeAreaAroundBuilding(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeHut]);
       
       this.tribesmanCap++;
 
@@ -171,7 +169,7 @@ class Tribe {
       Board.removeTribe(this);
    }
 
-   private addBuildingToTiles(buildingPosition: Point, influence: number): void {
+   private createTribeAreaAroundBuilding(buildingPosition: Point, influence: number): void {
       const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SETTINGS.TILE_SIZE));
       const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SETTINGS.TILE_SIZE));
       const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SETTINGS.TILE_SIZE));
@@ -252,7 +250,6 @@ class Tribe {
 
    public tileIsInArea(tileX: number, tileY: number): boolean {
       const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
-      
       return this.area.hasOwnProperty(tileIndex);
    }
 
@@ -260,32 +257,12 @@ class Tribe {
       return Object.keys(this.area).length;
    }
 
-   /** Updates which barrels belong to the tribe */
-   private updateBarrels(): void {
-      for (const barrel of this.barrels) {
-         const tribeComponent = TribeComponentArray.getComponent(barrel);
-         tribeComponent.tribe = null;
-      }
-      
-      const barrels = new Set<Entity>();
-      for (const chunkInfluence of Object.values(this.chunkArea)) {
-         for (const entity of chunkInfluence.chunk.entities) {
-            if (entity.type === IEntityType.barrel) {
-               const tribeComponent = TribeComponentArray.getComponent(entity);
-               tribeComponent.tribe = this;
-               barrels.add(entity as Entity);
-            }
-         }
-      }
-      this.barrels = barrels;
+   public addBarrel(barrel: Entity): void {
+      this.barrels.push(barrel);
    }
 
    public hasBarrel(barrel: Entity): boolean {
-      return this.barrels.has(barrel);
-   }
-
-   public getBarrels(): ReadonlySet<Entity> {
-      return this.barrels;
+      return this.barrels.includes(barrel);
    }
 
    public getArea(): ReadonlyArray<Tile> {

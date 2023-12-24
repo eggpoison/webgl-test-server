@@ -53,6 +53,23 @@ export function createCow(position: Point): Entity {
    return cow;
 }
 
+const graze = (cow: Entity, cowComponent: CowComponent): void => {
+   stopEntity(cow);
+   if (++cowComponent.grazeProgressTicks >= COW_GRAZE_TIME_TICKS) {
+      // Eat grass
+      const previousTile = cow.tile;
+      const newTileInfo: TileInfoConst = {
+         type: TileTypeConst.dirt,
+         biomeName: previousTile.biomeName,
+         isWall: false
+      };
+      Board.replaceTile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall, 0);
+
+      healEntity(cow, 3);
+      cowComponent.grazeCooldownTicks = randInt(MIN_GRAZE_COOLDOWN, MAX_GRAZE_COOLDOWN);
+   }
+}
+
 export function tickCow(cow: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
    updateAIHelperComponent(cow, VISION_RANGE);
@@ -61,22 +78,9 @@ export function tickCow(cow: Entity): void {
    const cowComponent = CowComponentArray.getComponent(cow);
    updateCowComponent(cowComponent);
 
-   // Graze AI
+   // Graze dirt to recover health
    if (cowComponent.grazeCooldownTicks === 0 && cow.tile.type === TileTypeConst.grass) {
-      stopEntity(cow);
-      if (++cowComponent.grazeProgressTicks >= COW_GRAZE_TIME_TICKS) {
-         // Eat grass
-         const previousTile = cow.tile;
-         const newTileInfo: TileInfoConst = {
-            type: TileTypeConst.dirt,
-            biomeName: previousTile.biomeName,
-            isWall: false
-         };
-         Board.replaceTile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall, 0);
-
-         healEntity(cow, 3);
-         cowComponent.grazeCooldownTicks = randInt(MIN_GRAZE_COOLDOWN, MAX_GRAZE_COOLDOWN);
-      }
+      graze(cow, cowComponent);
       return;
    } else {
       cowComponent.grazeProgressTicks = 0;
@@ -88,7 +92,7 @@ export function tickCow(cow: Entity): void {
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(cow, visibleEntities);
       if (escapeEntity !== null) {
-         runFromAttackingEntity(cow, escapeEntity, 200, 200);
+         runFromAttackingEntity(cow, escapeEntity, 350);
          return;
       }
    }
@@ -99,7 +103,7 @@ export function tickCow(cow: Entity): void {
       if (itemEntity.type === IEntityType.itemEntity) {
          const itemComponent = ItemComponentArray.getComponent(itemEntity);
          if (itemComponent.itemType === ItemType.berry) {
-            const wasEaten = chaseAndEatItemEntity(cow, itemEntity, 100, 50);
+            const wasEaten = chaseAndEatItemEntity(cow, itemEntity, 200);
             if (wasEaten) {
                healEntity(cow, 3);
                break;
@@ -140,7 +144,7 @@ export function tickCow(cow: Entity): void {
       if (cowComponent.targetBushID !== ID_SENTINEL_VALUE) {
          const berryBush = Board.entityRecord[cowComponent.targetBushID];
    
-         moveEntityToPosition(cow, berryBush.position.x, berryBush.position.y, 100, 50);
+         moveEntityToPosition(cow, berryBush.position.x, berryBush.position.y, 200);
    
          // If the target entity is directly in front of the cow, start eatin it
          const testPositionX = cow.position.x + 60 * Math.sin(cow.rotation);
@@ -171,14 +175,14 @@ export function tickCow(cow: Entity): void {
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
       const followedEntity = Board.entityRecord[followAIComponent.followTargetID];
-      moveEntityToPosition(cow, followedEntity.position.x, followedEntity.position.y, 100, 50);
+      moveEntityToPosition(cow, followedEntity.position.x, followedEntity.position.y, 200);
       return;
    } else if (canFollow(followAIComponent)) {
       for (let i = 0; i < visibleEntities.length; i++) {
          const entity = visibleEntities[i];
          if (entity.type === IEntityType.player) {
             // Follow the entity
-            followEntity(cow, entity, 100, 50, randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN));
+            followEntity(cow, entity, 200, randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN));
             return;
          }
       }
@@ -198,9 +202,8 @@ export function tickCow(cow: Entity): void {
    }
    if (herdMembers.length >= 2 && herdMembers.length <= 6) {
       runHerdAI(cow, herdMembers, VISION_RANGE, TURN_RATE, MIN_SEPARATION_DISTANCE, SEPARATION_INFLUENCE, ALIGNMENT_INFLUENCE, COHESION_INFLUENCE);
-      cow.acceleration.x = 100 * Math.sin(cow.rotation);
-      cow.acceleration.y = 100 * Math.cos(cow.rotation);
-      cow.terminalVelocity = 50;
+      cow.acceleration.x = 200 * Math.sin(cow.rotation);
+      cow.acceleration.y = 200 * Math.cos(cow.rotation);
       return;
    }
 
@@ -220,7 +223,7 @@ export function tickCow(cow: Entity): void {
 
       const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
-      wander(cow, x, y, 100, 50)
+      wander(cow, x, y, 200)
    } else {
       stopEntity(cow);
    }

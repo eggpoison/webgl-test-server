@@ -20,11 +20,8 @@ const RADIUS = 28;
 const INVENTORY_SIZE = 3;
 const VISION_RANGE = 320;
 
-const SLOW_TERMINAL_VELOCITY = 75;
-const SLOW_ACCELERATION = 150;
-
-const TERMINAL_VELOCITY = 150;
-const ACCELERATION = 300;
+const SLOW_ACCELERATION = 200;
+const ACCELERATION = 400;
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -128,7 +125,7 @@ const findNearestBarrel = (tribesman: Entity): Entity | null => {
    
    let minDistance = Number.MAX_SAFE_INTEGER;
    let closestBarrel: Entity | null = null;
-   for (const barrel of tribeComponent.tribe.getBarrels()) {
+   for (const barrel of tribeComponent.tribe.barrels) {
       const distance = tribesman.position.calculateDistanceBetween(barrel.position);
       if (distance < minDistance) {
          minDistance = distance;
@@ -213,7 +210,6 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
 const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
    tribesman.rotation = tribesman.position.calculateAngleBetween(barrel.position);
    tribesman.hitboxesAreDirty = true;
-   tribesman.terminalVelocity = TERMINAL_VELOCITY;
    tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
    tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
 
@@ -405,11 +401,9 @@ export function tickTribesman(tribesman: Entity): void {
          tribesman.hitboxesAreDirty = true;
          const distance = tribesman.position.calculateDistanceBetween(entity.position);
          if (willStopAtDesiredDistance(tribesman, 80, distance)) {
-            tribesman.terminalVelocity = 0;
             tribesman.acceleration.x = 0;
             tribesman.acceleration.y = 0;
          } else {
-            tribesman.terminalVelocity = TERMINAL_VELOCITY;
             tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
             tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
          }
@@ -457,7 +451,6 @@ export function tickTribesman(tribesman: Entity): void {
             inventoryUseComponent.foodEatingTimer = itemInfo.eatTime;
          }
          
-         tribesman.terminalVelocity = 0;
          tribesman.acceleration.x = 0;
          tribesman.acceleration.y = 0;
          inventoryUseComponent.currentAction = TribeMemberAction.eat;
@@ -507,7 +500,6 @@ export function tickTribesman(tribesman: Entity): void {
          
          tribesman.rotation = tribesman.position.calculateAngleBetween(closestDroppedItem.position);
          tribesman.hitboxesAreDirty = true;
-         tribesman.terminalVelocity = TERMINAL_VELOCITY;
          tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
          tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
@@ -599,14 +591,12 @@ export function tickTribesman(tribesman: Entity): void {
             const direction = tribesman.position.calculateAngleBetween(closestBarrelWithFood.position);
             tribesman.acceleration.x = ACCELERATION * Math.sin(direction);
             tribesman.acceleration.y = ACCELERATION * Math.cos(direction);
-            tribesman.terminalVelocity = TERMINAL_VELOCITY;
             tribesman.rotation = direction;
             tribesman.hitboxesAreDirty = true;
          } else {
             grabBarrelFood(tribesman, closestBarrelWithFood);
             tribesman.acceleration.x = 0;
             tribesman.acceleration.y = 0;
-            tribesman.terminalVelocity = 0;
          }
          tribesmanComponent.lastAIType = TribesmanAIType.grabbingFood;
          return;
@@ -644,7 +634,6 @@ export function tickTribesman(tribesman: Entity): void {
          // @Speed
          tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
          tribesman.hitboxesAreDirty = true;
-         tribesman.terminalVelocity = TERMINAL_VELOCITY;
          tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
 
@@ -664,7 +653,6 @@ export function tickTribesman(tribesman: Entity): void {
       // @Speed
       tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
       tribesman.hitboxesAreDirty = true;
-      tribesman.terminalVelocity = TERMINAL_VELOCITY;
       tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
 
@@ -710,7 +698,6 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
    tribesman.hitboxesAreDirty = true;
    tribesman.acceleration.x = ACCELERATION * Math.sin(runDirection);
    tribesman.acceleration.y = ACCELERATION * Math.cos(runDirection);
-   tribesman.terminalVelocity = TERMINAL_VELOCITY;
 }
 
 // @Cleanup: Copy and paste
@@ -823,11 +810,9 @@ const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
    tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
    tribesman.hitboxesAreDirty = true;
    if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
-      tribesman.terminalVelocity = SLOW_TERMINAL_VELOCITY;
       tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation + Math.PI);
       tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation + Math.PI);
    } else {
-      tribesman.terminalVelocity = SLOW_TERMINAL_VELOCITY;
       tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation);
    }
@@ -838,11 +823,9 @@ const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
    tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
    tribesman.hitboxesAreDirty = true;
    if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
-      tribesman.terminalVelocity = SLOW_TERMINAL_VELOCITY;
       tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation + Math.PI);
       tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation + Math.PI);
    } else {
-      tribesman.terminalVelocity = TERMINAL_VELOCITY;
       tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
    }

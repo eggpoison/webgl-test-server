@@ -35,6 +35,7 @@ import { onCactusRemove } from "./entities/resources/cactus";
 import { onIceSpikesRemove } from "./entities/resources/ice-spikes";
 import { onTribeTotemRemove } from "./entities/tribes/tribe-totem";
 import { tickItemEntity } from "./items/item-entity";
+import { onBarrelRemove } from "./entities/tribes/barrel";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -300,6 +301,10 @@ abstract class Board {
             }
             case IEntityType.tribeTotem: {
                onTribeTotemRemove(entity);
+               break;
+            }
+            case IEntityType.barrel: {
+               onBarrelRemove(entity);
                break;
             }
          }

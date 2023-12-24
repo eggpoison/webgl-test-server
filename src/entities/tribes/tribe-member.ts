@@ -441,7 +441,12 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
                break;
             }
             case ItemType.barrel: {
-               placedEntity = createBarrel(spawnPosition);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+
+               placedEntity = createBarrel(spawnPosition, tribeComponent.tribeType, tribeComponent.tribe);
+               if (tribeComponent.tribe !== null) {
+                  tribeComponent.tribe.addBarrel(placedEntity);
+               }
                break;
             }
             case ItemType.campfire: {

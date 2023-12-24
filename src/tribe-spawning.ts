@@ -135,7 +135,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    // Spawn barrel
    const barrelSpawnPosition = findValidBuildingPosition(tribe, buildingPositions);
    if (barrelSpawnPosition !== null) {
-      createBarrel(barrelSpawnPosition);
+      createBarrel(barrelSpawnPosition, tribe.tribeType, tribe);
    }
 }
 

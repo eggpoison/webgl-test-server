@@ -959,7 +959,6 @@ class GameServer {
             velocity: player.velocity.package(),
             acceleration: player.acceleration.package(),
             rotation: player.rotation,
-            terminalVelocity: player.terminalVelocity,
             health: HealthComponentArray.getComponent(player).health,
             inventory: SERVER.bundlePlayerInventoryData(player)
          };
@@ -977,7 +976,6 @@ class GameServer {
       playerData.instance.position.y = playerDataPacket.position[1];
       playerData.instance.velocity = Point.unpackage(playerDataPacket.velocity);
       playerData.instance.acceleration = Point.unpackage(playerDataPacket.acceleration);
-      playerData.instance.terminalVelocity = playerDataPacket.terminalVelocity;
       playerData.instance.rotation = playerDataPacket.rotation;
       playerData.instance.hitboxesAreDirty = true;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;

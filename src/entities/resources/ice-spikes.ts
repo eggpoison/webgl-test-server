@@ -60,7 +60,6 @@ export function onIceSpikesDeath(iceSpikes: Entity): void {
       iceShard.rotation = moveDirection;
       iceShard.velocity.x = 700 * Math.sin(moveDirection);
       iceShard.velocity.y = 700 * Math.cos(moveDirection);
-      iceShard.terminalVelocity = 700;
    }
 }
 

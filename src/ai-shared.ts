@@ -41,27 +41,25 @@ export function willStopAtDesiredDistance(entity: Entity, desiredDistance: numbe
    return distance - stopDistance <= desiredDistance;
 }
 
-export function chaseAndEatItemEntity(entity: Entity, itemEntity: Entity, acceleration: number, terminalVelocity: number): boolean {
+export function chaseAndEatItemEntity(entity: Entity, itemEntity: Entity, acceleration: number): boolean {
    if (entity.isColliding(itemEntity)) {
       itemEntity.remove();
       return true;
    }
 
-   moveEntityToPosition(entity, itemEntity.position.x, itemEntity.position.y, acceleration, terminalVelocity);
+   moveEntityToPosition(entity, itemEntity.position.x, itemEntity.position.y, acceleration);
    return false;
 }
 
 export function stopEntity(entity: Entity): void {
    entity.acceleration.x = 0;
    entity.acceleration.y = 0;
-   entity.terminalVelocity = 0;
 }
 
-export function moveEntityToPosition(entity: Entity, positionX: number, positionY: number, acceleration: number, terminalVelocity: number): void {
+export function moveEntityToPosition(entity: Entity, positionX: number, positionY: number, acceleration: number): void {
    const direction = angle(positionX - entity.position.x, positionY - entity.position.y);
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
-   entity.terminalVelocity = terminalVelocity;
    entity.rotation = direction;
 }
 
