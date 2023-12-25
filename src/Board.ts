@@ -36,6 +36,8 @@ import { onIceSpikesRemove } from "./entities/resources/ice-spikes";
 import { onTribeTotemRemove } from "./entities/tribes/tribe-totem";
 import { tickItemEntity } from "./items/item-entity";
 import { onBarrelRemove } from "./entities/tribes/barrel";
+import { onFrozenYetiRemove, tickFrozenYeti } from "./entities/mobs/frozen-yeti";
+import { tickRockSpikeProjectile } from "./entities/projectiles/rock-spike";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -307,6 +309,10 @@ abstract class Board {
                onBarrelRemove(entity);
                break;
             }
+            case IEntityType.frozenYeti: {
+               onFrozenYetiRemove(entity);
+               break;
+            }
          }
       }
 
@@ -376,6 +382,14 @@ abstract class Board {
             }
             case IEntityType.itemEntity: {
                tickItemEntity(entity);
+               break;
+            }
+            case IEntityType.frozenYeti: {
+               tickFrozenYeti(entity);
+               break;
+            }
+            case IEntityType.rockSpikeProjectile: {
+               tickRockSpikeProjectile(entity);
                break;
             }
          }

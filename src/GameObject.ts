@@ -20,6 +20,9 @@ import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
 import { onFishDeath } from "./entities/mobs/fish";
 import { AIHelperComponentArray } from "./components/ComponentArray";
+import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
+import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
+import { cleanAngle } from "./ai-shared";
 
 const a = new Array<number>();
 const b = new Array<number>();
@@ -334,7 +337,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
       // If the game object is in a river, push them in the flow direction of the river
       // The tileMoveSpeedMultiplier check is so that game objects on stepping stones aren't pushed
-      if (this.isInRiver && this.isInRiver && !this.overrideMoveSpeedMultiplier) {
+      if (this.isInRiver && !this.overrideMoveSpeedMultiplier) {
          const flowDirection = this.tile.riverFlowDirection;
          this.velocity.x += 240 / SETTINGS.TPS * a[flowDirection];
          this.velocity.y += 240 / SETTINGS.TPS * b[flowDirection];
@@ -925,6 +928,14 @@ class Entity<T extends IEntityType = IEntityType> {
             onSnowballCollision(this, collidingEntity);
             break;
          }
+         case IEntityType.frozenYeti: {
+            onFrozenYetiCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.rockSpikeProjectile: {
+            onRockSpikeProjectileCollision(this, collidingEntity);
+            break;
+         }
       }
    }
 
@@ -1014,6 +1025,45 @@ class Entity<T extends IEntityType = IEntityType> {
          tileHighlights: [],
          debugEntries: []
       };
+   }
+
+   public turn(targetRotation: number, turnSpeed: number): void {
+      if (this.shouldTurnClockwise(targetRotation)) {  
+         this.rotation += turnSpeed / SETTINGS.TPS;
+         if (!this.shouldTurnClockwise(targetRotation)) {
+            this.rotation = targetRotation;
+         } else if (this.rotation >= Math.PI * 2) {
+            this.rotation -= Math.PI * 2;
+         }
+      } else {
+         this.rotation -= turnSpeed / SETTINGS.TPS
+         if (this.shouldTurnClockwise(targetRotation)) {
+            this.rotation = targetRotation;
+         } else if (this.rotation < 0) {
+            this.rotation += Math.PI * 2;
+         }
+      }
+      this.hitboxesAreDirty = true;
+   }
+
+   protected shouldTurnClockwise(targetRotation: number): boolean {
+      // @Temporary @Speed: instead of doing this, probably just clean rotation after all places which could dirty it
+      this.cleanRotation();
+      
+      const clockwiseDist = (targetRotation - this.rotation + Math.PI * 2) % (Math.PI * 2);
+      const anticlockwiseDist = (Math.PI * 2) - clockwiseDist;
+      if (clockwiseDist < 0 || anticlockwiseDist < 0) {
+         throw new Error("Either targetRotation or this.rotation wasn't in the 0-to-2-pi range. Target rotation: " + targetRotation + ", rotation: " + this.rotation);
+      }
+      return clockwiseDist < anticlockwiseDist;
+   }
+
+   protected cleanRotation(): void {
+      const rotation = cleanAngle(this.rotation);
+      if (rotation !== this.rotation) {
+         this.hitboxesAreDirty = true;
+         this.rotation = rotation;
+      }
    }
 }
 
