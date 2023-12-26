@@ -5,7 +5,7 @@ import { AIHelperComponentArray, EscapeAIComponentArray, FollowAIComponentArray,
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
@@ -13,7 +13,7 @@ import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } f
 import Board from "../../Board";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 15;
 const KRUMBLID_SIZE = 48;
@@ -33,7 +33,7 @@ export function createKrumblid(position: Point): Entity {
    WanderAIComponentArray.addComponent(krumblid, new WanderAIComponent());
    FollowAIComponentArray.addComponent(krumblid, new FollowAIComponent(randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN)));
    EscapeAIComponentArray.addComponent(krumblid, new EscapeAIComponent());
-   AIHelperComponentArray.addComponent(krumblid, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(krumblid, new AIHelperComponent(VISION_RANGE));
 
    krumblid.rotation = 2 * Math.PI * Math.random();
 
@@ -42,14 +42,12 @@ export function createKrumblid(position: Point): Entity {
 
 export function tickKrumblid(krumblid: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(krumblid);
-   updateAIHelperComponent(krumblid, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(krumblid, aiHelperComponent, VISION_RANGE);
    
    // Escape AI
    const escapeAIComponent = EscapeAIComponentArray.getComponent(krumblid);
    updateEscapeAIComponent(escapeAIComponent, 5 * SETTINGS.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
-      const escapeEntity = chooseEscapeEntity(krumblid, visibleEntities);
+      const escapeEntity = chooseEscapeEntity(krumblid, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
          runFromAttackingEntity(krumblid, escapeEntity, 500);
          return;
@@ -58,15 +56,15 @@ export function tickKrumblid(krumblid: Entity): void {
    
    // Follow AI: Make the krumblid like to hide in cacti
    const followAIComponent = FollowAIComponentArray.getComponent(krumblid);
-   updateFollowAIComponent(krumblid, visibleEntities, 5);
+   updateFollowAIComponent(krumblid, aiHelperComponent.visibleEntities, 5);
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
       const followedEntity = Board.entityRecord[followAIComponent.followTargetID];
       moveEntityToPosition(krumblid, followedEntity.position.x, followedEntity.position.y, 200);
       return;
    } else if (canFollow(followAIComponent)) {
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type === IEntityType.player) {
             // Follow the entity
             followEntity(krumblid, entity, 200, randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN));

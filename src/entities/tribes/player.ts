@@ -1,12 +1,12 @@
 import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeMemberAction, TribeType, canCraftRecipe } from "webgl-test-shared";
 import Entity from "../../GameObject";
-import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, onTribeMemberHurt, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, getInventory, getItem } from "../../components/InventoryComponent";
-import { getItemStackSize, itemIsStackable } from "../../items/Item";
+import { getItemStackSize, itemIsStackable } from "../../Item";
 import Board from "../../Board";
-import { addItemEntityPlayerPickupCooldown, createItemEntity, itemEntityCanBePickedUp } from "../../items/item-entity";
+import { addItemEntityPlayerPickupCooldown, createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
@@ -98,6 +98,10 @@ export function onPlayerCollision(player: Entity, collidingEntity: Entity): void
          SERVER.registerPlayerDroppedItemPickup(player);
       }
    }
+}
+
+export function onPlayerHurt(player: Entity, collidingEntity: Entity): void {
+   onTribeMemberHurt(player, collidingEntity);
 }
 
 export function processPlayerCraftingPacket(player: Entity, recipeIndex: number): void {

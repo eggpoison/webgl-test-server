@@ -5,14 +5,14 @@ import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, Snowb
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity, healEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { YetiComponent } from "../../components/YetiComponent";
 import Board from "../../Board";
 import { createItemsOverEntity } from "../../entity-shared";
 import { createSnowball } from "../snowball";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -148,7 +148,7 @@ export function createYeti(position: Point): Entity {
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent());
    WanderAIComponentArray.addComponent(yeti, new WanderAIComponent());
-   AIHelperComponentArray.addComponent(yeti, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(yeti, new AIHelperComponent(VISION_RANGE));
 
    const territory = generateYetiTerritoryTiles(yeti.tile.x, yeti.tile.y);
    registerYetiTerritory(yeti, territory);
@@ -234,9 +234,6 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
 
 export function tickYeti(yeti: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(yeti);
-   updateAIHelperComponent(yeti, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(yeti, aiHelperComponent, VISION_RANGE);
-   
    const yetiComponent = YetiComponentArray.getComponent(yeti);
 
    // @Speed
@@ -290,7 +287,7 @@ export function tickYeti(yeti: Entity): void {
          }
       }
    } else if (yetiComponent.snowThrowCooldown === 0 && !yetiComponent.isThrowingSnow) {
-      const target = getYetiTarget(yeti, visibleEntities);
+      const target = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
       if (target !== null) {
          yetiComponent.isThrowingSnow = true;
          yetiComponent.attackTarget = target;
@@ -305,7 +302,7 @@ export function tickYeti(yeti: Entity): void {
    }
 
    // Chase AI
-   const chaseTarget = getYetiTarget(yeti, visibleEntities);
+   const chaseTarget = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
    if (chaseTarget !== null) {
       moveEntityToPosition(yeti, chaseTarget.position.x, chaseTarget.position.y, 375);
       return;
@@ -315,8 +312,8 @@ export function tickYeti(yeti: Entity): void {
    {
       let minDist = Number.MAX_SAFE_INTEGER;
       let closestFoodItem: Entity | null = null;
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type !== IEntityType.itemEntity) {
             continue;
          }

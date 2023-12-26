@@ -34,10 +34,13 @@ import { onBoulderRemove } from "./entities/resources/boulder";
 import { onCactusRemove } from "./entities/resources/cactus";
 import { onIceSpikesRemove } from "./entities/resources/ice-spikes";
 import { onTribeTotemRemove } from "./entities/tribes/tribe-totem";
-import { tickItemEntity } from "./items/item-entity";
+import { tickItemEntity } from "./entities/item-entity";
 import { onBarrelRemove } from "./entities/tribes/barrel";
 import { onFrozenYetiRemove, tickFrozenYeti } from "./entities/mobs/frozen-yeti";
 import { tickRockSpikeProjectile } from "./entities/projectiles/rock-spike";
+import { tickAIHelperComponent } from "./components/AIHelperComponent";
+import { onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
+import { onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -313,6 +316,14 @@ abstract class Board {
                onFrozenYetiRemove(entity);
                break;
             }
+            case IEntityType.campfire: {
+               onCampfireRemove(entity);
+               break;
+            }
+            case IEntityType.furnace: {
+               onFurnaceRemove(entity);
+               break;
+            }
          }
       }
 
@@ -320,6 +331,17 @@ abstract class Board {
    }
 
    public static updateGameObjects(): void {
+      if (Board.ticks % 3 === 0) {
+         for (let i = 0; i < AIHelperComponentArray.components.length; i++) {
+            const entity = AIHelperComponentArray.getEntity(i);
+            // @Speed @Cleanup @Hack: When new entities are created they aren't added to the board immediately but their
+            // components are immediately added to the arrays, so we do this hack
+            if (typeof entity !== "undefined") {
+               tickAIHelperComponent(entity);
+            }
+         }
+      }
+
       for (let i = 0; i < this.entities.length; i++) {
          const entity = this.entities[i];
 
@@ -390,6 +412,14 @@ abstract class Board {
             }
             case IEntityType.rockSpikeProjectile: {
                tickRockSpikeProjectile(entity);
+               break;
+            }
+            case IEntityType.campfire: {
+               tickCampfire(entity);
+               break;
+            }
+            case IEntityType.furnace: {
+               tickFurnace(entity);
                break;
             }
          }

@@ -8,11 +8,11 @@ import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Item from "./items/Item";
+import Item from "./Item";
 import OPTIONS from "./options";
 import { resetCensus } from "./census";
 import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, startChargingBow, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
@@ -93,6 +93,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
    }
 
    // @Cleanup @Robustness: Somehow make this automatically require the correct type for each entity type
+   // Extract each one of these to the appropriate entity file, and make it return that specific entity's client args
    let clientArgs: EntityData<EntityType>["clientArgs"];
    switch (entity.type) {
       case IEntityType.barrel: {
@@ -120,7 +121,16 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.campfire: {
-         clientArgs = [];
+         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
+
+         clientArgs = [
+            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory"), "fuelInventory"),
+            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory"), "ingredientInventory"),
+            serializeInventoryData(getInventory(inventoryComponent, "outputInventory"), "outputInventory"),
+            cookingEntityComponent.currentRecipe !== null ? cookingEntityComponent.heatingTimer / cookingEntityComponent.currentRecipe.cookTime : -1,
+            cookingEntityComponent.remainingHeatSeconds > 0
+         ];
          break;
       }
       case IEntityType.cow: {
@@ -140,7 +150,16 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.furnace: {
-         clientArgs = [];
+         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
+
+         clientArgs = [
+            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory"), "fuelInventory"),
+            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory"), "ingredientInventory"),
+            serializeInventoryData(getInventory(inventoryComponent, "outputInventory"), "outputInventory"),
+            cookingEntityComponent.currentRecipe !== null ? cookingEntityComponent.heatingTimer / cookingEntityComponent.currentRecipe.cookTime : -1,
+            cookingEntityComponent.remainingHeatSeconds > 0
+         ];
          break;
       }
       case IEntityType.iceSpikes: {

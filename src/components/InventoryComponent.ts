@@ -1,7 +1,7 @@
 import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType, StackableItemInfo } from "webgl-test-shared";
-import Item, { itemIsStackable } from "../items/Item";
+import Item, { itemIsStackable } from "../Item";
 import Entity from "../GameObject";
-import { createItemEntity, itemEntityCanBePickedUp } from "../items/item-entity";
+import { createItemEntity, itemEntityCanBePickedUp } from "../entities/item-entity";
 import { InventoryComponentArray, ItemComponentArray } from "./ComponentArray";
 
 export type ItemSlots = { [itemSlot: number]: Item };

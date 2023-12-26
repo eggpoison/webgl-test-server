@@ -11,7 +11,7 @@ import Tile from "../../Tile";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import Board from "../../Board";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
 const MAX_HEALTH: ReadonlyArray<number> = [10, 15, 25];
@@ -62,7 +62,7 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small):
    StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent());
    SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size]));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
-   AIHelperComponentArray.addComponent(slime, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(slime, new AIHelperComponent(VISION_RANGES[size]));
 
    slime.rotation = 2 * Math.PI * Math.random();
    slime.collisionPushForceMultiplier = 0.5;
@@ -167,15 +167,13 @@ export function tickSlime(slime: Entity): void {
    }
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
-   updateAIHelperComponent(slime, visionRange);
-   const visibleEntities = calculateVisibleEntities(slime, aiHelperComponent, visionRange);
 
    // Chase entities intruding on the slimes' land
    {
       let minDist = Number.MAX_SAFE_INTEGER;
       let closestEnemy: Entity | null = null;
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type === IEntityType.slime || entity.type === IEntityType.slimewisp || entity.tile.biomeName !== "swamp") {
             continue;
          }
@@ -199,11 +197,11 @@ export function tickSlime(slime: Entity): void {
    }
 
    // Merge with other slimes
-   if (visibleEntities.length > MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
+   if (aiHelperComponent.visibleEntities.length > MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
       let minDist = Number.MAX_SAFE_INTEGER;
       let mergeTarget: Entity | null = null;
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type !== IEntityType.slime || !wantsToMerge(slime, entity)) {
             continue;
          }

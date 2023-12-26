@@ -7,7 +7,6 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import { onCowDeath } from "./entities/mobs/cow";
 import { onTreeDeath } from "./entities/resources/tree";
 import { onPlayerCollision } from "./entities/tribes/player";
-import { onBoulderDeath } from "./entities/resources/boulder";
 import { onIceSpikesCollision, onIceSpikesDeath } from "./entities/resources/ice-spikes";
 import { onIceShardCollision } from "./entities/projectiles/ice-shards";
 import { onKrumblidDeath } from "./entities/mobs/krumblid";
@@ -147,9 +146,6 @@ class Entity<T extends IEntityType = IEntityType> {
 
       Board.addEntityToJoinBuffer(this);
    }
-
-   // public abstract callCollisionEvent(gameObject: GameObject): void;
-   // public abstract addToMobVisibleGameObjects(mob: Mob): void;
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
       this.hitboxes.push(hitbox);
@@ -392,19 +388,19 @@ class Entity<T extends IEntityType = IEntityType> {
          }
       }
 
-      // Find all chunks which aren't present in the new chunks and remove them
-      for (const chunk of this.chunks) {
-         if (!containingChunks.has(chunk)) {
-            this.removeFromChunk(chunk);
-            this.chunks.delete(chunk);
-         }
-      }
-
       // Add all new chunks
       for (const chunk of containingChunks) {
          if (!this.chunks.has(chunk)) {
             this.addToChunk(chunk);
             this.chunks.add(chunk);
+         }
+      }
+
+      // Find all chunks which aren't present in the new chunks and remove them
+      for (const chunk of this.chunks) {
+         if (!containingChunks.has(chunk)) {
+            this.removeFromChunk(chunk);
+            this.chunks.delete(chunk);
          }
       }
    }
@@ -448,6 +444,11 @@ class Entity<T extends IEntityType = IEntityType> {
          if (aiHelperComponent.potentialVisibleEntityAppearances[idx] === 0) {
             aiHelperComponent.potentialVisibleEntities.splice(idx, 1);
             aiHelperComponent.potentialVisibleEntityAppearances.splice(idx, 1);
+
+            const idx2 = aiHelperComponent.visibleEntities.indexOf(this);
+            if (idx2 !== -1) {
+               aiHelperComponent.visibleEntities.splice(idx2, 1);
+            }
          }
       }
    }

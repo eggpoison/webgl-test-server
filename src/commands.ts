@@ -2,7 +2,7 @@ import { BiomeName, EntityType, IEntityType, ItemType, PlayerCauseOfDeath, Point
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
-import Item from "./items/Item";
+import Item from "./Item";
 import Tile from "./Tile";
 import { damageEntity, healEntity } from "./components/HealthComponent";
 import Entity, { NUM_ENTITY_TYPES } from "./GameObject";

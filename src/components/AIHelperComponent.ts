@@ -1,4 +1,4 @@
-import { IEntityType, Point, SETTINGS, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset } from "webgl-test-shared";
+import { Point, SETTINGS, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import Entity from "../GameObject";
 import { AIHelperComponentArray } from "./ComponentArray";
@@ -14,6 +14,13 @@ export class AIHelperComponent {
    public readonly potentialVisibleEntities = new Array<Entity>();
    /** The number of times each potential visible game object appears in the mob's visible chunks */
    public readonly potentialVisibleEntityAppearances = new Array<number>();
+
+   public readonly visionRange: number;
+   public visibleEntities = new Array<Entity>();
+
+   constructor(visionRange: number) {
+      this.visionRange = visionRange;
+   }
 }
 
 const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): boolean => {
@@ -29,13 +36,46 @@ const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): b
    }
 }
 
-export function updateAIHelperComponent(entity: Entity, visionRange: number): void {
+const entityIsVisible = (entity: Entity, checkEntity: Entity, visionRange: number): boolean => {
+   const xDiff = entity.position.x - checkEntity.position.x;
+   const yDiff = entity.position.y - checkEntity.position.y;
+   if (xDiff * xDiff + yDiff * yDiff <= visionRange * visionRange) {
+      return true;
+   }
+
+   // If the mob can see any of the game object's hitboxes, it is visible
+   for (let j = 0; j < checkEntity.hitboxes.length; j++) {
+      const hitbox = checkEntity.hitboxes[j];
+      if (hitboxIsVisible(entity, hitbox, visionRange)) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+const calculateVisibleEntities = (entity: Entity, aiHelperComponent: AIHelperComponent): Array<Entity> => {
+   const visibleEntities = new Array<Entity>();
+
+   for (let i = 0; i < aiHelperComponent.potentialVisibleEntities.length; i++) {
+      const currentEntity = aiHelperComponent.potentialVisibleEntities[i];
+      if (entityIsVisible(entity, currentEntity, aiHelperComponent.visionRange)) {
+         visibleEntities.push(currentEntity);
+      }
+   }
+
+   visibleEntities.splice(visibleEntities.indexOf(entity), 1);
+
+   return visibleEntities;
+}
+
+export function tickAIHelperComponent(entity: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
    
-   const minChunkX = Math.max(Math.min(Math.floor((entity.position.x - visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((entity.position.x + visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((entity.position.y - visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((entity.position.y + visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.min(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    
    if (minChunkX === aiHelperComponent.visibleChunkBounds[0] && maxChunkX === aiHelperComponent.visibleChunkBounds[1] && minChunkY === aiHelperComponent.visibleChunkBounds[2] && maxChunkY === aiHelperComponent.visibleChunkBounds[3]) {
       return;
@@ -96,37 +136,6 @@ export function updateAIHelperComponent(entity: Entity, visionRange: number): vo
          }
       }
    }
-}
 
-const entityIsVisible = (entity: Entity, checkEntity: Entity, visionRange: number): boolean => {
-   const xDiff = entity.position.x - checkEntity.position.x;
-   const yDiff = entity.position.y - checkEntity.position.y;
-   if (xDiff * xDiff + yDiff * yDiff <= visionRange * visionRange) {
-      return true;
-   }
-
-   // If the mob can see any of the game object's hitboxes, it is visible
-   for (let j = 0; j < checkEntity.hitboxes.length; j++) {
-      const hitbox = checkEntity.hitboxes[j];
-      if (hitboxIsVisible(entity, hitbox, visionRange)) {
-         return true;
-      }
-   }
-
-   return false;
-}
-
-export function calculateVisibleEntities(entity: Entity, aiHelperComponent: AIHelperComponent, visionRange: number): Array<Entity> {
-   const visibleEntities = new Array<Entity>();
-
-   for (let i = 0; i < aiHelperComponent.potentialVisibleEntities.length; i++) {
-      const currentEntity = aiHelperComponent.potentialVisibleEntities[i];
-      if (entityIsVisible(entity, currentEntity, visionRange)) {
-         visibleEntities.push(currentEntity);
-      }
-   }
-
-   visibleEntities.splice(visibleEntities.indexOf(entity), 1);
-
-   return visibleEntities;
+   aiHelperComponent.visibleEntities = calculateVisibleEntities(entity, aiHelperComponent);
 }

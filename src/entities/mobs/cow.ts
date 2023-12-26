@@ -1,17 +1,17 @@
 import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../GameObject";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { AIHelperComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { chaseAndEatItemEntity, entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, runHerdAI, stopEntity } from "../../ai-shared";
+import { chaseAndEatItemEntity, entityHasReachedPosition, moveEntityToPosition, runHerdAI, stopEntity } from "../../ai-shared";
 import { getWanderTargetTile, shouldWander, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
 import Board from "../../Board";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } from "../../components/FollowAIComponent";
 import { CowComponent, updateCowComponent } from "../../components/CowComponent";
 import { dropBerry } from "../resources/berry-bush";
@@ -44,7 +44,7 @@ export function createCow(position: Point): Entity {
 
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent());
-   AIHelperComponentArray.addComponent(cow, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(cow, new AIHelperComponent(VISION_RANGE));
    WanderAIComponentArray.addComponent(cow, new WanderAIComponent());
    EscapeAIComponentArray.addComponent(cow, new EscapeAIComponent());
    FollowAIComponentArray.addComponent(cow, new FollowAIComponent(randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN)));
@@ -70,10 +70,22 @@ const graze = (cow: Entity, cowComponent: CowComponent): void => {
    }
 }
 
+const findHerdMembers = (cowComponent: CowComponent, visibleEntities: ReadonlyArray<Entity>): ReadonlyArray<Entity> => {
+   const herdMembers = new Array<Entity>();
+   for (let i = 0; i < visibleEntities.length; i++) {
+      const entity = visibleEntities[i];
+      if (entity.type === IEntityType.cow) {
+         const otherCowComponent = CowComponentArray.getComponent(entity);
+         if (otherCowComponent.species === cowComponent.species) {
+            herdMembers.push(entity);
+         }
+      }
+   }
+   return herdMembers;
+}
+
 export function tickCow(cow: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
-   updateAIHelperComponent(cow, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(cow, aiHelperComponent, VISION_RANGE);
 
    const cowComponent = CowComponentArray.getComponent(cow);
    updateCowComponent(cowComponent);
@@ -90,7 +102,7 @@ export function tickCow(cow: Entity): void {
    const escapeAIComponent = EscapeAIComponentArray.getComponent(cow);
    updateEscapeAIComponent(escapeAIComponent, 5 * SETTINGS.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
-      const escapeEntity = chooseEscapeEntity(cow, visibleEntities);
+      const escapeEntity = chooseEscapeEntity(cow, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
          runFromAttackingEntity(cow, escapeEntity, 350);
          return;
@@ -98,8 +110,8 @@ export function tickCow(cow: Entity): void {
    }
 
    // Eat berries
-   for (let i = 0; i < visibleEntities.length; i++) {
-      const itemEntity = visibleEntities[i];
+   for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+      const itemEntity = aiHelperComponent.visibleEntities[i];
       if (itemEntity.type === IEntityType.itemEntity) {
          const itemComponent = ItemComponentArray.getComponent(itemEntity);
          if (itemComponent.itemType === ItemType.berry) {
@@ -124,12 +136,18 @@ export function tickCow(cow: Entity): void {
          // Attempt to find a berry bush
          let target: Entity | null = null;
          let minDistance = Number.MAX_SAFE_INTEGER;
-         for (let i = 0; i < visibleEntities.length; i++) {
-            const berryBush = visibleEntities[i];
+         for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+            const berryBush = aiHelperComponent.visibleEntities[i];
             if (berryBush.type !== IEntityType.berryBush) {
                continue;
             }
    
+            // Don't shake bushes without berries
+            const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+            if (berryBushComponent.numBerries === 0) {
+               continue;
+            }
+
             const distance = cow.position.calculateDistanceBetween(berryBush.position);
             if (distance < minDistance) {
                minDistance = distance;
@@ -171,15 +189,15 @@ export function tickCow(cow: Entity): void {
 
    // Follow AI
    const followAIComponent = FollowAIComponentArray.getComponent(cow);
-   updateFollowAIComponent(cow, visibleEntities, 7)
+   updateFollowAIComponent(cow, aiHelperComponent.visibleEntities, 7)
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
       const followedEntity = Board.entityRecord[followAIComponent.followTargetID];
       moveEntityToPosition(cow, followedEntity.position.x, followedEntity.position.y, 200);
       return;
    } else if (canFollow(followAIComponent)) {
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type === IEntityType.player) {
             // Follow the entity
             followEntity(cow, entity, 200, randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN));
@@ -190,16 +208,7 @@ export function tickCow(cow: Entity): void {
    
    // Herd AI
    // @Incomplete: Steer the herd away from non-grasslands biomes
-   const herdMembers = new Array<Entity>();
-   for (let i = 0; i < visibleEntities.length; i++) {
-      const entity = visibleEntities[i];
-      if (entity.type === IEntityType.cow) {
-         const otherCowComponent = CowComponentArray.getComponent(entity);
-         if (otherCowComponent.species === cowComponent.species) {
-            herdMembers.push(entity);
-         }
-      }
-   }
+   const herdMembers = findHerdMembers(cowComponent, aiHelperComponent.visibleEntities);
    if (herdMembers.length >= 2 && herdMembers.length <= 6) {
       runHerdAI(cow, herdMembers, VISION_RANGE, TURN_RATE, MIN_SEPARATION_DISTANCE, SEPARATION_INFLUENCE, ALIGNMENT_INFLUENCE, COHESION_INFLUENCE);
       cow.acceleration.x = 200 * Math.sin(cow.rotation);

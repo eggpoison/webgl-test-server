@@ -1,11 +1,11 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../GameObject";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { AIHelperComponentArray, EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, runHerdAI, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, runHerdAI, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import Board, { tileRaytraceMatchesTileTypes } from "../../Board";
@@ -14,7 +14,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { getInventory } from "../../components/InventoryComponent";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 5;
 
@@ -49,7 +49,7 @@ export function createFish(position: Point): Entity {
    WanderAIComponentArray.addComponent(fish, new WanderAIComponent());
    EscapeAIComponentArray.addComponent(fish, new EscapeAIComponent());
    FishComponentArray.addComponent(fish, new FishComponent(randInt(0, 3)));
-   AIHelperComponentArray.addComponent(fish, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(fish, new AIHelperComponent(VISION_RANGE));
    
    fish.rotation = 2 * Math.PI * Math.random();
    
@@ -102,6 +102,19 @@ const move = (fish: Entity, direction: number): void => {
    }
 }
 
+const followLeader = (fish: Entity, leader: Entity): void => {
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(leader);
+   tribeMemberComponent.fishFollowerIDs.push(fish.id);
+}
+
+const unfollowLeader = (fish: Entity, leader: Entity): void => {
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(leader);
+   const idx = tribeMemberComponent.fishFollowerIDs.indexOf(fish.id);
+   if (idx !== -1) {
+      tribeMemberComponent.fishFollowerIDs.splice(idx, 1);
+   }
+}
+
 export function tickFish(fish: Entity): void {
    fish.overrideMoveSpeedMultiplier = fish.tile.type === TileTypeConst.water;
 
@@ -117,36 +130,25 @@ export function tickFish(fish: Entity): void {
    }
    
    const aiHelperComponent = AIHelperComponentArray.getComponent(fish);
-   updateAIHelperComponent(fish, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(fish, aiHelperComponent, VISION_RANGE);
 
    // If the leader dies or is out of vision range, stop following them
-   if (fishComponent.leader !== null && (fishComponent.leader.isRemoved || !visibleEntities.includes(fishComponent.leader))) {
+   if (fishComponent.leader !== null && (fishComponent.leader.isRemoved || !aiHelperComponent.visibleEntities.includes(fishComponent.leader))) {
+      unfollowLeader(fish, fishComponent.leader);
       fishComponent.leader = null;
    }
 
    // Look for a leader
    if (fishComponent.leader === null) {
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type === IEntityType.player || entity.type === IEntityType.tribesman) {
             const inventoryComponent = InventoryComponentArray.getComponent(entity);
             const armourSlotInventory = getInventory(inventoryComponent, "armourSlot");
             if (armourSlotInventory.itemSlots.hasOwnProperty(1) && armourSlotInventory.itemSlots[1].type === ItemType.fishlord_suit) {
                // New leader
                fishComponent.leader = entity;
+               followLeader(fish, entity);
                break;
-
-               // @Incomplete
-               // if (entity !== this.leader) {
-               //    if (this.leader !== null && typeof this.leader !== "undefined") {
-               //       this.leader.removeEvent("hurt", this.onLeaderHurt);
-               //    }
-   
-               //    entity.createEvent("hurt", this.onLeaderHurt);
-               
-               //    this.leader = entity;
-               // }
             }
          }
       }
@@ -193,7 +195,7 @@ export function tickFish(fish: Entity): void {
    const escapeAIComponent = EscapeAIComponentArray.getComponent(fish);
    updateEscapeAIComponent(escapeAIComponent, 3 * SETTINGS.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
-      const escapeEntity = chooseEscapeEntity(fish, visibleEntities);
+      const escapeEntity = chooseEscapeEntity(fish, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
          runFromAttackingEntity(fish, escapeEntity, 200);
          return;
@@ -203,8 +205,8 @@ export function tickFish(fish: Entity): void {
    // Herd AI
    // @Incomplete: Make fish steer away from land
    const herdMembers = new Array<Entity>();
-   for (let i = 0; i < visibleEntities.length; i++) {
-      const entity = visibleEntities[i];
+   for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+      const entity = aiHelperComponent.visibleEntities[i];
       if (entity.type === IEntityType.fish) {
          herdMembers.push(entity);
       }
@@ -260,6 +262,11 @@ export function tickFish(fish: Entity): void {
    }
 }
 
+export function onFishLeaderHurt(fish: Entity, attackingEntity: Entity): void {
+   const fishComponent = FishComponentArray.getComponent(fish);
+   fishComponent.attackTarget = attackingEntity;
+}
+
 export function onFishHurt(fish: Entity, attackingEntity: Entity): void {
    registerAttackingEntity(fish, attackingEntity);
 }
@@ -269,6 +276,12 @@ export function onFishDeath(fish: Entity): void {
 }
 
 export function onFishRemove(fish: Entity): void {
+   // Remove the fish from its leaders' follower array
+   const fishComponent = FishComponentArray.getComponent(fish);
+   if (fishComponent.leader !== null) {
+      unfollowLeader(fish, fishComponent.leader);
+   }
+   
    HealthComponentArray.removeComponent(fish);
    StatusEffectComponentArray.removeComponent(fish);
    WanderAIComponentArray.removeComponent(fish);

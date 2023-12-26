@@ -4,7 +4,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, FrozenYetiComponentArray, HealthComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { FrozenYetiComponent } from "../../components/FrozenYetiComponent";
 import Board from "../../Board";
@@ -74,7 +74,7 @@ export function createFrozenYeti(position: Point): Entity {
 
    HealthComponentArray.addComponent(frozenYeti, new HealthComponent(250));
    StatusEffectComponentArray.addComponent(frozenYeti, new StatusEffectComponent());
-   AIHelperComponentArray.addComponent(frozenYeti, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(frozenYeti, new AIHelperComponent(VISION_RANGE));
    FrozenYetiComponentArray.addComponent(frozenYeti, new FrozenYetiComponent());
    WanderAIComponentArray.addComponent(frozenYeti, new WanderAIComponent());
 
@@ -87,16 +87,9 @@ const findTargets = (frozenYeti: Entity, visibleEntities: ReadonlyArray<Entity>)
    const targets = new Array<Entity>();
    for (let i = 0; i < visibleEntities.length; i++) {
       const entity = visibleEntities[i];
-      targets.push(entity);
-   }
 
-   // @Speed: Instead of removing in 2nd loop, just add them in the opposite condition in the loop above
-   for (let i = 0; i < targets.length; i++) {
-      const entity = targets[i];
-      // Don't attack entities which aren't in the tundra or the entity is native to the tundra
-      if (entity.tile.biomeName !== "tundra" || entity.type === IEntityType.itemEntity || entity.type === IEntityType.frozenYeti || entity.type === IEntityType.iceSpikes || entity.type === IEntityType.snowball) {
-         targets.splice(i, 1);
-         i--;
+      if (entity.tile.biomeName === "tundra" && entity.type !== IEntityType.itemEntity && entity.type !== IEntityType.frozenYeti && entity.type !== IEntityType.iceSpikes && entity.type !== IEntityType.snowball) {
+         targets.push(entity);
       }
    }
 
@@ -347,7 +340,9 @@ const doBiteAttack = (frozenYeti: Entity, angleToTarget: number): void => {
       if (entity !== frozenYeti) {
          if (HealthComponentArray.hasComponent(entity)) {
             damageEntity(entity, 3, 200, angleToTarget, frozenYeti, PlayerCauseOfDeath.frozen_yeti, 0);
-            applyStatusEffect(entity, StatusEffectConst.bleeding, 5 * SETTINGS.TPS);
+            if (StatusEffectComponentArray.hasComponent(entity)) {
+               applyStatusEffect(entity, StatusEffectConst.bleeding, 5 * SETTINGS.TPS);
+            }
          }
       }
    }
@@ -372,14 +367,11 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
       }
    }
 
-   // Find visible entities
-   const aiHelperComponent = AIHelperComponentArray.getComponent(frozenYeti);
-   updateAIHelperComponent(frozenYeti, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(frozenYeti, aiHelperComponent, VISION_RANGE);
-
    // @Cleanup: Too long, should be separated into many individual functions
    
-   const targets = findTargets(frozenYeti, visibleEntities);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(frozenYeti);
+   const targets = findTargets(frozenYeti, aiHelperComponent.visibleEntities);
+   
    if (targets.length === 0 && frozenYetiComponent.attackType === FrozenYetiAttackType.none) {
       frozenYetiComponent.attackType = FrozenYetiAttackType.none;
       frozenYetiComponent.attackStage = 0;

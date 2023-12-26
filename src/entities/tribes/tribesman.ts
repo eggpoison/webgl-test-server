@@ -7,14 +7,14 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { Inventory, InventoryComponent, addItemToInventory, addItemToSlot, consumeItem, createNewInventory, getInventory, getItem, inventoryIsFull, pickupItemEntity, removeItemFromInventory } from "../../components/InventoryComponent";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { AttackToolType, EntityRelationship, attackEntity, calculateAttackTarget, calculateRadialAttackTargets, getEntityAttackToolType, getTribeMemberRelationship, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { AttackToolType, EntityRelationship, attackEntity, calculateAttackTarget, calculateRadialAttackTargets, getEntityAttackToolType, getTribeMemberRelationship, onTribeMemberHurt, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import { getClosestEntity, getEntitiesInVisionRange, getPositionRadialTiles, stopEntity, willStopAtDesiredDistance } from "../../ai-shared";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
 import Board from "../../Board";
-import Item from "../../items/Item";
+import Item from "../../Item";
 import Tile from "../../Tile";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const RADIUS = 28;
 const INVENTORY_SIZE = 3;
@@ -80,7 +80,7 @@ export function createTribesman(position: Point, tribeType: TribeType, tribe: Tr
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
    InventoryUseComponentArray.addComponent(tribesman, new InventoryUseComponent(hotbarInventory));
-   AIHelperComponentArray.addComponent(tribesman, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(tribesman, new AIHelperComponent(VISION_RANGE));
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done
@@ -335,8 +335,6 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman);
-   updateAIHelperComponent(tribesman, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(tribesman, aiHelperComponent, VISION_RANGE);
 
    // @Cleanup: A nicer way to do this might be to sort the visible entities array based on the 'threat level' of each entity
 
@@ -346,8 +344,8 @@ export function tickTribesman(tribesman: Entity): void {
    const visibleHostileMobs = new Array<Entity>();
    const visibleResources = new Array<Entity>();
    const visibleItemEntities = new Array<Entity>();
-   for (let i = 0; i < visibleEntities.length; i++) {
-      const entity = visibleEntities[i];
+   for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+      const entity = aiHelperComponent.visibleEntities[i];
 
       switch (getTribeMemberRelationship(tribesman, entity)) {
          case EntityRelationship.enemy: {
@@ -390,7 +388,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // If the player is interacting with the tribesman, move towards the player
-   for (const entity of visibleEntities) {
+   for (const entity of aiHelperComponent.visibleEntities) {
       if (entity.type !== IEntityType.player) {
          continue;
       }
@@ -576,7 +574,7 @@ export function tickTribesman(tribesman: Entity): void {
    if (!hasFood(tribesman) && hasAvailableHotbarSlot(hotbarInventory)) {
       let closestBarrelWithFood: Entity | undefined;
       let minDist = Number.MAX_SAFE_INTEGER;
-      for (const entity of visibleEntities) {
+      for (const entity of aiHelperComponent.visibleEntities) {
          if (entity.type === IEntityType.barrel) {
             const distance = tribesman.position.calculateDistanceBetween(entity.position);
             if (distance < minDist && barrelHasFood(entity)) {
@@ -905,10 +903,14 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    doMeleeAttack(tribesman);
 }
 
-export function onTribesmanCollision(player: Entity, collidingEntity: Entity): void {
+export function onTribesmanCollision(tribesman: Entity, collidingEntity: Entity): void {
    if (collidingEntity.type === IEntityType.itemEntity) {
-      pickupItemEntity(player, collidingEntity);
+      pickupItemEntity(tribesman, collidingEntity);
    }
+}
+
+export function onTribesmanHurt(tribesman: Entity, attackingEntity: Entity): void {
+   onTribeMemberHurt(tribesman, attackingEntity);
 }
 
 export function onTribesmanDeath(tribesman: Entity): void {

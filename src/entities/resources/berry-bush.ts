@@ -3,7 +3,7 @@ import Entity from "../../GameObject";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BerryBushComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { createItemEntity } from "../../items/item-entity";
+import { createItemEntity } from "../item-entity";
 import Board from "../../Board";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 

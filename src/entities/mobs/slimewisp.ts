@@ -4,13 +4,13 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { SlimewispComponent } from "../../components/SlimewispComponent";
 import { createSlime } from "./slime";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 3;
 const RADIUS = 16;
@@ -31,7 +31,7 @@ export function createSlimewisp(position: Point): Entity {
    StatusEffectComponentArray.addComponent(slimewisp, new StatusEffectComponent());
    SlimewispComponentArray.addComponent(slimewisp, new SlimewispComponent());
    WanderAIComponentArray.addComponent(slimewisp, new WanderAIComponent());
-   AIHelperComponentArray.addComponent(slimewisp, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(slimewisp, new AIHelperComponent(VISION_RANGE));
 
    slimewisp.rotation = 2 * Math.PI * Math.random();
    slimewisp.collisionPushForceMultiplier = 0.3;
@@ -41,12 +41,10 @@ export function createSlimewisp(position: Point): Entity {
 
 export function tickSlimewisp(slimewisp: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(slimewisp);
-   updateAIHelperComponent(slimewisp, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(slimewisp, aiHelperComponent, VISION_RANGE);
    
    // Merge with other slimewisps
-   for (let i = 0; i < visibleEntities.length; i++) {
-      const mergingSlimewisp = visibleEntities[i];
+   for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+      const mergingSlimewisp = aiHelperComponent.visibleEntities[i];
       if (mergingSlimewisp.type === IEntityType.slimewisp) {
          moveEntityToPosition(slimewisp, mergingSlimewisp.position.x, mergingSlimewisp.position.y, ACCELERATION);
    

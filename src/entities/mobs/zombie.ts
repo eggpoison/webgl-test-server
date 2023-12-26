@@ -11,7 +11,7 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
-import { AIHelperComponent, calculateVisibleEntities, updateAIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent } from "../../components/AIHelperComponent";
 
 const MAX_HEALTH = 20;
 
@@ -37,7 +37,7 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    const zombieType = isGolden ? 3 : randInt(0, 2);
    ZombieComponentArray.addComponent(zombie, new ZombieComponent(zombieType, tombstoneID));
    WanderAIComponentArray.addComponent(zombie, new WanderAIComponent());
-   AIHelperComponentArray.addComponent(zombie, new AIHelperComponent());
+   AIHelperComponentArray.addComponent(zombie, new AIHelperComponent(VISION_RANGE));
    
    return zombie;
 }
@@ -63,8 +63,6 @@ export function tickZombie(zombie: Entity): void {
    }
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(zombie);
-   updateAIHelperComponent(zombie, VISION_RANGE);
-   const visibleEntities = calculateVisibleEntities(zombie, aiHelperComponent, VISION_RANGE);
 
    // @Incomplete: Make the chase AI consider both enemies and food in the same loop
 
@@ -72,8 +70,8 @@ export function tickZombie(zombie: Entity): void {
    {
       let minDist = Number.MAX_SAFE_INTEGER;
       let chasedEntity: Entity | null = null;
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (shouldAttackEntity(zombie, entity)) {
             const distance = zombie.position.calculateDistanceBetween(entity.position);
             if (distance < minDist) {
@@ -92,8 +90,8 @@ export function tickZombie(zombie: Entity): void {
    {
       let minDist = Number.MAX_SAFE_INTEGER;
       let closestFoodItem: Entity | null = null;
-      for (let i = 0; i < visibleEntities.length; i++) {
-         const entity = visibleEntities[i];
+      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+         const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type !== IEntityType.itemEntity) {
             continue;
          }

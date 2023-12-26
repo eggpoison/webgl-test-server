@@ -1,13 +1,14 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
 import Entity from "../GameObject";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-import { HealthComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
+import { HealthComponentArray, StatusEffectComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
 import { createItemsOverEntity } from "../entity-shared";
 import Board from "../Board";
 import { TombstoneComponent } from "../components/TombstoneComponent";
 import { createZombie } from "./mobs/zombie";
 import TombstoneDeathManager from "../tombstone-deaths";
+import { StatusEffectComponent } from "../components/StatusEffectComponent";
 
 const WIDTH = 48;
 const HEIGHT = 88;
@@ -30,6 +31,7 @@ export function createTombstone(position: Point): Entity {
    tombstone.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tombstone, new HealthComponent(MAX_HEALTH));
+   StatusEffectComponentArray.addComponent(tombstone, new StatusEffectComponent());
    TombstoneComponentArray.addComponent(tombstone, new TombstoneComponent(randInt(0, 2), TombstoneDeathManager.popDeath()));
    
    tombstone.isStatic = true;

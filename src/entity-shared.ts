@@ -1,6 +1,6 @@
 import { ItemType } from "webgl-test-shared";
 import Entity from "./GameObject";
-import { createItemEntity } from "./items/item-entity";
+import { createItemEntity } from "./entities/item-entity";
 
 const ITEM_SPAWN_RANGE = 40;
 

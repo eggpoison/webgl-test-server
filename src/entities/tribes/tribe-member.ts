@@ -1,8 +1,8 @@
 import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../GameObject";
 import Board from "../../Board";
-import Item, { getItemStackSize, itemIsStackable } from "../../items/Item";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import Item, { getItemStackSize, itemIsStackable } from "../../Item";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { damageEntity, healEntity } from "../../components/HealthComponent";
@@ -18,7 +18,8 @@ import Hitbox from "../../hitboxes/Hitbox";
 import { createWoodenArrow } from "../projectiles/wooden-arrow";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { itemEntityCanBePickedUp } from "../../items/item-entity";
+import { itemEntityCanBePickedUp } from "../item-entity";
+import { onFishLeaderHurt } from "../mobs/fish";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -576,5 +577,14 @@ export function tickTribeMember(tribeMember: Entity): void {
       resizeInventory(inventoryComponent, "backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
    } else {
       resizeInventory(inventoryComponent, "backpack", -1, -1);
+   }
+}
+
+export function onTribeMemberHurt(tribeMember: Entity, attackingEntity: Entity): void {
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(tribeMember);
+   for (let i = 0; i < tribeMemberComponent.fishFollowerIDs.length; i++) {
+      const fishID = tribeMemberComponent.fishFollowerIDs[i];
+      const fish = Board.entityRecord[fishID];
+      onFishLeaderHurt(fish, attackingEntity);
    }
 }
