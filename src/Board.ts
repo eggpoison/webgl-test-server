@@ -41,6 +41,7 @@ import { tickRockSpikeProjectile } from "./entities/projectiles/rock-spike";
 import { tickAIHelperComponent } from "./components/AIHelperComponent";
 import { onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
 import { onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
+import { onSpearProjectileRemove, tickSpearProjectile } from "./entities/projectiles/spear-projectile";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -324,6 +325,10 @@ abstract class Board {
                onFurnaceRemove(entity);
                break;
             }
+            case IEntityType.spearProjectile: {
+               onSpearProjectileRemove(entity);
+               break;
+            }
          }
       }
 
@@ -420,6 +425,10 @@ abstract class Board {
             }
             case IEntityType.furnace: {
                tickFurnace(entity);
+               break;
+            }
+            case IEntityType.spearProjectile: {
+               tickSpearProjectile(entity);
                break;
             }
          }

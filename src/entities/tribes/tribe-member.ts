@@ -1,4 +1,4 @@
-import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, getItemStackSize, itemIsStackable } from "webgl-test-shared";
+import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -19,10 +19,11 @@ import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { itemEntityCanBePickedUp } from "../item-entity";
 import { onFishLeaderHurt } from "../mobs/fish";
+import { createSpearProjectile } from "../projectiles/spear-projectile";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
-const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribesman, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.tribeHut];
+const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribesman, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.tribeHut, IEntityType.cow];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace];
 const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree];
 const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime];
@@ -178,7 +179,7 @@ export function getEntityAttackToolType(entity: Entity): AttackToolType | null {
    return null;
 }
 
-const calculateItemDamage = (item: Item | null, entityToAttack: Entity): number => {
+export function calculateItemDamage(item: Item | null, entityToAttack: Entity): number {
    if (item === null) {
       return 1;
    }
@@ -186,6 +187,7 @@ const calculateItemDamage = (item: Item | null, entityToAttack: Entity): number 
    const attackToolType = getEntityAttackToolType(entityToAttack);
    const itemCategory = ITEM_TYPE_RECORD[item.type];
    switch (itemCategory) {
+      case "spear":
       case "sword": {
          if (attackToolType === AttackToolType.weapon) {
             const itemInfo = ITEM_INFO_RECORD[item.type] as SwordItemInfo;
@@ -248,7 +250,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    // Reset attack cooldown
    if (item !== null) {
       const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
-      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword") {
+      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear") {
          const itemInfo = ITEM_INFO_RECORD[item.type];
          inventoryUseComponent.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
       } else {
@@ -497,6 +499,32 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          spawnPosition.add(offset);
 
          createWoodenArrow(spawnPosition, tribeMember);
+         
+         break;
+      }
+      case "spear": {
+         // 
+         // Throw the spear
+         // 
+
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+
+         const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
+         const x = tribeMember.position.x + 35 * Math.sin(offsetDirection);
+         const y = tribeMember.position.y + 35 * Math.cos(offsetDirection);
+         const spear = createSpearProjectile(new Point(x, y), tribeMember.id);
+
+         const ticksSinceLastAction = Board.ticks - inventoryUseComponent.lastSpearChargeTicks;
+         const secondsSinceLastAction = ticksSinceLastAction / SETTINGS.TPS;
+         const velocityMagnitude = lerp(1000, 1700, Math.min(secondsSinceLastAction / 3, 1));
+
+         spear.velocity.x = velocityMagnitude * Math.sin(tribeMember.rotation);
+         spear.velocity.y = velocityMagnitude * Math.cos(tribeMember.rotation);
+         spear.rotation = tribeMember.rotation;
+
+         consumeItem(inventoryComponent, "hotbar", itemSlot, 1);
+
+         inventoryUseComponent.lastSpearChargeTicks = Board.ticks;
          
          break;
       }

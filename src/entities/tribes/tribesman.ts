@@ -7,7 +7,7 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { Inventory, InventoryComponent, addItemToInventory, addItemToSlot, consumeItem, createNewInventory, getInventory, getItem, inventoryIsFull, pickupItemEntity, removeItemFromInventory } from "../../components/InventoryComponent";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { AttackToolType, EntityRelationship, attackEntity, calculateAttackTarget, calculateRadialAttackTargets, getEntityAttackToolType, getTribeMemberRelationship, onTribeMemberHurt, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { AttackToolType, EntityRelationship, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, getEntityAttackToolType, getTribeMemberRelationship, onTribeMemberHurt, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import { getClosestEntity, getEntitiesInVisionRange, getPositionRadialTiles, stopEntity, willStopAtDesiredDistance } from "../../ai-shared";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
@@ -565,8 +565,8 @@ export function tickTribesman(tribesman: Entity): void {
 
       if (typeof resourceToAttack !== "undefined") {
          huntEntity(tribesman, resourceToAttack);
+         return;
       }
-      return;
    }
 
    // Grab food from barrel
@@ -840,48 +840,50 @@ const doMeleeAttack = (tribesman: Entity): void => {
    }
 }
 
-const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
-   // Find the best tool for the job
-   let bestToolSlot: number | null = null;
-   const attackToolType = getEntityAttackToolType(huntedEntity);
-   switch (attackToolType) {
-      case AttackToolType.weapon: {
-         bestToolSlot = getBestWeaponSlot(tribesman);
-         if (bestToolSlot === null) {
-            bestToolSlot = getBestPickaxeSlot(tribesman);
-            if (bestToolSlot === null) {
-               bestToolSlot = getBestAxeSlot(tribesman);
-            }
-         }
-         break;
+const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): number => {
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+
+   // @Incomplete: Account for status effects
+   
+   let bestItemSlot = 999;
+   let mostDamage = 0;
+   for (let itemSlot = 1; itemSlot < hotbarInventory.width * hotbarInventory.height; itemSlot++) {
+      if (!hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
+         continue;
       }
-      case AttackToolType.pickaxe: {
-         bestToolSlot = getBestPickaxeSlot(tribesman);
-         break;
-      }
-      case AttackToolType.axe: {
-         bestToolSlot = getBestAxeSlot(tribesman);
-         break;
+
+      const item = hotbarInventory.itemSlots[itemSlot];
+      const damage = calculateItemDamage(item, huntedEntity);
+      if (damage > mostDamage) {
+         mostDamage = damage;
+         bestItemSlot = itemSlot;
       }
    }
 
+   return bestItemSlot;
+}
+
+const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
+   const bestItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
+
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
 
-   if (bestToolSlot !== null) {
+   if (bestItemSlot !== 999) {
       const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
       
-      inventoryUseComponent.selectedItemSlot = bestToolSlot;
+      inventoryUseComponent.selectedItemSlot = bestItemSlot;
 
       // Don't do a melee attack if using a bow, instead charge the bow
       const selectedItem = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot)!;
       const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
       if (weaponCategory === "bow") {
          // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
-         if (inventoryUseComponent.currentAction !== TribeMemberAction.charge_bow) {
+         if (inventoryUseComponent.currentAction !== TribeMemberAction.chargeBow) {
             const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
             inventoryUseComponent.bowCooldownTicks = itemInfo.shotCooldownTicks;
          }
-         inventoryUseComponent.currentAction = TribeMemberAction.charge_bow;
+         inventoryUseComponent.currentAction = TribeMemberAction.chargeBow;
          
          engageTargetRanged(tribesman, huntedEntity);
 

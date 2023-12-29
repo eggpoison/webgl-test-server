@@ -5,6 +5,7 @@ export class InventoryUseComponent {
    public readonly inventory: Inventory;
    public bowCooldownTicks = 0;
    public readonly itemAttackCooldowns: Record<number, number> = {};
+   public readonly spearWindupCooldowns: Record<number, number> = {};
    public foodEatingTimer = 0;
 
    public selectedItemSlot = 1;
@@ -14,6 +15,7 @@ export class InventoryUseComponent {
    public lastAttackTicks = 0;
    public lastEatTicks = 0;
    public lastBowChargeTicks = 0;
+   public lastSpearChargeTicks = 0;
 
    constructor(inventory: Inventory) {
       this.inventory = inventory;

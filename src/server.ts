@@ -13,7 +13,7 @@ import { resetCensus } from "./census";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
-import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, startChargingBow, startEating, throwItem } from "./entities/tribes/player";
+import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
@@ -66,8 +66,11 @@ const getLastActionTicks = (tribeMember: Entity): number => {
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
 
    switch (inventoryUseComponent.currentAction) {
-      case TribeMemberAction.charge_bow: {
+      case TribeMemberAction.chargeBow: {
          return inventoryUseComponent.lastBowChargeTicks;
+      }
+      case TribeMemberAction.chargeSpear: {
+         return inventoryUseComponent.lastSpearChargeTicks;
       }
       case TribeMemberAction.eat: {
          return inventoryUseComponent.lastEatTicks;
@@ -357,6 +360,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             getLastActionTicks(entity),
             inventoryUseComponent.currentAction
          ];
+         break;
+      }
+      case IEntityType.spearProjectile: {
+         clientArgs = [];
          break;
       }
    }
@@ -857,8 +864,9 @@ class GameServer {
          socket.on("unlock_tech", (techID: TechID): void => {
             // Get the player data for the current client
             const playerData = SERVER.playerDataRecord[socket.id];
-            if (playerData.tribe !== null) {
-               playerData.tribe.unlockTech(techID);
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               processTechUnlock(player, techID);
             }
          });
       });
@@ -901,7 +909,8 @@ class GameServer {
             numHuts: playerData.tribe.getNumHuts(),
             tribesmanCap: playerData.tribe.tribesmanCap,
             area: playerData.tribe.getArea().map(tile => [tile.x, tile.y]),
-            unlockedTechs: playerData.tribe.unlockedTechs
+            unlockedTechs: playerData.tribe.unlockedTechs,
+            techUnlockProgress: playerData.tribe.techUnlockProgress
          } : null;
 
          // @Incomplete
@@ -1085,8 +1094,10 @@ class GameServer {
 
       if (playerDataPacket.action === TribeMemberAction.eat && inventoryUseComponent.currentAction !== TribeMemberAction.eat) {
          startEating(player);
-      } else if (playerDataPacket.action === TribeMemberAction.charge_bow && inventoryUseComponent.currentAction !== TribeMemberAction.charge_bow) {
+      } else if (playerDataPacket.action === TribeMemberAction.chargeBow && inventoryUseComponent.currentAction !== TribeMemberAction.chargeBow) {
          startChargingBow(player);
+      } else if (playerDataPacket.action === TribeMemberAction.chargeSpear && inventoryUseComponent.currentAction !== TribeMemberAction.chargeSpear) {
+         startChargingSpear(player);
       }
       inventoryUseComponent.currentAction = playerDataPacket.action;
    }

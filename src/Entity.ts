@@ -22,6 +22,7 @@ import { AIHelperComponentArray } from "./components/ComponentArray";
 import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
+import { onSpearProjectileCollision } from "./entities/projectiles/spear-projectile";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -312,6 +313,11 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public applyPhysics(): void {
+      // @Speed
+      if (!this.isAffectedByFriction) {
+         return;
+      }
+      
       // Apply acceleration
       if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
          // @Speed: very complicated logic
@@ -934,6 +940,10 @@ class Entity<T extends IEntityType = IEntityType> {
          }
          case IEntityType.rockSpikeProjectile: {
             onRockSpikeProjectileCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.spearProjectile: {
+            onSpearProjectileCollision(this, collidingEntity);
             break;
          }
       }

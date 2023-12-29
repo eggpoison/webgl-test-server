@@ -1,4 +1,4 @@
-import { IEntityType, Point, SETTINGS, TechID, TribeType, clampToBoardDimensions } from "webgl-test-shared";
+import { IEntityType, Point, SETTINGS, TechID, TechUnlockProgress, TribeType, clampToBoardDimensions } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
@@ -59,6 +59,7 @@ class Tribe {
    public readonly reinforcementInfoArray = new Array<ReinforcementInfo>();
 
    public readonly unlockedTechs = new Array<TechID>();
+   public readonly techUnlockProgress: TechUnlockProgress = {};
    
    constructor(tribeType: TribeType, totem: Entity) {
       this.id = getAvailableID();

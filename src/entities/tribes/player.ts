@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeMemberAction, TribeType, getItemStackSize, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemRequirements, ItemType, Point, SETTINGS, SpearItemInfo, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, onTribeMemberHurt, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
@@ -269,5 +269,90 @@ export function startChargingBow(player: Entity): void {
       inventoryUseComponent.lastBowChargeTicks = Board.ticks;
    }
    
-   inventoryUseComponent.currentAction = TribeMemberAction.eat;
+   inventoryUseComponent.currentAction = TribeMemberAction.chargeBow;
+}
+
+export function startChargingSpear(player: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+
+   // Reset the cooldown so the bow doesn't fire immediately
+   const spear = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+   if (spear !== null) {
+      inventoryUseComponent.lastSpearChargeTicks = Board.ticks;
+   }
+   
+   inventoryUseComponent.currentAction = TribeMemberAction.chargeSpear;
+}
+
+const itemIsNeededInTech = (tech: TechInfo, itemProgress: ItemRequirements, itemType: ItemType): boolean => {
+   // If the item isn't present in the item requirements then it isn't needed
+   if (!tech.researchItemRequirements.hasOwnProperty(itemType)) {
+      return false;
+   }
+   
+   const amountNeeded = tech.researchItemRequirements[itemType]!;
+   const amountCommitted = itemProgress.hasOwnProperty(itemType) ? itemProgress[itemType]! : 0;
+
+   return amountCommitted < amountNeeded;
+}
+
+const hasMetTechItemRequirements = (tech: TechInfo, itemProgress: ItemRequirements): boolean => {
+   for (const [itemType, itemAmount] of Object.entries(tech.researchItemRequirements)) {
+      if (!itemProgress.hasOwnProperty(itemType)) {
+         return false;
+      }
+
+      if (itemAmount !== itemProgress[itemType as unknown as ItemType]) {
+         return false;
+      }
+   }
+
+   return true;
+}
+
+export function processTechUnlock(player: Entity, techID: TechID): void {
+   const tech = getTechByID(techID);
+   
+   const tribeComponent = TribeComponentArray.getComponent(player);
+   if (tribeComponent.tribe === null) {
+      console.warn("Cannot research a tech without a tribe.");
+      return;
+   }
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+
+   const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+   
+   // Consume any available items
+   for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
+      if (!hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
+         continue;
+      }
+
+      const item = hotbarInventory.itemSlots[itemSlot];
+      const itemProgress = tribeComponent.tribe.techUnlockProgress[techID] || {};
+      if (itemIsNeededInTech(tech, itemProgress, item.type)) {
+         const amountNeeded = tech.researchItemRequirements[item.type]!;
+         const amountCommitted = itemProgress.hasOwnProperty(item.type) ? itemProgress[item.type]! : 0;
+
+         const amountToAdd = Math.min(item.count, amountNeeded - amountCommitted);
+
+         item.count -= amountToAdd;
+         if (item.count === 0) {
+            delete hotbarInventory.itemSlots[itemSlot];
+         }
+
+         if (tribeComponent.tribe.techUnlockProgress.hasOwnProperty(techID)) {
+            tribeComponent.tribe.techUnlockProgress[techID]![item.type] = amountCommitted + amountToAdd;
+         } else {
+            tribeComponent.tribe.techUnlockProgress[techID] = {
+               [item.type]: amountCommitted + amountToAdd
+            };
+         }
+      }
+   }
+
+   if (hasMetTechItemRequirements(tech, tribeComponent.tribe.techUnlockProgress[techID] || {})) {
+      tribeComponent.tribe.unlockTech(techID);
+   }
 }

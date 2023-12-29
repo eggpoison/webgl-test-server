@@ -31,6 +31,7 @@ import Board from "../Board";
 import { FrozenYetiComponent } from "./FrozenYetiComponent";
 import { RockSpikeProjectileComponent } from "./RockSpikeProjectileComponent";
 import { CookingEntityComponent } from "./CookingEntityComponent";
+import { SpearComponent } from "./SpearComponent";
 
 class ComponentArray<T extends {}> {
    public components = new Array<T>();
@@ -112,3 +113,4 @@ export const FishComponentArray = new ComponentArray<FishComponent>();
 export const FrozenYetiComponentArray = new ComponentArray<FrozenYetiComponent>();
 export const RockSpikeProjectileComponentArray = new ComponentArray<RockSpikeProjectileComponent>();
 export const CookingEntityComponentArray = new ComponentArray<CookingEntityComponent>();
+export const SpearComponentArray = new ComponentArray<SpearComponent>();
