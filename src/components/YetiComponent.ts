@@ -1,4 +1,4 @@
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import Tile from "../Tile";
 import { SnowThrowStage, YETI_SNOW_THROW_COOLDOWN } from "../entities/mobs/yeti";
 

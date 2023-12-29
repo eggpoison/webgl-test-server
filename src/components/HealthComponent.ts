@@ -1,5 +1,5 @@
 import { IEntityType, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { SERVER } from "../server";

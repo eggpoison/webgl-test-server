@@ -1,8 +1,8 @@
-import { IEntityType, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
+import { IEntityType, Point, SETTINGS, TechID, TribeType, clampToBoardDimensions } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 import { TotemBannerComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { createTribesman } from "./entities/tribes/tribesman";
 import { addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
@@ -57,6 +57,8 @@ class Tribe {
    public tribesmanCap = 0;
 
    public readonly reinforcementInfoArray = new Array<ReinforcementInfo>();
+
+   public readonly unlockedTechs = new Array<TechID>();
    
    constructor(tribeType: TribeType, totem: Entity) {
       this.id = getAvailableID();
@@ -73,7 +75,14 @@ class Tribe {
       this.createTribeAreaAroundBuilding(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeTotem]);
    }
 
+   public unlockTech(techID: TechID): void {
+      if (!this.unlockedTechs.includes(techID)) {
+         this.unlockedTechs.push(techID);
+      }
+   }
+
    public tick(): void {
+      // @Temporary
       for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
          const info = this.reinforcementInfoArray[i];
 

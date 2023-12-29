@@ -1,5 +1,5 @@
 import { RiverSteppingStoneData } from "webgl-test-shared";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 
 class Chunk {
    /** Stores all game objects inside the chunk */

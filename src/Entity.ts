@@ -1,4 +1,4 @@
-import { GameObjectDebugData, IEntityType, I_TPS, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileType, TileTypeConst, TribeMemberAction, Vector, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { GameObjectDebugData, IEntityType, I_TPS, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -6,7 +6,7 @@ import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { onCowDeath } from "./entities/mobs/cow";
 import { onTreeDeath } from "./entities/resources/tree";
-import { onPlayerCollision } from "./entities/tribes/player";
+import { onPlayerCollision, onPlayerDeath } from "./entities/tribes/player";
 import { onIceSpikesCollision, onIceSpikesDeath } from "./entities/resources/ice-spikes";
 import { onIceShardCollision } from "./entities/projectiles/ice-shards";
 import { onKrumblidDeath } from "./entities/mobs/krumblid";
@@ -23,6 +23,7 @@ import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
 
+// @Cleanup: Variable names
 const a = new Array<number>();
 const b = new Array<number>();
 for (let i = 0; i < 8; i++) {
@@ -32,7 +33,6 @@ for (let i = 0; i < 8; i++) {
 }
 
 export const ID_SENTINEL_VALUE = 99999999;
-
 
 let idCounter = 0;
 
@@ -67,37 +67,35 @@ class Entity<T extends IEntityType = IEntityType> {
 
    public ageTicks = 0;
 
-   /** Position of the object in the world */
+   /** Position of the entity in the world */
    public position: Point;
-   /** Velocity of the object */
+   /** Velocity of the entity */
    public velocity = new Point(0, 0);
-   /** Acceleration of the object */
+   /** Acceleration of the entity */
    public acceleration = new Point(0, 0);
 
-   /** Direction the object is facing in radians */
+   /** Direction the entity is facing in radians */
    public rotation = Number.EPSILON;
 
-   /** Affects the force the game object experiences during collisions */
+   /** Affects the force the entity experiences during collisions */
    public mass = 1;
 
    public moveSpeedMultiplier = 1 + Number.EPSILON;
 
    public collisionPushForceMultiplier = 1;
 
-   /** Set of all chunks the object is contained in */
+   /** Set of all chunks the entity is contained in */
    public chunks = new Set<Chunk>();
 
-   /** The tile the object is currently standing on. */
+   /** The tile the entity is currently standing on. */
    public tile!: Tile;
 
-   /** All hitboxes attached to the game object */
+   /** All hitboxes attached to the entity */
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
-   public collidingObjectTicks = new Array<number>();
-   public collidingObjectIDs = new Array<number>();
+   public collidingEntityTicks = new Array<number>();
+   public collidingEntityIDs = new Array<number>();
    
-   // protected abstract readonly events: { [E in keyof EventsType]: Array<GameEvent<EventsType, E>> };
-
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
 
@@ -316,6 +314,7 @@ class Entity<T extends IEntityType = IEntityType> {
    public applyPhysics(): void {
       // Apply acceleration
       if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
+         // @Speed: very complicated logic
          let moveSpeedMultiplier: number;
          if (this.overrideMoveSpeedMultiplier) {
             moveSpeedMultiplier = 1;
@@ -878,14 +877,14 @@ class Entity<T extends IEntityType = IEntityType> {
          this.velocity.y += force * Math.cos(pushAngle);
       }
 
-      const idx = this.collidingObjectIDs.indexOf(collidingEntity.id);
+      const idx = this.collidingEntityIDs.indexOf(collidingEntity.id);
       if (idx === -1) {
          // New colliding game object
-         this.collidingObjectIDs.push(collidingEntity.id);
-         this.collidingObjectTicks.push(Board.ticks);
+         this.collidingEntityIDs.push(collidingEntity.id);
+         this.collidingEntityTicks.push(Board.ticks);
       } else {
          // Existing colliding game object
-         this.collidingObjectTicks[idx] = Board.ticks;
+         this.collidingEntityTicks[idx] = Board.ticks;
       }
 
       switch (this.type) {
@@ -1010,6 +1009,10 @@ class Entity<T extends IEntityType = IEntityType> {
             }
             case IEntityType.fish: {
                onFishDeath(this);
+               break;
+            }
+            case IEntityType.player: {
+               onPlayerDeath(this);
                break;
             }
          }

@@ -2,7 +2,7 @@ import { Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-s
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 
 const TURN_CONSTANT = Math.PI / SETTINGS.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;

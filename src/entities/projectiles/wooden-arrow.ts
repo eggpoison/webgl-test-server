@@ -1,6 +1,6 @@
 import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import Entity from "../../GameObject";
+import Entity from "../../Entity";
 import { ArrowComponentArray, HealthComponentArray } from "../../components/ComponentArray";
 import { entityIsInvulnerable, damageEntity } from "../../components/HealthComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../tribes/tribe-member";

@@ -1,6 +1,6 @@
 import { SETTINGS } from "webgl-test-shared";
 import Board from "../Board";
-import Entity, { ID_SENTINEL_VALUE } from "../GameObject";
+import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { moveEntityToPosition } from "../ai-shared";
 import { FollowAIComponentArray } from "./ComponentArray";
 

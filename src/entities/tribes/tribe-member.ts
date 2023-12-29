@@ -1,7 +1,6 @@
-import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction } from "webgl-test-shared";
-import Entity, { RESOURCE_ENTITY_TYPES } from "../../GameObject";
+import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, getItemStackSize, itemIsStackable } from "webgl-test-shared";
+import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
-import Item, { getItemStackSize, itemIsStackable } from "../../Item";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
@@ -232,7 +231,9 @@ const calculateItemKnockback = (item: Item | null): number => {
  * @param targetEntity The entity to attack
  * @param itemSlot The item slot being used to attack the entity
  */
-export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number): void {
+// @Cleanup: Pass in the item to use directly instead of passing in the item slot and inventory name
+// @Cleanup: Not just for tribe members, move to different file
+export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): void {
    const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
 
@@ -242,7 +243,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    }
    
    // Find the selected item
-   const item = getItem(inventoryComponent, "hotbar", itemSlot);
+   const item = getItem(inventoryComponent, inventoryName, itemSlot);
 
    // Reset attack cooldown
    if (item !== null) {
@@ -273,6 +274,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    inventoryUseComponent.lastAttackTicks = Board.ticks;
 }
 
+// @Cleanup: Not just for tribe members, move to different file
 export function calculateAttackTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>): Entity | null {
    let closestEntity: Entity | null = null;
    let minDistance = Number.MAX_SAFE_INTEGER;
@@ -282,7 +284,8 @@ export function calculateAttackTarget(tribeMember: Entity, targetEntities: Reado
          continue;
       }
 
-      if (getTribeMemberRelationship(tribeMember, targetEntity) !== EntityRelationship.friendly) {
+      // @Cleanup: Don't hardcode the zombie condition. Instead move the relationship check to outside this function
+      if (tribeMember.type === IEntityType.zombie || getTribeMemberRelationship(tribeMember, targetEntity) !== EntityRelationship.friendly) {
          const dist = tribeMember.position.calculateDistanceBetween(targetEntity.position);
          if (dist < minDistance) {
             closestEntity = targetEntity;
@@ -296,6 +299,7 @@ export function calculateAttackTarget(tribeMember: Entity, targetEntities: Reado
    return closestEntity;
 }
 
+// @Cleanup: Not just for tribe members, move to different file
 export function calculateRadialAttackTargets(entity: Entity, attackOffset: number, attackRadius: number): ReadonlyArray<Entity> {
    const attackPositionX = entity.position.x + attackOffset * Math.sin(entity.rotation);
    const attackPositionY = entity.position.y + attackOffset * Math.cos(entity.rotation);
@@ -371,6 +375,8 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
 
    const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
 
+   // @Cleanup: Extract each one of these cases into their own function
+
    switch (itemCategory) {
       case "armour": {
          // 
@@ -425,6 +431,9 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
             }
             case ItemType.tribe_totem: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               if (tribeComponent.tribe !== null) {
+                  return;
+               }
 
                placedEntity = createTribeTotem(spawnPosition, tribeComponent.tribeType);
                TribeBuffer.addTribe(tribeComponent.tribeType, placedEntity, tribeMember);

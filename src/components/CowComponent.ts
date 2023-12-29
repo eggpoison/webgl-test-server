@@ -1,5 +1,5 @@
 import { CowSpecies } from "webgl-test-shared";
-import { ID_SENTINEL_VALUE } from "../GameObject";
+import { ID_SENTINEL_VALUE } from "../Entity";
 
 export class CowComponent {
    public readonly species: CowSpecies;

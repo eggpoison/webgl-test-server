@@ -1,5 +1,5 @@
 import { FishColour } from "webgl-test-shared";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 
 export class FishComponent {
    public readonly colour: FishColour;

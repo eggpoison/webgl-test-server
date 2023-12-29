@@ -1,5 +1,5 @@
 import { CookingIngredientItemType, FuelSourceItemType, IEntityType, ItemType, SETTINGS } from "webgl-test-shared";
-import Entity from "../../GameObject";
+import Entity from "../../Entity";
 import { CookingEntityComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, consumeItemTypeFromInventory, getInventory } from "../../components/InventoryComponent";
 

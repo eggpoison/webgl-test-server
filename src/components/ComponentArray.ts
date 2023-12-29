@@ -1,4 +1,4 @@
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import { HealthComponent } from "./HealthComponent";
 import { ItemComponent } from "./ItemComponent";
 import { StatusEffectComponent } from "./StatusEffectComponent";

@@ -1,10 +1,9 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeMemberAction, TribeType, canCraftRecipe } from "webgl-test-shared";
-import Entity from "../../GameObject";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, TribeMemberAction, TribeType, getItemStackSize, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, onTribeMemberHurt, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { InventoryComponent, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, getInventory, getItem } from "../../components/InventoryComponent";
-import { getItemStackSize, itemIsStackable } from "../../Item";
+import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { addItemEntityPlayerPickupCooldown, createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -14,6 +13,7 @@ import { SERVER } from "../../server";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { PlayerComponent } from "../../components/PlayerComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { createItem } from "../../Item";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -52,6 +52,9 @@ export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe
    createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
+
+   // @Temporary
+   addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
 
    InventoryUseComponentArray.addComponent(player, new InventoryUseComponent(hotbarInventory));
 
@@ -104,6 +107,14 @@ export function onPlayerHurt(player: Entity, collidingEntity: Entity): void {
    onTribeMemberHurt(player, collidingEntity);
 }
 
+export function onPlayerDeath(player: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   
+   dropInventory(player, inventoryComponent, "hotbar", 38);
+   dropInventory(player, inventoryComponent, "armourSlot", 38);
+   dropInventory(player, inventoryComponent, "backpackSlot", 38);
+}
+
 export function processPlayerCraftingPacket(player: Entity, recipeIndex: number): void {
    if (recipeIndex < 0 || recipeIndex >= CRAFTING_RECIPES.length) {
       return;
@@ -125,7 +136,7 @@ export function processPlayerCraftingPacket(player: Entity, recipeIndex: number)
    const backpackInventory = getInventory(inventoryComponent, "backpack");
 
    // @Speed: Garbage collection
-   if (canCraftRecipe([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe)) {
+   if (hasEnoughItems([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe.ingredients)) {
       // Consume ingredients
       for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
          // Prioritise consuming ingredients from the backpack inventory first
@@ -203,7 +214,7 @@ export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPa
 
    // Register the hit
    if (target !== null) {
-      attackEntity(player, target, attackPacket.itemSlot);
+      attackEntity(player, target, attackPacket.itemSlot, "hotbar");
    }
 }
 

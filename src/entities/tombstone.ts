@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";

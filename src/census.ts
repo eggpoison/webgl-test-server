@@ -1,6 +1,6 @@
 import { BiomeName, IEntityType, TileType, TileTypeConst } from "webgl-test-shared";
 import Tile from "./Tile";
-import Entity, { NUM_ENTITY_TYPES } from "./GameObject";
+import Entity, { NUM_ENTITY_TYPES } from "./Entity";
 
 const entityCounts = new Array<IEntityType>();
 for (let i = 0; i < NUM_ENTITY_TYPES; i++) {

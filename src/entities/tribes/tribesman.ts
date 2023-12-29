@@ -1,5 +1,5 @@
-import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, angle, distance, randItem } from "webgl-test-shared";
-import Entity from "../../GameObject";
+import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, angle, distance, randItem } from "webgl-test-shared";
+import Entity from "../../Entity";
 import Tribe from "../../Tribe";
 import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -12,7 +12,6 @@ import { getClosestEntity, getEntitiesInVisionRange, getPositionRadialTiles, sto
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
 import Board from "../../Board";
-import Item from "../../Item";
 import Tile from "../../Tile";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 
@@ -837,7 +836,7 @@ const doMeleeAttack = (tribesman: Entity): void => {
    // Register the hit
    if (target !== null) {
       const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
-      attackEntity(tribesman, target, inventoryUseComponent.selectedItemSlot);
+      attackEntity(tribesman, target, inventoryUseComponent.selectedItemSlot, "hotbar");
    }
 }
 

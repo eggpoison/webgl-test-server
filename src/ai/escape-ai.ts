@@ -1,5 +1,5 @@
 import Board from "../Board";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import { EscapeAIComponentArray } from "../components/ComponentArray";
 
 export function registerAttackingEntity(entity: Entity, attackingEntity: Entity): void {

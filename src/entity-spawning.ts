@@ -3,7 +3,7 @@ import Board from "./Board";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 import { createEntity } from "./entity-creation";
 import { yetiSpawnPositionIsValid } from "./entities/mobs/yeti";
 

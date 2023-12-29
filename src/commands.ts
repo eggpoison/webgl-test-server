@@ -2,13 +2,13 @@ import { BiomeName, EntityType, IEntityType, ItemType, PlayerCauseOfDeath, Point
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
-import Item from "./Item";
 import Tile from "./Tile";
 import { damageEntity, healEntity } from "./components/HealthComponent";
-import Entity, { NUM_ENTITY_TYPES } from "./GameObject";
+import Entity, { NUM_ENTITY_TYPES } from "./Entity";
 import { InventoryComponentArray } from "./components/ComponentArray";
 import { addItem } from "./components/InventoryComponent";
 import { createEntity } from "./entity-creation";
+import { createItem } from "./Item";
 
 const ENTITY_SPAWN_RANGE = 200;
 
@@ -29,7 +29,7 @@ const giveItem = (player: Entity, itemType: ItemType, amount: number): void => {
       return;
    }
 
-   const item = new Item(itemType, amount);
+   const item = createItem(itemType, amount);
    addItem(InventoryComponentArray.getComponent(player), item);
 }
 

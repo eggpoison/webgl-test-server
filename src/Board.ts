@@ -12,7 +12,7 @@ import { TribeComponent } from "./components/TribeComponent";
 import { AIHelperComponentArray, HealthComponentArray, InventoryUseComponentArray, ItemComponentArray, StatusEffectComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { tickPlayer } from "./entities/tribes/player";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 import { tickHealthComponent } from "./components/HealthComponent";
 import { onBerryBushRemove, tickBerryBush } from "./entities/resources/berry-bush";
 import { onIceShardRemove, tickIceShard } from "./entities/projectiles/ice-shards";
@@ -57,7 +57,7 @@ abstract class Board {
    public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time = 6.01;
+   public static time = 6 + Number.EPSILON;
 
    /** This is an array as game objects get created/removed fairly slowly */
    public static entities = new Array<Entity>();
@@ -459,11 +459,11 @@ abstract class Board {
 
          // Remove old collisions
          // @Speed
-         let numCollisions = gameObject.collidingObjectIDs.length;
+         let numCollisions = gameObject.collidingEntityIDs.length;
          for (let i = 0; i < numCollisions; i++) {
-            if (gameObject.collidingObjectTicks[i] !== Board.ticks) {
-               gameObject.collidingObjectIDs.splice(i, 1);
-               gameObject.collidingObjectTicks.splice(i, 1);
+            if (gameObject.collidingEntityTicks[i] !== Board.ticks) {
+               gameObject.collidingEntityIDs.splice(i, 1);
+               gameObject.collidingEntityTicks.splice(i, 1);
                i--;
                numCollisions--;
             }
@@ -520,7 +520,7 @@ abstract class Board {
             const gameObject1 = chunk.entities[j];
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const gameObject2 = chunk.entities[k];
-               if (gameObject1.collidingObjectIDs.indexOf(gameObject2.id) === -1 && gameObject1.isColliding(gameObject2)) {
+               if (gameObject1.collidingEntityIDs.indexOf(gameObject2.id) === -1 && gameObject1.isColliding(gameObject2)) {
                   gameObject1.collide(gameObject2);
                   gameObject2.collide(gameObject1);
                }

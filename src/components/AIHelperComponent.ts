@@ -1,6 +1,6 @@
 import { Point, SETTINGS, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset } from "webgl-test-shared";
 import Chunk from "../Chunk";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import { AIHelperComponentArray } from "./ComponentArray";
 import Board from "../Board";
 import Hitbox from "../hitboxes/Hitbox";
@@ -77,7 +77,10 @@ export function tickAIHelperComponent(entity: Entity): void {
    const minChunkY = Math.max(Math.min(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    const maxChunkY = Math.max(Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
    
+   // If the entity hasn't changed visible chunk bounds, then the potential visible entities will be the same
+   // and only the visible entities need to updated
    if (minChunkX === aiHelperComponent.visibleChunkBounds[0] && maxChunkX === aiHelperComponent.visibleChunkBounds[1] && minChunkY === aiHelperComponent.visibleChunkBounds[2] && maxChunkY === aiHelperComponent.visibleChunkBounds[3]) {
+      aiHelperComponent.visibleEntities = calculateVisibleEntities(entity, aiHelperComponent);
       return;
    }
 

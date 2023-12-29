@@ -1,6 +1,6 @@
 import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffectConst, customTickIntervalHasPassed } from "webgl-test-shared";
 import { StatusEffectComponentArray } from "./ComponentArray";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
 
 export const NUM_STATUS_EFFECTS = Object.keys(STATUS_EFFECT_MODIFIERS).length;

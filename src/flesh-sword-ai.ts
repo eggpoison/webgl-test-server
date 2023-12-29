@@ -1,7 +1,7 @@
 import { IEntityType, Point, SETTINGS, angle, lerp, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 
 const FLESH_SWORD_VISION_RANGE = 250;
 

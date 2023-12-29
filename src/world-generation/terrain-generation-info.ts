@@ -110,15 +110,6 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             },
             minDist: 2
          },
-         // {
-         //    tileType: TileType.sandstone,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 7,
-         //       minWeight: 0.5
-         //    },
-         //    minDist: 1
-         // },
          {
             tileType: TileTypeConst.sand,
             isWall: false
@@ -174,37 +165,6 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             tileType: TileTypeConst.sludge,
             isWall: false
          }
-         // {
-         //    tileType: TileTypeConst.sludge,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 5,
-         //       minWeight: 0.25
-         //    },
-         //    minDist: 3
-         // },
-         // {
-         //    tileType: TileTypeConst.dirt,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 5,
-         //       minWeight: 0.4
-         //    },
-         //    minDist: 2
-         // },
-         // {
-         //    tileType: TileTypeConst.sludge,
-         //    isWall: false,
-         //    noiseRequirements: {
-         //       scale: 5,
-         //       minWeight: 0.6
-         //    },
-         //    minDist: 1
-         // },
-         // {
-         //    tileType: TileTypeConst.dirt,
-         //    isWall: false
-         // }
       ]
    },
    grasslands: {

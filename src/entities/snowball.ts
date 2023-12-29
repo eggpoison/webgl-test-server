@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../GameObject";
+import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { HealthComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../components/HealthComponent";

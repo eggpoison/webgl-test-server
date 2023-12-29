@@ -1,5 +1,5 @@
 import { SETTINGS, randInt } from "webgl-test-shared";
-import Entity from "../GameObject";
+import Entity from "../Entity";
 import Tile from "../Tile";
 import Board from "../Board";
 import { WanderAIComponentArray } from "../components/ComponentArray";

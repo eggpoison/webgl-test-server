@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
-import Entity from "../../GameObject";
+import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, IceShardComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";

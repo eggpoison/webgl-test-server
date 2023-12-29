@@ -1,8 +1,8 @@
-import { ITEM_INFO_RECORD, InventoryData, ItemSlotsData, ItemType, StackableItemInfo } from "webgl-test-shared";
-import Item, { itemIsStackable } from "../Item";
-import Entity from "../GameObject";
+import { ITEM_INFO_RECORD, InventoryData, Item, ItemSlotsData, ItemType, StackableItemInfo, itemIsStackable } from "webgl-test-shared";
+import Entity from "../Entity";
 import { createItemEntity, itemEntityCanBePickedUp } from "../entities/item-entity";
 import { InventoryComponentArray, ItemComponentArray } from "./ComponentArray";
+import { createItem } from "../Item";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 
@@ -196,7 +196,7 @@ export function addItemToInventory(inventoryComponent: InventoryComponent, inven
             addAmount = 1;
          }
 
-         inventory.itemSlots[i] = new Item(itemType, addAmount);
+         inventory.itemSlots[i] = createItem(itemType, addAmount);
 
          amountAdded += addAmount;
          remainingAmountToAdd -= addAmount;
@@ -233,9 +233,8 @@ export function addItemToSlot(inventoryComponent: InventoryComponent, inventoryN
          return 0;
       }
 
+      // If the item is stackable, add as many as the stack size of the item would allow
       if (itemIsStackable(itemType)) {
-         // If the item is stackable, add as many as the stack size of the item would allow
-
          const stackSize = (ITEM_INFO_RECORD[itemType] as StackableItemInfo).stackSize;
          
          amountAdded = Math.min(amount, stackSize - item.count);
@@ -246,7 +245,7 @@ export function addItemToSlot(inventoryComponent: InventoryComponent, inventoryN
       }
    } else {
       amountAdded = amount;
-      inventory.itemSlots[itemSlot] = new Item(itemType, amount);
+      inventory.itemSlots[itemSlot] = createItem(itemType, amount);
    }
 
    return amountAdded;

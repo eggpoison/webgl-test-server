@@ -1,10 +1,10 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randInt } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../GameObject";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, ItemComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyKnockback, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { getInventory } from "../../components/InventoryComponent";
+import { InventoryComponent, createNewInventory, getInventory, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { StatusEffectComponent, applyStatusEffect, hasStatusEffect } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -12,6 +12,8 @@ import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../.
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { InventoryUseComponent } from "../../components/InventoryUseComponent";
+import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets } from "../tribes/tribe-member";
 
 const MAX_HEALTH = 20;
 
@@ -20,10 +22,13 @@ const VISION_RANGE = 270;
 const ACCELERATION = 275;
 const ACCELERATION_SLOW = 150;
 
-const ATTACK_PURSUE_TIME = 5;
+const CHASE_PURSUE_TIME = 5;
 
 /** Chance for a zombie to spontaneously combust every second */
 const SPONTANEOUS_COMBUSTION_CHANCE = 0.5;
+
+const ATTACK_OFFSET = 40;
+const ATTACK_RADIUS = 30;
 
 // @Cleanup: We don't need to pass the isGolden parameter, can deduce whether the tombstone is golden from the tombstoneID instead
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
@@ -38,14 +43,64 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    ZombieComponentArray.addComponent(zombie, new ZombieComponent(zombieType, tombstoneID));
    WanderAIComponentArray.addComponent(zombie, new WanderAIComponent());
    AIHelperComponentArray.addComponent(zombie, new AIHelperComponent(VISION_RANGE));
+
+   const inventoryComponent = new InventoryComponent();
+   InventoryComponentArray.addComponent(zombie, inventoryComponent);
+
+   const inventory = createNewInventory(inventoryComponent, "handSlot", 1, 1, true);
+   InventoryUseComponentArray.addComponent(zombie, new InventoryUseComponent(inventory));
    
    return zombie;
 }
 
+const doMeleeAttack = (zombie: Entity, target: Entity): void => {
+   // Find the attack target
+   const attackTargets = calculateRadialAttackTargets(zombie, ATTACK_OFFSET, ATTACK_RADIUS);
+
+   // Register the hit
+   if (attackTargets.includes(target)) {
+      attackEntity(zombie, target, 1, "handSlot");
+
+      // Reset attack cooldown
+      const zombieComponent = ZombieComponentArray.getComponent(zombie);
+      zombieComponent.attackCooldownTicks = Math.floor(randFloat(1, 2) * SETTINGS.TPS);
+   }
+}
+
+// @Incomplete: bite wind-up
+
+const doBiteAttack = (zombie: Entity, target: Entity): void => {
+   // Lunge at the target
+   const lungeDirection = zombie.position.calculateAngleBetween(target.position);
+   zombie.velocity.x += 130 * Math.sin(lungeDirection);
+   zombie.velocity.y += 130 * Math.cos(lungeDirection);
+
+   // Reset attack cooldown
+   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   zombieComponent.attackCooldownTicks = Math.floor(randFloat(3, 4) * SETTINGS.TPS);
+
+   // @Hack
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(zombie);
+   inventoryUseComponent.lastAttackTicks = Board.ticks;
+}
+
+const doAttack = (zombie: Entity, target: Entity): void => {
+   const inventoryComponent = InventoryComponentArray.getComponent(zombie);
+
+   // If holding an item, do a melee attack
+   const handInventory = getInventory(inventoryComponent, "handSlot");
+   if (handInventory.itemSlots.hasOwnProperty(1)) {
+      doMeleeAttack(zombie, target);
+   } else {
+      doBiteAttack(zombie, target);
+   }
+}
+
 export function tickZombie(zombie: Entity): void {
+   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+
    // Update attacking entities
    // @Speed
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
    for (const id of Object.keys(zombieComponent.attackingEntityIDs).map(idString => Number(idString))) {
       zombieComponent.attackingEntityIDs[id] -= 1 / SETTINGS.TPS;
       if (zombieComponent.attackingEntityIDs[id] <= 0) {
@@ -64,25 +119,32 @@ export function tickZombie(zombie: Entity): void {
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(zombie);
 
-   // @Incomplete: Make the chase AI consider both enemies and food in the same loop
-
-   // Chase AI
    {
       let minDist = Number.MAX_SAFE_INTEGER;
-      let chasedEntity: Entity | null = null;
+      let target: Entity | null = null;
       for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
          const entity = aiHelperComponent.visibleEntities[i];
          if (shouldAttackEntity(zombie, entity)) {
             const distance = zombie.position.calculateDistanceBetween(entity.position);
             if (distance < minDist) {
                minDist = distance;
-               chasedEntity = entity;
+               target = entity;
             }
          }
       }
-      if (chasedEntity !== null) {
-         moveEntityToPosition(zombie, chasedEntity.position.x, chasedEntity.position.y, ACCELERATION);
+
+      if (target !== null) {
+         if (zombieComponent.attackCooldownTicks > 0) {
+            zombieComponent.attackCooldownTicks--;
+         } else {
+            // Do special attack
+            doAttack(zombie, target);
+         }
+         
+         moveEntityToPosition(zombie, target.position.x, target.position.y, ACCELERATION);
          return;
+      } else {
+         zombieComponent.attackCooldownTicks = Math.floor(2.5 * SETTINGS.TPS);
       }
    }
 
@@ -160,6 +222,11 @@ const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
 }
 
 export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void {
+   // Pick up item entities
+   if (collidingEntity.type === IEntityType.itemEntity) {
+      pickupItemEntity(zombie, collidingEntity);
+   }
+   
    // Hurt enemies on collision
    if (shouldAttackEntity(zombie, collidingEntity)) {
       const hitDirection = zombie.position.calculateAngleBetween(collidingEntity.position);
@@ -181,7 +248,7 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
 export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
    if (attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus) {
       const zombieComponent = ZombieComponentArray.getComponent(zombie);
-      zombieComponent.attackingEntityIDs[attackingEntity.id] = ATTACK_PURSUE_TIME;
+      zombieComponent.attackingEntityIDs[attackingEntity.id] = CHASE_PURSUE_TIME;
    }
 }
 
@@ -200,4 +267,5 @@ export function onZombieRemove(zombie: Entity): void {
    ZombieComponentArray.removeComponent(zombie);
    WanderAIComponentArray.removeComponent(zombie);
    AIHelperComponentArray.removeComponent(zombie);
+   InventoryComponentArray.removeComponent(zombie);
 }

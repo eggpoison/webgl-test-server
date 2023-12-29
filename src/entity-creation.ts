@@ -1,5 +1,5 @@
 import { IEntityType, Point, TribeType } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "./GameObject";
+import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { createBarrel } from "./entities/tribes/barrel";
 import { createBerryBush } from "./entities/resources/berry-bush";
 import { createBoulder } from "./entities/resources/boulder";

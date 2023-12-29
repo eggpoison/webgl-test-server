@@ -1,5 +1,5 @@
 import { TribeType } from "webgl-test-shared";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 
 interface TribeJoinInfo {
    readonly tribeType: TribeType;
@@ -7,6 +7,7 @@ interface TribeJoinInfo {
    readonly startingTribeMember: Entity;
 }
 
+// @Cleanup: We've reworked the whole entity architecture, and this was originally done to combat circular dependencies. Do we still need a tribe buffer?
 abstract class TribeBuffer {
    private static joinBuffer = new Array<TribeJoinInfo>();
    

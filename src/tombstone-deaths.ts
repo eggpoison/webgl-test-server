@@ -1,5 +1,5 @@
 import { DeathInfo, PlayerCauseOfDeath } from "webgl-test-shared";
-import Entity from "./GameObject";
+import Entity from "./Entity";
 import { SERVER } from "./server";
 
 abstract class TombstoneDeathManager {

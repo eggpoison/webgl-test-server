@@ -1,6 +1,6 @@
 import { IEntityType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
 import { createEntity } from "../../entity-creation";
-import Entity from "../../GameObject";
+import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, RockSpikeProjectileComponentArray } from "../../components/ComponentArray";
 import { RockSpikeProjectileComponent } from "../../components/RockSpikeProjectileComponent";

@@ -9,10 +9,11 @@ export class InventoryUseComponent {
 
    public selectedItemSlot = 1;
 
+   // @Cleanup: Type name should not be 'tribe member action' as non tribe members can have this component
    public currentAction = TribeMemberAction.none;
-   public lastAttackTicks = -99999;
-   public lastEatTicks = -99999;
-   public lastBowChargeTicks = -99999;
+   public lastAttackTicks = 0;
+   public lastEatTicks = 0;
+   public lastBowChargeTicks = 0;
 
    constructor(inventory: Inventory) {
       this.inventory = inventory;
