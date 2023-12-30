@@ -9,9 +9,9 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { AIHelperComponentArray, HealthComponentArray, InventoryUseComponentArray, ItemComponentArray, StatusEffectComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, SpearComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
-import { tickPlayer } from "./entities/tribes/player";
+import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity from "./Entity";
 import { tickHealthComponent } from "./components/HealthComponent";
 import { onBerryBushRemove, tickBerryBush } from "./entities/resources/berry-bush";
@@ -19,14 +19,14 @@ import { onIceShardRemove, tickIceShard } from "./entities/projectiles/ice-shard
 import { onCowRemove, tickCow } from "./entities/mobs/cow";
 import { onKrumblidRemove, tickKrumblid } from "./entities/mobs/krumblid";
 import { tickItemComponent } from "./components/ItemComponent";
-import { tickTribesman } from "./entities/tribes/tribesman";
-import { tickTombstone } from "./entities/tombstone";
+import { onTribesmanRemove, tickTribesman } from "./entities/tribes/tribesman";
+import { onTombstoneRemove, tickTombstone } from "./entities/tombstone";
 import { onZombieRemove, tickZombie } from "./entities/mobs/zombie";
 import { onSlimewispRemove, tickSlimewisp } from "./entities/mobs/slimewisp";
 import { onSlimeRemove, tickSlime } from "./entities/mobs/slime";
 import { onArrowRemove, tickArrowProjectile } from "./entities/projectiles/wooden-arrow";
 import { onYetiRemove, tickYeti } from "./entities/mobs/yeti";
-import { tickSnowball } from "./entities/snowball";
+import { onSnowballRemove, tickSnowball } from "./entities/snowball";
 import { onFishRemove, tickFish } from "./entities/mobs/fish";
 import { tickStatusEffectComponent } from "./components/StatusEffectComponent";
 import { onTreeRemove } from "./entities/resources/tree";
@@ -42,6 +42,7 @@ import { tickAIHelperComponent } from "./components/AIHelperComponent";
 import { onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
 import { onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
 import { onSpearProjectileRemove, tickSpearProjectile } from "./entities/projectiles/spear-projectile";
+import { onTribeHutRemove } from "./entities/tribes/tribe-hut";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -329,6 +330,26 @@ abstract class Board {
                onSpearProjectileRemove(entity);
                break;
             }
+            case IEntityType.snowball: {
+               onSnowballRemove(entity);
+               break;
+            }
+            case IEntityType.tombstone: {
+               onTombstoneRemove(entity);
+               break;
+            }
+            case IEntityType.player: {
+               onPlayerRemove(entity);
+               break;
+            }
+            case IEntityType.tribeHut: {
+               onTribeHutRemove(entity);
+               break;
+            }
+            case IEntityType.tribesman: {
+               onTribesmanRemove(entity);
+               break;
+            }
          }
       }
 
@@ -339,11 +360,7 @@ abstract class Board {
       if (Board.ticks % 3 === 0) {
          for (let i = 0; i < AIHelperComponentArray.components.length; i++) {
             const entity = AIHelperComponentArray.getEntity(i);
-            // @Speed @Cleanup @Hack: When new entities are created they aren't added to the board immediately but their
-            // components are immediately added to the arrays, so we do this hack
-            if (typeof entity !== "undefined") {
-               tickAIHelperComponent(entity);
-            }
+            tickAIHelperComponent(entity);
          }
       }
 
@@ -453,11 +470,7 @@ abstract class Board {
 
       for (let i = 0; i < StatusEffectComponentArray.components.length; i++) {
          const entity = StatusEffectComponentArray.getEntity(i);
-         // @Speed @Cleanup @Hack: When new entities are created they aren't added to the board immediately but their
-         // components are immediately added to the arrays, so we do this hack
-         if (typeof entity !== "undefined") {
-            tickStatusEffectComponent(entity);
-         }
+         tickStatusEffectComponent(entity);
       }
    }
 
@@ -607,7 +620,48 @@ abstract class Board {
       this.entityRemoveBuffer.push(entity);
    }
 
+   private static pushComponentsFromArray(componentArray: ComponentArray): void {
+      while (componentArray.componentBuffer.length > 0) {
+         componentArray.pushComponentFromBuffer();
+      }
+   }
+
    public static pushJoinBuffer(): void {
+      // Push components
+      this.pushComponentsFromArray(TribeComponentArray);
+      this.pushComponentsFromArray(InventoryComponentArray);
+      this.pushComponentsFromArray(HealthComponentArray);
+      this.pushComponentsFromArray(ItemComponentArray);
+      this.pushComponentsFromArray(StatusEffectComponentArray);
+      this.pushComponentsFromArray(TotemBannerComponentArray);
+      this.pushComponentsFromArray(TreeComponentArray);
+      this.pushComponentsFromArray(BerryBushComponentArray);
+      this.pushComponentsFromArray(InventoryUseComponentArray);
+      this.pushComponentsFromArray(BoulderComponentArray);
+      this.pushComponentsFromArray(IceShardComponentArray);
+      this.pushComponentsFromArray(CowComponentArray);
+      this.pushComponentsFromArray(WanderAIComponentArray);
+      this.pushComponentsFromArray(EscapeAIComponentArray);
+      this.pushComponentsFromArray(AIHelperComponentArray);
+      this.pushComponentsFromArray(FollowAIComponentArray);
+      this.pushComponentsFromArray(CactusComponentArray);
+      this.pushComponentsFromArray(TribeMemberComponentArray);
+      this.pushComponentsFromArray(PlayerComponentArray);
+      this.pushComponentsFromArray(TribesmanComponentArray);
+      this.pushComponentsFromArray(TombstoneComponentArray);
+      this.pushComponentsFromArray(ZombieComponentArray);
+      this.pushComponentsFromArray(SlimewispComponentArray);
+      this.pushComponentsFromArray(SlimeComponentArray);
+      this.pushComponentsFromArray(ArrowComponentArray);
+      this.pushComponentsFromArray(YetiComponentArray);
+      this.pushComponentsFromArray(SnowballComponentArray);
+      this.pushComponentsFromArray(FishComponentArray);
+      this.pushComponentsFromArray(FrozenYetiComponentArray);
+      this.pushComponentsFromArray(RockSpikeProjectileComponentArray);
+      this.pushComponentsFromArray(CookingEntityComponentArray);
+      this.pushComponentsFromArray(SpearComponentArray);
+
+      // Push entities
       for (const entity of this.entityJoinBuffer) {
          // @Cleanup: Is this necessary?
          entity.cleanHitboxes();

@@ -26,3 +26,9 @@ export function createTribeHut(position: Point, tribe: Tribe): Entity {
 
    return hut;
 }
+
+export function onTribeHutRemove(hut: Entity): void {
+   HealthComponentArray.removeComponent(hut);
+   StatusEffectComponentArray.removeComponent(hut);
+   TribeComponentArray.removeComponent(hut);
+}

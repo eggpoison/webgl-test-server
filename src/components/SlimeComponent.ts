@@ -10,10 +10,11 @@ export class SlimeComponent {
    public mergeWant = 0;
    public readonly angeredEntities = new Array<SlimeEntityAnger>();
 
-   public readonly orbs = new Array<MovingOrbData>();
+   public readonly orbs: Array<MovingOrbData>;
 
-   constructor(size: SlimeSize, mergeWeight: number) {
+   constructor(size: SlimeSize, mergeWeight: number, startingOrbs: Array<MovingOrbData>) {
       this.size = size;
       this.mergeWeight = mergeWeight;
+      this.orbs = startingOrbs;
    }
 }

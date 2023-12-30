@@ -115,6 +115,15 @@ export function onPlayerDeath(player: Entity): void {
    dropInventory(player, inventoryComponent, "backpackSlot", 38);
 }
 
+export function onPlayerRemove(player: Entity): void {
+   HealthComponentArray.removeComponent(player);
+   StatusEffectComponentArray.removeComponent(player);
+   TribeComponentArray.removeComponent(player);
+   TribeMemberComponentArray.removeComponent(player);
+   PlayerComponentArray.removeComponent(player);
+   InventoryComponentArray.removeComponent(player);
+}
+
 export function processPlayerCraftingPacket(player: Entity, recipeIndex: number): void {
    if (recipeIndex < 0 || recipeIndex >= CRAFTING_RECIPES.length) {
       return;

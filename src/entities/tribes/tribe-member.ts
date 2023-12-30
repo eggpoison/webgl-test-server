@@ -1,13 +1,12 @@
-import { AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
-import { damageEntity, healEntity } from "../../components/HealthComponent";
+import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
 import { TRIBE_TOTEM_SIZE, createTribeTotem } from "./tribe-totem";
-import TribeBuffer from "../../TribeBuffer";
 import { TRIBE_HUT_SIZE, createTribeHut } from "./tribe-hut";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 import { BARREL_SIZE, createBarrel } from "./barrel";
@@ -20,6 +19,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { itemEntityCanBePickedUp } from "../item-entity";
 import { onFishLeaderHurt } from "../mobs/fish";
 import { createSpearProjectile } from "../projectiles/spear-projectile";
+import Tribe from "../../Tribe";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -437,8 +437,8 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
                   return;
                }
 
-               placedEntity = createTribeTotem(spawnPosition, tribeComponent.tribeType);
-               TribeBuffer.addTribe(tribeComponent.tribeType, placedEntity, tribeMember);
+               const tribe = new Tribe(tribeComponent.tribeType);
+               placedEntity = createTribeTotem(spawnPosition, tribe);
                break;
             }
             case ItemType.tribe_hut: {
@@ -614,6 +614,17 @@ export function tickTribeMember(tribeMember: Entity): void {
       resizeInventory(inventoryComponent, "backpack", itemInfo.inventoryWidth, itemInfo.inventoryHeight);
    } else {
       resizeInventory(inventoryComponent, "backpack", -1, -1);
+   }
+      
+   // @Speed: Shouldn't be done every tick, only do when the armour changes
+   // Armour defence
+   const armourSlotInventory = getInventory(inventoryComponent, "armourSlot");
+   const healthComponent = HealthComponentArray.getComponent(tribeMember);
+   if (armourSlotInventory.itemSlots.hasOwnProperty(1)) {
+      const itemInfo = ITEM_INFO_RECORD[armourSlotInventory.itemSlots[1].type] as ArmourItemInfo;
+      addDefence(healthComponent, itemInfo.defence, "armour");
+   } else {
+      removeDefence(healthComponent, "armour");
    }
 }
 

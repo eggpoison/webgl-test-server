@@ -5,6 +5,7 @@ import { TotemBannerPosition } from "../../components/TotemBannerComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import Tribe from "../../Tribe";
 
 export const TRIBE_TOTEM_SIZE = 120;
 
@@ -22,7 +23,7 @@ for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
    }
 }
 
-export function createTribeTotem(position: Point, tribeType: TribeType): Entity {
+export function createTribeTotem(position: Point, tribe: Tribe): Entity {
    const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
    
    const hitbox = new CircularHitbox(totem, 0, 0, TRIBE_TOTEM_SIZE / 2);
@@ -31,8 +32,8 @@ export function createTribeTotem(position: Point, tribeType: TribeType): Entity 
    HealthComponentArray.addComponent(totem, new HealthComponent(50));
    StatusEffectComponentArray.addComponent(totem, new StatusEffectComponent());
    TribeComponentArray.addComponent(totem, {
-      tribeType: tribeType,
-      tribe: null
+      tribeType: tribe.tribeType,
+      tribe: tribe
    });
    TotemBannerComponentArray.addComponent(totem, {
       banners: {},
@@ -41,6 +42,8 @@ export function createTribeTotem(position: Point, tribeType: TribeType): Entity 
    });
 
    totem.isStatic = true;
+
+   tribe.setTotem(totem);
    
    return totem;
 }

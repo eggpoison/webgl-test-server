@@ -4,7 +4,6 @@ import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
 import Tribe from "./Tribe";
-import TribeBuffer from "./TribeBuffer";
 import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -522,23 +521,6 @@ class GameServer {
       runTribeSpawnAttempt();
       
       Board.pushJoinBuffer();
-
-      // Push tribes from buffer
-      while (TribeBuffer.hasTribes()) {
-         const tribeJoinInfo = TribeBuffer.popTribe();
-         const tribe = new Tribe(tribeJoinInfo.tribeType, tribeJoinInfo.totem);
-         Board.addTribe(tribe);
-
-         const tribeComponent = TribeComponentArray.getComponent(tribeJoinInfo.startingTribeMember);
-         tribeComponent.tribe = tribe;
-
-         if (tribeJoinInfo.startingTribeMember.type === IEntityType.player) {
-            const playerData = SERVER.getPlayerDataFromInstance(tribeJoinInfo.startingTribeMember);
-            if (playerData !== null) {
-               playerData.tribe = tribe;
-            }
-         }
-      }
 
       Board.spreadGrass();
 

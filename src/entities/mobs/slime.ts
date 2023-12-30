@@ -52,7 +52,7 @@ interface AngerPropagationInfo {
    readonly propagatedEntityIDs: Set<number>;
 }
 
-export function createSlime(position: Point, size: SlimeSize = SlimeSize.small): Entity {
+export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, startingOrbs: Array<MovingOrbData> = []): Entity {
    const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(slime, 0, 0, RADII[size]);
@@ -60,7 +60,7 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small):
 
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));
    StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent());
-   SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size]));
+   SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size], startingOrbs));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slime, new AIHelperComponent(VISION_RANGES[size]));
 
@@ -241,8 +241,8 @@ export function tickSlime(slime: Entity): void {
    }
 }
 
-const createNewOrb = (slimeComponent: SlimeComponent, size: SlimeSize): void => {
-   slimeComponent.orbs.push({
+const createNewOrb = (orbs: Array<MovingOrbData>, size: SlimeSize): void => {
+   orbs.push({
       size: size,
       rotation: 2 * Math.PI * Math.random(),
       offset: Math.random(),
@@ -260,26 +260,28 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
    slimeComponent1.mergeTimer = SLIME_MERGE_TIME;
 
    if (slimeComponent1.size < SlimeSize.large && slimeComponent1.mergeWeight >= MERGE_WEIGHTS[slimeComponent1.size + 1]) {
-      const slime = createSlime(new Point((slime1.position.x + slime2.position.x) / 2, (slime1.position.y + slime2.position.y) / 2), slimeComponent1.size + 1);
-      const slimeComponent = SlimeComponentArray.getComponent(slime);
+      const orbs = new Array<MovingOrbData>();
 
       // Add orbs from the 2 existing slimes
       for (const orb of slimeComponent1.orbs) {
-         createNewOrb(slimeComponent, orb.size);
+         createNewOrb(orbs, orb.size);
       }
       for (const orb of slimeComponent2.orbs) {
-         createNewOrb(slimeComponent, orb.size);
+         createNewOrb(orbs, orb.size);
       }
 
-      createNewOrb(slimeComponent, slimeComponent1.size);
-      createNewOrb(slimeComponent, slimeComponent2.size);
+      createNewOrb(orbs, slimeComponent1.size);
+      createNewOrb(orbs, slimeComponent2.size);
+      
+      const slimeSpawnPosition = new Point((slime1.position.x + slime2.position.x) / 2, (slime1.position.y + slime2.position.y) / 2);
+      createSlime(slimeSpawnPosition, slimeComponent1.size + 1, orbs);
       
       slime1.remove();
    } else {
       // Add the other slime's health
       healEntity(slime1, getEntityHealth(slime2))
 
-      createNewOrb(slimeComponent1, slimeComponent2.size);
+      createNewOrb(slimeComponent1.orbs, slimeComponent2.size);
 
       slimeComponent1.mergeWant = 0;
    }

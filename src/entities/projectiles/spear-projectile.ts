@@ -40,7 +40,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
          tribeMember = Board.entityRecord[spearComponent.tribeMemberID];
       }
 
-      const damage = Math.floor(spear.velocity.length() / 120);
+      const damage = Math.floor(spear.velocity.length() / 140);
       
       // Damage the entity
       const direction = spear.position.calculateAngleBetween(collidingEntity.position);

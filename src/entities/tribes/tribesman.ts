@@ -929,4 +929,13 @@ export function onTribesmanDeath(tribesman: Entity): void {
    }
 }
 
-// @Incomplete: onTribesmanRemove
+export function onTribesmanRemove(tribesman: Entity): void {
+   HealthComponentArray.removeComponent(tribesman);
+   StatusEffectComponentArray.removeComponent(tribesman);
+   TribeComponentArray.removeComponent(tribesman);
+   TribeMemberComponentArray.removeComponent(tribesman);
+   TribesmanComponentArray.removeComponent(tribesman);
+   InventoryComponentArray.removeComponent(tribesman);
+   InventoryUseComponentArray.removeComponent(tribesman);
+   AIHelperComponentArray.removeComponent(tribesman);
+}

@@ -5,7 +5,7 @@ import Chunk from "./Chunk";
 import Entity from "./Entity";
 import { TotemBannerComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { createTribesman } from "./entities/tribes/tribesman";
-import { addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
+import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 
 let idCounter = 0;
 
@@ -41,7 +41,7 @@ class Tribe {
    
    public readonly tribeType: TribeType;
 
-   public readonly totem: Entity;
+   public totem!: Entity;
    
    private readonly members = new Array<Entity>();
 
@@ -61,12 +61,20 @@ class Tribe {
    public readonly unlockedTechs = new Array<TechID>();
    public readonly techUnlockProgress: TechUnlockProgress = {};
    
-   constructor(tribeType: TribeType, totem: Entity) {
+   constructor(tribeType: TribeType) {
       this.id = getAvailableID();
-      
       this.tribeType = tribeType;
+
+      Board.addTribe(this);
+   }
+
+   public setTotem(totem: Entity): void {
+      if (typeof this.totem !== "undefined") {
+         console.warn("Tribe already has a totem.");
+         return;
+      }
+
       this.totem = totem;
-      TribeComponentArray.getComponent(totem).tribe = this;
 
       // @Incomplete
       // totem.createEvent("death", () => {
@@ -121,7 +129,12 @@ class Tribe {
       //    this.removeHut(hut);
       // });
       
-      const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+      let bannerComponent: TotemBannerComponent;
+      if (TotemBannerComponentArray.hasComponent(this.totem)) {
+         bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+      } else {
+         bannerComponent = TotemBannerComponentArray.getComponentFromBuffer(this.totem);
+      }
       addBannerToTotem(bannerComponent, this.huts.length - 1);
    }
 

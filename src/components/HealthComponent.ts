@@ -18,10 +18,14 @@ import { onPlayerHurt } from "../entities/tribes/player";
 export class HealthComponent {
    public readonly maxHealth: number;
    public health: number;
+
    /** How much that incoming damage gets reduced. 0 = none, 1 = all */
    public defence = 0;
+   public readonly defenceFactors: Record<string, number> = {};
+
    public readonly localIframeHashes = new Array<string>();
    public readonly localIframeDurations = new Array<number>();
+
    // @Cleanup @Memory: This is only used to send to the player, does it have to be stored here??? (expensive)
    public amountHealedThisTick = 0;
 
@@ -216,4 +220,22 @@ export function addLocalInvulnerabilityHash(healthComponent: HealthComponent, ha
 export function getEntityHealth(entity: Entity): number {
    const healthComponent = HealthComponentArray.getComponent(entity);
    return healthComponent.health;
+}
+
+export function addDefence(healthComponent: HealthComponent, defence: number, name: string): void {
+   if (healthComponent.defenceFactors.hasOwnProperty(name)) {
+      return;
+   }
+   
+   healthComponent.defence += defence;
+   healthComponent.defenceFactors[name] = defence;
+}
+
+export function removeDefence(healthComponent: HealthComponent, name: string): void {
+   if (!healthComponent.defenceFactors.hasOwnProperty(name)) {
+      return;
+   }
+   
+   healthComponent.defence -= healthComponent.defenceFactors[name];
+   delete healthComponent.defenceFactors[name];
 }

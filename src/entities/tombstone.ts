@@ -120,6 +120,12 @@ export function onTombstoneDeath(tombstone: Entity, attackingEntity: Entity | nu
    }
 }
 
+export function onTombstoneRemove(tombstone: Entity): void {
+   HealthComponentArray.removeComponent(tombstone);
+   StatusEffectComponentArray.removeComponent(tombstone);
+   TombstoneComponentArray.removeComponent(tombstone);
+}
+
 export function getZombieSpawnProgress(tombstoneComponent: TombstoneComponent): number {
    return tombstoneComponent.isSpawningZombie ? tombstoneComponent.zombieSpawnTimer / ZOMBIE_SPAWN_TIME : -1;
 }

@@ -33,28 +33,53 @@ import { RockSpikeProjectileComponent } from "./RockSpikeProjectileComponent";
 import { CookingEntityComponent } from "./CookingEntityComponent";
 import { SpearComponent } from "./SpearComponent";
 
-class ComponentArray<T extends {}> {
+export class ComponentArray<T extends {} = {}> {
    public components = new Array<T>();
+   public componentBuffer = new Array<T>();
    
    /** Maps entity IDs to component indexes */
    private entityToIndexMap: Record<number, number> = {};
    /** Maps component indexes to entity IDs */
    private indexToEntityMap: Record<number, number> = {};
+
+   private componentBufferIDs = new Array<number>();
    
    public addComponent(entity: Entity, component: T): void {
       if (this.entityToIndexMap.hasOwnProperty(entity.id)) {
          throw new Error("Component added to same entity twice.");
       }
 
+      this.componentBuffer.push(component);
+      this.componentBufferIDs.push(entity.id);
+   }
+
+   public pushComponentFromBuffer(): void {
+      const component = this.componentBuffer[0];
+      const entityID = this.componentBufferIDs[0];
+      
       // Put new entry at end and update the maps
       const newIndex = this.components.length;
-      this.entityToIndexMap[entity.id] = newIndex;
-      this.indexToEntityMap[newIndex] = entity.id;
+      this.entityToIndexMap[entityID] = newIndex;
+      this.indexToEntityMap[newIndex] = entityID;
       this.components.push(component);
+
+      this.componentBuffer.splice(0, 1);
+      this.componentBufferIDs.splice(0, 1);
    }
 
    public getComponent(entity: Entity): T {
       return this.components[this.entityToIndexMap[entity.id]];
+   }
+
+   // Much slower than the regular getComponent array, and only able to be done when the entity hasn't been added to the board yet
+   public getComponentFromBuffer(entity: Entity): T {
+      for (let i = 0; i < this.componentBuffer.length; i++) {
+         const entityID = this.componentBufferIDs[i];
+         if (entityID === entity.id) {
+            return this.componentBuffer[i];
+         }
+      }
+      throw new Error("Component wasn't in buffer");
    }
 
    public removeComponent(entity: Entity): void {

@@ -67,3 +67,9 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
       addLocalInvulnerabilityHash(healthComponent, "snowball", 0.3);
    }
 }
+
+export function onSnowballRemove(snowball: Entity): void {
+   HealthComponentArray.removeComponent(snowball);
+   StatusEffectComponentArray.removeComponent(snowball);
+   SnowballComponentArray.removeComponent(snowball);
+}
