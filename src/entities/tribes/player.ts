@@ -5,7 +5,7 @@ import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem } from "../../components/InventoryComponent";
 import Board from "../../Board";
-import { addItemEntityPlayerPickupCooldown, createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
+import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
@@ -22,18 +22,17 @@ const ATTACK_RADIUS = 50;
 
 const ITEM_THROW_FORCE = 100;
 const ITEM_THROW_OFFSET = 32;
-const THROWN_ITEM_PICKUP_COOLDOWN = 1;
 
 const VACUUM_RANGE = 85;
 const VACUUM_STRENGTH = 25;
 
-export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe | null): Entity {
+export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(player, 0, 0, 32);
    player.addHitbox(hitbox);
 
-   const tribeInfo = TRIBE_INFO_RECORD[tribeType];
+   const tribeInfo = TRIBE_INFO_RECORD[tribe.tribeType];
    HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(player, new StatusEffectComponent());
 
@@ -41,7 +40,7 @@ export function createPlayer(position: Point, tribeType: TribeType, tribe: Tribe
       tribeType: TribeType.plainspeople,
       tribe: tribe
    });
-   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribeType));
+   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribe.tribeType));
    PlayerComponentArray.addComponent(player, new PlayerComponent());
 
    const inventoryComponent = new InventoryComponent();
@@ -242,10 +241,7 @@ export function throwItem(player: Entity, inventoryName: string, itemSlot: numbe
    dropPosition.y += ITEM_THROW_OFFSET * Math.cos(throwDirection);
 
    // Create the item entity
-   const itemEntity = createItemEntity(dropPosition, itemType, amountRemoved);
-
-   // Add a pickup cooldown so the item isn't picked up immediately
-   addItemEntityPlayerPickupCooldown(itemEntity, player.id, THROWN_ITEM_PICKUP_COOLDOWN);
+   const itemEntity = createItemEntity(dropPosition, itemType, amountRemoved, player.id);
 
    // Throw the dropped item away from the player
    itemEntity.velocity.x += ITEM_THROW_FORCE * Math.sin(throwDirection);
@@ -320,6 +316,18 @@ const hasMetTechItemRequirements = (tech: TechInfo, itemProgress: ItemRequiremen
    return true;
 }
 
+const hasMetTechStudyRequirements = (tech: TechInfo, tribe: Tribe): boolean => {
+   if (!tribe.techTreeUnlockProgress.hasOwnProperty(tech.id)) {
+      return false;
+   }
+
+   if (tech.researchStudyRequirements === 0) {
+      return true;
+   }
+
+   return tribe.techTreeUnlockProgress[tech.id]!.studyProgress >= tech.researchStudyRequirements;
+}
+
 export function processTechUnlock(player: Entity, techID: TechID): void {
    const tech = getTechByID(techID);
    
@@ -339,7 +347,7 @@ export function processTechUnlock(player: Entity, techID: TechID): void {
       }
 
       const item = hotbarInventory.itemSlots[itemSlot];
-      const itemProgress = tribeComponent.tribe.techUnlockProgress[techID] || {};
+      const itemProgress = tribeComponent.tribe.techTreeUnlockProgress[techID]?.itemProgress || {};
       if (itemIsNeededInTech(tech, itemProgress, item.type)) {
          const amountNeeded = tech.researchItemRequirements[item.type]!;
          const amountCommitted = itemProgress.hasOwnProperty(item.type) ? itemProgress[item.type]! : 0;
@@ -351,17 +359,20 @@ export function processTechUnlock(player: Entity, techID: TechID): void {
             delete hotbarInventory.itemSlots[itemSlot];
          }
 
-         if (tribeComponent.tribe.techUnlockProgress.hasOwnProperty(techID)) {
-            tribeComponent.tribe.techUnlockProgress[techID]![item.type] = amountCommitted + amountToAdd;
+         if (tribeComponent.tribe.techTreeUnlockProgress.hasOwnProperty(techID)) {
+            tribeComponent.tribe.techTreeUnlockProgress[techID]!.itemProgress[item.type] = amountCommitted + amountToAdd;
          } else {
-            tribeComponent.tribe.techUnlockProgress[techID] = {
-               [item.type]: amountCommitted + amountToAdd
+            tribeComponent.tribe.techTreeUnlockProgress[techID] = {
+               itemProgress: {
+                  [item.type]: amountCommitted + amountToAdd
+               },
+               studyProgress: 0
             };
          }
       }
    }
 
-   if (hasMetTechItemRequirements(tech, tribeComponent.tribe.techUnlockProgress[techID] || {})) {
+   if (hasMetTechItemRequirements(tech, tribeComponent.tribe.techTreeUnlockProgress[techID]?.itemProgress || {}) && hasMetTechStudyRequirements(tech, tribeComponent.tribe)) {
       tribeComponent.tribe.unlockTech(techID);
    }
 }

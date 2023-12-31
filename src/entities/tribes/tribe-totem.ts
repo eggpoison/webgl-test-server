@@ -48,6 +48,11 @@ export function createTribeTotem(position: Point, tribe: Tribe): Entity {
    return totem;
 }
 
+export function onTribeTotemDeath(totem: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(totem);
+   tribeComponent.tribe!.clearTotem();
+}
+
 export function onTribeTotemRemove(totem: Entity): void {
    HealthComponentArray.removeComponent(totem);
    StatusEffectComponentArray.removeComponent(totem);

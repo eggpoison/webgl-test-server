@@ -11,7 +11,7 @@ import { onIceSpikesCollision, onIceSpikesDeath } from "./entities/resources/ice
 import { onIceShardCollision } from "./entities/projectiles/ice-shards";
 import { onKrumblidDeath } from "./entities/mobs/krumblid";
 import { onCactusCollision, onCactusDeath } from "./entities/resources/cactus";
-import { onTribesmanCollision, onTribesmanDeath } from "./entities/tribes/tribesman";
+import { onTribeWorkerCollision, onTribeWorkerDeath } from "./entities/tribes/tribe-worker";
 import { onZombieCollision } from "./entities/mobs/zombie";
 import { onSlimeCollision } from "./entities/mobs/slime";
 import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
@@ -23,6 +23,8 @@ import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
 import { onSpearProjectileCollision } from "./entities/projectiles/spear-projectile";
+import { onTribeTotemDeath } from "./entities/tribes/tribe-totem";
+import { onTribeWarriorDeath } from "./entities/tribes/tribe-warrior";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -313,16 +315,11 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public applyPhysics(): void {
-      // @Speed
-      if (!this.isAffectedByFriction) {
-         return;
-      }
-      
       // Apply acceleration
       if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
          // @Speed: very complicated logic
          let moveSpeedMultiplier: number;
-         if (this.overrideMoveSpeedMultiplier) {
+         if (this.overrideMoveSpeedMultiplier || !this.isAffectedByFriction) {
             moveSpeedMultiplier = 1;
          } else if (this.tile.type === TileTypeConst.water && !this.isInRiver) {
             moveSpeedMultiplier = this.moveSpeedMultiplier;
@@ -338,7 +335,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
       // If the game object is in a river, push them in the flow direction of the river
       // The tileMoveSpeedMultiplier check is so that game objects on stepping stones aren't pushed
-      if (this.isInRiver && !this.overrideMoveSpeedMultiplier) {
+      if (this.isInRiver && !this.overrideMoveSpeedMultiplier && this.isAffectedByFriction) {
          const flowDirection = this.tile.riverFlowDirection;
          this.velocity.x += 240 / SETTINGS.TPS * a[flowDirection];
          this.velocity.y += 240 / SETTINGS.TPS * b[flowDirection];
@@ -348,16 +345,18 @@ class Entity<T extends IEntityType = IEntityType> {
       if (this.velocity.x !== 0 || this.velocity.y !== 0) {
          const friction = TILE_FRICTIONS[this.tile.type];
 
-         // Apply a friction based on the tile type to air resistance (???)
-         this.velocity.x *= 1 - friction * I_TPS * 2;
-         this.velocity.y *= 1 - friction * I_TPS * 2;
-
-         // Apply a constant friction based on the tile type to simulate ground friction
-         const velocityMagnitude = this.velocity.length();
-         if (velocityMagnitude > 0) {
-            const groundFriction = Math.min(friction, velocityMagnitude);
-            this.velocity.x -= groundFriction * this.velocity.x / velocityMagnitude;
-            this.velocity.y -= groundFriction * this.velocity.y / velocityMagnitude;
+         if (this.isAffectedByFriction) {
+            // Apply a friction based on the tile type to air resistance (???)
+            this.velocity.x *= 1 - friction * I_TPS * 2;
+            this.velocity.y *= 1 - friction * I_TPS * 2;
+   
+            // Apply a constant friction based on the tile type to simulate ground friction
+            const velocityMagnitude = this.velocity.length();
+            if (velocityMagnitude > 0) {
+               const groundFriction = Math.min(friction, velocityMagnitude);
+               this.velocity.x -= groundFriction * this.velocity.x / velocityMagnitude;
+               this.velocity.y -= groundFriction * this.velocity.y / velocityMagnitude;
+            }
          }
          
          this.position.x += this.velocity.x * I_TPS;
@@ -898,8 +897,8 @@ class Entity<T extends IEntityType = IEntityType> {
             onPlayerCollision(this, collidingEntity);
             break;
          }
-         case IEntityType.tribesman: {
-            onTribesmanCollision(this, collidingEntity);
+         case IEntityType.tribeWorker: {
+            onTribeWorkerCollision(this, collidingEntity);
             break;
          }
          case IEntityType.iceSpikes: {
@@ -1009,8 +1008,12 @@ class Entity<T extends IEntityType = IEntityType> {
                onCactusDeath(this);
                break;
             }
-            case IEntityType.tribesman: {
-               onTribesmanDeath(this);
+            case IEntityType.tribeWorker: {
+               onTribeWorkerDeath(this);
+               break;
+            }
+            case IEntityType.tribeWarrior: {
+               onTribeWarriorDeath(this);
                break;
             }
             case IEntityType.yeti: {
@@ -1024,6 +1027,9 @@ class Entity<T extends IEntityType = IEntityType> {
             case IEntityType.player: {
                onPlayerDeath(this);
                break;
+            }
+            case IEntityType.tribeTotem: {
+               onTribeTotemDeath(this);
             }
          }
       }

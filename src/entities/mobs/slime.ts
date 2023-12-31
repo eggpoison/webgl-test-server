@@ -27,7 +27,7 @@ const MAX_MERGE_WANT: ReadonlyArray<number> = [15, 40, 75];
 
 const VISION_RANGES = [200, 250, 300];
 
-const ACCELERATION = 60;
+const ACCELERATION = 150;
 
 export const SLIME_MERGE_TIME = 7.5;
 
@@ -70,20 +70,35 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, 
    return slime;
 }
 
-const getAngerTarget = (slime: Entity): Entity | null => {
+const updateAngerTarget = (slime: Entity): Entity | null => {
    const slimeComponent = SlimeComponentArray.getComponent(slime);
-   if (slimeComponent.angeredEntities.length === 0) {
-      return null;
-   }
 
    // Target the entity which the slime is angry with the most
    let maxAnger = 0;
    let target!: Entity;
-   for (const angerInfo of slimeComponent.angeredEntities) {
+   for (let i = 0; i < slimeComponent.angeredEntities.length; i++) {
+      const angerInfo = slimeComponent.angeredEntities[i];
+
+      // Remove anger at an entity if the entity is dead
+      if (angerInfo.target.isRemoved) {
+         slimeComponent.angeredEntities.splice(i, 1);
+         i--;
+      }
+
+      // Decrease anger
+      angerInfo.angerAmount -= 1 / SETTINGS.TPS * ANGER_DIFFUSE_MULTIPLIER;
+      if (angerInfo.angerAmount <= 0) {
+         slimeComponent.angeredEntities.splice(i, 1);
+      }
+      
       if (angerInfo.angerAmount > maxAnger) {
          maxAnger = angerInfo.angerAmount;
          target = angerInfo.target;
       }
+   }
+
+   if (maxAnger === 0) {
+      return null;
    }
    
    return target;
@@ -104,7 +119,7 @@ const wantsToMerge = (slime1: Entity, slime2: Entity): boolean => {
 
 export function tickSlime(slime: Entity): void {
    // Slimes move at normal speed on slime blocks
-   slime.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime;
+   slime.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime || slime.tile.type === TileTypeConst.sludge;
 
    const slimeComponent = SlimeComponentArray.getComponent(slime);
    const visionRange = VISION_RANGES[slimeComponent.size];
@@ -131,26 +146,6 @@ export function tickSlime(slime: Entity): void {
       }
    }
 
-   // @Speed: Combine the two following loops
-
-   // Remove anger at an entity if the entity is dead
-   for (let i = 0; i < slimeComponent.angeredEntities.length; i++) {
-      const angerInfo = slimeComponent.angeredEntities[i];
-      if (angerInfo.target.isRemoved) {
-         slimeComponent.angeredEntities.splice(i, 1);
-         i--;
-      }
-   }
-
-   // Decrease anger
-   for (let i = slimeComponent.angeredEntities.length - 1; i >= 0; i--) {
-      const angerInfo = slimeComponent.angeredEntities[i];
-      angerInfo.angerAmount -= 1 / SETTINGS.TPS * ANGER_DIFFUSE_MULTIPLIER;
-      if (angerInfo.angerAmount <= 0) {
-         slimeComponent.angeredEntities.splice(i, 1);
-      }
-   }
-
    // Heal when standing on slime blocks
    if (slime.tile.type === TileTypeConst.slime) {
       if (Board.tickIntervalHasPassed(HEALING_PROC_INTERVAL)) {
@@ -159,7 +154,7 @@ export function tickSlime(slime: Entity): void {
    }
    
    // Chase entities the slime is angry at
-   const angerTarget = getAngerTarget(slime);
+   const angerTarget = updateAngerTarget(slime);
    if (angerTarget !== null) {
       slimeComponent.eyeRotation = slime.position.calculateAngleBetween(angerTarget.position);
       moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier);
@@ -292,10 +287,12 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
 export function onSlimeCollision(slime: Entity, collidingEntity: Entity): void {
    // Merge with slimes
    if (collidingEntity.type === IEntityType.slime) {
-      const slimeComponent = SlimeComponentArray.getComponent(slime);
-      slimeComponent.mergeTimer -= 1 / SETTINGS.TPS;
-      if (slimeComponent.mergeTimer <= 0) {
-         mergeSlimes(slime, collidingEntity);
+      if (wantsToMerge(slime, collidingEntity)) {
+         const slimeComponent = SlimeComponentArray.getComponent(slime);
+         slimeComponent.mergeTimer -= 1 / SETTINGS.TPS;
+         if (slimeComponent.mergeTimer <= 0) {
+            mergeSlimes(slime, collidingEntity);
+         }
       }
       return;
    }
@@ -380,7 +377,7 @@ export function onSlimeHurt(slime: Entity, attackingEntity: Entity): void {
 }
 
 export function onSlimeDeath(slime: Entity, attackingEntity: Entity): void {
-   if (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribesman) {
+   if (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior) {
       const slimeComponent = SlimeComponentArray.getComponent(slime);
       createItemsOverEntity(slime, ItemType.slimeball, randInt(...SLIME_DROP_AMOUNTS[slimeComponent.size]));
    }

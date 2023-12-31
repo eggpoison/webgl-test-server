@@ -41,7 +41,7 @@ export function createSlimewisp(position: Point): Entity {
 
 export function tickSlimewisp(slimewisp: Entity): void {
    // Slimewisps move at normal speed on slime blocks
-   slimewisp.overrideMoveSpeedMultiplier = slimewisp.tile.type === TileTypeConst.slime;
+   slimewisp.overrideMoveSpeedMultiplier = slimewisp.tile.type === TileTypeConst.slime || slimewisp.tile.type === TileTypeConst.sludge;
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(slimewisp);
    

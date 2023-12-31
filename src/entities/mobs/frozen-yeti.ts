@@ -667,7 +667,7 @@ export function onFrozenYetiHurt(frozenYeti: Entity, attackingEntity: Entity, da
 export function onFrozenYetiDeath(frozenYeti: Entity, attackingEntity: Entity | null): void {
    createItemsOverEntity(frozenYeti, ItemType.raw_beef, randInt(13, 18));
 
-   if (attackingEntity !== null && (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribesman)) {
+   if (attackingEntity !== null && (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior)) {
       createItemsOverEntity(frozenYeti, ItemType.deepfrost_heart, randInt(2, 3));
       createItemsOverEntity(frozenYeti, ItemType.yeti_hide, randInt(5, 7));
    }

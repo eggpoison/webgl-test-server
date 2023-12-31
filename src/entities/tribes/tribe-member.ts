@@ -7,7 +7,7 @@ import { getEntitiesInVisionRange } from "../../ai-shared";
 import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
 import { TRIBE_TOTEM_SIZE, createTribeTotem } from "./tribe-totem";
-import { TRIBE_HUT_SIZE, createTribeHut } from "./tribe-hut";
+import { WORKER_HUT_SIZE, createWorkerHut } from "./worker-hut";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 import { BARREL_SIZE, createBarrel } from "./barrel";
 import { CAMPFIRE_SIZE, createCampfire } from "../cooking-entities/campfire";
@@ -19,11 +19,12 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { itemEntityCanBePickedUp } from "../item-entity";
 import { onFishLeaderHurt } from "../mobs/fish";
 import { createSpearProjectile } from "../projectiles/spear-projectile";
-import Tribe from "../../Tribe";
+import { createResearchBench } from "../research-bench";
+import { WARRIOR_HUT_SIZE, createWarriorHut } from "./warrior-hut";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
-const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribesman, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.tribeHut, IEntityType.cow];
+const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace];
 const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree];
 const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime];
@@ -64,11 +65,17 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
       radius: TRIBE_TOTEM_SIZE / 2,
       placeOffset: TRIBE_TOTEM_SIZE / 2
    },
-   [ItemType.tribe_hut]: {
+   [ItemType.worker_hut]: {
       type: PlaceableItemHitboxType.rectangular,
-      width: TRIBE_HUT_SIZE,
-      height: TRIBE_HUT_SIZE,
-      placeOffset: TRIBE_HUT_SIZE / 2
+      width: WORKER_HUT_SIZE,
+      height: WORKER_HUT_SIZE,
+      placeOffset: WORKER_HUT_SIZE / 2
+   },
+   [ItemType.warrior_hut]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: WARRIOR_HUT_SIZE,
+      height: WARRIOR_HUT_SIZE,
+      placeOffset: WARRIOR_HUT_SIZE / 2
    },
    [ItemType.barrel]: {
       type: PlaceableItemHitboxType.circular,
@@ -86,6 +93,12 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
       width: FURNACE_SIZE,
       height: FURNACE_SIZE,
       placeOffset: FURNACE_SIZE / 2
+   },
+   [ItemType.research_bench]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 32 * 4,
+      height: 20 * 4,
+      placeOffset: 50
    }
 };
 
@@ -120,7 +133,13 @@ export function getTribeMemberRelationship(tribeMember: Entity, entity: Entity):
    const tribeComponent = TribeComponentArray.getComponent(tribeMember);
    
    switch (entity.type) {
-      case IEntityType.tribeHut: {
+      case IEntityType.workerHut: {
+         if (tribeComponent.tribe === null || !tribeComponent.tribe.hasHut(entity)) {
+            return EntityRelationship.enemyBuilding;
+         }
+         return EntityRelationship.friendly;
+      }
+      case IEntityType.warriorHut: {
          if (tribeComponent.tribe === null || !tribeComponent.tribe.hasHut(entity)) {
             return EntityRelationship.enemyBuilding;
          }
@@ -143,7 +162,8 @@ export function getTribeMemberRelationship(tribeMember: Entity, entity: Entity):
          return EntityRelationship.enemyBuilding;
       }
       case IEntityType.player:
-      case IEntityType.tribesman: {
+      case IEntityType.tribeWorker:
+      case IEntityType.tribeWarrior: {
          const entityTribeComponent = TribeComponentArray.getComponent(entity);
          if (tribeComponent.tribe !== null && entityTribeComponent.tribe === tribeComponent.tribe) {
             return EntityRelationship.friendly;
@@ -433,23 +453,34 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
             }
             case ItemType.tribe_totem: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-               if (tribeComponent.tribe !== null) {
+               // Don't place a tribe totem if they aren't in a tribe
+               if (tribeComponent.tribe === null) {
                   return;
                }
 
-               const tribe = new Tribe(tribeComponent.tribeType);
-               placedEntity = createTribeTotem(spawnPosition, tribe);
+               placedEntity = createTribeTotem(spawnPosition, tribeComponent.tribe);
                break;
             }
-            case ItemType.tribe_hut: {
+            case ItemType.worker_hut: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
                if (tribeComponent.tribe === null) {
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
                }
                
-               placedEntity = createTribeHut(spawnPosition, tribeComponent.tribe);
+               placedEntity = createWorkerHut(spawnPosition, tribeComponent.tribe);
                placedEntity.rotation = tribeMember.rotation; // This has to be done before the hut is registered in its tribe
-               tribeComponent.tribe.registerNewHut(placedEntity);
+               tribeComponent.tribe.registerNewWorkerHut(placedEntity);
+               break;
+            }
+            case ItemType.warrior_hut: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               if (tribeComponent.tribe === null) {
+                  throw new Error("Tribe member didn't belong to a tribe when placing a hut");
+               }
+               
+               placedEntity = createWarriorHut(spawnPosition, tribeComponent.tribe);
+               placedEntity.rotation = tribeMember.rotation; // This has to be done before the hut is registered in its tribe
+               tribeComponent.tribe.registerNewWarriorHut(placedEntity);
                break;
             }
             case ItemType.barrel: {
@@ -469,7 +500,12 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
                placedEntity = createFurnace(spawnPosition);
                break;
             }
+            case ItemType.research_bench: {
+               placedEntity = createResearchBench(spawnPosition);
+               break;
+            }
             default: {
+               // @Robustness: Should automatically detect this before compiled
                throw new Error("No case for placing item type '" + item.type + "'.");
             }
          }

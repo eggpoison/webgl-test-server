@@ -1,21 +1,23 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
-import { HealthComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, HutComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { HutComponent } from "../../components/HutComponent";
 
-export const TRIBE_HUT_SIZE = 88;
+export const WORKER_HUT_SIZE = 88;
 
-export function createTribeHut(position: Point, tribe: Tribe): Entity {
-   const hut = new Entity(position, IEntityType.tribeHut, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+export function createWorkerHut(position: Point, tribe: Tribe): Entity {
+   const hut = new Entity(position, IEntityType.workerHut, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(hut, 0, 0, TRIBE_HUT_SIZE, TRIBE_HUT_SIZE);
+   const hitbox = new RectangularHitbox(hut, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE);
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(20));
    StatusEffectComponentArray.addComponent(hut, new StatusEffectComponent());
+   HutComponentArray.addComponent(hut, new HutComponent());
    
    TribeComponentArray.addComponent(hut, {
       tribeType: tribe.tribeType,
@@ -27,8 +29,12 @@ export function createTribeHut(position: Point, tribe: Tribe): Entity {
    return hut;
 }
 
-export function onTribeHutRemove(hut: Entity): void {
+export function onWorkerHutRemove(hut: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(hut);
+   tribeComponent.tribe!.removeWorkerHut(hut);
+   
    HealthComponentArray.removeComponent(hut);
    StatusEffectComponentArray.removeComponent(hut);
+   HutComponentArray.removeComponent(hut);
    TribeComponentArray.removeComponent(hut);
 }

@@ -5,7 +5,7 @@ import Board from "./Board";
 import Tile from "./Tile";
 import { damageEntity, healEntity } from "./components/HealthComponent";
 import Entity, { NUM_ENTITY_TYPES } from "./Entity";
-import { InventoryComponentArray } from "./components/ComponentArray";
+import { InventoryComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { addItem } from "./components/InventoryComponent";
 import { createEntity } from "./entity-creation";
 import { createItem } from "./Item";
@@ -179,6 +179,13 @@ export function registerCommand(command: string, player: Entity): void {
             const amount = commandComponents[2] as number;
             summonEntities(player, unguardedEntityType, amount);
          }
+         break;
+      }
+
+      case "unlockall": {
+         const tribeComponent = TribeComponentArray.getComponent(player);
+         tribeComponent.tribe!.unlockAllTechs();
+         
          break;
       }
    }

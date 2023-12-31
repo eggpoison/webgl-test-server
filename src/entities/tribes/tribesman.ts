@@ -1,23 +1,14 @@
-import { ArmourItemInfo, BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, Point, SETTINGS, TRIBE_INFO_RECORD, ToolItemInfo, TribeMemberAction, TribeType, angle, distance, randItem } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance } from "webgl-test-shared";
 import Entity from "../../Entity";
-import Tribe from "../../Tribe";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
-import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponent } from "../../components/HealthComponent";
-import { Inventory, InventoryComponent, addItemToInventory, addItemToSlot, consumeItem, createNewInventory, getInventory, getItem, inventoryIsFull, pickupItemEntity, removeItemFromInventory } from "../../components/InventoryComponent";
-import { InventoryUseComponent } from "../../components/InventoryUseComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { AttackToolType, EntityRelationship, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, getEntityAttackToolType, getTribeMemberRelationship, onTribeMemberHurt, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
-import { getClosestEntity, getEntitiesInVisionRange, getPositionRadialTiles, stopEntity, willStopAtDesiredDistance } from "../../ai-shared";
-import { TribeMemberComponent } from "../../components/TribeMemberComponent";
-import { TribesmanComponent } from "../../components/TribesmanComponent";
-import Board from "../../Board";
 import Tile from "../../Tile";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
-
-const RADIUS = 28;
-const INVENTORY_SIZE = 3;
-const VISION_RANGE = 320;
+import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity } from "../../ai-shared";
+import { InventoryComponentArray, TribeComponentArray, AIHelperComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
+import { HealthComponent } from "../../components/HealthComponent";
+import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull } from "../../components/InventoryComponent";
+import { TribesmanComponent } from "../../components/TribesmanComponent";
+import { getTribeMemberRelationship, EntityRelationship, tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem } from "./tribe-member";
+import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE, TribesmanAIType } from "./tribe-worker";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -43,51 +34,20 @@ const RESOURCE_PRODUCTS: Partial<Record<IEntityType, ReadonlyArray<ItemType>>> =
    [IEntityType.krumblid]: [ItemType.leather]
 }
 
-export enum TribesmanAIType {
-   escaping,
-   attacking,
-   harvestingResources,
-   pickingUpDroppedItems,
-   haulingResources,
-   grabbingFood,
-   patrolling,
-   idle
+const getVisionRange = (tribesman: Entity): number => {
+   if (tribesman.type === IEntityType.tribeWorker) {
+      return TRIBE_WORKER_VISION_RANGE;
+   } else {
+      return 320;
+   }
 }
 
-export function createTribesman(position: Point, tribeType: TribeType, tribe: Tribe, hutID: number): Entity {
-   const tribesman = new Entity(position, IEntityType.tribesman, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
-
-   const hitbox = new CircularHitbox(tribesman, 0, 0, RADIUS);
-   tribesman.addHitbox(hitbox);
-   
-   const tribeInfo = TRIBE_INFO_RECORD[tribeType];
-   HealthComponentArray.addComponent(tribesman, new HealthComponent(tribeInfo.maxHealthWorker));
-   StatusEffectComponentArray.addComponent(tribesman, new StatusEffectComponent());
-
-   TribeComponentArray.addComponent(tribesman, {
-      tribeType: tribeType,
-      tribe: tribe
-   });
-   TribeMemberComponentArray.addComponent(tribesman, new TribeMemberComponent(tribeType));
-   TribesmanComponentArray.addComponent(tribesman, new TribesmanComponent(hutID));
-
-   const inventoryComponent = new InventoryComponent();
-   InventoryComponentArray.addComponent(tribesman, inventoryComponent);
-   const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", INVENTORY_SIZE, 1, true);
-   createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
-   createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
-   createNewInventory(inventoryComponent, "backpack", -1, -1, false);
-
-   InventoryUseComponentArray.addComponent(tribesman, new InventoryUseComponent(hotbarInventory));
-   AIHelperComponentArray.addComponent(tribesman, new AIHelperComponent(VISION_RANGE));
-
-   // If the tribesman is a frostling, spawn with a bow
-   // @Temporary: Remove once tribe rework is done
-   if (tribeType === TribeType.frostlings) {
-      addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.wooden_bow, 1);
+const getRadius = (tribesman: Entity): number => {
+   if (tribesman.type === IEntityType.tribeWorker) {
+      return TRIBE_WORKER_RADIUS;
+   } else {
+      return 32;
    }
-   
-   return tribesman;
 }
 
 const getFoodItemSlot = (tribesman: Entity): number | null => {
@@ -108,7 +68,7 @@ const shouldEscape = (healthComponent: HealthComponent): boolean => {
 }
 
 const positionIsSafe = (tribesman: Entity, x: number, y: number): boolean => {
-   const visibleEntitiesFromItem = getEntitiesInVisionRange(x, y, VISION_RANGE);
+   const visibleEntitiesFromItem = getEntitiesInVisionRange(x, y, getVisionRange(tribesman));
    for (const entity of visibleEntitiesFromItem) {
       const relationship = getTribeMemberRelationship(tribesman, entity);
       if (relationship >= EntityRelationship.hostileMob) {
@@ -607,7 +567,7 @@ export function tickTribesman(tribesman: Entity): void {
 
    // If nothing else to do, patrol tribe area
    if (tribesmanComponent.targetPatrolPositionX === -1 && Math.random() < 0.3 / SETTINGS.TPS) {
-      const tileTargets = getPositionRadialTiles(tribesman.position, VISION_RANGE);
+      const tileTargets = getPositionRadialTiles(tribesman.position, getVisionRange(tribesman));
       if (tileTargets.length > 0) {
          // Filter tiles in tribe area
          const tilesInTribeArea = new Array<Tile>();
@@ -671,10 +631,10 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
       const enemy = visibleEnemies[i];
 
       let distance = tribesman.position.calculateDistanceBetween(enemy.position);
-      if (distance > VISION_RANGE) {
-         distance = VISION_RANGE;
+      if (distance > getVisionRange(tribesman)) {
+         distance = getVisionRange(tribesman);
       }
-      const weight = Math.pow(1 - distance / VISION_RANGE / 1.25, 0.5);
+      const weight = Math.pow(1 - distance / getVisionRange(tribesman) / 1.25, 0.5);
 
       const relativeX = (enemy.position.x - tribesman.position.x) * weight;
       const relativeY = (enemy.position.y - tribesman.position.y) * weight;
@@ -791,7 +751,7 @@ const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number 
    for (const hitbox of entity.hitboxes) {
       if (hitbox.hasOwnProperty("radius")) {
          const rawDistance = distance(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.offset.x, hitbox.object.position.y + hitbox.offset.y);
-         const hitboxDistance = rawDistance - RADIUS - (hitbox as CircularHitbox).radius;
+         const hitboxDistance = rawDistance - getRadius(tribesman) - (hitbox as CircularHitbox).radius;
          if (hitboxDistance < minDistance) {
             minDistance = hitboxDistance;
          }
@@ -902,40 +862,4 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    inventoryUseComponent.currentAction = TribeMemberAction.none;
    
    doMeleeAttack(tribesman);
-}
-
-export function onTribesmanCollision(tribesman: Entity, collidingEntity: Entity): void {
-   if (collidingEntity.type === IEntityType.itemEntity) {
-      pickupItemEntity(tribesman, collidingEntity);
-   }
-}
-
-export function onTribesmanHurt(tribesman: Entity, attackingEntity: Entity): void {
-   onTribeMemberHurt(tribesman, attackingEntity);
-}
-
-export function onTribesmanDeath(tribesman: Entity): void {
-   // Attempt to respawn the tribesman when it is killed
-   // Only respawn the tribesman if their hut is alive
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
-   if (!Board.entityRecord.hasOwnProperty(tribesmanComponent.hutID)) {
-      return;
-   }
-   
-   const hut = Board.entityRecord[tribesmanComponent.hutID];
-   if (!hut.isRemoved) {
-      const tribeComponent = TribeComponentArray.getComponent(tribesman);
-      tribeComponent.tribe!.createNewTribesman(hut);
-   }
-}
-
-export function onTribesmanRemove(tribesman: Entity): void {
-   HealthComponentArray.removeComponent(tribesman);
-   StatusEffectComponentArray.removeComponent(tribesman);
-   TribeComponentArray.removeComponent(tribesman);
-   TribeMemberComponentArray.removeComponent(tribesman);
-   TribesmanComponentArray.removeComponent(tribesman);
-   InventoryComponentArray.removeComponent(tribesman);
-   InventoryUseComponentArray.removeComponent(tribesman);
-   AIHelperComponentArray.removeComponent(tribesman);
 }

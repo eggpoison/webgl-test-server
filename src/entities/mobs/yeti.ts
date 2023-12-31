@@ -210,7 +210,7 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
       }
       
       // Don't chase frostlings which aren't attacking the yeti
-      if ((entity.type === IEntityType.tribesman || entity.type === IEntityType.player) && !yetiComponent.attackingEntities.hasOwnProperty(entity.id)) {
+      if ((entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior || entity.type === IEntityType.player) && !yetiComponent.attackingEntities.hasOwnProperty(entity.id)) {
          const tribeComponent = TribeComponentArray.getComponent(entity);
          if (tribeComponent.tribeType === TribeType.frostlings) {
             continue;

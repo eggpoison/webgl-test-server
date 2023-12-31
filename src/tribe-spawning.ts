@@ -3,7 +3,7 @@ import Board from "./Board";
 import Tribe from "./Tribe";
 import OPTIONS from "./options";
 import { createTribeTotem } from "./entities/tribes/tribe-totem";
-import { createTribeHut } from "./entities/tribes/tribe-hut";
+import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { createBarrel } from "./entities/tribes/barrel";
 
 /** Average number of spawn attempts that are done each second */
@@ -63,6 +63,10 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
 
    // Don't spawn too close to other tribes
    for (const tribe of Board.getTribes()) {
+      if (tribe.totem === null) {
+         continue;
+      }
+
       const distance = position.calculateDistanceBetween(tribe.totem.position);
       if (distance < MIN_DISTANCE_FROM_OTHER_TRIBE) {
          return false;
@@ -125,8 +129,8 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
       const hutPosition = findValidBuildingPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
-         const hut = createTribeHut(hutPosition, tribe);
-         tribe.registerNewHut(hut);
+         const hut = createWorkerHut(hutPosition, tribe);
+         tribe.registerNewWorkerHut(hut);
          hut.rotation = 2 * Math.PI * Math.random();
          buildingPositions.push(hutPosition);
       }

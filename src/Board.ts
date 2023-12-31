@@ -9,7 +9,7 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, SpearComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, SpearComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity from "./Entity";
@@ -19,7 +19,7 @@ import { onIceShardRemove, tickIceShard } from "./entities/projectiles/ice-shard
 import { onCowRemove, tickCow } from "./entities/mobs/cow";
 import { onKrumblidRemove, tickKrumblid } from "./entities/mobs/krumblid";
 import { tickItemComponent } from "./components/ItemComponent";
-import { onTribesmanRemove, tickTribesman } from "./entities/tribes/tribesman";
+import { onTribeWorkerRemove, tickTribeWorker } from "./entities/tribes/tribe-worker";
 import { onTombstoneRemove, tickTombstone } from "./entities/tombstone";
 import { onZombieRemove, tickZombie } from "./entities/mobs/zombie";
 import { onSlimewispRemove, tickSlimewisp } from "./entities/mobs/slimewisp";
@@ -42,7 +42,10 @@ import { tickAIHelperComponent } from "./components/AIHelperComponent";
 import { onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
 import { onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
 import { onSpearProjectileRemove, tickSpearProjectile } from "./entities/projectiles/spear-projectile";
-import { onTribeHutRemove } from "./entities/tribes/tribe-hut";
+import { onWorkerHutRemove } from "./entities/tribes/worker-hut";
+import { onResearchBenchRemove } from "./entities/research-bench";
+import { onWarriorHutRemove } from "./entities/tribes/warrior-hut";
+import { onTribeWarriorRemove, tickTribeWarrior } from "./entities/tribes/tribe-warrior";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -342,12 +345,24 @@ abstract class Board {
                onPlayerRemove(entity);
                break;
             }
-            case IEntityType.tribeHut: {
-               onTribeHutRemove(entity);
+            case IEntityType.workerHut: {
+               onWorkerHutRemove(entity);
                break;
             }
-            case IEntityType.tribesman: {
-               onTribesmanRemove(entity);
+            case IEntityType.warriorHut: {
+               onWarriorHutRemove(entity);
+               break;
+            }
+            case IEntityType.tribeWorker: {
+               onTribeWorkerRemove(entity);
+               break;
+            }
+            case IEntityType.tribeWarrior: {
+               onTribeWarriorRemove(entity);
+               break;
+            }
+            case IEntityType.researchBench: {
+               onResearchBenchRemove(entity);
                break;
             }
          }
@@ -372,8 +387,12 @@ abstract class Board {
                tickPlayer(entity);
                break;
             }
-            case IEntityType.tribesman: {
-               tickTribesman(entity);
+            case IEntityType.tribeWorker: {
+               tickTribeWorker(entity);
+               break;
+            }
+            case IEntityType.tribeWarrior: {
+               tickTribeWarrior(entity);
                break;
             }
             case IEntityType.berryBush: {
@@ -660,6 +679,7 @@ abstract class Board {
       this.pushComponentsFromArray(RockSpikeProjectileComponentArray);
       this.pushComponentsFromArray(CookingEntityComponentArray);
       this.pushComponentsFromArray(SpearComponentArray);
+      this.pushComponentsFromArray(HutComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {

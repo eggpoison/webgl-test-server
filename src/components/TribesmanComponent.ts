@@ -1,4 +1,4 @@
-import { TribesmanAIType } from "../entities/tribes/tribesman";
+import { TribesmanAIType } from "../entities/tribes/tribe-worker";
 
 export class TribesmanComponent {
    /** ID of the hut which spawned the tribesman */

@@ -13,7 +13,7 @@ import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { InventoryUseComponent } from "../../components/InventoryUseComponent";
-import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets } from "../tribes/tribe-member";
+import { attackEntity, calculateRadialAttackTargets } from "../tribes/tribe-member";
 
 const MAX_HEALTH = 20;
 
@@ -207,7 +207,7 @@ const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
    }
 
    // Attack tribe members, but only if they aren't wearing a meat suit
-   if (entity.type === IEntityType.player || entity.type === IEntityType.tribesman) {
+   if (entity.type === IEntityType.player || entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior) {
       const inventoryComponent = InventoryComponentArray.getComponent(entity);
       const armourInventory = getInventory(inventoryComponent, "armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
@@ -218,7 +218,7 @@ const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
       return true;
    }
 
-   return entity.type === IEntityType.tribeTotem || entity.type === IEntityType.tribeHut || entity.type === IEntityType.barrel;
+   return entity.type === IEntityType.tribeTotem || entity.type === IEntityType.workerHut || entity.type === IEntityType.warriorHut || entity.type === IEntityType.barrel || entity.type === IEntityType.researchBench;
 }
 
 export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void {

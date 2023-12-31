@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData, StatusEffectData, TechID, Item } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -8,25 +8,14 @@ import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
-import { resetCensus } from "./census";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
-import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { getInventory, getItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
-import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
 import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
-
-const NUM_TESTS = 5;
-const TEST_DURATION_MS = 15000;
-
-const IS_TIMED = process.argv[2] === "1";
-
-let lastTestTime = 0;
-let numTestsConducted = 0;
-
-const tickTimes = new Array<number>();
+import { getTilesOfBiome } from "./census";
 
 /*
 
@@ -76,6 +65,10 @@ const getLastActionTicks = (tribeMember: Entity): number => {
       }
       case TribeMemberAction.none: {
          return inventoryUseComponent.lastAttackTicks;
+      }
+      case TribeMemberAction.researching: {
+         // @Incomplete
+         return Board.ticks;
       }
    }
 }
@@ -214,7 +207,40 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          ];
          break;
       }
-      case IEntityType.tribesman: {
+      case IEntityType.tribeWorker: {
+         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
+         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
+
+         const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+
+         let activeItem: ItemType | null = null;
+         if (hotbarInventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
+            const item = hotbarInventory.itemSlots[inventoryUseComponent.selectedItemSlot];
+            activeItem = item.type;
+         }
+         
+         // @Incomplete
+         clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
+            tribeComponent.tribeType,
+            serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
+            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
+            serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
+            activeItem,
+            inventoryUseComponent.currentAction,
+            getFoodEatingType(entity, activeItem),
+            getLastActionTicks(entity),
+            false,
+            tribeMemberComponent.warPaintType,
+            serializeInventoryData(hotbarInventory, "hotbar"),
+            inventoryUseComponent.selectedItemSlot,
+            0
+         ];
+         break;
+      }
+      case IEntityType.tribeWarrior: {
          const tribeComponent = TribeComponentArray.getComponent(entity);
          const inventoryComponent = InventoryComponentArray.getComponent(entity);
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
@@ -303,8 +329,24 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [treeComponent.treeSize];
          break;
       }
-      case IEntityType.tribeHut: {
-         clientArgs = [];
+      case IEntityType.workerHut: {
+         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const hutComponent = HutComponentArray.getComponent(entity);
+
+         clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
+            hutComponent.lastDoorSwingTicks
+         ];
+         break;
+      }
+      case IEntityType.warriorHut: {
+         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const hutComponent = HutComponentArray.getComponent(entity);
+
+         clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
+            hutComponent.lastDoorSwingTicks
+         ];
          break;
       }
       case IEntityType.tribeTotem: {
@@ -362,6 +404,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.spearProjectile: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.researchBench: {
          clientArgs = [];
          break;
       }
@@ -439,9 +485,23 @@ interface PlayerData {
    instanceID: number;
    clientIsActive: boolean;
    visibleChunkBounds: VisibleChunkBounds;
-   tribe: Tribe | null;
+   readonly tribe: Tribe;
    hitsTaken: Array<HitData>;
    pickedUpItem: boolean;
+}
+
+const bundleTribeData = (playerData: PlayerData): TribeData => {
+   return {
+      id: playerData.tribe.id,
+      tribeType: playerData.tribe.tribeType,
+      hasTotem: playerData.tribe.totem !== null,
+      numHuts: playerData.tribe.getNumHuts(),
+      tribesmanCap: playerData.tribe.tribesmanCap,
+      area: playerData.tribe.getArea().map(tile => [tile.x, tile.y]),
+      selectedTechID: playerData.tribe.selectedTechID,
+      unlockedTechs: playerData.tribe.unlockedTechs,
+      techTreeUnlockProgress: playerData.tribe.techTreeUnlockProgress
+   };
 }
 
 /** Communicates between the server and players */
@@ -467,10 +527,6 @@ class GameServer {
    }
 
    public start(): void {
-      if (IS_TIMED && numTestsConducted === NUM_TESTS) {
-         console.log("All tests done");
-         return;
-      }
 
       Board.setup();
       SERVER.setup();
@@ -501,21 +557,14 @@ class GameServer {
    }
 
    private tick(): void {
-      const tickStartTime = (OPTIONS.logging || IS_TIMED) ? performance.now() : 0;
-      
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedGameObjects();
 
       Board.updateTribes();
 
-      const timeBeforeUpdate = OPTIONS.logging ? performance.now() : 0;
-
       Board.updateGameObjects();
-      const timeAfterUpdate = OPTIONS.logging ? performance.now() : 0;
       Board.resolveOtherCollisions();
-      const timeAfterOtherCollisions = OPTIONS.logging ? performance.now() : 0;
       Board.resolveGameObjectCollisions();
-      const timeAfterGameObjectCollisions = OPTIONS.logging ? performance.now() : 0;
 
       runSpawnAttempt();
       runTribeSpawnAttempt();
@@ -534,43 +583,6 @@ class GameServer {
       Board.time += SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600;
       if (Board.time >= 24) {
          Board.time -= 24;
-      }
-
-      if (OPTIONS.logging) {
-         const tickEndTime = performance.now();
-         const tickTime = tickEndTime - tickStartTime;
-         const updateTime = timeAfterUpdate - timeBeforeUpdate;
-         const gameObjectCollisionsTime = timeAfterGameObjectCollisions - timeAfterUpdate;
-         const otherCollisionsTime = timeAfterOtherCollisions - timeAfterGameObjectCollisions;
-         console.log("[BENCHMARK] " + tickTime.toFixed(2) + "ms " + updateTime.toFixed(2) + "ms " + gameObjectCollisionsTime.toFixed(2) + "ms " + otherCollisionsTime.toFixed(2) + "ms | Game objects: " + Board.entities.length + " (" + Object.keys(Board.entityRecord).length + ")");
-      }
-
-      if (IS_TIMED) {
-         const tickTime = performance.now() - tickStartTime;
-         tickTimes.push(tickTime);
-
-         const testTimeElapsed = performance.now() - lastTestTime;
-         if (testTimeElapsed >= TEST_DURATION_MS) {
-            numTestsConducted++;
-            lastTestTime = performance.now();
-
-            let average = 0;
-            for (let i = 0; i < tickTimes.length; i++) {
-               average += tickTimes[i];
-            }
-            average /= tickTimes.length;
-
-            console.log("Completed test. AVG: " + average.toFixed(2) + "ms (" + Object.keys(Board.entityRecord).length + ")");
-            SERVER.stop();
-
-            // Reset
-            resetYetiTerritoryTiles();
-            SERVER = new GameServer();
-            Board.reset();
-            resetCensus();
-            
-            SERVER.start();
-         }
       }
    }
 
@@ -608,36 +620,48 @@ class GameServer {
    private handlePlayerConnections(): void {
       if (SERVER.io === null) return;
       SERVER.io.on("connection", (socket: ISocket) => {
-         const playerData: Mutable<Partial<PlayerData>> = {
-            socket: socket,
-            clientIsActive: true,
-            tribe: null,
-            hitsTaken: []
-         };
+         let username: string;
+         let tribeType: TribeType;
+         let visibleChunkBounds: VisibleChunkBounds;
+         let spawnPosition: Point;
          
-         socket.on("initial_player_data", (username: string, visibleChunkBounds: VisibleChunkBounds) => {
-            playerData.username = username;
-            playerData.visibleChunkBounds = visibleChunkBounds;
+         socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
+            username = _username;
+            tribeType = _tribeType;
          });
 
-         // Spawn the player in a random position in the world
-         const spawnPosition = SERVER.generatePlayerSpawnPosition();
-
          socket.on("spawn_position_request", () => {
+            // Spawn the player in a random position in the world
+            spawnPosition = SERVER.generatePlayerSpawnPosition(tribeType);
             socket.emit("spawn_position", spawnPosition.package());
+         });
+
+         socket.on("visible_chunk_bounds", (_visibleChunkBounds: VisibleChunkBounds) => {
+            visibleChunkBounds = _visibleChunkBounds;
          });
 
          // When the server receives a request for the initial player data, process it and send back the server player data
          socket.on("initial_game_data_request", () => {
-            if (typeof playerData.username === "undefined") {
+            if (typeof username === "undefined") {
                throw new Error("Player username was undefined when trying to send initial game data.");
             }
-            if (typeof playerData.visibleChunkBounds === "undefined") {
+            if (typeof visibleChunkBounds === "undefined") {
                throw new Error("Player visible chunk bounds was undefined when trying to send initial game data.");
             }
             
-            // Spawn the player entity
-            const player = createPlayer(spawnPosition, TribeType.plainspeople, null);
+            const tribe = new Tribe(tribeType);
+            const player = createPlayer(spawnPosition, tribe);
+
+            const playerData: PlayerData = {
+               username: username,
+               socket: socket,
+               instanceID: player.id,
+               clientIsActive: true,
+               visibleChunkBounds: visibleChunkBounds,
+               tribe: tribe,
+               hitsTaken: [],
+               pickedUpItem: false
+            }
             playerData.instanceID = player.id;
 
             const serverTileData = new Array<ServerTileData>();
@@ -719,12 +743,12 @@ class GameServer {
                serverTicks: Board.ticks,
                serverTime: Board.time,
                playerHealth: 20,
-               tribeData: null,
+               tribeData: bundleTribeData(playerData),
                hasFrostShield: false,
                pickedUpItem: false
             };
 
-            SERVER.playerDataRecord[socket.id] = playerData as PlayerData;
+            SERVER.playerDataRecord[socket.id] = playerData;
 
             socket.emit("initial_game_data_packet", initialGameDataPacket);
          });
@@ -831,7 +855,6 @@ class GameServer {
          });
          
          socket.on("command", (command: string) => {
-            // Get the player data for the current client
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
@@ -843,14 +866,23 @@ class GameServer {
             SERVER.setTrackedGameObject(id);
          });
 
+         socket.on("select_tech", (techID: TechID): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            playerData.tribe.selectedTechID = techID;
+         });
+
          socket.on("unlock_tech", (techID: TechID): void => {
-            // Get the player data for the current client
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
                processTechUnlock(player, techID);
             }
          });
+
+         socket.on("study_tech", (studyAmount: number): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            playerData.tribe.studyTech(studyAmount);
+         })
       });
    }
 
@@ -885,18 +917,8 @@ class GameServer {
             Math.min(playerData.visibleChunkBounds[3] + 1, SETTINGS.BOARD_SIZE - 1)
          ];
 
-         const tribeData: TribeData | null = playerData.tribe !== null ? {
-            id: playerData.tribe.id,
-            tribeType: playerData.tribe.tribeType,
-            numHuts: playerData.tribe.getNumHuts(),
-            tribesmanCap: playerData.tribe.tribesmanCap,
-            area: playerData.tribe.getArea().map(tile => [tile.x, tile.y]),
-            unlockedTechs: playerData.tribe.unlockedTechs,
-            techUnlockProgress: playerData.tribe.techUnlockProgress
-         } : null;
-
          // @Incomplete
-         // const playerArmour = getItem(InventoryComponentArray.getComponent(player), "armourSlot", 1);
+         // const playerArmour = player !== null ? getItem(InventoryComponentArray.getComponent(player), "armourSlot", 1) : null;
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
@@ -908,7 +930,7 @@ class GameServer {
             serverTime: Board.time,
             playerHealth: player !== null ? HealthComponentArray.getComponent(player).health : 0,
             gameObjectDebugData: gameObjectDebugData,
-            tribeData: tribeData,
+            tribeData: bundleTribeData(playerData),
             // @Incomplete
             // hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
             hasFrostShield: false,
@@ -1084,10 +1106,26 @@ class GameServer {
       inventoryUseComponent.currentAction = playerDataPacket.action;
    }
 
-   private generatePlayerSpawnPosition(): Point {
-      const xSpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-      const ySpawnPosition = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-      return new Point(xSpawnPosition, ySpawnPosition);
+   private generatePlayerSpawnPosition(tribeType: TribeType): Point {
+      const tribeInfo = TRIBE_INFO_RECORD[tribeType];
+      for (let numAttempts = 0; numAttempts < 50; numAttempts++) {
+         const biomeName = randItem(tribeInfo.biomes);
+         const tile = randItem(getTilesOfBiome(biomeName));
+
+         const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
+         const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+
+         if (x < GameServer.PLAYER_SPAWN_POSITION_PADDING || x >= SETTINGS.BOARD_UNITS - GameServer.PLAYER_SPAWN_POSITION_PADDING || y < GameServer.PLAYER_SPAWN_POSITION_PADDING || y >= SETTINGS.BOARD_UNITS - GameServer.PLAYER_SPAWN_POSITION_PADDING) {
+            continue;
+         }
+
+         return new Point(x, y);
+      }
+      
+      // If all else fails, just pick a random position
+      const x = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
+      const y = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
+      return new Point(x, y);
    }
 
    private respawnPlayer(socket: ISocket): void {
@@ -1095,16 +1133,16 @@ class GameServer {
 
       // Calculate spawn position
       let spawnPosition: Point;
-      if (playerData.tribe !== null) {
+      if (playerData.tribe.totem !== null) {
          spawnPosition = playerData.tribe.totem.position.copy();
          const offsetDirection = 2 * Math.PI * Math.random();
          spawnPosition.x += 100 * Math.sin(offsetDirection);
          spawnPosition.y += 100 * Math.cos(offsetDirection);
       } else {
-         spawnPosition = SERVER.generatePlayerSpawnPosition();
+         spawnPosition = this.generatePlayerSpawnPosition(playerData.tribe.tribeType);
       }
 
-      const player = createPlayer(spawnPosition, TribeType.plainspeople, playerData.tribe);
+      const player = createPlayer(spawnPosition, playerData.tribe);
 
       // Update the player data's instance
       SERVER.playerDataRecord[socket.id].instanceID = player.id;
@@ -1124,15 +1162,6 @@ class GameServer {
       }
       
       playerData.socket.emit("force_position_update", position.package());
-   }
-
-   public updatePlayerTribe(player: Entity, tribe: Tribe | null): void {
-      const playerData = SERVER.getPlayerDataFromInstance(player);
-      if (playerData === null) {
-         return;
-      }
-
-      playerData.tribe = tribe;
    }
 }
 

@@ -139,7 +139,7 @@ export function tickFish(fish: Entity): void {
    if (fishComponent.leader === null) {
       for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
          const entity = aiHelperComponent.visibleEntities[i];
-         if (entity.type === IEntityType.player || entity.type === IEntityType.tribesman) {
+         if (entity.type === IEntityType.player || entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior) {
             const inventoryComponent = InventoryComponentArray.getComponent(entity);
             const armourSlotInventory = getInventory(inventoryComponent, "armourSlot");
             if (armourSlotInventory.itemSlots.hasOwnProperty(1) && armourSlotInventory.itemSlots[1].type === ItemType.fishlord_suit) {

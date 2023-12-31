@@ -10,12 +10,12 @@ interface Options {
 
 const OPTIONS: Options = {
    spawnEntities: true,
-   spawnTribes: true,
+   spawnTribes: false,
    generateRivers: true,
    generateWalls: true,
-   inBenchmarkMode: true,
+   inBenchmarkMode: false,
    logging: false,
-   warp: true
+   warp: false
 };
 
 

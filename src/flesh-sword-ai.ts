@@ -40,7 +40,7 @@ const getRunTarget = (itemEntity: Entity, visibleEntities: ReadonlyArray<Entity>
    let runTarget: Entity | null = null;
 
    for (const entity of visibleEntities) {
-      if (entity.type === IEntityType.player || entity.type === IEntityType.tribesman) {
+      if (entity.type === IEntityType.player || entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior) {
          const distance = itemEntity.position.calculateDistanceBetween(entity.position);
          if (distance < closestRunTargetDistance) {
             closestRunTargetDistance = distance;

@@ -72,10 +72,10 @@ const calculateVisibleEntities = (entity: Entity, aiHelperComponent: AIHelperCom
 export function tickAIHelperComponent(entity: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
    
-   const minChunkX = Math.max(Math.min(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
    
    // If the entity hasn't changed visible chunk bounds, then the potential visible entities will be the same
    // and only the visible entities need to updated

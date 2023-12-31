@@ -117,6 +117,8 @@ export function tickTombstone(tombstone: Entity): void {
 export function onTombstoneDeath(tombstone: Entity, attackingEntity: Entity | null): void {
    if (attackingEntity !== null) {
       createItemsOverEntity(tombstone, ItemType.rock, randInt(2, 3));
+
+      createZombie(tombstone.position.copy(), false, tombstone.id);
    }
 }
 

@@ -14,6 +14,8 @@ import { onFishHurt } from "../entities/mobs/fish";
 import { onBoulderDeath } from "../entities/resources/boulder";
 import { onFrozenYetiDeath, onFrozenYetiHurt } from "../entities/mobs/frozen-yeti";
 import { onPlayerHurt } from "../entities/tribes/player";
+import { onTribeWorkerHurt } from "../entities/tribes/tribe-worker";
+import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -164,6 +166,18 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
       case IEntityType.player: {
          if (attackingEntity !== null) {
             onPlayerHurt(entity, attackingEntity);
+         }
+         break;
+      }
+      case IEntityType.tribeWorker: {
+         if (attackingEntity !== null) {
+            onTribeWorkerHurt(entity, attackingEntity);
+         }
+         break;
+      }
+      case IEntityType.tribeWarrior: {
+         if (attackingEntity !== null) {
+            onTribeWarriorHurt(entity, attackingEntity);
          }
          break;
       }

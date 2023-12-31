@@ -1,4 +1,4 @@
-import { IEntityType, Point, TribeType } from "webgl-test-shared";
+import { IEntityType, Point } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { createBerryBush } from "./entities/resources/berry-bush";
 import { createBoulder } from "./entities/resources/boulder";
@@ -10,7 +10,6 @@ import { createFrozenYeti } from "./entities/mobs/frozen-yeti";
 import { createFurnace } from "./entities/cooking-entities/furnace";
 import { createIceSpikes } from "./entities/resources/ice-spikes";
 import { createKrumblid } from "./entities/mobs/krumblid";
-import { createPlayer } from "./entities/tribes/player";
 import { createSlime } from "./entities/mobs/slime";
 import { createSlimewisp } from "./entities/mobs/slimewisp";
 import { createSnowball } from "./entities/snowball";
@@ -19,6 +18,7 @@ import { createTree } from "./entities/resources/tree";
 import { createWorkbench } from "./entities/workbench";
 import { createYeti } from "./entities/mobs/yeti";
 import { createZombie } from "./entities/mobs/zombie";
+import { createResearchBench } from "./entities/research-bench";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -32,7 +32,6 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.furnace: return createFurnace(position);
       case IEntityType.iceSpikes: return createIceSpikes(position);
       case IEntityType.krumblid: return createKrumblid(position);
-      case IEntityType.player: return createPlayer(position, TribeType.plainspeople, null);
       case IEntityType.slime: return createSlime(position);
       case IEntityType.slimewisp: return createSlimewisp(position);
       case IEntityType.snowball: return createSnowball(position);
@@ -41,14 +40,18 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.workbench: return createWorkbench(position);
       case IEntityType.yeti: return createYeti(position);
       case IEntityType.zombie: return createZombie(position, false, ID_SENTINEL_VALUE);
+      case IEntityType.researchBench: return createResearchBench(position);
       case IEntityType.woodenArrowProjectile:
+      case IEntityType.player:
       case IEntityType.iceShardProjectile:
       case IEntityType.rockSpikeProjectile:
       case IEntityType.spearProjectile:
       case IEntityType.barrel:
-      case IEntityType.tribesman:
+      case IEntityType.tribeWorker:
+      case IEntityType.tribeWarrior:
       case IEntityType.tribeTotem:
-      case IEntityType.tribeHut:
+      case IEntityType.workerHut:
+      case IEntityType.warriorHut:
       case IEntityType.itemEntity: throw new Error("Can't dynamically create entity of type '" + entityType + "'.");
    }
 }

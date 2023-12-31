@@ -11,9 +11,7 @@ const ARROW_WIDTH = 20;
 const ARROW_HEIGHT = 64;
 const ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(ARROW_WIDTH / 2, 2) + Math.pow(ARROW_HEIGHT, 2));
 
-export function createWoodenArrow(position: Point, tribeMember: Entity): void {
-   // @Incomplete: Add lifetime of 1.5 seconds
-
+export function createWoodenArrow(position: Point, tribeMember: Entity): Entity {
    const itemInfo = ITEM_INFO_RECORD[ItemType.wooden_bow] as BowItemInfo;
    
    const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
@@ -27,9 +25,16 @@ export function createWoodenArrow(position: Point, tribeMember: Entity): void {
    ArrowComponentArray.addComponent(arrow, new ArrowComponent(tribeMember.id));
 
    arrow.isAffectedByFriction = false;
+
+   return arrow;
 }
 
 export function tickArrowProjectile(arrow: Entity): void {
+   if (arrow.ageTicks >= 1.5 * SETTINGS.TPS) {
+      arrow.remove();
+      return;
+   }
+   
    // 
    // Air resistance
    // 
