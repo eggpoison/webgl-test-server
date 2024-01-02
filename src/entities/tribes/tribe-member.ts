@@ -21,6 +21,7 @@ import { onFishLeaderHurt } from "../mobs/fish";
 import { createSpearProjectile } from "../projectiles/spear-projectile";
 import { createResearchBench } from "../research-bench";
 import { WARRIOR_HUT_SIZE, createWarriorHut } from "./warrior-hut";
+import { createWoodenWall } from "../structures/wooden-wall";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -99,6 +100,12 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
       width: 32 * 4,
       height: 20 * 4,
       placeOffset: 50
+   },
+   [ItemType.wooden_wall]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 64,
+      height: 64,
+      placeOffset: 32
    }
 };
 
@@ -502,6 +509,11 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
             }
             case ItemType.research_bench: {
                placedEntity = createResearchBench(spawnPosition);
+               break;
+            }
+            case ItemType.wooden_wall: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createWoodenWall(spawnPosition, tribeComponent.tribe);
                break;
             }
             default: {

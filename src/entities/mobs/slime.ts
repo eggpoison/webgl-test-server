@@ -12,6 +12,7 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import Board from "../../Board";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { createSlimeSpit } from "../projectiles/slime-spit";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
 const MAX_HEALTH: ReadonlyArray<number> = [10, 15, 25];
@@ -37,6 +38,8 @@ const MAX_ENTITIES_IN_RANGE_FOR_MERGE = 7;
 
 const HEALING_ON_SLIME_PER_SECOND = 0.5;
 const HEALING_PROC_INTERVAL = 0.1;
+
+const SPIT_COOLDOWN_TICKS = 4 * SETTINGS.TPS;
 
 export interface MovingOrbData extends Mutable<SlimeOrbData> {
    angularVelocity: number;
@@ -117,6 +120,21 @@ const wantsToMerge = (slime1: Entity, slime2: Entity): boolean => {
    return slimeComponent1.mergeWant >= MAX_MERGE_WANT[slimeComponent1.size];
 }
 
+const spit = (slime: Entity, slimeComponent: SlimeComponent): void => {
+   if (slimeComponent.size === SlimeSize.small || (Board.ticks - slimeComponent.lastSpitTicks) < SPIT_COOLDOWN_TICKS) {
+      return;
+   }
+
+   const x = slime.position.x + RADII[slimeComponent.size] * Math.sin(slime.rotation);
+   const y = slime.position.y + RADII[slimeComponent.size] * Math.cos(slime.rotation);
+   const spit = createSlimeSpit(new Point(x, y), slimeComponent.size === SlimeSize.medium ? 0 : 1);
+
+   spit.velocity.x = 500 * Math.sin(slime.rotation);
+   spit.velocity.y = 500 * Math.cos(slime.rotation);
+
+   slimeComponent.lastSpitTicks = Board.ticks;
+}
+
 export function tickSlime(slime: Entity): void {
    // Slimes move at normal speed on slime blocks
    slime.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime || slime.tile.type === TileTypeConst.sludge;
@@ -158,8 +176,11 @@ export function tickSlime(slime: Entity): void {
    if (angerTarget !== null) {
       slimeComponent.eyeRotation = slime.position.calculateAngleBetween(angerTarget.position);
       moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier);
+      
+      spit(slime, slimeComponent);
       return;
    }
+   slimeComponent.lastSpitTicks = Board.ticks;
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
 
@@ -273,6 +294,8 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
       
       slime1.remove();
    } else {
+      // @Incomplete: THis allows small slimes to eat larger slimes. Very bad.
+      
       // Add the other slime's health
       healEntity(slime1, getEntityHealth(slime2))
 

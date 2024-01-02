@@ -25,6 +25,8 @@ import { cleanAngle } from "./ai-shared";
 import { onSpearProjectileCollision } from "./entities/projectiles/spear-projectile";
 import { onTribeTotemDeath } from "./entities/tribes/tribe-totem";
 import { onTribeWarriorDeath } from "./entities/tribes/tribe-warrior";
+import { onSlimeSpitCollision, onSlimeSpitDeath } from "./entities/projectiles/slime-spit";
+import { onSpitPoisonCollision } from "./entities/projectiles/spit-poison";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -945,6 +947,14 @@ class Entity<T extends IEntityType = IEntityType> {
             onSpearProjectileCollision(this, collidingEntity);
             break;
          }
+         case IEntityType.slimeSpit: {
+            onSlimeSpitCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.spitPoison: {
+            onSpitPoisonCollision(this, collidingEntity);
+            break;
+         }
       }
    }
 
@@ -1030,6 +1040,11 @@ class Entity<T extends IEntityType = IEntityType> {
             }
             case IEntityType.tribeTotem: {
                onTribeTotemDeath(this);
+               break;
+            }
+            case IEntityType.slimeSpit: {
+               onSlimeSpitDeath(this);
+               break;
             }
          }
       }

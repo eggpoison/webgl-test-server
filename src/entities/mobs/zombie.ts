@@ -200,6 +200,10 @@ export function tickZombie(zombie: Entity): void {
 }
 
 const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
+   if (!HealthComponentArray.hasComponent(entity)) {
+      return false;
+   }
+   
    // If the entity is attacking the zombie, attack back
    const zombieComponent = ZombieComponentArray.getComponent(zombie);
    if (zombieComponent.attackingEntityIDs.hasOwnProperty(entity.id)) {

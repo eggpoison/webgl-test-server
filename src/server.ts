@@ -9,13 +9,14 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, getItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 import { getTilesOfBiome } from "./census";
+import { createSlime } from "./entities/mobs/slime";
 
 /*
 
@@ -411,6 +412,19 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [];
          break;
       }
+      case IEntityType.woodenWall: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.slimeSpit: {
+         const slimeSpitComponent = SlimeSpitComponentArray.getComponent(entity);
+         clientArgs = [slimeSpitComponent.size];
+         break;
+      }
+      case IEntityType.spitPoison: {
+         clientArgs = [];
+         break;
+      }
    }
 
    const statusEffectData = new Array<StatusEffectData>();
@@ -624,6 +638,10 @@ class GameServer {
          let tribeType: TribeType;
          let visibleChunkBounds: VisibleChunkBounds;
          let spawnPosition: Point;
+
+         setTimeout(() => {
+            createSlime(new Point(spawnPosition.x, spawnPosition.y), 2);
+         }, 500);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
             username = _username;

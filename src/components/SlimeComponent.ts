@@ -1,8 +1,11 @@
 import { SlimeSize } from "webgl-test-shared";
 import { MovingOrbData, SLIME_MERGE_TIME, SlimeEntityAnger } from "../entities/mobs/slime";
+import Board from "../Board";
 
 export class SlimeComponent {
    public readonly size: SlimeSize;
+
+   public lastSpitTicks: number;
    
    public eyeRotation = 2 * Math.PI * Math.random();
    public mergeTimer = SLIME_MERGE_TIME;
@@ -16,5 +19,6 @@ export class SlimeComponent {
       this.size = size;
       this.mergeWeight = mergeWeight;
       this.orbs = startingOrbs;
+      this.lastSpitTicks = Board.ticks;
    }
 }

@@ -19,6 +19,8 @@ import { createWorkbench } from "./entities/workbench";
 import { createYeti } from "./entities/mobs/yeti";
 import { createZombie } from "./entities/mobs/zombie";
 import { createResearchBench } from "./entities/research-bench";
+import { createWoodenWall } from "./entities/structures/wooden-wall";
+import { createSpitPoison } from "./entities/projectiles/spit-poison";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -41,6 +43,9 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.yeti: return createYeti(position);
       case IEntityType.zombie: return createZombie(position, false, ID_SENTINEL_VALUE);
       case IEntityType.researchBench: return createResearchBench(position);
+      case IEntityType.woodenWall: return createWoodenWall(position, null);
+      case IEntityType.spitPoison: return createSpitPoison(position);
+      case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.player:
       case IEntityType.iceShardProjectile:
