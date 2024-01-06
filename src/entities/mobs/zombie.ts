@@ -38,7 +38,7 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    zombie.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(zombie, new HealthComponent(MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(zombie, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(zombie, new StatusEffectComponent(0));
    const zombieType = isGolden ? 3 : randInt(0, 2);
    ZombieComponentArray.addComponent(zombie, new ZombieComponent(zombieType, tombstoneID));
    WanderAIComponentArray.addComponent(zombie, new WanderAIComponent());

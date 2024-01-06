@@ -7,7 +7,7 @@ import { createSpitPoison } from "./spit-poison";
 import { damageEntity } from "../../components/HealthComponent";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 
-const BREAK_VELOCITY = 75;
+const BREAK_VELOCITY = 100;
 
 const SIZES = [20, 30];
 

@@ -6,6 +6,7 @@ export class SlimeComponent {
    public readonly size: SlimeSize;
 
    public lastSpitTicks: number;
+   public spitChargeProgress = 0;
    
    public eyeRotation = 2 * Math.PI * Math.random();
    public mergeTimer = SLIME_MERGE_TIME;

@@ -37,7 +37,7 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];
    HealthComponentArray.addComponent(worker, new HealthComponent(tribeInfo.maxHealthWorker));
-   StatusEffectComponentArray.addComponent(worker, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(worker, new StatusEffectComponent(0));
 
    TribeComponentArray.addComponent(worker, {
       tribeType: tribeType,

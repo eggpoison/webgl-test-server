@@ -34,7 +34,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.tribeType];
    HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
-   StatusEffectComponentArray.addComponent(player, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(player, new StatusEffectComponent(0));
 
    TribeComponentArray.addComponent(player, {
       tribeType: TribeType.plainspeople,
@@ -54,6 +54,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
+   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
 
    InventoryUseComponentArray.addComponent(player, new InventoryUseComponent(hotbarInventory));
 

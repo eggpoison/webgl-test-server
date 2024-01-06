@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { HealthComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
@@ -17,7 +17,7 @@ export function createSnowball(position: Point, size: SnowballSize = SnowballSiz
    snowball.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(snowball, new HealthComponent(MAX_HEALTHS[size]));
-   StatusEffectComponentArray.addComponent(snowball, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(snowball, new StatusEffectComponent(StatusEffectConst.poisoned));
    SnowballComponentArray.addComponent(snowball, new SnowballComponent(yetiID, size, Math.floor(randFloat(10, 15) * SETTINGS.TPS)));
    
    snowball.rotation = 2 * Math.PI * Math.random();

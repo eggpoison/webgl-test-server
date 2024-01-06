@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
@@ -146,7 +146,7 @@ export function createYeti(position: Point): Entity {
    yeti.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
-   StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent(StatusEffectConst.freezing));
    WanderAIComponentArray.addComponent(yeti, new WanderAIComponent());
    AIHelperComponentArray.addComponent(yeti, new AIHelperComponent(VISION_RANGE));
 

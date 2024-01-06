@@ -6,7 +6,7 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
-const TREE_MAX_HEALTH = 10;
+const TREE_MAX_HEALTHS = [10, 15];
 const TREE_RADII: ReadonlyArray<number> = [40, 50];
 
 const WOOD_DROP_AMOUNTS: ReadonlyArray<[number, number]> = [
@@ -22,8 +22,8 @@ export function createTree(position: Point): Entity {
    const hitbox = new CircularHitbox(tree, 0, 0, TREE_RADII[size]);
    tree.addHitbox(hitbox);
 
-   HealthComponentArray.addComponent(tree, new HealthComponent(TREE_MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(tree, new StatusEffectComponent());
+   HealthComponentArray.addComponent(tree, new HealthComponent(TREE_MAX_HEALTHS[size]));
+   StatusEffectComponentArray.addComponent(tree, new StatusEffectComponent(0));
    TreeComponentArray.addComponent(tree, {
       treeSize: size
    });

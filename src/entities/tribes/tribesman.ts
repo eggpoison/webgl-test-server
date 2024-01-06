@@ -1,4 +1,4 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance, TribeType, TRIBE_INFO_RECORD } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tile from "../../Tile";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity } from "../../ai-shared";
@@ -48,6 +48,24 @@ const getRadius = (tribesman: Entity): number => {
    } else {
       return 32;
    }
+}
+
+const getSlowAcceleration = (tribesman: Entity): number => {
+   let acceleration = SLOW_ACCELERATION;
+
+   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   acceleration *= TRIBE_INFO_RECORD[tribeComponent.tribeType].moveSpeedMultiplier;
+
+   return acceleration;
+}
+
+const getAcceleration = (tribesman: Entity): number => {
+   let acceleration = ACCELERATION;
+
+   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   acceleration *= TRIBE_INFO_RECORD[tribeComponent.tribeType].moveSpeedMultiplier;
+
+   return acceleration;
 }
 
 const getFoodItemSlot = (tribesman: Entity): number | null => {
@@ -169,8 +187,8 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
 const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
    tribesman.rotation = tribesman.position.calculateAngleBetween(barrel.position);
    tribesman.hitboxesAreDirty = true;
-   tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
-   tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+   tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
+   tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
 
    if (tribesman.position.calculateDistanceBetween(barrel.position) <= BARREL_INTERACT_DISTANCE) {
       depositResources(tribesman, barrel);
@@ -361,8 +379,8 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.x = 0;
             tribesman.acceleration.y = 0;
          } else {
-            tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
-            tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+            tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
+            tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
          }
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
@@ -457,8 +475,8 @@ export function tickTribesman(tribesman: Entity): void {
          
          tribesman.rotation = tribesman.position.calculateAngleBetween(closestDroppedItem.position);
          tribesman.hitboxesAreDirty = true;
-         tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
-         tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+         tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
+         tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
          tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
          inventoryUseComponent.currentAction = TribeMemberAction.none;
          return;
@@ -546,8 +564,8 @@ export function tickTribesman(tribesman: Entity): void {
          if (tribesman.position.calculateDistanceBetween(closestBarrelWithFood.position) > BARREL_INTERACT_DISTANCE) {
             // Move to barrel
             const direction = tribesman.position.calculateAngleBetween(closestBarrelWithFood.position);
-            tribesman.acceleration.x = ACCELERATION * Math.sin(direction);
-            tribesman.acceleration.y = ACCELERATION * Math.cos(direction);
+            tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(direction);
+            tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(direction);
             tribesman.rotation = direction;
             tribesman.hitboxesAreDirty = true;
          } else {
@@ -591,8 +609,8 @@ export function tickTribesman(tribesman: Entity): void {
          // @Speed
          tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
          tribesman.hitboxesAreDirty = true;
-         tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
-         tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+         tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
+         tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
 
          tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
          return;
@@ -610,8 +628,8 @@ export function tickTribesman(tribesman: Entity): void {
       // @Speed
       tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
       tribesman.hitboxesAreDirty = true;
-      tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
-      tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+      tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
+      tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
 
       tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
       return;
@@ -653,8 +671,8 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
    const runDirection = angle(averageEnemyX - tribesman.position.x, averageEnemyY - tribesman.position.y) + Math.PI;
    tribesman.rotation = runDirection;
    tribesman.hitboxesAreDirty = true;
-   tribesman.acceleration.x = ACCELERATION * Math.sin(runDirection);
-   tribesman.acceleration.y = ACCELERATION * Math.cos(runDirection);
+   tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(runDirection);
+   tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(runDirection);
 }
 
 // @Cleanup: Copy and paste
@@ -767,11 +785,11 @@ const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
    tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
    tribesman.hitboxesAreDirty = true;
    if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
-      tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation + Math.PI);
-      tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation + Math.PI);
+      tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
+      tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
    } else {
-      tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation);
-      tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation);
+      tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation);
+      tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation);
    }
 }
 
@@ -780,11 +798,11 @@ const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
    tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
    tribesman.hitboxesAreDirty = true;
    if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
-      tribesman.acceleration.x = SLOW_ACCELERATION * Math.sin(tribesman.rotation + Math.PI);
-      tribesman.acceleration.y = SLOW_ACCELERATION * Math.cos(tribesman.rotation + Math.PI);
+      tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
+      tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
    } else {
-      tribesman.acceleration.x = ACCELERATION * Math.sin(tribesman.rotation);
-      tribesman.acceleration.y = ACCELERATION * Math.cos(tribesman.rotation);
+      tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
+      tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
    }
 }
 

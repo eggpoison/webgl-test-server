@@ -16,7 +16,7 @@ import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 import { getTilesOfBiome } from "./census";
-import { createSlime } from "./entities/mobs/slime";
+import { SPIT_CHARGE_TIME_TICKS, createSlime } from "./entities/mobs/slime";
 
 /*
 
@@ -297,11 +297,14 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             }
          }
 
+         const spitChargeProgress = slimeComponent.spitChargeProgress > 0 ? slimeComponent.spitChargeProgress / SPIT_CHARGE_TIME_TICKS : -1;
+
          clientArgs = [
             slimeComponent.size,
             slimeComponent.eyeRotation,
             orbs,
-            anger
+            anger,
+            spitChargeProgress
          ];
          break;
       }

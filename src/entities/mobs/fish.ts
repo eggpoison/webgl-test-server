@@ -43,7 +43,7 @@ export function createFish(position: Point): Entity {
    fish.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(fish, new HealthComponent(MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(fish, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(fish, new StatusEffectComponent(0));
    WanderAIComponentArray.addComponent(fish, new WanderAIComponent());
    EscapeAIComponentArray.addComponent(fish, new EscapeAIComponent());
    FishComponentArray.addComponent(fish, new FishComponent(randInt(0, 3)));

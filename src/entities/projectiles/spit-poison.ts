@@ -5,7 +5,7 @@ import { addLocalInvulnerabilityHash, damageEntity } from "../../components/Heal
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 
-const RADIUS = 45;
+const RADIUS = 55;
 
 export function createSpitPoison(position: Point): Entity {
    const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
@@ -21,7 +21,7 @@ export function createSpitPoison(position: Point): Entity {
 
 export function tickSpitPoison(spit: Entity): void {
    const hitbox = spit.hitboxes[0] as CircularHitbox;
-   hitbox.radius -= 10 / SETTINGS.TPS;
+   hitbox.radius -= 5 / SETTINGS.TPS;
    spit.hitboxesAreDirty = true;
    if (hitbox.radius <= 0) {
       spit.remove();

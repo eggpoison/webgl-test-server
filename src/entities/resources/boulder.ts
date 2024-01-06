@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BoulderComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -15,7 +15,7 @@ export function createBoulder(position: Point): Entity {
    boulder.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(boulder, new HealthComponent(40));
-   StatusEffectComponentArray.addComponent(boulder, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(boulder, new StatusEffectComponent(StatusEffectConst.poisoned));
    BoulderComponentArray.addComponent(boulder, {
       boulderType: Math.floor(Math.random() * 2)
    });

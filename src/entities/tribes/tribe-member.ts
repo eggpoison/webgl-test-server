@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, StatusEffectConst, StructureType, SwordItemInfo, ToolItemInfo, TribeMemberAction, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -277,7 +277,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    // Reset attack cooldown
    if (item !== null) {
       const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
-      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear") {
+      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer") {
          const itemInfo = ITEM_INFO_RECORD[item.type];
          inventoryUseComponent.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
       } else {
@@ -345,6 +345,98 @@ export function calculateRadialAttackTargets(entity: Entity, attackOffset: numbe
    }
 
    return attackedEntities;
+}
+
+const calculateRegularPlacePosition = (entity: Entity, placeInfo: PlaceableItemHitboxInfo): Point => {
+   const placePositionX = entity.position.x + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.sin(entity.rotation);
+   const placePositionY = entity.position.y + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.cos(entity.rotation);
+   return new Point(placePositionX, placePositionY);
+}
+
+interface BuildingSnapInfo {
+   /** -1 if no snap was found */
+   readonly x: number;
+   readonly y: number;
+   readonly direction: number;
+}
+export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitboxInfo): BuildingSnapInfo {
+   const regularPlacePosition = calculateRegularPlacePosition(entity, placeInfo);
+
+   const minChunkX = Math.max(Math.floor((regularPlacePosition.x - SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((regularPlacePosition.x + SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((regularPlacePosition.y - SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((regularPlacePosition.y + SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   
+   const snappableEntities = new Array<Entity>();
+   for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+         for (const currentEntity of chunk.entities) {
+            const distance = regularPlacePosition.calculateDistanceBetween(currentEntity.position);
+            if (distance > SETTINGS.STRUCTURE_SNAP_RANGE) {
+               continue;
+            }
+            
+            if (currentEntity.type === IEntityType.woodenWall) {
+               snappableEntities.push(currentEntity);
+            }
+         }
+      }
+   }
+
+   for (const snapEntity of snappableEntities) {
+      console.log(snapEntity.id);
+      const snapOffset = SNAP_OFFSETS[snapEntity.type as unknown as StructureType];
+      // Check the 4 potential snap positions for matches
+      for (let i = 0; i < 4; i++) {
+         const direction = i * Math.PI / 2;
+         const placeDirection = (snapEntity.rotation + direction + Math.PI) % (Math.PI * 2) - Math.PI;
+         const x = snapEntity.position.x + snapOffset * Math.sin(placeDirection);
+         const y = snapEntity.position.y + snapOffset * Math.cos(placeDirection);
+         
+         if (distance(regularPlacePosition.x, regularPlacePosition.y, x, y) > SETTINGS.STRUCTURE_POSITION_SNAP) {
+            continue;
+         }
+
+         const placingEntityRotation = (entity.rotation + Math.PI) % (Math.PI * 2) - Math.PI;
+         for (let i = 0; i < 4; i++) {
+            const direction = i * Math.PI / 2;
+            const placeDirection = (snapEntity.rotation + direction + Math.PI) % (Math.PI * 2) - Math.PI;
+            let angleDiff = placingEntityRotation - placeDirection;
+            angleDiff = (angleDiff + Math.PI) % (Math.PI * 2) - Math.PI;
+            if (Math.abs(angleDiff) <= SETTINGS.STRUCTURE_ROTATION_SNAP) {
+               return {
+                  x: x,
+                  y: y,
+                  direction: placeDirection
+               };
+            }
+         }
+      }
+   }
+   
+   return {
+      x: -1,
+      y: -1,
+      direction: -1
+   };
+}
+
+const calculatePlacePosition = (entity: Entity, placeInfo: PlaceableItemHitboxInfo, snapInfo: BuildingSnapInfo): Point => {
+   if (snapInfo.x === -1) {
+      return calculateRegularPlacePosition(entity, placeInfo);
+   }
+
+   return new Point(snapInfo.x, snapInfo.y);
+}
+
+const calculatePlaceRotation = (entity: Entity, snapInfo: BuildingSnapInfo): number => {
+   if (snapInfo.x === -1) {
+      return entity.rotation;
+   }
+
+   console.log("getting snapDir");
+   return snapInfo.direction;
 }
 
 const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, placeRotation: number, itemType: PlaceableItemType): boolean => {
@@ -443,19 +535,19 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
 
          const placeInfo = PLACEABLE_ITEM_HITBOX_INFO[item.type];
 
-         const spawnPositionX = tribeMember.position.x + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.sin(tribeMember.rotation);
-         const spawnPositionY = tribeMember.position.y + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.cos(tribeMember.rotation);
+         const snapInfo = calculateSnapInfo(tribeMember, placeInfo);
+         console.log(snapInfo);
+         const placePosition = calculatePlacePosition(tribeMember, placeInfo, snapInfo);
+         const placeRotation = calculatePlaceRotation(tribeMember, snapInfo);
 
          // Make sure the placeable item can be placed
-         if (!buildingCanBePlaced(spawnPositionX, spawnPositionY, tribeMember.rotation, item.type)) return;
-         
-         const spawnPosition = new Point(spawnPositionX, spawnPositionY);
+         if (!buildingCanBePlaced(placePosition.x, placePosition.y, placeRotation, item.type)) return;
          
          // Spawn the placeable entity
          let placedEntity: Entity;
          switch (item.type) {
             case ItemType.workbench: {
-               placedEntity = createWorkbench(spawnPosition);
+               placedEntity = createWorkbench(placePosition);
                break;
             }
             case ItemType.tribe_totem: {
@@ -465,7 +557,7 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
                   return;
                }
 
-               placedEntity = createTribeTotem(spawnPosition, tribeComponent.tribe);
+               placedEntity = createTribeTotem(placePosition, tribeComponent.tribe);
                break;
             }
             case ItemType.worker_hut: {
@@ -474,8 +566,8 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
                }
                
-               placedEntity = createWorkerHut(spawnPosition, tribeComponent.tribe);
-               placedEntity.rotation = tribeMember.rotation; // This has to be done before the hut is registered in its tribe
+               placedEntity = createWorkerHut(placePosition, tribeComponent.tribe);
+               placedEntity.rotation = placeRotation; // This has to be done before the hut is registered in its tribe
                tribeComponent.tribe.registerNewWorkerHut(placedEntity);
                break;
             }
@@ -485,35 +577,35 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
                }
                
-               placedEntity = createWarriorHut(spawnPosition, tribeComponent.tribe);
-               placedEntity.rotation = tribeMember.rotation; // This has to be done before the hut is registered in its tribe
+               placedEntity = createWarriorHut(placePosition, tribeComponent.tribe);
+               placedEntity.rotation = placeRotation; // This has to be done before the hut is registered in its tribe
                tribeComponent.tribe.registerNewWarriorHut(placedEntity);
                break;
             }
             case ItemType.barrel: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
 
-               placedEntity = createBarrel(spawnPosition, tribeComponent.tribeType, tribeComponent.tribe);
+               placedEntity = createBarrel(placePosition, tribeComponent.tribeType, tribeComponent.tribe);
                if (tribeComponent.tribe !== null) {
                   tribeComponent.tribe.addBarrel(placedEntity);
                }
                break;
             }
             case ItemType.campfire: {
-               placedEntity = createCampfire(spawnPosition);
+               placedEntity = createCampfire(placePosition);
                break;
             }
             case ItemType.furnace: {
-               placedEntity = createFurnace(spawnPosition);
+               placedEntity = createFurnace(placePosition);
                break;
             }
             case ItemType.research_bench: {
-               placedEntity = createResearchBench(spawnPosition);
+               placedEntity = createResearchBench(placePosition);
                break;
             }
             case ItemType.wooden_wall: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-               placedEntity = createWoodenWall(spawnPosition, tribeComponent.tribe);
+               placedEntity = createWoodenWall(placePosition, tribeComponent.tribe);
                break;
             }
             default: {
@@ -523,7 +615,7 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          }
 
          // Rotate it to match the entity's rotation
-         placedEntity.rotation = tribeMember.rotation;
+         placedEntity.rotation = placeRotation;
 
          consumeItem(inventoryComponent, "hotbar", itemSlot, 1);
 

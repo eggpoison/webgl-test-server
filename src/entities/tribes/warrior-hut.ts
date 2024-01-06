@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
 import { HealthComponentArray, HutComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -16,7 +16,7 @@ export function createWarriorHut(position: Point, tribe: Tribe): Entity {
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(20));
-   StatusEffectComponentArray.addComponent(hut, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(hut, new StatusEffectComponent(StatusEffectConst.poisoned));
    HutComponentArray.addComponent(hut, new HutComponent());
    
    TribeComponentArray.addComponent(hut, {

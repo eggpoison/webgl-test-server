@@ -43,7 +43,7 @@ export function createCow(position: Point): Entity {
    cow.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent(0));
    AIHelperComponentArray.addComponent(cow, new AIHelperComponent(VISION_RANGE));
    WanderAIComponentArray.addComponent(cow, new WanderAIComponent());
    EscapeAIComponentArray.addComponent(cow, new EscapeAIComponent());

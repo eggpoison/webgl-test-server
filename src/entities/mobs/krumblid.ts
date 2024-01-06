@@ -29,7 +29,7 @@ export function createKrumblid(position: Point): Entity {
    krumblid.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(krumblid, new HealthComponent(MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(krumblid, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(krumblid, new StatusEffectComponent(0));
    WanderAIComponentArray.addComponent(krumblid, new WanderAIComponent());
    FollowAIComponentArray.addComponent(krumblid, new FollowAIComponent(randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN)));
    EscapeAIComponentArray.addComponent(krumblid, new EscapeAIComponent());

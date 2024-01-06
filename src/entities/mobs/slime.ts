@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Mutable, PlayerCauseOfDeath, Point, SETTINGS, SlimeOrbData, SlimeSize, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Mutable, PlayerCauseOfDeath, Point, SETTINGS, SlimeOrbData, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -15,7 +15,7 @@ import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { createSlimeSpit } from "../projectiles/slime-spit";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
-const MAX_HEALTH: ReadonlyArray<number> = [10, 15, 25];
+const MAX_HEALTH: ReadonlyArray<number> = [10, 20, 35];
 const CONTACT_DAMAGE: ReadonlyArray<number> = [1, 2, 3];
 const SPEED_MULTIPLIERS: ReadonlyArray<number> = [2.5, 1.75, 1];
 const MERGE_WEIGHTS: ReadonlyArray<number> = [2, 5, 11];
@@ -40,6 +40,7 @@ const HEALING_ON_SLIME_PER_SECOND = 0.5;
 const HEALING_PROC_INTERVAL = 0.1;
 
 const SPIT_COOLDOWN_TICKS = 4 * SETTINGS.TPS;
+export const SPIT_CHARGE_TIME_TICKS = Math.floor(0.5 * SETTINGS.TPS);
 
 export interface MovingOrbData extends Mutable<SlimeOrbData> {
    angularVelocity: number;
@@ -62,7 +63,7 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, 
    slime.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));
-   StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent(StatusEffectConst.poisoned));
    SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size], startingOrbs));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slime, new AIHelperComponent(VISION_RANGES[size]));
@@ -121,10 +122,6 @@ const wantsToMerge = (slime1: Entity, slime2: Entity): boolean => {
 }
 
 const spit = (slime: Entity, slimeComponent: SlimeComponent): void => {
-   if (slimeComponent.size === SlimeSize.small || (Board.ticks - slimeComponent.lastSpitTicks) < SPIT_COOLDOWN_TICKS) {
-      return;
-   }
-
    const x = slime.position.x + RADII[slimeComponent.size] * Math.sin(slime.rotation);
    const y = slime.position.y + RADII[slimeComponent.size] * Math.cos(slime.rotation);
    const spit = createSlimeSpit(new Point(x, y), slimeComponent.size === SlimeSize.medium ? 0 : 1);
@@ -175,12 +172,24 @@ export function tickSlime(slime: Entity): void {
    const angerTarget = updateAngerTarget(slime);
    if (angerTarget !== null) {
       slimeComponent.eyeRotation = slime.position.calculateAngleBetween(angerTarget.position);
-      moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier);
+
+      if (slimeComponent.size > SlimeSize.small && (Board.ticks - slimeComponent.lastSpitTicks) >= SPIT_COOLDOWN_TICKS) {
+         slime.rotation = slime.position.calculateAngleBetween(angerTarget.position);
+         stopEntity(slime);
+         
+         // Spit attack
+         if (++slimeComponent.spitChargeProgress >= SPIT_CHARGE_TIME_TICKS) {
+            spit(slime, slimeComponent);
+         }
+         return;
+      }
       
-      spit(slime, slimeComponent);
+      slimeComponent.spitChargeProgress = 0;
+      moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier);
       return;
    }
    slimeComponent.lastSpitTicks = Board.ticks;
+   slimeComponent.spitChargeProgress = 0;
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
 

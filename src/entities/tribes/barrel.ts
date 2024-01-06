@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst, TribeType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -16,7 +16,7 @@ export function createBarrel(position: Point, tribeType: TribeType, tribe: Tribe
    barrel.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(barrel, new HealthComponent(20));
-   StatusEffectComponentArray.addComponent(barrel, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(barrel, new StatusEffectComponent(StatusEffectConst.poisoned));
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(barrel, inventoryComponent);

@@ -83,7 +83,7 @@ export function createCactus(position: Point): Entity {
    }
 
    HealthComponentArray.addComponent(cactus, new HealthComponent(15));
-   StatusEffectComponentArray.addComponent(cactus, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(cactus, new StatusEffectComponent(0));
    CactusComponentArray.addComponent(cactus, new CactusComponent(flowers, limbs));
 
    cactus.isStatic = true;

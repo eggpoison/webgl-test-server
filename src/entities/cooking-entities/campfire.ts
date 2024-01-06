@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { CookingEntityComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -19,7 +19,7 @@ export function createCampfire(position: Point): Entity {
    campfire.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(campfire, new HealthComponent(25));
-   StatusEffectComponentArray.addComponent(campfire, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(campfire, new StatusEffectComponent(StatusEffectConst.poisoned));
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(campfire, inventoryComponent);

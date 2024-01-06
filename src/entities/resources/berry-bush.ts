@@ -19,7 +19,7 @@ export function createBerryBush(position: Point): Entity {
    berryBush.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(berryBush, new HealthComponent(10));
-   StatusEffectComponentArray.addComponent(berryBush, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(berryBush, new StatusEffectComponent(0));
    BerryBushComponentArray.addComponent(berryBush, {
       numBerries: 5,
       berryGrowTimer: 0

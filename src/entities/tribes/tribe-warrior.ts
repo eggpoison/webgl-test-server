@@ -26,7 +26,7 @@ export function createTribeWarrior(position: Point, tribeType: TribeType, tribe:
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];
    HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer));
-   StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent(0));
 
    TribeComponentArray.addComponent(warrior, {
       tribeType: tribeType,

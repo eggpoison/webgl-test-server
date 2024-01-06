@@ -15,7 +15,7 @@ export function createIceSpikes(position: Point): Entity {
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));
-   StatusEffectComponentArray.addComponent(iceSpikes, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(iceSpikes, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.freezing));
 
    iceSpikes.isStatic = true;
    iceSpikes.rotation = 2 * Math.PI * Math.random();

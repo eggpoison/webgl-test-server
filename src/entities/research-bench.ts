@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../Entity";
 import { HealthComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
@@ -12,7 +12,7 @@ export function createResearchBench(position: Point): Entity {
    bench.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(bench, new HealthComponent(40));
-   StatusEffectComponentArray.addComponent(bench, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(bench, new StatusEffectComponent(StatusEffectConst.poisoned));
 
    bench.isStatic = true;
    

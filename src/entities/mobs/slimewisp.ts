@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, TileTypeConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -28,7 +28,7 @@ export function createSlimewisp(position: Point): Entity {
    slimewisp.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slimewisp, new HealthComponent(MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(slimewisp, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(slimewisp, new StatusEffectComponent(StatusEffectConst.poisoned));
    SlimewispComponentArray.addComponent(slimewisp, new SlimewispComponent());
    WanderAIComponentArray.addComponent(slimewisp, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slimewisp, new AIHelperComponent(VISION_RANGE));

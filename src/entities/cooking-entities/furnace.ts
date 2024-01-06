@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray, InventoryComponentArray, CookingEntityComponentArray } from "../../components/ComponentArray";
@@ -17,7 +17,7 @@ export function createFurnace(position: Point): Entity {
    furnace.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(furnace, new HealthComponent(25));
-   StatusEffectComponentArray.addComponent(furnace, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(furnace, new StatusEffectComponent(StatusEffectConst.poisoned));
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(furnace, inventoryComponent);

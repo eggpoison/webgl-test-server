@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
@@ -31,7 +31,7 @@ export function createTombstone(position: Point): Entity {
    tombstone.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tombstone, new HealthComponent(MAX_HEALTH));
-   StatusEffectComponentArray.addComponent(tombstone, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(tombstone, new StatusEffectComponent(StatusEffectConst.poisoned));
    TombstoneComponentArray.addComponent(tombstone, new TombstoneComponent(randInt(0, 2), TombstoneDeathManager.popDeath()));
    
    tombstone.isStatic = true;

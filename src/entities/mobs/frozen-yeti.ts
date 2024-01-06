@@ -73,7 +73,7 @@ export function createFrozenYeti(position: Point): Entity {
    }
 
    HealthComponentArray.addComponent(frozenYeti, new HealthComponent(250));
-   StatusEffectComponentArray.addComponent(frozenYeti, new StatusEffectComponent());
+   StatusEffectComponentArray.addComponent(frozenYeti, new StatusEffectComponent(StatusEffectConst.freezing));
    AIHelperComponentArray.addComponent(frozenYeti, new AIHelperComponent(VISION_RANGE));
    FrozenYetiComponentArray.addComponent(frozenYeti, new FrozenYetiComponent());
    WanderAIComponentArray.addComponent(frozenYeti, new WanderAIComponent());

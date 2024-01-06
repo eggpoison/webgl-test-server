@@ -6,12 +6,26 @@ import { damageEntity } from "./HealthComponent";
 export const NUM_STATUS_EFFECTS = Object.keys(STATUS_EFFECT_MODIFIERS).length;
 
 export class StatusEffectComponent {
-   readonly ticksRemaining = [0, 0, 0, 0];
-   readonly ticksElapsed = [0, 0, 0, 0];
+   public readonly ticksRemaining = [0, 0, 0, 0];
+   public readonly ticksElapsed = [0, 0, 0, 0];
+
+   public readonly statusEffectImmunityBitset: number;
+
+   constructor(statusEffectImmunityBitset: number) {
+      this.statusEffectImmunityBitset = statusEffectImmunityBitset;
+   }
+}
+
+const entityIsImmuneToStatusEffect = (statusEffectComponent: StatusEffectComponent, statusEffect: StatusEffectConst): boolean => {
+   return (statusEffectComponent.statusEffectImmunityBitset & statusEffect) > 0;
 }
 
 export function applyStatusEffect(entity: Entity, statusEffect: StatusEffectConst, durationTicks: number): void {
    const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
+   if (entityIsImmuneToStatusEffect(statusEffectComponent, statusEffect)) {
+      return;
+   }
+   
    if (!hasStatusEffect(statusEffectComponent, statusEffect)) {
       // New status effect
       
