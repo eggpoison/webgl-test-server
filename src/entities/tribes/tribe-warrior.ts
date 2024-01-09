@@ -34,16 +34,23 @@ export function createTribeWarrior(position: Point, tribeType: TribeType, tribe:
    });
    TribeMemberComponentArray.addComponent(warrior, new TribeMemberComponent(tribeType));
    TribesmanComponentArray.addComponent(warrior, new TribesmanComponent(hutID));
+   AIHelperComponentArray.addComponent(warrior, new AIHelperComponent(TRIBE_WARRIOR_VISION_RANGE));
+
+   const inventoryUseComponent = new InventoryUseComponent();
+   InventoryUseComponentArray.addComponent(warrior, inventoryUseComponent);
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(warrior, inventoryComponent);
+
    const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", INVENTORY_SIZE, 1, true);
+   inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
    createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
-
-   InventoryUseComponentArray.addComponent(warrior, new InventoryUseComponent(hotbarInventory));
-   AIHelperComponentArray.addComponent(warrior, new AIHelperComponent(TRIBE_WARRIOR_VISION_RANGE));
+   if (tribe.tribeType === TribeType.barbarians) {
+      const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
+      inventoryUseComponent.addInventoryUseInfo(offhandInventory);
+   }
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done

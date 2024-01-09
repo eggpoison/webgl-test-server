@@ -12,7 +12,7 @@ import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../.
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
-import { InventoryUseComponent } from "../../components/InventoryUseComponent";
+import { InventoryUseComponent, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { attackEntity, calculateRadialAttackTargets } from "../tribes/tribe-member";
 
 const MAX_HEALTH = 20;
@@ -48,7 +48,10 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    InventoryComponentArray.addComponent(zombie, inventoryComponent);
 
    const inventory = createNewInventory(inventoryComponent, "handSlot", 1, 1, true);
-   InventoryUseComponentArray.addComponent(zombie, new InventoryUseComponent(inventory));
+
+   const inventoryUseComponent = new InventoryUseComponent();
+   InventoryUseComponentArray.addComponent(zombie, inventoryUseComponent);
+   inventoryUseComponent.addInventoryUseInfo(inventory);
    
    return zombie;
 }
@@ -79,9 +82,9 @@ const doBiteAttack = (zombie: Entity, target: Entity): void => {
    const zombieComponent = ZombieComponentArray.getComponent(zombie);
    zombieComponent.attackCooldownTicks = Math.floor(randFloat(3, 4) * SETTINGS.TPS);
 
-   // @Hack
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(zombie);
-   inventoryUseComponent.lastAttackTicks = Board.ticks;
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
+   useInfo.lastAttackTicks = Board.ticks;
 }
 
 const doAttack = (zombie: Entity, target: Entity): void => {

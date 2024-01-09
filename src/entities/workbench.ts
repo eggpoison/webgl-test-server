@@ -10,5 +10,7 @@ export function createWorkbench(position: Point): Entity {
    const hitbox = new RectangularHitbox(workbench, 0, 0, WORKBENCH_SIZE, WORKBENCH_SIZE);
    workbench.addHitbox(hitbox);
 
+   workbench.isStatic = true;
+
    return workbench;
 }

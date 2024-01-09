@@ -1,8 +1,8 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, StatusEffectConst, StructureType, SwordItemInfo, ToolItemInfo, TribeMemberAction, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, StatusEffectConst, StructureType, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
+import { InventoryComponent, addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
@@ -22,6 +22,7 @@ import { createSpearProjectile } from "../projectiles/spear-projectile";
 import { createResearchBench } from "../research-bench";
 import { WARRIOR_HUT_SIZE, createWarriorHut } from "./warrior-hut";
 import { createWoodenWall } from "../structures/wooden-wall";
+import { InventoryUseComponent, InventoryUseInfo, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -262,13 +263,15 @@ const calculateItemKnockback = (item: Item | null): number => {
  */
 // @Cleanup: Pass in the item to use directly instead of passing in the item slot and inventory name
 // @Cleanup: Not just for tribe members, move to different file
-export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): void {
+export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
    const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
 
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
+
    // Don't attack if on cooldown
-   if (inventoryUseComponent.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
-      return;
+   if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
+      return false;
    }
    
    // Find the selected item
@@ -279,12 +282,12 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
       const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
       if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer") {
          const itemInfo = ITEM_INFO_RECORD[item.type];
-         inventoryUseComponent.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
+         useInfo.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
       } else {
-         inventoryUseComponent.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+         useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
       }
    } else {
-      inventoryUseComponent.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+      useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
    }
 
    const attackDamage = calculateItemDamage(item, targetEntity);
@@ -300,7 +303,9 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
       applyStatusEffect(targetEntity, StatusEffectConst.poisoned, 3 * SETTINGS.TPS);
    }
 
-   inventoryUseComponent.lastAttackTicks = Board.ticks;
+   useInfo.lastAttackTicks = Board.ticks;
+
+   return true;
 }
 
 // @Cleanup: Not just for tribe members, move to different file
@@ -491,7 +496,7 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
    return true;
 }
 
-export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void {
+export function useItem(tribeMember: Entity, item: Item, inventoryName: string, itemSlot: number): void {
    const itemCategory = ITEM_TYPE_RECORD[item.type];
 
    const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
@@ -511,7 +516,7 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          }
 
          // Move from hotbar to armour slot
-         removeItemFromInventory(inventoryComponent, "hotbar", itemSlot);
+         removeItemFromInventory(inventoryComponent, inventoryName, itemSlot);
          addItemToSlot(inventoryComponent, "armourSlot", 1, item.type, 1);
          break;
       }
@@ -524,10 +529,11 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
 
          healEntity(tribeMember, itemInfo.healAmount);
-         consumeItem(inventoryComponent, "hotbar", itemSlot, 1);
+         consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
-         inventoryUseComponent.lastEatTicks = Board.ticks;
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName)
+         useInfo.lastEatTicks = Board.ticks;
          break;
       }
       case "placeable": {
@@ -536,7 +542,6 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          const placeInfo = PLACEABLE_ITEM_HITBOX_INFO[item.type];
 
          const snapInfo = calculateSnapInfo(tribeMember, placeInfo);
-         console.log(snapInfo);
          const placePosition = calculatePlacePosition(tribeMember, placeInfo, snapInfo);
          const placeRotation = calculatePlaceRotation(tribeMember, snapInfo);
 
@@ -623,14 +628,15 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
       }
       case "bow": {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
-         if (inventoryUseComponent.bowCooldownTicks !== 0) {
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
+         if (useInfo.bowCooldownTicks !== 0) {
             return;
          }
 
-         inventoryUseComponent.lastBowChargeTicks = Board.ticks;
+         useInfo.lastBowChargeTicks = Board.ticks;
 
          const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
-         inventoryUseComponent.bowCooldownTicks = itemInfo.shotCooldownTicks;
+         useInfo.bowCooldownTicks = itemInfo.shotCooldownTicks;
 
          // Offset the arrow's spawn to be just outside of the tribe member's hitbox
          // @Speed: Garbage collection
@@ -648,13 +654,14 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          // 
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
          const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
          const x = tribeMember.position.x + 35 * Math.sin(offsetDirection);
          const y = tribeMember.position.y + 35 * Math.cos(offsetDirection);
          const spear = createSpearProjectile(new Point(x, y), tribeMember.id);
 
-         const ticksSinceLastAction = Board.ticks - inventoryUseComponent.lastSpearChargeTicks;
+         const ticksSinceLastAction = Board.ticks - useInfo.lastSpearChargeTicks;
          const secondsSinceLastAction = ticksSinceLastAction / SETTINGS.TPS;
          const velocityMagnitude = lerp(1000, 1700, Math.min(secondsSinceLastAction / 3, 1));
 
@@ -662,9 +669,9 @@ export function useItem(tribeMember: Entity, item: Item, itemSlot: number): void
          spear.velocity.y = velocityMagnitude * Math.cos(tribeMember.rotation);
          spear.rotation = tribeMember.rotation;
 
-         consumeItem(inventoryComponent, "hotbar", itemSlot, 1);
+         consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
 
-         inventoryUseComponent.lastSpearChargeTicks = Board.ticks;
+         useInfo.lastSpearChargeTicks = Board.ticks;
          
          break;
       }
@@ -725,26 +732,38 @@ export function pickupItemEntity(tribeMember: Entity, itemEntity: Entity): boole
    return false;
 }
 
-export function tickTribeMember(tribeMember: Entity): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+const tickInventoryUseInfo = (tribeMember: Entity, inventoryUseInfo: InventoryUseInfo): void => {
+   if (inventoryUseInfo.currentAction === TribeMemberAction.eat) {
+      inventoryUseInfo.foodEatingTimer -= 1 / SETTINGS.TPS;
 
-   if (inventoryUseComponent.currentAction === TribeMemberAction.eat) {
-      inventoryUseComponent.foodEatingTimer -= 1 / SETTINGS.TPS;
-
-      if (inventoryUseComponent.foodEatingTimer <= 0) {
-         const selectedItem = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+      if (inventoryUseInfo.foodEatingTimer <= 0) {
+         const selectedItem = getItemFromInventory(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot);
          if (selectedItem !== null) {
             const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];
             if (itemCategory === "food") {
-               useItem(tribeMember, selectedItem, inventoryUseComponent.selectedItemSlot);
+               useItem(tribeMember, selectedItem, inventoryUseInfo.inventory.name, inventoryUseInfo.selectedItemSlot);
 
                const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as FoodItemInfo;
-               inventoryUseComponent.foodEatingTimer = itemInfo.eatTime;
+               inventoryUseInfo.foodEatingTimer = itemInfo.eatTime;
             }
          }
       }
    }
+}
+
+export function tickTribeMember(tribeMember: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+   tickInventoryUseInfo(tribeMember, useInfo);
+
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+   if (tribeComponent.tribeType === TribeType.barbarians && tribeMember.type !== IEntityType.tribeWorker) {
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
+      tickInventoryUseInfo(tribeMember, useInfo);
+   }
+
 
    // @Speed: Shouldn't be done every tick, only do when the backpack changes
    // Update backpack

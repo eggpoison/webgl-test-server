@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, StructureShapeType, randFloat, SlimeSize } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -10,13 +10,14 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
-import { getInventory, getItem, serializeInventoryData } from "./components/InventoryComponent";
-import { createPlayer, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
+import { getInventory, serializeInventoryData } from "./components/InventoryComponent";
+import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 import { getTilesOfBiome } from "./census";
-import { SPIT_CHARGE_TIME_TICKS, createSlime } from "./entities/mobs/slime";
+import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
+import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 
 /*
 
@@ -42,30 +43,33 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
    };
 }
 
+// @Incomplete
 const getFoodEatingType = (tribeMember: Entity, activeItemType: ItemType | null): ItemType | -1 => {
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
-   if (activeItemType !== null && inventoryUseComponent.currentAction === TribeMemberAction.eat) {
+   if (activeItemType !== null && useInfo.currentAction === TribeMemberAction.eat) {
       return activeItemType;
    }
    return -1;
 }
 
-const getLastActionTicks = (tribeMember: Entity): number => {
+const getLastActionTicks = (tribeMember: Entity, inventoryName: string): number => {
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
-   switch (inventoryUseComponent.currentAction) {
+   switch (useInfo.currentAction) {
       case TribeMemberAction.chargeBow: {
-         return inventoryUseComponent.lastBowChargeTicks;
+         return useInfo.lastBowChargeTicks;
       }
       case TribeMemberAction.chargeSpear: {
-         return inventoryUseComponent.lastSpearChargeTicks;
+         return useInfo.lastSpearChargeTicks;
       }
       case TribeMemberAction.eat: {
-         return inventoryUseComponent.lastEatTicks;
+         return useInfo.lastEatTicks;
       }
       case TribeMemberAction.none: {
-         return inventoryUseComponent.lastAttackTicks;
+         return useInfo.lastAttackTicks;
       }
       case TribeMemberAction.researching: {
          // @Incomplete
@@ -184,24 +188,45 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             throw new Error("Can't find player data");
          }
 
-         let activeItem: ItemType | null = null;
-         if (hotbarInventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
-            const item = hotbarInventory.itemSlots[inventoryUseComponent.selectedItemSlot];
-            activeItem = item.type;
+         const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+
+         let hotbarActiveItem: ItemType | null = null;
+         if (hotbarInventory.itemSlots.hasOwnProperty(hotbarUseInfo.selectedItemSlot)) {
+            const item = hotbarInventory.itemSlots[hotbarUseInfo.selectedItemSlot];
+            hotbarActiveItem = item.type;
+         }
+
+         let offhandActiveItem: ItemType | null = null;
+         let offhandAction = TribeMemberAction.none;
+         let offhandLastActionTicks = 0;
+         if (tribeComponent.tribeType === TribeType.barbarians) {
+            const offhandInventory = getInventory(inventoryComponent, "offhand");
+            const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
+            
+            if (offhandInventory.itemSlots.hasOwnProperty(1)) {
+               const item = offhandInventory.itemSlots[1];
+               offhandActiveItem = item.type;
+            }
+
+            offhandAction = offhandUseInfo.currentAction;
+            offhandLastActionTicks = getLastActionTicks(entity, "offhand");
          }
          
          // @Incomplete
-         // foodEatingType: ItemType | -1, lastActionTicks: number, hasFrostShield: boolean, warPaintType: number, username: string
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             tribeComponent.tribeType,
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
-            activeItem,
-            inventoryUseComponent.currentAction,
-            getFoodEatingType(entity, activeItem),
-            getLastActionTicks(entity),
+            hotbarActiveItem,
+            hotbarUseInfo.currentAction,
+            getFoodEatingType(entity, hotbarActiveItem),
+            getLastActionTicks(entity, "hotbar"),
+            offhandActiveItem,
+            offhandAction,
+            getFoodEatingType(entity, offhandActiveItem),
+            offhandLastActionTicks,
             false,
             tribeMemberComponent.warPaintType,
             playerData.username
@@ -216,10 +241,28 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
 
          const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
-         let activeItem: ItemType | null = null;
-         if (hotbarInventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
-            const item = hotbarInventory.itemSlots[inventoryUseComponent.selectedItemSlot];
-            activeItem = item.type;
+         const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+
+         let hotbarActiveItem: ItemType | null = null;
+         if (hotbarInventory.itemSlots.hasOwnProperty(hotbarUseInfo.selectedItemSlot)) {
+            const item = hotbarInventory.itemSlots[hotbarUseInfo.selectedItemSlot];
+            hotbarActiveItem = item.type;
+         }
+
+         let offhandActiveItem: ItemType | null = null;
+         let offhandAction = TribeMemberAction.none;
+         let offhandLastActionTicks = 0;
+         if (tribeComponent.tribeType === TribeType.barbarians) {
+            const offhandInventory = getInventory(inventoryComponent, "offhand");
+            const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
+            
+            if (offhandInventory.itemSlots.hasOwnProperty(1)) {
+               const item = offhandInventory.itemSlots[1];
+               offhandActiveItem = item.type;
+            }
+
+            offhandAction = offhandUseInfo.currentAction;
+            offhandLastActionTicks = getLastActionTicks(entity, "offhand");
          }
          
          // @Incomplete
@@ -229,14 +272,18 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
-            activeItem,
-            inventoryUseComponent.currentAction,
-            getFoodEatingType(entity, activeItem),
-            getLastActionTicks(entity),
+            hotbarActiveItem,
+            hotbarUseInfo.currentAction,
+            getFoodEatingType(entity, hotbarActiveItem),
+            getLastActionTicks(entity, "hotbar"),
+            offhandActiveItem,
+            offhandAction,
+            getFoodEatingType(entity, offhandActiveItem),
+            offhandLastActionTicks,
             false,
             tribeMemberComponent.warPaintType,
             serializeInventoryData(hotbarInventory, "hotbar"),
-            inventoryUseComponent.selectedItemSlot,
+            hotbarUseInfo.selectedItemSlot,
             0
          ];
          break;
@@ -248,11 +295,28 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
 
          const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+         const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
-         let activeItem: ItemType | null = null;
-         if (hotbarInventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
-            const item = hotbarInventory.itemSlots[inventoryUseComponent.selectedItemSlot];
-            activeItem = item.type;
+         let hotbarActiveItem: ItemType | null = null;
+         if (hotbarInventory.itemSlots.hasOwnProperty(hotbarUseInfo.selectedItemSlot)) {
+            const item = hotbarInventory.itemSlots[hotbarUseInfo.selectedItemSlot];
+            hotbarActiveItem = item.type;
+         }
+
+         let offhandActiveItem: ItemType | null = null;
+         let offhandAction = TribeMemberAction.none;
+         let offhandLastActionTicks = 0;
+         if (tribeComponent.tribeType === TribeType.barbarians) {
+            const offhandInventory = getInventory(inventoryComponent, "offhand");
+            const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
+            
+            if (offhandInventory.itemSlots.hasOwnProperty(1)) {
+               const item = offhandInventory.itemSlots[1];
+               offhandActiveItem = item.type;
+            }
+
+            offhandAction = offhandUseInfo.currentAction;
+            offhandLastActionTicks = getLastActionTicks(entity, "offhand");
          }
          
          // @Incomplete
@@ -262,14 +326,18 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
-            activeItem,
-            inventoryUseComponent.currentAction,
-            getFoodEatingType(entity, activeItem),
-            getLastActionTicks(entity),
+            hotbarActiveItem,
+            hotbarUseInfo.currentAction,
+            getFoodEatingType(entity, hotbarActiveItem),
+            getLastActionTicks(entity, "hotbar"),
+            offhandActiveItem,
+            offhandAction,
+            getFoodEatingType(entity, offhandActiveItem),
+            offhandLastActionTicks,
             false,
             tribeMemberComponent.warPaintType,
             serializeInventoryData(hotbarInventory, "hotbar"),
-            inventoryUseComponent.selectedItemSlot,
+            hotbarUseInfo.selectedItemSlot,
             0
          ];
          break;
@@ -392,18 +460,19 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          const zombieComponent = ZombieComponentArray.getComponent(entity);
 
          const inventory = getInventory(inventoryComponent, "handSlot");
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
          
          let activeItem: ItemType | null = null;
-         if (inventory.itemSlots.hasOwnProperty(inventoryUseComponent.selectedItemSlot)) {
-            const item = inventory.itemSlots[inventoryUseComponent.selectedItemSlot];
+         if (inventory.itemSlots.hasOwnProperty(useInfo.selectedItemSlot)) {
+            const item = inventory.itemSlots[useInfo.selectedItemSlot];
             activeItem = item.type;
          }
 
          clientArgs = [
             zombieComponent.zombieType,
             activeItem,
-            getLastActionTicks(entity),
-            inventoryUseComponent.currentAction
+            getLastActionTicks(entity, "handSlot"),
+            useInfo.currentAction
          ];
          break;
       }
@@ -425,6 +494,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.spitPoison: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.woodenDoor: {
          clientArgs = [];
          break;
       }
@@ -641,10 +714,6 @@ class GameServer {
          let tribeType: TribeType;
          let visibleChunkBounds: VisibleChunkBounds;
          let spawnPosition: Point;
-
-         setTimeout(() => {
-            createSlime(new Point(spawnPosition.x, spawnPosition.y), 2);
-         }, 500);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
             username = _username;
@@ -754,6 +823,12 @@ class GameServer {
                      inventoryName: "craftingOutputSlot"
                   },
                   armourSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     inventoryName: "armourSlot"
+                  },
+                  offhand: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
@@ -903,7 +978,23 @@ class GameServer {
          socket.on("study_tech", (studyAmount: number): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             playerData.tribe.studyTech(studyAmount);
-         })
+         });
+
+         socket.on("shape_structure", (structureID: number, type: StructureShapeType): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               shapeStructure(player, structureID, type);
+            };
+         });
+
+         socket.on("structure_interact", (structureID: number): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               interactWithStructure(player, structureID);
+            };
+         });
       });
    }
 
@@ -1028,16 +1119,30 @@ class GameServer {
                width: 1,
                height: 1,
                inventoryName: "armourSlot"
+            },
+            offhand: {
+               itemSlots: {},
+               width: 1,
+               height: 1,
+               inventoryName: "offhand"
             }
          };
       } else {
+         const tribeComponent = TribeComponentArray.getComponent(player);
+         
          return {
             hotbar: SERVER.bundleInventory(player, "hotbar"),
             backpackInventory: SERVER.bundleInventory(player, "backpack"),
             backpackSlot: SERVER.bundleInventory(player, "backpackSlot"),
             heldItemSlot: SERVER.bundleInventory(player, "heldItemSlot"),
             craftingOutputItemSlot: SERVER.bundleInventory(player, "craftingOutputSlot"),
-            armourSlot: SERVER.bundleInventory(player, "armourSlot")
+            armourSlot: SERVER.bundleInventory(player, "armourSlot"),
+            offhand: tribeComponent.tribeType === TribeType.barbarians ? SERVER.bundleInventory(player, "offhand") : {
+               itemSlots: {},
+               width: 1,
+               height: 1,
+               inventoryName: "offhand"
+            }
          };
       }
    }
@@ -1103,6 +1208,7 @@ class GameServer {
       }
 
       const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
       player.position.x = playerDataPacket.position[0];
       player.position.y = playerDataPacket.position[1];
@@ -1112,19 +1218,19 @@ class GameServer {
       player.hitboxesAreDirty = true;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       
-      inventoryUseComponent.selectedItemSlot = playerDataPacket.selectedItemSlot;
+      useInfo.selectedItemSlot = playerDataPacket.selectedItemSlot;
 
       const playerComponent = PlayerComponentArray.getComponent(player);
       playerComponent.interactingEntityID = playerDataPacket.interactingEntityID !== null ? playerDataPacket.interactingEntityID : ID_SENTINEL_VALUE;
 
-      if (playerDataPacket.action === TribeMemberAction.eat && inventoryUseComponent.currentAction !== TribeMemberAction.eat) {
+      if (playerDataPacket.action === TribeMemberAction.eat && useInfo.currentAction !== TribeMemberAction.eat) {
          startEating(player);
-      } else if (playerDataPacket.action === TribeMemberAction.chargeBow && inventoryUseComponent.currentAction !== TribeMemberAction.chargeBow) {
+      } else if (playerDataPacket.action === TribeMemberAction.chargeBow && useInfo.currentAction !== TribeMemberAction.chargeBow) {
          startChargingBow(player);
-      } else if (playerDataPacket.action === TribeMemberAction.chargeSpear && inventoryUseComponent.currentAction !== TribeMemberAction.chargeSpear) {
+      } else if (playerDataPacket.action === TribeMemberAction.chargeSpear && useInfo.currentAction !== TribeMemberAction.chargeSpear) {
          startChargingSpear(player);
       }
-      inventoryUseComponent.currentAction = playerDataPacket.action;
+      useInfo.currentAction = playerDataPacket.action;
    }
 
    private generatePlayerSpawnPosition(tribeType: TribeType): Point {

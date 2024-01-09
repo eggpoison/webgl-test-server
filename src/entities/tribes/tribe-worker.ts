@@ -45,6 +45,7 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    });
    TribeMemberComponentArray.addComponent(worker, new TribeMemberComponent(tribeType));
    TribesmanComponentArray.addComponent(worker, new TribesmanComponent(hutID));
+   AIHelperComponentArray.addComponent(worker, new AIHelperComponent(TRIBE_WORKER_VISION_RANGE));
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(worker, inventoryComponent);
@@ -53,8 +54,9 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
-   InventoryUseComponentArray.addComponent(worker, new InventoryUseComponent(hotbarInventory));
-   AIHelperComponentArray.addComponent(worker, new AIHelperComponent(TRIBE_WORKER_VISION_RANGE));
+   const inventoryUseComponent = new InventoryUseComponent();
+   InventoryUseComponentArray.addComponent(worker, inventoryUseComponent);
+   inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done

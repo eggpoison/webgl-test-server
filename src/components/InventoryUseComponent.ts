@@ -1,40 +1,69 @@
 import { SETTINGS, TribeMemberAction } from "webgl-test-shared";
 import { Inventory } from "./InventoryComponent";
 
-export class InventoryUseComponent {
-   public readonly inventory: Inventory;
-   public bowCooldownTicks = 0;
-   public readonly itemAttackCooldowns: Record<number, number> = {};
-   public readonly spearWindupCooldowns: Record<number, number> = {};
-   public foodEatingTimer = 0;
-
-   public selectedItemSlot = 1;
-
+export interface InventoryUseInfo {
+   selectedItemSlot: number;
+   readonly inventory: Inventory;
+   bowCooldownTicks: number;
+   readonly itemAttackCooldowns: Record<number, number>;
+   readonly spearWindupCooldowns: Record<number, number>;
+   foodEatingTimer: number;
    // @Cleanup: Type name should not be 'tribe member action' as non tribe members can have this component
-   public currentAction = TribeMemberAction.none;
-   public lastAttackTicks = 0;
-   public lastEatTicks = 0;
-   public lastBowChargeTicks = 0;
-   public lastSpearChargeTicks = 0;
+   currentAction: TribeMemberAction;
+   lastAttackTicks: number;
+   lastEatTicks: number;
+   lastBowChargeTicks: number;
+   lastSpearChargeTicks: number;
+}
 
-   constructor(inventory: Inventory) {
-      this.inventory = inventory;
+export class InventoryUseComponent {
+   public readonly inventoryUseInfos = new Array<InventoryUseInfo>();
+
+   public addInventoryUseInfo(inventory: Inventory): void {
+      this.inventoryUseInfos.push({
+         selectedItemSlot: 1,
+         inventory: inventory,
+         bowCooldownTicks: 0,
+         itemAttackCooldowns: {},
+         spearWindupCooldowns: {},
+         foodEatingTimer: 0,
+         currentAction: TribeMemberAction.none,
+         lastAttackTicks: 0,
+         lastEatTicks: 0,
+         lastBowChargeTicks: 0,
+         lastSpearChargeTicks: 0
+      });
    }
 }
 
 export function tickInventoryUseComponent(inventoryUseComponent: InventoryUseComponent): void {
-   // Update attack cooldowns
-   for (let itemSlot = 1; itemSlot <= inventoryUseComponent.inventory.width * inventoryUseComponent.inventory.height; itemSlot++) {
-      if (inventoryUseComponent.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
-         inventoryUseComponent.itemAttackCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
-         if (inventoryUseComponent.itemAttackCooldowns[itemSlot] < 0) {
-            delete inventoryUseComponent.itemAttackCooldowns[itemSlot];
+   for (let i = 0; i < inventoryUseComponent.inventoryUseInfos.length; i++) {
+      const useInfo = inventoryUseComponent.inventoryUseInfos[i];
+
+      // Update attack cooldowns
+      for (let itemSlot = 1; itemSlot <= useInfo.inventory.width * useInfo.inventory.height; itemSlot++) {
+         if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
+            useInfo.itemAttackCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
+            if (useInfo.itemAttackCooldowns[itemSlot] < 0) {
+               delete useInfo.itemAttackCooldowns[itemSlot];
+            }
          }
+      }
+
+      useInfo.bowCooldownTicks--;
+      if (useInfo.bowCooldownTicks < 0) {
+         useInfo.bowCooldownTicks = 0;
+      }
+   }
+}
+
+export function getInventoryUseInfo(inventoryUseComponent: InventoryUseComponent, inventoryName: string): InventoryUseInfo {
+   for (let i = 0; i < inventoryUseComponent.inventoryUseInfos.length; i++) {
+      const useInfo = inventoryUseComponent.inventoryUseInfos[i];
+      if (useInfo.inventory.name === inventoryName) {
+         return useInfo;
       }
    }
 
-   inventoryUseComponent.bowCooldownTicks--;
-   if (inventoryUseComponent.bowCooldownTicks < 0) {
-      inventoryUseComponent.bowCooldownTicks = 0;
-   }
+   throw new Error("Can't find inventory use info for inventory name " + inventoryName);
 }

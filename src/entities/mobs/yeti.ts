@@ -204,8 +204,8 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
    for (let i = 0; i < visibleEntities.length; i++) {
       const entity = visibleEntities[i];
 
-      // Don't chase natural tundra resources or snowballs or frozen yetis who aren't attacking the yeti
-      if (entity.type === IEntityType.iceSpikes || entity.type === IEntityType.snowball || (entity.type === IEntityType.frozenYeti && !yetiComponent.attackingEntities.hasOwnProperty(entity.id))) {
+      // Don't chase item entities or natural tundra resources or snowballs or frozen yetis who aren't attacking the yeti
+      if (entity.type === IEntityType.itemEntity || entity.type === IEntityType.iceSpikes || entity.type === IEntityType.snowball || (entity.type === IEntityType.frozenYeti && !yetiComponent.attackingEntities.hasOwnProperty(entity.id))) {
          continue;
       }
       

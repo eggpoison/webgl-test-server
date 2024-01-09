@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemRequirements, ItemType, Point, SETTINGS, SpearItemInfo, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemRequirements, ItemType, Point, SETTINGS, SpearItemInfo, StructureShapeType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, onTribeMemberHurt, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
@@ -8,12 +8,14 @@ import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { InventoryUseComponent } from "../../components/InventoryUseComponent";
+import { InventoryUseComponent, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { SERVER } from "../../server";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { PlayerComponent } from "../../components/PlayerComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { createItem } from "../../Item";
+import { createWoodenDoor } from "../structures/wooden-door";
+import { toggleDoor } from "../../components/DoorComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -37,26 +39,34 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    StatusEffectComponentArray.addComponent(player, new StatusEffectComponent(0));
 
    TribeComponentArray.addComponent(player, {
-      tribeType: TribeType.plainspeople,
+      tribeType: tribe.tribeType,
       tribe: tribe
    });
    TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribe.tribeType));
    PlayerComponentArray.addComponent(player, new PlayerComponent());
 
+   const inventoryUseComponent = new InventoryUseComponent();
+   InventoryUseComponentArray.addComponent(player, inventoryUseComponent);
+
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(player, inventoryComponent);
+
    const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
+   inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
    createNewInventory(inventoryComponent, "craftingOutputSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "heldItemSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
+   if (tribe.tribeType === TribeType.barbarians) {
+      const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
+      inventoryUseComponent.addInventoryUseInfo(offhandInventory);
+   }
 
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
    addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
 
-   InventoryUseComponentArray.addComponent(player, new InventoryUseComponent(hotbarInventory));
 
    return player;
 }
@@ -212,7 +222,7 @@ export function processItemUsePacket(player: Entity, itemSlot: number): void {
 
    const item = getItem(inventoryComponent, "hotbar", itemSlot);
    if (item !== null)  {
-      useItem(player, item, itemSlot);
+      useItem(player, item, "hotbar", itemSlot);
    }
 }
 
@@ -223,7 +233,15 @@ export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPa
 
    // Register the hit
    if (target !== null) {
-      attackEntity(player, target, attackPacket.itemSlot, "hotbar");
+      const didAttackWithRightHand = attackEntity(player, target, attackPacket.itemSlot, "hotbar");
+
+      // If a barbarian, attack with offhand
+      if (!didAttackWithRightHand) {
+         const tribeComponent = TribeComponentArray.getComponent(player);
+         if (tribeComponent.tribeType === TribeType.barbarians) {
+            attackEntity(player, target, 1, "offhand");
+         }
+      }
    }
 }
 
@@ -252,43 +270,49 @@ export function throwItem(player: Entity, inventoryName: string, itemSlot: numbe
 export function startEating(player: Entity): void {
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    
    // Reset the food timer so that the food isn't immediately eaten
-   const foodItem = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+   const foodItem = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot);
    if (foodItem !== null) {
       const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
-      inventoryUseComponent.foodEatingTimer = itemInfo.eatTime;
+      useInfo.foodEatingTimer = itemInfo.eatTime;
    }
    
-   inventoryUseComponent.currentAction = TribeMemberAction.eat;
+   useInfo.currentAction = TribeMemberAction.eat;
 }
 
 export function startChargingBow(player: Entity): void {
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
 
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+
    // Reset the cooldown so the bow doesn't fire immediately
-   const bow = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+   const bow = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot);
    if (bow !== null) {
       const itemInfo = ITEM_INFO_RECORD[bow.type] as BowItemInfo;
-      inventoryUseComponent.bowCooldownTicks = itemInfo.shotCooldownTicks;
-      inventoryUseComponent.lastBowChargeTicks = Board.ticks;
+      useInfo.bowCooldownTicks = itemInfo.shotCooldownTicks;
+      useInfo.lastBowChargeTicks = Board.ticks;
    }
    
-   inventoryUseComponent.currentAction = TribeMemberAction.chargeBow;
+   useInfo.currentAction = TribeMemberAction.chargeBow;
 }
 
 export function startChargingSpear(player: Entity): void {
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
 
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+
    // Reset the cooldown so the bow doesn't fire immediately
-   const spear = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot);
+   const spear = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot);
    if (spear !== null) {
-      inventoryUseComponent.lastSpearChargeTicks = Board.ticks;
+      useInfo.lastSpearChargeTicks = Board.ticks;
    }
    
-   inventoryUseComponent.currentAction = TribeMemberAction.chargeSpear;
+   useInfo.currentAction = TribeMemberAction.chargeSpear;
 }
 
 const itemIsNeededInTech = (tech: TechInfo, itemProgress: ItemRequirements, itemType: ItemType): boolean => {
@@ -375,5 +399,32 @@ export function processTechUnlock(player: Entity, techID: TechID): void {
 
    if (hasMetTechItemRequirements(tech, tribeComponent.tribe.techTreeUnlockProgress[techID]?.itemProgress || {}) && hasMetTechStudyRequirements(tech, tribeComponent.tribe)) {
       tribeComponent.tribe.unlockTech(techID);
+   }
+}
+
+export function shapeStructure(player: Entity, structureID: number, type: StructureShapeType): void {
+   if (!Board.entityRecord.hasOwnProperty(structureID)) {
+      return;
+   }
+
+   const previousStructure = Board.entityRecord[structureID];
+   previousStructure.remove();
+
+   const tribeComponent = TribeComponentArray.getComponent(player);
+   const newStructure = createWoodenDoor(previousStructure.position, tribeComponent.tribe, previousStructure.rotation);
+   newStructure.rotation = previousStructure.rotation;
+}
+
+export function interactWithStructure(player: Entity, structureID: number): void {
+   if (!Board.entityRecord.hasOwnProperty(structureID)) {
+      return;
+   }
+
+   const structure = Board.entityRecord[structureID];
+   switch (structure.type) {
+      case IEntityType.woodenDoor: {
+         toggleDoor(structure);
+         break;
+      }
    }
 }

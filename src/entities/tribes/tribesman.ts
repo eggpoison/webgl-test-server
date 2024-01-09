@@ -9,6 +9,7 @@ import { TribesmanComponent } from "../../components/TribesmanComponent";
 import { getTribeMemberRelationship, EntityRelationship, tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem } from "./tribe-member";
 import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE, TribesmanAIType } from "./tribe-worker";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -358,9 +359,10 @@ export function tickTribesman(tribesman: Entity): void {
       escape(tribesman, visibleEnemies);
 
       const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       
       tribesmanComponent.lastAIType = TribesmanAIType.escaping;
-      inventoryUseComponent.currentAction = TribeMemberAction.none;
+      useInfo.currentAction = TribeMemberAction.none;
       return;
    }
 
@@ -384,9 +386,10 @@ export function tickTribesman(tribesman: Entity): void {
          }
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          tribesmanComponent.lastAIType = TribesmanAIType.idle;
-         inventoryUseComponent.currentAction = TribeMemberAction.none;
+         useInfo.currentAction = TribeMemberAction.none;
          return;
       }
    }
@@ -417,18 +420,19 @@ export function tickTribesman(tribesman: Entity): void {
       const foodItemSlot = getFoodItemSlot(tribesman);
       if (foodItemSlot !== null) {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
-         inventoryUseComponent.selectedItemSlot = foodItemSlot;
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+         useInfo.selectedItemSlot = foodItemSlot;
 
          // If the food is only just being eaten, reset the food timer so that the food isn't immediately eaten
-         if (inventoryUseComponent.currentAction !== TribeMemberAction.eat) {
+         if (useInfo.currentAction !== TribeMemberAction.eat) {
             const foodItem = getItem(inventoryComponent, "hotbar", foodItemSlot)!;
             const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
-            inventoryUseComponent.foodEatingTimer = itemInfo.eatTime;
+            useInfo.foodEatingTimer = itemInfo.eatTime;
          }
          
          tribesman.acceleration.x = 0;
          tribesman.acceleration.y = 0;
-         inventoryUseComponent.currentAction = TribeMemberAction.eat;
+         useInfo.currentAction = TribeMemberAction.eat;
          return;
       }
    }
@@ -472,13 +476,14 @@ export function tickTribesman(tribesman: Entity): void {
 
       if (typeof closestDroppedItem !== "undefined") {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          tribesman.rotation = tribesman.position.calculateAngleBetween(closestDroppedItem.position);
          tribesman.hitboxesAreDirty = true;
          tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
          tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
-         inventoryUseComponent.currentAction = TribeMemberAction.none;
+         useInfo.currentAction = TribeMemberAction.none;
          return;
       }
    }
@@ -488,10 +493,11 @@ export function tickTribesman(tribesman: Entity): void {
       const closestBarrel = findNearestBarrel(tribesman);
       if (closestBarrel !== null) {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          haulToBarrel(tribesman, closestBarrel);
          tribesmanComponent.lastAIType = TribesmanAIType.haulingResources;
-         inventoryUseComponent.currentAction = TribeMemberAction.none;
+         useInfo.currentAction = TribeMemberAction.none;
          return;
       }
    }
@@ -814,7 +820,8 @@ const doMeleeAttack = (tribesman: Entity): void => {
    // Register the hit
    if (target !== null) {
       const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
-      attackEntity(tribesman, target, inventoryUseComponent.selectedItemSlot, "hotbar");
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+      attackEntity(tribesman, target, useInfo.selectedItemSlot, "hotbar");
    }
 }
 
@@ -846,28 +853,29 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    const bestItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
 
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
    if (bestItemSlot !== 999) {
       const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
       
-      inventoryUseComponent.selectedItemSlot = bestItemSlot;
+      useInfo.selectedItemSlot = bestItemSlot;
 
       // Don't do a melee attack if using a bow, instead charge the bow
-      const selectedItem = getItem(inventoryComponent, "hotbar", inventoryUseComponent.selectedItemSlot)!;
+      const selectedItem = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot)!;
       const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
       if (weaponCategory === "bow") {
          // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
-         if (inventoryUseComponent.currentAction !== TribeMemberAction.chargeBow) {
+         if (useInfo.currentAction !== TribeMemberAction.chargeBow) {
             const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
-            inventoryUseComponent.bowCooldownTicks = itemInfo.shotCooldownTicks;
+            useInfo.bowCooldownTicks = itemInfo.shotCooldownTicks;
          }
-         inventoryUseComponent.currentAction = TribeMemberAction.chargeBow;
+         useInfo.currentAction = TribeMemberAction.chargeBow;
          
          engageTargetRanged(tribesman, huntedEntity);
 
          // If the bow is fully charged, fire it
-         if (inventoryUseComponent.bowCooldownTicks === 0) {
-            useItem(tribesman, selectedItem, inventoryUseComponent.selectedItemSlot);
+         if (useInfo.bowCooldownTicks === 0) {
+            useItem(tribesman, selectedItem, "hotbar", useInfo.selectedItemSlot);
          }
 
          return;
@@ -877,7 +885,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    // If a melee attack is being done, update to attack at melee distance
    engageTargetMelee(tribesman, huntedEntity);
 
-   inventoryUseComponent.currentAction = TribeMemberAction.none;
+   useInfo.currentAction = TribeMemberAction.none;
    
    doMeleeAttack(tribesman);
 }

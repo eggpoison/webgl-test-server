@@ -15,6 +15,7 @@ export interface Inventory {
    readonly itemSlots: ItemSlots;
    /** Whether the inventory allows dropped items to be put into it */
    readonly acceptsPickedUpItems: boolean;
+   readonly name: string;
 }
 
 export function serializeInventoryData(inventory: Inventory, inventoryName: string): InventoryData {
@@ -55,7 +56,8 @@ export function createNewInventory(inventoryComponent: InventoryComponent, name:
       width: width,
       height: height,
       itemSlots: {},
-      acceptsPickedUpItems: acceptsPickedUpItems
+      acceptsPickedUpItems: acceptsPickedUpItems,
+      name: name
    };
 
    inventoryComponent.inventories[name] = inventory;
@@ -79,14 +81,17 @@ export function getInventory(inventoryComponent: InventoryComponent, name: strin
    return inventoryComponent.inventories[name];
 }
 
-export function getItem(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number): Item | null {
-   const inventory = getInventory(inventoryComponent, inventoryName);
-   
+export function getItemFromInventory(inventory: Inventory, itemSlot: number): Item | null {
    if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
       return inventory.itemSlots[itemSlot];
    } else {
       return null;
    }
+}
+
+export function getItem(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number): Item | null {
+   const inventory = getInventory(inventoryComponent, inventoryName);
+   return getItemFromInventory(inventory, itemSlot);
 }
 
 export function setItem(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number, item: Item | null): void {
