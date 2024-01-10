@@ -617,7 +617,6 @@ class GameServer {
    }
 
    public start(): void {
-
       Board.setup();
       SERVER.setup();
       
@@ -1208,7 +1207,7 @@ class GameServer {
       }
 
       const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
-      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+      const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
       player.position.x = playerDataPacket.position[0];
       player.position.y = playerDataPacket.position[1];
@@ -1218,19 +1217,34 @@ class GameServer {
       player.hitboxesAreDirty = true;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
       
-      useInfo.selectedItemSlot = playerDataPacket.selectedItemSlot;
+      hotbarUseInfo.selectedItemSlot = playerDataPacket.selectedItemSlot;
 
       const playerComponent = PlayerComponentArray.getComponent(player);
       playerComponent.interactingEntityID = playerDataPacket.interactingEntityID !== null ? playerDataPacket.interactingEntityID : ID_SENTINEL_VALUE;
 
-      if (playerDataPacket.action === TribeMemberAction.eat && useInfo.currentAction !== TribeMemberAction.eat) {
-         startEating(player);
-      } else if (playerDataPacket.action === TribeMemberAction.chargeBow && useInfo.currentAction !== TribeMemberAction.chargeBow) {
-         startChargingBow(player);
-      } else if (playerDataPacket.action === TribeMemberAction.chargeSpear && useInfo.currentAction !== TribeMemberAction.chargeSpear) {
-         startChargingSpear(player);
+      if (playerDataPacket.mainAction === TribeMemberAction.eat && hotbarUseInfo.currentAction !== TribeMemberAction.eat) {
+         startEating(player, "hotbar");
+      } else if (playerDataPacket.mainAction === TribeMemberAction.chargeBow && hotbarUseInfo.currentAction !== TribeMemberAction.chargeBow) {
+         startChargingBow(player, "hotbar");
+      } else if (playerDataPacket.mainAction === TribeMemberAction.chargeSpear && hotbarUseInfo.currentAction !== TribeMemberAction.chargeSpear) {
+         startChargingSpear(player, "hotbar");
       }
-      useInfo.currentAction = playerDataPacket.action;
+      hotbarUseInfo.currentAction = playerDataPacket.mainAction;
+
+      const tribeComponent = TribeComponentArray.getComponent(player);
+      if (tribeComponent.tribeType === TribeType.barbarians) {
+         const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
+
+         if (playerDataPacket.offhandAction === TribeMemberAction.eat && offhandUseInfo.currentAction !== TribeMemberAction.eat) {
+            startEating(player, "offhand");
+         } else if (playerDataPacket.offhandAction === TribeMemberAction.chargeBow && offhandUseInfo.currentAction !== TribeMemberAction.chargeBow) {
+            startChargingBow(player, "offhand");
+         } else if (playerDataPacket.offhandAction === TribeMemberAction.chargeSpear && offhandUseInfo.currentAction !== TribeMemberAction.chargeSpear) {
+            startChargingSpear(player, "offhand");
+         }
+
+         offhandUseInfo.currentAction = playerDataPacket.offhandAction;
+      }
    }
 
    private generatePlayerSpawnPosition(tribeType: TribeType): Point {

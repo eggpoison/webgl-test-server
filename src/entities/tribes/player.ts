@@ -267,14 +267,14 @@ export function throwItem(player: Entity, inventoryName: string, itemSlot: numbe
    itemEntity.velocity.y += ITEM_THROW_FORCE * Math.cos(throwDirection);
 }
 
-export function startEating(player: Entity): void {
+export function startEating(player: Entity, inventoryName: string): void {
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
 
-   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
    
    // Reset the food timer so that the food isn't immediately eaten
-   const foodItem = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot);
+   const foodItem = getItem(inventoryComponent, inventoryName, useInfo.selectedItemSlot);
    if (foodItem !== null) {
       const itemInfo = ITEM_INFO_RECORD[foodItem.type] as FoodItemInfo;
       useInfo.foodEatingTimer = itemInfo.eatTime;
@@ -283,14 +283,14 @@ export function startEating(player: Entity): void {
    useInfo.currentAction = TribeMemberAction.eat;
 }
 
-export function startChargingBow(player: Entity): void {
+export function startChargingBow(player: Entity, inventoryName: string): void {
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
 
-   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
    // Reset the cooldown so the bow doesn't fire immediately
-   const bow = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot);
+   const bow = getItem(inventoryComponent, inventoryName, useInfo.selectedItemSlot);
    if (bow !== null) {
       const itemInfo = ITEM_INFO_RECORD[bow.type] as BowItemInfo;
       useInfo.bowCooldownTicks = itemInfo.shotCooldownTicks;
@@ -300,14 +300,14 @@ export function startChargingBow(player: Entity): void {
    useInfo.currentAction = TribeMemberAction.chargeBow;
 }
 
-export function startChargingSpear(player: Entity): void {
+export function startChargingSpear(player: Entity, inventoryName: string): void {
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
 
-   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
    // Reset the cooldown so the bow doesn't fire immediately
-   const spear = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot);
+   const spear = getItem(inventoryComponent, inventoryName, useInfo.selectedItemSlot);
    if (spear !== null) {
       useInfo.lastSpearChargeTicks = Board.ticks;
    }
