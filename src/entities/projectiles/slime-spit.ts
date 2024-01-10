@@ -15,7 +15,7 @@ export function createSlimeSpit(position: Point, size: number): Entity {
    const spit = new Entity(position, IEntityType.slimeSpit, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    const hitboxSize = SIZES[size];
-   const hitbox = new RectangularHitbox(spit, 0, 0, hitboxSize, hitboxSize);
+   const hitbox = new RectangularHitbox(spit, 0, 0, hitboxSize, hitboxSize, 0);
    spit.addHitbox(hitbox);
 
    SlimeSpitComponentArray.addComponent(spit, new SlimeSpitComponent(size));

@@ -59,16 +59,16 @@ export interface FrozenYetiRockSpikeInfo {
 export function createFrozenYeti(position: Point): Entity {
    const frozenYeti = new Entity(position, IEntityType.frozenYeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const bodyHitbox = new CircularHitbox(frozenYeti, 0, 0, FROZEN_YETI_SIZE / 2);
+   const bodyHitbox = new CircularHitbox(frozenYeti, 0, 0, FROZEN_YETI_SIZE / 2, 0);
    frozenYeti.addHitbox(bodyHitbox);
 
-   const headHitbox = new CircularHitbox(frozenYeti, 0, HEAD_DISTANCE, HEAD_HITBOX_SIZE / 2);
+   const headHitbox = new CircularHitbox(frozenYeti, 0, HEAD_DISTANCE, HEAD_HITBOX_SIZE / 2, 1);
    frozenYeti.addHitbox(headHitbox);
 
    // Paw hitboxes
    for (let i = 0; i < 2; i++) {
       const pawDirection = PAW_RESTING_ANGLE * (i === 0 ? -1 : 1);
-      const hitbox = new CircularHitbox(frozenYeti, PAW_OFFSET * Math.sin(pawDirection), PAW_OFFSET * Math.cos(pawDirection), PAW_SIZE / 2);
+      const hitbox = new CircularHitbox(frozenYeti, PAW_OFFSET * Math.sin(pawDirection), PAW_OFFSET * Math.cos(pawDirection), PAW_SIZE / 2, 2 + i);
       frozenYeti.addHitbox(hitbox);
    }
 

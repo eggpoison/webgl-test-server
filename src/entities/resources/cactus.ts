@@ -70,15 +70,16 @@ const generateRandomLimbs = (): ReadonlyArray<CactusLimbData> => {
 export function createCactus(position: Point): Entity {
    const cactus = new Entity(position, IEntityType.cactus, COLLISION_BITS.cactus, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(cactus, 0, 0, RADIUS - HITBOX_PADDING);
+   const hitbox = new CircularHitbox(cactus, 0, 0, RADIUS - HITBOX_PADDING, 0);
    cactus.addHitbox(hitbox);
 
    const flowers = generateRandomFlowers();
    const limbs = generateRandomLimbs();
 
    // Create hitboxes for all the cactus limbs
-   for (const limb of limbs) {
-      const hitbox = new CircularHitbox(cactus, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), 18);
+   for (let i = 0; i < limbs.length; i++) {
+      const limb = limbs[i]
+      const hitbox = new CircularHitbox(cactus, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), 18, i + 1);
       cactus.addHitbox(hitbox);
    }
 

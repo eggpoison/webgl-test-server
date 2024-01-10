@@ -24,7 +24,7 @@ export const SLIMEWISP_MERGE_TIME = 2;
 export function createSlimewisp(position: Point): Entity {
    const slimewisp = new Entity(position, IEntityType.slimewisp, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(slimewisp, 0, 0, RADIUS);
+   const hitbox = new CircularHitbox(slimewisp, 0, 0, RADIUS, 0);
    slimewisp.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slimewisp, new HealthComponent(MAX_HEALTH));

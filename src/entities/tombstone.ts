@@ -27,7 +27,7 @@ const ZOMBIE_SPAWN_TIME = 3;
 export function createTombstone(position: Point): Entity {
    const tombstone = new Entity(position, IEntityType.tombstone, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(tombstone, 0, 0, WIDTH, HEIGHT);
+   const hitbox = new RectangularHitbox(tombstone, 0, 0, WIDTH, HEIGHT, 0);
    tombstone.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tombstone, new HealthComponent(MAX_HEALTH));

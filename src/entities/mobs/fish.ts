@@ -39,7 +39,7 @@ const LUNGE_INTERVAL = 1;
 export function createFish(position: Point): Entity {
    const fish = new Entity(position, IEntityType.fish, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(fish, 0, 0, FISH_WIDTH, FISH_HEIGHT);
+   const hitbox = new RectangularHitbox(fish, 0, 0, FISH_WIDTH, FISH_HEIGHT, 0);
    fish.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(fish, new HealthComponent(MAX_HEALTH));

@@ -59,7 +59,7 @@ interface AngerPropagationInfo {
 export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, startingOrbs: Array<MovingOrbData> = []): Entity {
    const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(slime, 0, 0, RADII[size]);
+   const hitbox = new CircularHitbox(slime, 0, 0, RADII[size], 0);
    slime.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));

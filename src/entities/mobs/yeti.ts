@@ -142,7 +142,7 @@ export function yetiSpawnPositionIsValid(positionX: number, positionY: number): 
 export function createYeti(position: Point): Entity {
    const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(yeti, 0, 0, YETI_SIZE / 2);
+   const hitbox = new CircularHitbox(yeti, 0, 0, YETI_SIZE / 2, 0);
    yeti.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));

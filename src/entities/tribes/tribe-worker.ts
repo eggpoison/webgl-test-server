@@ -32,7 +32,7 @@ export enum TribesmanAIType {
 export function createTribeWorker(position: Point, tribeType: TribeType, tribe: Tribe, hutID: number): Entity {
    const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(worker, 0, 0, TRIBE_WORKER_RADIUS);
+   const hitbox = new CircularHitbox(worker, 0, 0, TRIBE_WORKER_RADIUS, 0);
    worker.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];
@@ -62,7 +62,7 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
       const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
       inventoryUseComponent.addInventoryUseInfo(offhandInventory);
    }
-   
+
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done
    if (tribeType === TribeType.frostlings) {

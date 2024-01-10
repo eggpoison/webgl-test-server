@@ -28,6 +28,7 @@ node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
 
 const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitboxData => {
    return {
+      localID: hitbox.localID,
       width: hitbox.width,
       height: hitbox.height,
       offsetX: hitbox.offset.x,
@@ -37,6 +38,7 @@ const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitb
 
 const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData => {
    return {
+      localID: hitbox.localID,
       radius: hitbox.radius,
       offsetX: hitbox.offset.x,
       offsetY: hitbox.offset.y
@@ -517,6 +519,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.battleaxeProjectile: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.golem: {
          clientArgs = [];
          break;
       }

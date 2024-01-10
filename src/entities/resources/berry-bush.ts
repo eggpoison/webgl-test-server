@@ -15,7 +15,7 @@ const BERRY_GROW_TIME = 30;
 export function createBerryBush(position: Point): Entity {
    const berryBush = new Entity(position, IEntityType.berryBush, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(berryBush, 0, 0, BERRY_BUSH_RADIUS);
+   const hitbox = new CircularHitbox(berryBush, 0, 0, BERRY_BUSH_RADIUS, 0);
    berryBush.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(berryBush, new HealthComponent(10));

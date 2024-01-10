@@ -3,7 +3,7 @@ import Board from "./Board";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
-import Entity from "./Entity";
+import Entity, { NUM_ENTITY_TYPES } from "./Entity";
 import { createEntity } from "./entity-creation";
 import { yetiSpawnPositionIsValid } from "./entities/mobs/yeti";
 
@@ -130,6 +130,15 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.03,
       minPackSize: 3,
       maxPackSize: 4,
+      onlySpawnsInNight: false
+   },
+   {
+      entityType: IEntityType.golem,
+      spawnableTiles: [TileTypeConst.rock],
+      spawnRate: 0.004,
+      maxDensity: 0.008,
+      minPackSize: 1,
+      maxPackSize: 1,
       onlySpawnsInNight: false
    }
 ];
@@ -324,6 +333,10 @@ export function spawnInitialEntities(): void {
 
    // For each spawn info object, spawn entities until no more can be spawned
    for (const spawnInfo of SPAWN_INFO_RECORD) {
+      if (spawnInfo.entityType >= NUM_ENTITY_TYPES) {
+         throw new Error("NUM_ENTITY_TYPES too small (need at least" + (spawnInfo.entityType + 1) + ")");
+      }
+      
       numSpawnAttempts = 0;
       while (spawnConditionsAreMet(spawnInfo)) {
          runSpawnEvent(spawnInfo);

@@ -19,7 +19,7 @@ export function createWoodenArrow(position: Point, tribeMember: Entity): Entity 
    arrow.velocity.y = itemInfo.projectileSpeed * Math.cos(tribeMember.rotation);
    arrow.rotation = tribeMember.rotation;
 
-   const hitbox = new RectangularHitbox(arrow, 0, 0, ARROW_WIDTH, ARROW_HEIGHT);
+   const hitbox = new RectangularHitbox(arrow, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
    arrow.addHitbox(hitbox);
 
    ArrowComponentArray.addComponent(arrow, new ArrowComponent(tribeMember.id));

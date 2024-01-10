@@ -22,6 +22,7 @@ import { createResearchBench } from "./entities/research-bench";
 import { createWoodenWall } from "./entities/structures/wooden-wall";
 import { createSpitPoison } from "./entities/projectiles/spit-poison";
 import { createWoodenDoor } from "./entities/structures/wooden-door";
+import { createGolem } from "./entities/mobs/golem";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -47,6 +48,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.woodenWall: return createWoodenWall(position, null);
       case IEntityType.woodenDoor: return createWoodenDoor(position, null, 0);
       case IEntityType.spitPoison: return createSpitPoison(position);
+      case IEntityType.golem: return createGolem(position);
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.player:

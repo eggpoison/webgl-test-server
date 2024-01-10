@@ -11,7 +11,7 @@ const ICE_SPIKE_RADIUS = 40;
 export function createIceSpikes(position: Point): Entity {
    const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(iceSpikes, 0, 0, ICE_SPIKE_RADIUS);
+   const hitbox = new CircularHitbox(iceSpikes, 0, 0, ICE_SPIKE_RADIUS, 0);
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));

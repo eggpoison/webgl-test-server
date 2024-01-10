@@ -59,12 +59,12 @@ export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: numb
 
 export const RESOURCE_ENTITY_TYPES: ReadonlyArray<IEntityType> = [IEntityType.krumblid, IEntityType.fish, IEntityType.cow, IEntityType.tree, IEntityType.boulder, IEntityType.cactus, IEntityType.iceSpikes, IEntityType.berryBush];
 
-export const NUM_ENTITY_TYPES = 25;
+export const NUM_ENTITY_TYPES = 37;
 
 /** A generic class for any object in the world */
 class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
-   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1);
+   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1, 0);
    
    /** Unique identifier for each entity */
    public readonly id: number;

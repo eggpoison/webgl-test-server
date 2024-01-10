@@ -12,7 +12,7 @@ const DROP_VELOCITY = 400;
 export function createSpearProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const spear = new Entity(position, IEntityType.spearProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(spear, 0, 0, 12, 60);
+   const hitbox = new RectangularHitbox(spear, 0, 0, 12, 60, 0);
    spear.addHitbox(hitbox);
 
    ThrowingProjectileComponentArray.addComponent(spear, new ThrowingProjectileComponent(tribeMemberID, item));

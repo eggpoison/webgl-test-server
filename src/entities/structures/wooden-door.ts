@@ -10,7 +10,7 @@ import { DoorComponent } from "../../components/DoorComponent";
 export function createWoodenDoor(position: Point, tribe: Tribe | null, rotation: number): Entity {
    const door = new Entity(position, IEntityType.woodenDoor, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(door, 0, 0, 64, 16);
+   const hitbox = new RectangularHitbox(door, 0, 0, 64, 16, 0);
    door.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(door, new HealthComponent(15));

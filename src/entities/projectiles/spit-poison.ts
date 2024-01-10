@@ -10,7 +10,7 @@ const RADIUS = 55;
 export function createSpitPoison(position: Point): Entity {
    const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new CircularHitbox(poison, 0, 0, RADIUS);
+   const hitbox = new CircularHitbox(poison, 0, 0, RADIUS, 0);
    poison.addHitbox(hitbox);
    
    poison.isStatic = true;

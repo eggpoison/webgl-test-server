@@ -1,20 +1,19 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, ItemType, PlayerCauseOfDeath, Point, SETTINGS, lerp } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SETTINGS, lerp } from "webgl-test-shared";
 import Entity from "../../Entity";
-import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
 import { findInventoryContainingItem } from "../../components/InventoryComponent";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
-const SIZE = 40;
 const RETURN_TIME_TICKS = 1 * SETTINGS.TPS;
 
 export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new RectangularHitbox(battleaxe, 0, 0, SIZE, SIZE);
+   const hitbox = new CircularHitbox(battleaxe, 0, 0, 32, 0);
    battleaxe.addHitbox(hitbox);
    
    ThrowingProjectileComponentArray.addComponent(battleaxe, new ThrowingProjectileComponent(tribeMemberID, item));

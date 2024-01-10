@@ -52,6 +52,7 @@ import { tickSpitPoison } from "./entities/projectiles/spit-poison";
 import { onWoodenDoorRemove } from "./entities/structures/wooden-door";
 import { tickDoorComponent } from "./components/DoorComponent";
 import { onBattleaxeProjectileRemove, tickBattleaxeProjectile } from "./entities/projectiles/battleaxe-projectile";
+import { onGolemRemove } from "./entities/mobs/golem";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -381,6 +382,10 @@ abstract class Board {
             }
             case IEntityType.battleaxeProjectile: {
                onBattleaxeProjectileRemove(entity);
+               break;
+            }
+            case IEntityType.golem: {
+               onGolemRemove(entity);
                break;
             }
          }

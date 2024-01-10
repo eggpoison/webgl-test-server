@@ -15,8 +15,8 @@ class RectangularHitbox extends Hitbox {
    public vertexOffsets: HitboxVertexPositions = [new Point(0, 0), new Point(0, 0), new Point(0, 0), new Point(0, 0)];
    public sideAxes = [new Point(0, 0), new Point(0, 0)] as const;
 
-   constructor(object: HitboxObject, offsetX: number, offsetY: number, width: number, height: number) {
-      super(object, offsetX, offsetY);
+   constructor(object: HitboxObject, offsetX: number, offsetY: number, width: number, height: number, localID: number) {
+      super(object, offsetX, offsetY, localID);
 
       this.width = width;
       this.height = height;

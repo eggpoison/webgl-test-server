@@ -13,7 +13,7 @@ const DAMAGE_VELOCITY_THRESHOLD = 100;
 export function createSnowball(position: Point, size: SnowballSize = SnowballSize.small, yetiID: number = ID_SENTINEL_VALUE): Entity {
    const snowball = new Entity(position, IEntityType.snowball, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(snowball, 0, 0, SNOWBALL_SIZES[size] / 2);
+   const hitbox = new CircularHitbox(snowball, 0, 0, SNOWBALL_SIZES[size] / 2, 0);
    snowball.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(snowball, new HealthComponent(MAX_HEALTHS[size]));

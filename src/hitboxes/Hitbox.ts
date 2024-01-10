@@ -7,14 +7,16 @@ export type HitboxObject = { position: Point, rotation: number };
 export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: number];
 
 abstract class Hitbox {
+   public localID: number;
    public object: HitboxObject;
    public offset: Point;
 
    public chunkBounds: HitboxBounds = [-1, -1, -1, -1];
 
-   constructor(object: HitboxObject, offsetX: number, offsetY: number) {
+   constructor(object: HitboxObject, offsetX: number, offsetY: number, localID: number) {
       this.object = object;
       this.offset = new Point(offsetX, offsetY);
+      this.localID = localID;
    }
 
    public abstract calculateHitboxBoundsMinX(): number;

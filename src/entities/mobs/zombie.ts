@@ -34,7 +34,7 @@ const ATTACK_RADIUS = 30;
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
    const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(zombie, 0, 0, 32);
+   const hitbox = new CircularHitbox(zombie, 0, 0, 32, 0);
    zombie.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(zombie, new HealthComponent(MAX_HEALTH));

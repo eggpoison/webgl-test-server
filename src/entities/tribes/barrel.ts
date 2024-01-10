@@ -12,7 +12,7 @@ export const BARREL_SIZE = 80;
 export function createBarrel(position: Point, tribeType: TribeType, tribe: Tribe | null): Entity {
    const barrel = new Entity(position, IEntityType.barrel, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(barrel, 0, 0, BARREL_SIZE / 2);
+   const hitbox = new CircularHitbox(barrel, 0, 0, BARREL_SIZE / 2, 0);
    barrel.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(barrel, new HealthComponent(20));

@@ -13,7 +13,7 @@ export const FURNACE_SIZE = 80;
 export function createFurnace(position: Point): Entity {
    const furnace = new Entity(position, IEntityType.furnace, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(furnace, 0, 0, FURNACE_SIZE, FURNACE_SIZE);
+   const hitbox = new RectangularHitbox(furnace, 0, 0, FURNACE_SIZE, FURNACE_SIZE, 0);
    furnace.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(furnace, new HealthComponent(25));

@@ -8,7 +8,7 @@ import { applyStatusEffect } from "../../components/StatusEffectComponent";
 export function createIceShard(position: Point): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(iceShard, 0, 0, 24, 24);
+   const hitbox = new RectangularHitbox(iceShard, 0, 0, 24, 24, 0);
    iceShard.addHitbox(hitbox);
    
    IceShardComponentArray.addComponent(iceShard, {
