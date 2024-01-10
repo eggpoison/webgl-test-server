@@ -12,8 +12,11 @@ export interface InventoryUseInfo {
    currentAction: TribeMemberAction;
    lastAttackTicks: number;
    lastEatTicks: number;
+   // @Cleanup: May be able to merge all 3 of these into 1
    lastBowChargeTicks: number;
    lastSpearChargeTicks: number;
+   lastBattleaxeChargeTicks: number;
+   thrownBattleaxeItemID: number;
 }
 
 export class InventoryUseComponent {
@@ -31,7 +34,9 @@ export class InventoryUseComponent {
          lastAttackTicks: 0,
          lastEatTicks: 0,
          lastBowChargeTicks: 0,
-         lastSpearChargeTicks: 0
+         lastSpearChargeTicks: 0,
+         lastBattleaxeChargeTicks: 0,
+         thrownBattleaxeItemID: -1
       });
    }
 }

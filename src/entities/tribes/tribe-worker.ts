@@ -47,17 +47,22 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    TribesmanComponentArray.addComponent(worker, new TribesmanComponent(hutID));
    AIHelperComponentArray.addComponent(worker, new AIHelperComponent(TRIBE_WORKER_VISION_RANGE));
 
+   const inventoryUseComponent = new InventoryUseComponent();
+   InventoryUseComponentArray.addComponent(worker, inventoryUseComponent);
+
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(worker, inventoryComponent);
+
    const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", INVENTORY_SIZE, 1, true);
+   inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
    createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
-
-   const inventoryUseComponent = new InventoryUseComponent();
-   InventoryUseComponentArray.addComponent(worker, inventoryUseComponent);
-   inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
-
+   if (tribe.tribeType === TribeType.barbarians) {
+      const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
+      inventoryUseComponent.addInventoryUseInfo(offhandInventory);
+   }
+   
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done
    if (tribeType === TribeType.frostlings) {

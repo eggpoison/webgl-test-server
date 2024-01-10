@@ -1,4 +1,4 @@
-import { ITEM_INFO_RECORD, InventoryData, Item, ItemSlotsData, ItemType, StackableItemInfo, itemIsStackable } from "webgl-test-shared";
+import { ITEM_INFO_RECORD, InventoryData, Item, ItemData, ItemSlotsData, ItemType, StackableItemInfo, itemIsStackable } from "webgl-test-shared";
 import Entity from "../Entity";
 import { createItemEntity, itemEntityCanBePickedUp } from "../entities/item-entity";
 import { InventoryComponentArray, ItemComponentArray } from "./ComponentArray";
@@ -18,14 +18,18 @@ export interface Inventory {
    readonly name: string;
 }
 
+export function serialiseItem(item: Item): ItemData {
+   return {
+      type: item.type,
+      count: item.count,
+      id: item.id
+   };
+}
+
 export function serializeInventoryData(inventory: Inventory, inventoryName: string): InventoryData {
    const itemSlots: ItemSlotsData = {};
    for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
-      itemSlots[Number(itemSlot)] = {
-         type: item.type,
-         count: item.count,
-         id: item.id
-      };
+      itemSlots[Number(itemSlot)] = serialiseItem(item);
    }
    
    const inventoryData: InventoryData = {
@@ -343,4 +347,21 @@ export function dropInventory(entity: Entity, inventoryComponent: InventoryCompo
          createItemEntity(position, item.type, item.count);
       }
    }
+}
+
+export function findInventoryContainingItem(inventoryComponent: InventoryComponent, item: Item): Inventory | null {
+   for (const [_inventoryName, inventory] of inventoryComponent.inventoryArray) {
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            continue;
+         }
+
+         const currentItem = inventory.itemSlots[itemSlot];
+         if (currentItem === item) {
+            return inventory;
+         }
+      }
+   }
+
+   return null;
 }

@@ -66,7 +66,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
    addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
-
+   addItem(inventoryComponent, createItem(ItemType.stone_battleaxe, 1));
 
    return player;
 }
@@ -306,13 +306,28 @@ export function startChargingSpear(player: Entity, inventoryName: string): void 
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
-   // Reset the cooldown so the bow doesn't fire immediately
+   // Reset the cooldown so the battleaxe doesn't fire immediately
    const spear = getItem(inventoryComponent, inventoryName, useInfo.selectedItemSlot);
    if (spear !== null) {
       useInfo.lastSpearChargeTicks = Board.ticks;
    }
    
    useInfo.currentAction = TribeMemberAction.chargeSpear;
+}
+
+export function startChargingBattleaxe(player: Entity, inventoryName: string): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
+
+   // Reset the cooldown so the battleaxe doesn't fire immediately
+   const battleaxe = getItem(inventoryComponent, inventoryName, useInfo.selectedItemSlot);
+   if (battleaxe !== null) {
+      useInfo.lastBattleaxeChargeTicks = Board.ticks;
+   }
+   
+   useInfo.currentAction = TribeMemberAction.chargeBattleaxe;
 }
 
 const itemIsNeededInTech = (tech: TechInfo, itemProgress: ItemRequirements, itemType: ItemType): boolean => {

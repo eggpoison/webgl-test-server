@@ -14,7 +14,7 @@ export function createSpitPoison(position: Point): Entity {
    poison.addHitbox(hitbox);
    
    poison.isStatic = true;
-   poison.mass = 0;
+   poison.mass = Number.EPSILON; // @Hack
    
    return poison;
 }

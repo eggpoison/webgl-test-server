@@ -23,6 +23,7 @@ import { createResearchBench } from "../research-bench";
 import { WARRIOR_HUT_SIZE, createWarriorHut } from "./warrior-hut";
 import { createWoodenWall } from "../structures/wooden-wall";
 import { InventoryUseComponent, InventoryUseInfo, getInventoryUseInfo } from "../../components/InventoryUseComponent";
+import { createBattleaxeProjectile } from "../projectiles/battleaxe-projectile";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -215,6 +216,7 @@ export function calculateItemDamage(item: Item | null, entityToAttack: Entity): 
    const attackToolType = getEntityAttackToolType(entityToAttack);
    const itemCategory = ITEM_TYPE_RECORD[item.type];
    switch (itemCategory) {
+      case "battleaxe":
       case "spear":
       case "sword": {
          if (attackToolType === AttackToolType.weapon) {
@@ -280,7 +282,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    // Reset attack cooldown
    if (item !== null) {
       const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
-      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer") {
+      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer" || itemTypeInfo === "battleaxe") {
          const itemInfo = ITEM_INFO_RECORD[item.type];
          useInfo.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
       } else {
@@ -390,7 +392,6 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
    }
 
    for (const snapEntity of snappableEntities) {
-      console.log(snapEntity.id);
       const snapOffset = SNAP_OFFSETS[snapEntity.type as unknown as StructureType];
       // Check the 4 potential snap positions for matches
       for (let i = 0; i < 4; i++) {
@@ -659,7 +660,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
          const x = tribeMember.position.x + 35 * Math.sin(offsetDirection);
          const y = tribeMember.position.y + 35 * Math.cos(offsetDirection);
-         const spear = createSpearProjectile(new Point(x, y), tribeMember.id);
+         const spear = createSpearProjectile(new Point(x, y), tribeMember.id, item);
 
          const ticksSinceLastAction = Board.ticks - useInfo.lastSpearChargeTicks;
          const secondsSinceLastAction = ticksSinceLastAction / SETTINGS.TPS;
@@ -672,6 +673,36 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
 
          useInfo.lastSpearChargeTicks = Board.ticks;
+         
+         break;
+      }
+      case "battleaxe": {
+         // 
+         // Throw the battleaxe
+         // 
+
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
+
+         const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
+         const x = tribeMember.position.x + 35 * Math.sin(offsetDirection);
+         const y = tribeMember.position.y + 35 * Math.cos(offsetDirection);
+         const battleaxe = createBattleaxeProjectile(new Point(x, y), tribeMember.id, item);
+
+         const ticksSinceLastAction = Board.ticks - useInfo.lastBattleaxeChargeTicks;
+         const secondsSinceLastAction = ticksSinceLastAction / SETTINGS.TPS;
+         const velocityMagnitude = lerp(600, 1100, Math.min(secondsSinceLastAction / 3, 1));
+
+         battleaxe.velocity.x = velocityMagnitude * Math.sin(tribeMember.rotation);
+         battleaxe.velocity.y = velocityMagnitude * Math.cos(tribeMember.rotation);
+         battleaxe.rotation = tribeMember.rotation;
+
+         // Add velocity from thrower
+         battleaxe.velocity.x += tribeMember.velocity.x;
+         battleaxe.velocity.y += tribeMember.velocity.y;
+
+         useInfo.lastBattleaxeChargeTicks = Board.ticks;
+         useInfo.thrownBattleaxeItemID = item.id;
          
          break;
       }

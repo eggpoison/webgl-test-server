@@ -53,6 +53,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.iceShardProjectile:
       case IEntityType.rockSpikeProjectile:
       case IEntityType.spearProjectile:
+      case IEntityType.battleaxeProjectile:
       case IEntityType.barrel:
       case IEntityType.tribeWorker:
       case IEntityType.tribeWarrior:

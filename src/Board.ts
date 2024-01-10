@@ -9,7 +9,7 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, SpearComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity from "./Entity";
@@ -51,6 +51,7 @@ import { tickSlimeSpit } from "./entities/projectiles/slime-spit";
 import { tickSpitPoison } from "./entities/projectiles/spit-poison";
 import { onWoodenDoorRemove } from "./entities/structures/wooden-door";
 import { tickDoorComponent } from "./components/DoorComponent";
+import { onBattleaxeProjectileRemove, tickBattleaxeProjectile } from "./entities/projectiles/battleaxe-projectile";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -378,6 +379,10 @@ abstract class Board {
                onWoodenDoorRemove(entity);
                break;
             }
+            case IEntityType.battleaxeProjectile: {
+               onBattleaxeProjectileRemove(entity);
+               break;
+            }
          }
       }
 
@@ -486,6 +491,10 @@ abstract class Board {
             }
             case IEntityType.spitPoison: {
                tickSpitPoison(entity);
+               break;
+            }
+            case IEntityType.battleaxeProjectile: {
+               tickBattleaxeProjectile(entity);
                break;
             }
          }
@@ -704,7 +713,7 @@ abstract class Board {
       this.pushComponentsFromArray(FrozenYetiComponentArray);
       this.pushComponentsFromArray(RockSpikeProjectileComponentArray);
       this.pushComponentsFromArray(CookingEntityComponentArray);
-      this.pushComponentsFromArray(SpearComponentArray);
+      this.pushComponentsFromArray(ThrowingProjectileComponentArray);
       this.pushComponentsFromArray(HutComponentArray);
       this.pushComponentsFromArray(SlimeSpitComponentArray);
       this.pushComponentsFromArray(DoorComponentArray);

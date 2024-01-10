@@ -27,6 +27,7 @@ import { onTribeTotemDeath } from "./entities/tribes/tribe-totem";
 import { onTribeWarriorDeath } from "./entities/tribes/tribe-warrior";
 import { onSlimeSpitCollision, onSlimeSpitDeath } from "./entities/projectiles/slime-spit";
 import { onSpitPoisonCollision } from "./entities/projectiles/spit-poison";
+import { onBattleaxeProjectileCollision, onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -955,6 +956,10 @@ class Entity<T extends IEntityType = IEntityType> {
             onSpitPoisonCollision(this, collidingEntity);
             break;
          }
+         case IEntityType.battleaxeProjectile: {
+            onBattleaxeProjectileCollision(this, collidingEntity);
+            break;
+         }
       }
    }
 
@@ -1046,6 +1051,10 @@ class Entity<T extends IEntityType = IEntityType> {
                onSlimeSpitDeath(this);
                break;
             }
+            case IEntityType.battleaxeProjectile: {
+               onBattleaxeProjectileDeath(this);
+               break;
+            }
          }
       }
 
@@ -1084,6 +1093,11 @@ class Entity<T extends IEntityType = IEntityType> {
    protected shouldTurnClockwise(targetRotation: number): boolean {
       // @Temporary @Speed: instead of doing this, probably just clean rotation after all places which could dirty it
       this.cleanRotation();
+
+      // @Hack
+      if (targetRotation < 0) {
+         targetRotation += 2 * Math.PI;
+      }
       
       const clockwiseDist = (targetRotation - this.rotation + Math.PI * 2) % (Math.PI * 2);
       const anticlockwiseDist = (Math.PI * 2) - clockwiseDist;
