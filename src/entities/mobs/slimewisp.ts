@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
-import Entity from "../../Entity";
+import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -24,7 +24,7 @@ export const SLIMEWISP_MERGE_TIME = 2;
 export function createSlimewisp(position: Point): Entity {
    const slimewisp = new Entity(position, IEntityType.slimewisp, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(slimewisp, 0, 0, RADIUS, 0);
+   const hitbox = new CircularHitbox(slimewisp, 0.4, 0, 0, RADIUS, 0);
    slimewisp.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slimewisp, new HealthComponent(MAX_HEALTH));
@@ -52,7 +52,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
          moveEntityToPosition(slimewisp, mergingSlimewisp.position.x, mergingSlimewisp.position.y, ACCELERATION);
    
          // Continue merge
-         if (slimewisp.isColliding(mergingSlimewisp)) {
+         if (slimewisp.isColliding(mergingSlimewisp) !== NO_COLLISION) {
             const slimewispComponent = SlimewispComponentArray.getComponent(slimewisp);
             slimewispComponent.mergeTimer -= 1 / SETTINGS.TPS;
             if (slimewispComponent.mergeTimer <= 0 && !mergingSlimewisp.isRemoved) {

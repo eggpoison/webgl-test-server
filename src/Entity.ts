@@ -28,6 +28,7 @@ import { onTribeWarriorDeath } from "./entities/tribes/tribe-warrior";
 import { onSlimeSpitCollision, onSlimeSpitDeath } from "./entities/projectiles/slime-spit";
 import { onSpitPoisonCollision } from "./entities/projectiles/spit-poison";
 import { onBattleaxeProjectileCollision, onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
+import Hitbox from "./hitboxes/Hitbox";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -61,15 +62,20 @@ export const RESOURCE_ENTITY_TYPES: ReadonlyArray<IEntityType> = [IEntityType.kr
 
 export const NUM_ENTITY_TYPES = 37;
 
+export const NO_COLLISION = 0xFFFF;
+
 /** A generic class for any object in the world */
 class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
-   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1, 0);
+   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, -1, 0);
    
    /** Unique identifier for each entity */
    public readonly id: number;
 
    public readonly type: T;
+
+   /** Combined mass of all the entity's hitboxes */
+   public totalMass = Number.EPSILON;
 
    public ageTicks = 0;
 
@@ -82,9 +88,6 @@ class Entity<T extends IEntityType = IEntityType> {
 
    /** Direction the entity is facing in radians */
    public rotation = Number.EPSILON;
-
-   /** Affects the force the entity experiences during collisions */
-   public mass = 1;
 
    public moveSpeedMultiplier = 1 + Number.EPSILON;
 
@@ -153,6 +156,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
       this.hitboxes.push(hitbox);
+      this.totalMass += hitbox.mass;
 
       const boundsMinX = hitbox.calculateHitboxBoundsMinX();
       const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
@@ -841,13 +845,16 @@ class Entity<T extends IEntityType = IEntityType> {
       }
    }
 
-   public isColliding(gameObject: Entity): boolean {
+   /**
+    * @returns A number where the first 8 bits hold the local ID of the entity's colliding hitbox, and the next 8 bits hold the local ID of the other entity's colliding hitbox
+   */
+   public isColliding(entity: Entity): number {
       // AABB bounding area check
-      if (this.boundingArea[0] > gameObject.boundingArea[1] || // minX(1) > maxX(2)
-          this.boundingArea[1] < gameObject.boundingArea[0] || // maxX(1) < minX(2)
-          this.boundingArea[2] > gameObject.boundingArea[3] || // minY(1) > maxY(2)
-          this.boundingArea[3] < gameObject.boundingArea[2]) { // maxY(1) < minY(2)
-         return false;
+      if (this.boundingArea[0] > entity.boundingArea[1] || // minX(1) > maxX(2)
+          this.boundingArea[1] < entity.boundingArea[0] || // maxX(1) < minX(2)
+          this.boundingArea[2] > entity.boundingArea[3] || // minY(1) > maxY(2)
+          this.boundingArea[3] < entity.boundingArea[2]) { // maxY(1) < minY(2)
+         return NO_COLLISION;
       }
       
       // More expensive hitbox check
@@ -855,31 +862,47 @@ class Entity<T extends IEntityType = IEntityType> {
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
-         const numOtherHitboxes = gameObject.hitboxes.length;
+         const numOtherHitboxes = entity.hitboxes.length;
          for (let i = 0; i < numOtherHitboxes; i++) {
-            const otherHitbox = gameObject.hitboxes[i];
+            const otherHitbox = entity.hitboxes[i];
             // If the objects are colliding, add the colliding object and this object
             if (hitbox.isColliding(otherHitbox)) {
-               return true;
+               return hitbox.localID + (otherHitbox.localID << 8);
             }
          }
       }
-      return false;
+
+      // If no hitboxes match, then they must be colliding
+      return NO_COLLISION;
    }
 
-   public collide(collidingEntity: Entity): void {
+   public getHitboxByLocalID(localID: number): Hitbox {
+      for (let i = 0; i < this.hitboxes.length; i++) {
+         const hitbox = this.hitboxes[i];
+         if (hitbox.localID === localID) {
+            return hitbox;
+         }
+      }
+
+      throw new Error("Can't find hitbox for local ID " + localID);
+   }
+
+   public collide(collidingEntity: Entity, thisHitboxLocalID: number, collidingHitboxLocalID: number): void {
       if ((collidingEntity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & collidingEntity.collisionBit) === 0) {
          return;
       }
       
       if (!this.isStatic) {
+         const thisHitbox = this.getHitboxByLocalID(thisHitboxLocalID);
+         const collidingHitbox = collidingEntity.getHitboxByLocalID(collidingHitboxLocalID);
+         
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
          const distanceBetweenEntities = this.position.calculateDistanceBetween(collidingEntity.position);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
          const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
          
-         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingEntity.mass / this.mass * collidingEntity.collisionPushForceMultiplier;
+         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingHitbox.mass / thisHitbox.mass * collidingEntity.collisionPushForceMultiplier;
          const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
          this.velocity.x += force * Math.sin(pushAngle);
          this.velocity.y += force * Math.cos(pushAngle);

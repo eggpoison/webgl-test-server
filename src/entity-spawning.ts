@@ -207,6 +207,10 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    }
 
    for (let i = 0; i < spawnCount - 1;) {
+      if (++totalSpawnAttempts === 100) {
+         break;
+      }
+
       // @Speed: Garbage collection, and doing a whole bunch of unnecessary continues here
       
       // Generate a spawn position near the spawn origin
@@ -230,10 +234,6 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
          const entity = createEntity(spawnPosition, spawnInfo.entityType);
          addEntityToCensus(entity);
          i++;
-      }
-
-      if (++totalSpawnAttempts === 99) {
-         break;
       }
    }
 }

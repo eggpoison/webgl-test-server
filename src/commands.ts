@@ -13,11 +13,21 @@ import { createItem } from "./Item";
 const ENTITY_SPAWN_RANGE = 200;
 
 const killPlayer = (player: Entity): void => {
-   damageEntity(player, 999999, 0, null, null, PlayerCauseOfDeath.god, 0);
+   damageEntity(player, 999999, null, PlayerCauseOfDeath.god);
 }
 
 const damagePlayer = (player: Entity, damage: number): void => {
-   damageEntity(player, damage, 0, null, null, PlayerCauseOfDeath.god, 0);
+   damageEntity(player, damage, null, PlayerCauseOfDeath.god);
+   SERVER.registerEntityHit({
+      entityPositionX: player.position.x,
+      entityPositionY: player.position.y,
+      hitEntityID: player.id,
+      damage: damage,
+      knockback: 0,
+      angleFromAttacker: null,
+      attackerID: -1,
+      flags: 0
+   });
 }
 
 const setTime = (time: number): void => {

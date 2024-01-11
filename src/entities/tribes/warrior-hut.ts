@@ -12,7 +12,7 @@ export const WARRIOR_HUT_SIZE = 104;
 export function createWarriorHut(position: Point, tribe: Tribe): Entity {
    const hut = new Entity(position, IEntityType.warriorHut, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(hut, 0, 0, WARRIOR_HUT_SIZE, WARRIOR_HUT_SIZE, 0);
+   const hitbox = new RectangularHitbox(hut, 2, 0, 0, WARRIOR_HUT_SIZE, WARRIOR_HUT_SIZE, 0);
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(20));

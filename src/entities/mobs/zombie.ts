@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity, { ID_SENTINEL_VALUE, NO_COLLISION } from "../../Entity";
 import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyKnockback, damageEntity, healEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { InventoryComponent, createNewInventory, getInventory, pickupItemEntity } from "../../components/InventoryComponent";
@@ -14,6 +14,8 @@ import Tile from "../../Tile";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { InventoryUseComponent, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { attackEntity, calculateRadialAttackTargets } from "../tribes/tribe-member";
+import Hitbox from "../../hitboxes/Hitbox";
+import { SERVER } from "../../server";
 
 const MAX_HEALTH = 20;
 
@@ -34,7 +36,7 @@ const ATTACK_RADIUS = 30;
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
    const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(zombie, 0, 0, 32, 0);
+   const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32, 0);
    zombie.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(zombie, new HealthComponent(MAX_HEALTH));
@@ -172,7 +174,7 @@ export function tickZombie(zombie: Entity): void {
       }
       if (closestFoodItem !== null) {
          moveEntityToPosition(zombie, closestFoodItem.position.x, closestFoodItem.position.y, ACCELERATION);
-         if (zombie.isColliding(closestFoodItem)) {
+         if (zombie.isColliding(closestFoodItem) !== NO_COLLISION) {
             healEntity(zombie, 3);
             closestFoodItem.remove();
          }
@@ -236,19 +238,32 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
    
    // Hurt enemies on collision
    if (shouldAttackEntity(zombie, collidingEntity)) {
-      const hitDirection = zombie.position.calculateAngleBetween(collidingEntity.position);
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      if (!canDamageEntity(healthComponent, "zombie")) {
+         return;
+      }
 
-      const healthBeforeAttack = healthComponent.health;
+      const hitDirection = zombie.position.calculateAngleBetween(collidingEntity.position);
 
       // Damage and knock back the player
-      damageEntity(collidingEntity, 2, 150, hitDirection, zombie, PlayerCauseOfDeath.zombie, 0, "zombie");
+      damageEntity(collidingEntity, 2, zombie, PlayerCauseOfDeath.zombie, "zombie");
+      applyHitKnockback(collidingEntity, 150, hitDirection);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: 2,
+         knockback: 150,
+         angleFromAttacker: hitDirection,
+         attackerID: zombie.id,
+         flags: 0
+      });
       addLocalInvulnerabilityHash(healthComponent, "zombie", 0.3);
 
       // Push the zombie away from the entity
-      if (healthComponent.health < healthBeforeAttack) {
-         applyKnockback(zombie, 100, hitDirection + Math.PI);
-      }
+      const flinchDirection = hitDirection + Math.PI;
+      zombie.velocity.x += 100 * Math.sin(flinchDirection);
+      zombie.velocity.y += 100 * Math.cos(flinchDirection);
    }
 }
 

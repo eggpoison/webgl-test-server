@@ -16,6 +16,7 @@ import { onFrozenYetiDeath, onFrozenYetiHurt } from "../entities/mobs/frozen-yet
 import { onPlayerHurt } from "../entities/tribes/player";
 import { onTribeWorkerHurt } from "../entities/tribes/tribe-worker";
 import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
+import Hitbox from "../hitboxes/Hitbox";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -51,17 +52,22 @@ export function tickHealthComponent(healthComponent: HealthComponent): void {
    }
 }
 
+export function canDamageEntity(healthComponent: HealthComponent, attackHash: string): boolean {
+   // Can't attack if the entity has local invulnerability
+   if (typeof attackHash !== "undefined" && healthComponent.localIframeHashes.indexOf(attackHash) !== -1) {
+      return false;
+   }
+
+   return true;
+}
+
 /**
  * Attempts to apply damage to an entity
  * @param damage The amount of damage given
  * @returns Whether the damage was received
  */
-export function damageEntity(entity: Entity, damage: number, knockback: number, hitDirection: number | null, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, hitFlags: number, attackHash?: string): boolean {
+export function damageEntity(entity: Entity, damage: number, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, attackHash?: string): boolean {
    const healthComponent = HealthComponentArray.getComponent(entity);
-   
-   if (entityIsInvulnerable(healthComponent, attackHash) || healthComponent.health <= 0) {
-      return false;
-   }
 
    const absorbedDamage = damage * clamp(healthComponent.defence, 0, 1);
    const actualDamage = damage - absorbedDamage;
@@ -95,25 +101,9 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
          }
       }
 
-      // @Cleanup: This should instead just be an event created in the player class
       if (entity.type === IEntityType.player) {
          TombstoneDeathManager.registerNewDeath(entity, causeOfDeath);
       }
-   }
-
-   SERVER.registerEntityHit({
-      entityPositionX: entity.position.x,
-      entityPositionY: entity.position.y,
-      hitEntityID: entity.id,
-      damage: damage,
-      knockback: knockback,
-      angleFromAttacker: hitDirection,
-      attackerID: attackingEntity !== null ? attackingEntity.id : -1,
-      flags: hitFlags
-   });
-
-   if (hitDirection !== null && !entity.isStatic) {
-      applyKnockback(entity, knockback, hitDirection);
    }
 
    switch (entity.type) {
@@ -187,12 +177,12 @@ export function damageEntity(entity: Entity, damage: number, knockback: number, 
 }
 
 // @Cleanup: Should this be here?
-export function applyKnockback(entity: Entity, knockback: number, knockbackDirection: number): void {
-   if (typeof knockback === "undefined" || typeof knockbackDirection === "undefined") {
-      throw new Error("Knockback was undefined");
+export function applyHitKnockback(entity: Entity, knockback: number, knockbackDirection: number): void {
+   if (entity.isStatic) {
+      return;
    }
    
-   const knockbackForce = knockback / entity.mass;
+   const knockbackForce = knockback / entity.totalMass;
    entity.velocity.x += knockbackForce * Math.sin(knockbackDirection);
    entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
 }
@@ -211,15 +201,6 @@ export function healEntity(entity: Entity, healAmount: number): void {
    }
 
    healthComponent.amountHealedThisTick += amountHealed;
-}
-
-export function entityIsInvulnerable(healthComponent: HealthComponent, attackHash?: string): boolean {
-   // Local invulnerability
-   if (typeof attackHash !== "undefined" && healthComponent.localIframeHashes.indexOf(attackHash) !== -1) {
-      return true;
-   }
-
-   return false;
 }
 
 export function addLocalInvulnerabilityHash(healthComponent: HealthComponent, hash: string, invulnerabilityDurationSeconds: number): void {

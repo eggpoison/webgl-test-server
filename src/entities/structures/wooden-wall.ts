@@ -10,7 +10,7 @@ const SIZE = 64;
 export function createWoodenWall(position: Point, tribe: Tribe | null): Entity {
    const wall = new Entity(position, IEntityType.woodenWall, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(wall, 0, 0, SIZE, SIZE, 0);
+   const hitbox = new RectangularHitbox(wall, 1, 0, 0, SIZE, SIZE, 0);
    wall.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(wall, new HealthComponent(25));

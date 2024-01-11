@@ -2,10 +2,12 @@ import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerD
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { CactusComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { CactusComponent } from "../../components/CactusComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import Hitbox from "../../hitboxes/Hitbox";
+import { SERVER } from "../../server";
 
 const RADIUS = 40;
 /** Amount the hitbox is brought in. */
@@ -70,7 +72,7 @@ const generateRandomLimbs = (): ReadonlyArray<CactusLimbData> => {
 export function createCactus(position: Point): Entity {
    const cactus = new Entity(position, IEntityType.cactus, COLLISION_BITS.cactus, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(cactus, 0, 0, RADIUS - HITBOX_PADDING, 0);
+   const hitbox = new CircularHitbox(cactus, 1, 0, 0, RADIUS - HITBOX_PADDING, 0);
    cactus.addHitbox(hitbox);
 
    const flowers = generateRandomFlowers();
@@ -79,7 +81,7 @@ export function createCactus(position: Point): Entity {
    // Create hitboxes for all the cactus limbs
    for (let i = 0; i < limbs.length; i++) {
       const limb = limbs[i]
-      const hitbox = new CircularHitbox(cactus, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), 18, i + 1);
+      const hitbox = new CircularHitbox(cactus, 0.4, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), 18, i + 1);
       cactus.addHitbox(hitbox);
    }
 
@@ -99,8 +101,24 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
    }
 
    const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   if (!canDamageEntity(healthComponent, "cactus")) {
+      return;
+   }
+
    const hitDirection = cactus.position.calculateAngleBetween(collidingEntity.position);
-   damageEntity(collidingEntity, 1, 200, hitDirection, cactus, PlayerCauseOfDeath.cactus, 0, "cactus");
+
+   damageEntity(collidingEntity, 1, cactus, PlayerCauseOfDeath.cactus, "cactus");
+   applyHitKnockback(collidingEntity, 200, hitDirection);
+   SERVER.registerEntityHit({
+      entityPositionX: collidingEntity.position.x,
+      entityPositionY: collidingEntity.position.y,
+      hitEntityID: collidingEntity.id,
+      damage: 1,
+      knockback: 200,
+      angleFromAttacker: hitDirection,
+      attackerID: cactus.id,
+      flags: 0
+   });
    addLocalInvulnerabilityHash(healthComponent, "cactus", 0.3);
 }
 

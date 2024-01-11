@@ -2,7 +2,7 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Mutable,
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { SlimeComponent } from "../../components/SlimeComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
@@ -13,6 +13,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 import Board from "../../Board";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { createSlimeSpit } from "../projectiles/slime-spit";
+import { SERVER } from "../../server";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
 const MAX_HEALTH: ReadonlyArray<number> = [10, 20, 35];
@@ -59,7 +60,8 @@ interface AngerPropagationInfo {
 export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, startingOrbs: Array<MovingOrbData> = []): Entity {
    const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(slime, 0, 0, RADII[size], 0);
+   const mass = 1 + size * 0.5;
+   const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size], 0);
    slime.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));
@@ -332,10 +334,25 @@ export function onSlimeCollision(slime: Entity, collidingEntity: Entity): void {
    if (collidingEntity.type === IEntityType.slimewisp) return;
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const slimeComponent = SlimeComponentArray.getComponent(slime);
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      if (!canDamageEntity(healthComponent, "slime")) {
+         return;
+      }
 
-      damageEntity(collidingEntity, CONTACT_DAMAGE[slimeComponent.size], 0, null, slime, PlayerCauseOfDeath.slime, 0, "slime");
+      const slimeComponent = SlimeComponentArray.getComponent(slime);
+      const damage = CONTACT_DAMAGE[slimeComponent.size];
+
+      damageEntity(collidingEntity, damage, slime, PlayerCauseOfDeath.slime, "slime");
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: damage,
+         knockback: 0,
+         angleFromAttacker: slime.position.calculateAngleBetween(collidingEntity.position),
+         attackerID: slime.id,
+         flags: 0
+      });
       addLocalInvulnerabilityHash(healthComponent, "slime", 0.3);
    }
 }

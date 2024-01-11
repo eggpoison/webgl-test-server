@@ -2,7 +2,7 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityTy
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, FrozenYetiComponentArray, HealthComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { createItemsOverEntity } from "../../entity-shared";
@@ -14,6 +14,8 @@ import Tile from "../../Tile";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { ROCK_SPIKE_HITBOX_SIZES, createRockSpikeProjectile } from "../projectiles/rock-spike";
 import { createSnowball } from "../snowball";
+import { SERVER } from "../../server";
+import Hitbox from "../../hitboxes/Hitbox";
 
 const FROZEN_YETI_SIZE = 144;
 const HEAD_HITBOX_SIZE = 72;
@@ -59,16 +61,16 @@ export interface FrozenYetiRockSpikeInfo {
 export function createFrozenYeti(position: Point): Entity {
    const frozenYeti = new Entity(position, IEntityType.frozenYeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const bodyHitbox = new CircularHitbox(frozenYeti, 0, 0, FROZEN_YETI_SIZE / 2, 0);
+   const bodyHitbox = new CircularHitbox(frozenYeti, 4, 0, 0, FROZEN_YETI_SIZE / 2, 0);
    frozenYeti.addHitbox(bodyHitbox);
 
-   const headHitbox = new CircularHitbox(frozenYeti, 0, HEAD_DISTANCE, HEAD_HITBOX_SIZE / 2, 1);
+   const headHitbox = new CircularHitbox(frozenYeti, 0.8, 0, HEAD_DISTANCE, HEAD_HITBOX_SIZE / 2, 1);
    frozenYeti.addHitbox(headHitbox);
 
    // Paw hitboxes
    for (let i = 0; i < 2; i++) {
       const pawDirection = PAW_RESTING_ANGLE * (i === 0 ? -1 : 1);
-      const hitbox = new CircularHitbox(frozenYeti, PAW_OFFSET * Math.sin(pawDirection), PAW_OFFSET * Math.cos(pawDirection), PAW_SIZE / 2, 2 + i);
+      const hitbox = new CircularHitbox(frozenYeti, 0.6, PAW_OFFSET * Math.sin(pawDirection), PAW_OFFSET * Math.cos(pawDirection), PAW_SIZE / 2, 2 + i);
       frozenYeti.addHitbox(hitbox);
    }
 
@@ -336,12 +338,27 @@ const doBiteAttack = (frozenYeti: Entity, angleToTarget: number): void => {
    const x = frozenYeti.position.x + BITE_ATTACK_OFFSET * Math.sin(frozenYeti.rotation);
    const y = frozenYeti.position.y + BITE_ATTACK_OFFSET * Math.cos(frozenYeti.rotation);
    const hitEntities = getEntitiesInVisionRange(x, y, BITE_ATTACK_RANGE);
-   for (const entity of hitEntities) {
-      if (entity !== frozenYeti) {
-         if (HealthComponentArray.hasComponent(entity)) {
-            damageEntity(entity, 3, 200, angleToTarget, frozenYeti, PlayerCauseOfDeath.frozen_yeti, 0);
-            if (StatusEffectComponentArray.hasComponent(entity)) {
-               applyStatusEffect(entity, StatusEffectConst.bleeding, 5 * SETTINGS.TPS);
+
+   for (let i = 0; i < hitEntities.length; i++) {
+      const hitEntity = hitEntities[i];
+      if (hitEntity !== frozenYeti) {
+         if (HealthComponentArray.hasComponent(hitEntity)) {
+            damageEntity(hitEntity, 3, frozenYeti, PlayerCauseOfDeath.frozen_yeti);
+            // @Incomplete
+            applyHitKnockback(hitEntity, 200, angleToTarget);
+            SERVER.registerEntityHit({
+               entityPositionX: hitEntity.position.x,
+               entityPositionY: hitEntity.position.y,
+               hitEntityID: hitEntity.id,
+               damage: 3,
+               knockback: 200,
+               angleFromAttacker: angleToTarget,
+               attackerID: frozenYeti.id,
+               flags: 0
+            });
+
+            if (StatusEffectComponentArray.hasComponent(hitEntity)) {
+               applyStatusEffect(hitEntity, StatusEffectConst.bleeding, 5 * SETTINGS.TPS);
             }
          }
       }
@@ -643,8 +660,24 @@ export function onFrozenYetiCollision(frozenYeti: Entity, collidingEntity: Entit
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      if (!canDamageEntity(healthComponent, "frozen_yeti")) {
+         return;
+      }
+      
       const hitDirection = frozenYeti.position.calculateAngleBetween(collidingEntity.position);
-      damageEntity(collidingEntity, 5, 250, hitDirection, frozenYeti, PlayerCauseOfDeath.yeti, 0, "frozen_yeti");
+
+      damageEntity(collidingEntity, 5, frozenYeti, PlayerCauseOfDeath.yeti, "frozen_yeti");
+      applyHitKnockback(collidingEntity, 250, hitDirection);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: 5,
+         knockback: 250,
+         angleFromAttacker: hitDirection,
+         attackerID: frozenYeti.id,
+         flags: 0
+      });
       addLocalInvulnerabilityHash(healthComponent, "frozen_yeti", 0.3);
    }
 }

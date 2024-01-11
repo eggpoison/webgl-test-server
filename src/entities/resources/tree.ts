@@ -19,7 +19,8 @@ export function createTree(position: Point): Entity {
 
    const tree = new Entity(position, IEntityType.tree, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(tree, 0, 0, TREE_RADII[size], 0);
+   const mass = 1.25 + size * 0.25;
+   const hitbox = new CircularHitbox(tree, mass, 0, 0, TREE_RADII[size], 0);
    tree.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tree, new HealthComponent(TREE_MAX_HEALTHS[size]));

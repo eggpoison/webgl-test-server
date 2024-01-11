@@ -39,7 +39,7 @@ export function createCow(position: Point): Entity {
    
    const cow = new Entity(position, IEntityType.cow, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(cow, 0, 0, 50, 100, 0);
+   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100, 0);
    cow.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));

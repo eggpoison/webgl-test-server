@@ -1,20 +1,21 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { SERVER } from "../../server";
 
 const RADIUS = 55;
 
 export function createSpitPoison(position: Point): Entity {
    const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new CircularHitbox(poison, 0, 0, RADIUS, 0);
+   // @Hack mass
+   const hitbox = new CircularHitbox(poison, Number.EPSILON, 0, 0, RADIUS, 0);
    poison.addHitbox(hitbox);
    
    poison.isStatic = true;
-   poison.mass = Number.EPSILON; // @Hack
    
    return poison;
 }
@@ -34,8 +35,23 @@ export function onSpitPoisonCollision(spit: Entity, collidingEntity: Entity): vo
    }
 
    const healthComponent = HealthComponentArray.getComponent(collidingEntity);
-   damageEntity(collidingEntity, 1, 0, null, spit, PlayerCauseOfDeath.poison, 0, "spitPoison");
-   addLocalInvulnerabilityHash(healthComponent, "spitPoison", 0.25);
+   if (!canDamageEntity(healthComponent, "spitPoison")) {
+      return;
+   }
+
+   damageEntity(collidingEntity, 1, spit, PlayerCauseOfDeath.poison, "spitPoison");
+   SERVER.registerEntityHit({
+      entityPositionX: collidingEntity.position.x,
+      entityPositionY: collidingEntity.position.y,
+      hitEntityID: collidingEntity.id,
+      damage: 1,
+      knockback: 0,
+      angleFromAttacker: null,
+      attackerID: spit.id,
+      flags: 0
+   });
+   addLocalInvulnerabilityHash(healthComponent, "spitPoison", 0.35);
+
    if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
       applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 3 * SETTINGS.TPS);
    }

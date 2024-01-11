@@ -2,13 +2,15 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, IceShardComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { SERVER } from "../../server";
+import Hitbox from "../../hitboxes/Hitbox";
 
 export function createIceShard(position: Point): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(iceShard, 0, 0, 24, 24, 0);
+   const hitbox = new RectangularHitbox(iceShard, 0.4, 0, 0, 24, 24, 0);
    iceShard.addHitbox(hitbox);
    
    IceShardComponentArray.addComponent(iceShard, {
@@ -30,23 +32,38 @@ export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): 
       return;
    }
 
+   // Shatter the ice spike
+   iceShard.remove();
+
    if (collidingEntity.type === IEntityType.iceSpikes) {
       // Instantly destroy ice spikes
-      damageEntity(collidingEntity, 99999, 0, 0, null, PlayerCauseOfDeath.ice_spikes, 0);
+      damageEntity(collidingEntity, 99999, null, PlayerCauseOfDeath.ice_spikes);
    } else {
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      if (!canDamageEntity(healthComponent, "ice_shards")) {
+         return;
+      }
+      
       const hitDirection = iceShard.position.calculateAngleBetween(collidingEntity.position);
 
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
-      damageEntity(collidingEntity, 2, 150, hitDirection, null, PlayerCauseOfDeath.ice_shards, 0, "ice_shards");
+      damageEntity(collidingEntity, 2, null, PlayerCauseOfDeath.ice_shards, "ice_shards");
+      applyHitKnockback(collidingEntity, 150, hitDirection);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: 2,
+         knockback: 150,
+         angleFromAttacker: hitDirection,
+         attackerID: iceShard.id,
+         flags: 0
+      });
       addLocalInvulnerabilityHash(healthComponent, "ice_shards", 0.3);
 
       if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
          applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SETTINGS.TPS);
       }
    }
-
-   // Shatter the ice spike
-   iceShard.remove();
 }
 
 export function onIceShardRemove(iceShard: Entity): void {

@@ -2,9 +2,11 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { HealthComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../components/HealthComponent";
 import { StatusEffectComponent } from "../components/StatusEffectComponent";
 import { SnowballComponent } from "../components/SnowballComponent";
+import Hitbox from "../hitboxes/Hitbox";
+import { SERVER } from "../server";
    
 const MAX_HEALTHS: ReadonlyArray<number> = [5, 10];
 
@@ -13,7 +15,8 @@ const DAMAGE_VELOCITY_THRESHOLD = 100;
 export function createSnowball(position: Point, size: SnowballSize = SnowballSize.small, yetiID: number = ID_SENTINEL_VALUE): Entity {
    const snowball = new Entity(position, IEntityType.snowball, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(snowball, 0, 0, SNOWBALL_SIZES[size] / 2, 0);
+   const mass = size === SnowballSize.small ? 1 : 1.5;
+   const hitbox = new CircularHitbox(snowball, mass, 0, 0, SNOWBALL_SIZES[size] / 2, 0);
    snowball.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(snowball, new HealthComponent(MAX_HEALTHS[size]));
@@ -62,9 +65,23 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
-      const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
-      damageEntity(collidingEntity, 4, 100, hitDirection, null, PlayerCauseOfDeath.snowball, 0, "snowball");
-      addLocalInvulnerabilityHash(healthComponent, "snowball", 0.3);
+      if (canDamageEntity(healthComponent, "snowball")) {
+         const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
+
+         damageEntity(collidingEntity, 4, null, PlayerCauseOfDeath.snowball, "snowball");
+         applyHitKnockback(collidingEntity, 100, hitDirection);
+         SERVER.registerEntityHit({
+            entityPositionX: collidingEntity.position.x,
+            entityPositionY: collidingEntity.position.y,
+            hitEntityID: collidingEntity.id,
+            damage: 4,
+            knockback: 100,
+            angleFromAttacker: hitDirection,
+            attackerID: snowball.id,
+            flags: 0
+         });
+         addLocalInvulnerabilityHash(healthComponent, "snowball", 0.3);
+      }
    }
 }
 

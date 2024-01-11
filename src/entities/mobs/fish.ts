@@ -1,8 +1,8 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
-import Entity from "../../Entity";
+import Entity, { NO_COLLISION } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { AIHelperComponentArray, EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, runHerdAI, stopEntity } from "../../ai-shared";
@@ -15,6 +15,7 @@ import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/Esc
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { getInventory } from "../../components/InventoryComponent";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { SERVER } from "../../server";
 
 const MAX_HEALTH = 5;
 
@@ -39,7 +40,7 @@ const LUNGE_INTERVAL = 1;
 export function createFish(position: Point): Entity {
    const fish = new Entity(position, IEntityType.fish, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(fish, 0, 0, FISH_WIDTH, FISH_HEIGHT, 0);
+   const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, FISH_WIDTH, FISH_HEIGHT, 0);
    fish.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(fish, new HealthComponent(MAX_HEALTH));
@@ -121,7 +122,17 @@ export function tickFish(fish: Entity): void {
    if (fish.tile.type !== TileTypeConst.water) {
       fishComponent.secondsOutOfWater += 1 / SETTINGS.TPS;
       if (fishComponent.secondsOutOfWater >= 5 && customTickIntervalHasPassed(fishComponent.secondsOutOfWater * SETTINGS.TPS, 1.5)) {
-         damageEntity(fish, 1, 0, null, null, PlayerCauseOfDeath.lack_of_oxygen, 0);
+         damageEntity(fish, 1, null, PlayerCauseOfDeath.lack_of_oxygen);
+         SERVER.registerEntityHit({
+            entityPositionX: fish.position.x,
+            entityPositionY: fish.position.y,
+            hitEntityID: fish.id,
+            damage: 1,
+            knockback: 0,
+            angleFromAttacker: null,
+            attackerID: -1,
+            flags: 0
+         });
       }
    } else {
       fishComponent.secondsOutOfWater = 0;
@@ -160,10 +171,27 @@ export function tickFish(fish: Entity): void {
       } else {
          // Attack the target
          move(fish, fish.position.calculateAngleBetween(fishComponent.attackTarget.position));
-         if (fish.isColliding(fishComponent.attackTarget) && HealthComponentArray.hasComponent(fishComponent.attackTarget)) {
+
+         if (fish.isColliding(fishComponent.attackTarget) !== NO_COLLISION) {
             const healthComponent = HealthComponentArray.getComponent(fishComponent.attackTarget);
+            if (!canDamageEntity(healthComponent, "fish")) {
+               return;
+            }
+            
             const hitDirection = fish.position.calculateAngleBetween(fishComponent.attackTarget.position);
-            damageEntity(fishComponent.attackTarget, 2, 100, hitDirection, fish, PlayerCauseOfDeath.fish, 0, "fish");
+
+            damageEntity(fishComponent.attackTarget, 2, fish, PlayerCauseOfDeath.fish, "fish");
+            applyHitKnockback(fishComponent.attackTarget, 100, hitDirection);
+            SERVER.registerEntityHit({
+               entityPositionX: fishComponent.attackTarget.position.x,
+               entityPositionY: fishComponent.attackTarget.position.y,
+               hitEntityID: fishComponent.attackTarget.id,
+               damage: 2,
+               knockback: 100,
+               angleFromAttacker: hitDirection,
+               attackerID: fish.id,
+               flags: 0
+            });
             addLocalInvulnerabilityHash(healthComponent, "fish", 0.3);
          }
       }
@@ -260,9 +288,11 @@ export function tickFish(fish: Entity): void {
    }
 }
 
-export function onFishLeaderHurt(fish: Entity, attackingEntity: Entity): void {
-   const fishComponent = FishComponentArray.getComponent(fish);
-   fishComponent.attackTarget = attackingEntity;
+export function onFishLeaderHurt(fish: Entity, leaderAttacker: Entity): void {
+   if (HealthComponentArray.hasComponent(leaderAttacker)) {
+      const fishComponent = FishComponentArray.getComponent(fish);
+      fishComponent.attackTarget = leaderAttacker;
+   }
 }
 
 export function onFishHurt(fish: Entity, attackingEntity: Entity): void {

@@ -21,7 +21,7 @@ export const TRIBE_WARRIOR_VISION_RANGE = 360;
 export function createTribeWarrior(position: Point, tribeType: TribeType, tribe: Tribe, hutID: number): Entity {
    const warrior = new Entity(position, IEntityType.tribeWarrior, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(warrior, 0, 0, TRIBE_WARRIOR_RADIUS, 0);
+   const hitbox = new CircularHitbox(warrior, 1.25, 0, 0, TRIBE_WARRIOR_RADIUS, 0);
    warrior.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];

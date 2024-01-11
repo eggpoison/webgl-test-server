@@ -2,10 +2,11 @@ import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
 import { ArrowComponentArray, HealthComponentArray } from "../../components/ComponentArray";
-import { entityIsInvulnerable, damageEntity } from "../../components/HealthComponent";
+import { damageEntity } from "../../components/HealthComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../tribes/tribe-member";
 import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
+import { SERVER } from "../../server";
 
 const ARROW_WIDTH = 20;
 const ARROW_HEIGHT = 64;
@@ -19,7 +20,7 @@ export function createWoodenArrow(position: Point, tribeMember: Entity): Entity 
    arrow.velocity.y = itemInfo.projectileSpeed * Math.cos(tribeMember.rotation);
    arrow.rotation = tribeMember.rotation;
 
-   const hitbox = new RectangularHitbox(arrow, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
+   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
    arrow.addHitbox(hitbox);
 
    ArrowComponentArray.addComponent(arrow, new ArrowComponent(tribeMember.id));
@@ -64,15 +65,23 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
    }
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
-      if (!entityIsInvulnerable(healthComponent)) {
-         const itemInfo = ITEM_INFO_RECORD[ItemType.wooden_bow] as BowItemInfo;
-         
-         const hitDirection = arrow.position.calculateAngleBetween(collidingEntity.position);
-         damageEntity(collidingEntity, itemInfo.projectileDamage, itemInfo.projectileKnockback, hitDirection, Board.entityRecord.hasOwnProperty(arrowComponent.tribeMemberID) ? Board.entityRecord[arrowComponent.tribeMemberID] : null, PlayerCauseOfDeath.arrow, 0)
+      const itemInfo = ITEM_INFO_RECORD[ItemType.wooden_bow] as BowItemInfo;
+      const thrower = Board.entityRecord.hasOwnProperty(arrowComponent.tribeMemberID) ? Board.entityRecord[arrowComponent.tribeMemberID] : null;
+      const hitDirection = arrow.position.calculateAngleBetween(collidingEntity.position);
+      
+      damageEntity(collidingEntity, itemInfo.projectileDamage, thrower, PlayerCauseOfDeath.arrow);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: itemInfo.projectileDamage,
+         knockback: itemInfo.projectileKnockback,
+         angleFromAttacker: hitDirection,
+         attackerID: thrower !== null ? thrower.id : -1,
+         flags: 0
+      });
 
-         arrow.remove();
-      }
+      arrow.remove();
    }
 }
 

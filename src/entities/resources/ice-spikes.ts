@@ -2,16 +2,18 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { createIceShard } from "../projectiles/ice-shards";
+import { SERVER } from "../../server";
+import Hitbox from "../../hitboxes/Hitbox";
 
 const ICE_SPIKE_RADIUS = 40;
 
 export function createIceSpikes(position: Point): Entity {
    const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(iceSpikes, 0, 0, ICE_SPIKE_RADIUS, 0);
+   const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, ICE_SPIKE_RADIUS, 0);
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));
@@ -29,14 +31,27 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const hitDirection = iceSpikes.position.calculateAngleBetween(collidingEntity.position);
-      
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
-      damageEntity(collidingEntity, 1, 180, hitDirection, iceSpikes, PlayerCauseOfDeath.ice_spikes, 0, "ice_spikes");
-      addLocalInvulnerabilityHash(healthComponent, "ice_spikes", 0.3);
-
-      if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+      if (canDamageEntity(healthComponent, "ice_spikes")) {
+         const hitDirection = iceSpikes.position.calculateAngleBetween(collidingEntity.position);
+         
+         damageEntity(collidingEntity, 1, iceSpikes, PlayerCauseOfDeath.ice_spikes, "ice_spikes");
+         applyHitKnockback(collidingEntity, 180, hitDirection);
+         SERVER.registerEntityHit({
+            entityPositionX: collidingEntity.position.x,
+            entityPositionY: collidingEntity.position.y,
+            hitEntityID: collidingEntity.id,
+            damage: 1,
+            knockback: 180,
+            angleFromAttacker: hitDirection,
+            attackerID: iceSpikes.id,
+            flags: 0
+         });
+         addLocalInvulnerabilityHash(healthComponent, "ice_spikes", 0.3);
+   
+         if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
+            applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+         }
       }
    }
 }

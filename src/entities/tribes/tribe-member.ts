@@ -2,9 +2,9 @@ import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BowIt
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { InventoryComponent, addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
+import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
-import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
+import { addDefence, applyHitKnockback, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
 import { TRIBE_TOTEM_SIZE, createTribeTotem } from "./tribe-totem";
 import { WORKER_HUT_SIZE, createWorkerHut } from "./worker-hut";
@@ -24,6 +24,7 @@ import { WARRIOR_HUT_SIZE, createWarriorHut } from "./warrior-hut";
 import { createWoodenWall } from "../structures/wooden-wall";
 import { InventoryUseInfo, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { createBattleaxeProjectile } from "../projectiles/battleaxe-projectile";
+import { SERVER } from "../../server";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -32,8 +33,8 @@ const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.bou
 const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree];
 const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime];
 
-const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, -1, 0);
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, 0);
+const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, -1, 0);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, 0);
 
 enum PlaceableItemHitboxType {
    circular = 0,
@@ -304,8 +305,18 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    const hitDirection = tribeMember.position.calculateAngleBetween(targetEntity.position);
 
    // Register the hit
-   const hitFlags = item !== null && item.type === ItemType.flesh_sword ? HitFlags.HIT_BY_FLESH_SWORD : 0
-   damageEntity(targetEntity, attackDamage, attackKnockback, hitDirection, tribeMember, PlayerCauseOfDeath.tribe_member, hitFlags);
+   damageEntity(targetEntity, attackDamage, tribeMember, PlayerCauseOfDeath.tribe_member);
+   applyHitKnockback(targetEntity, 250, hitDirection);
+   SERVER.registerEntityHit({
+      entityPositionX: targetEntity.position.x,
+      entityPositionY: targetEntity.position.y,
+      hitEntityID: targetEntity.id,
+      damage: attackDamage,
+      knockback: attackKnockback,
+      angleFromAttacker: hitDirection,
+      attackerID: tribeMember.id,
+      flags: item !== null && item.type === ItemType.flesh_sword ? HitFlags.HIT_BY_FLESH_SWORD : 0
+   });
 
    if (item !== null && item.type === ItemType.flesh_sword) {
       applyStatusEffect(targetEntity, StatusEffectConst.poisoned, 3 * SETTINGS.TPS);

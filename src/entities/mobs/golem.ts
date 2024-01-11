@@ -7,6 +7,10 @@ import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 
 const BODY_GENERATION_RADIUS = 50;
 
+const ROCK_SMALL_MASS = 0.75;
+const ROCK_MEDIUM_MASS = 1;
+const ROCK_LARGE_MASS = 1.25;
+
 const hitboxIsTooClose = (golem: Entity, hitboxX: number, hitboxY: number, hitboxRadius: number): boolean => {
    for (let j = 0; j < golem.hitboxes.length; j++) {
       const otherHitbox = golem.hitboxes[j];
@@ -24,7 +28,7 @@ export function createGolem(position: Point): Entity {
    const golem = new Entity(position, IEntityType.golem, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
    // Create core hitbox
-   const hitbox = new CircularHitbox(golem, 0, 0, 32, 0);
+   const hitbox = new CircularHitbox(golem, ROCK_LARGE_MASS, 0, 0, 32, 0);
    golem.addHitbox(hitbox);
    
    // Create body hitboxes
@@ -38,23 +42,30 @@ export function createGolem(position: Point): Entity {
       const x = golem.position.x + offsetX;
       const y = golem.position.y + offsetY;
 
-      const radius = Math.random() < 0.5 ? 20 : 26;
+      const size = Math.random() < 0.4 ? 0 : 1;
+      const radius = size === 0 ? 20 : 26;
 
       // Make sure the hitboxes aren't too close
       if (hitboxIsTooClose(golem, x, y, radius)) {
          continue;
       }
 
-      const hitbox = new CircularHitbox(golem, offsetX, offsetY, radius, i + 1);
+      const mass = size === 0 ? ROCK_SMALL_MASS : ROCK_MEDIUM_MASS;
+      const hitbox = new CircularHitbox(golem, mass, offsetX, offsetY, radius, i + 1);
       golem.addHitbox(hitbox);
 
       i++;
    }
 
+   // Create hand hitboxes
+   for (let j = 0; j < 2; j++) {
+      const offsetX = 60 * (j === 0 ? -1 : 1);
+      const hitbox = new CircularHitbox(golem, ROCK_MEDIUM_MASS, offsetX, 50, 20, 1 + i + j);
+      golem.addHitbox(hitbox);
+   }
+
    HealthComponentArray.addComponent(golem, new HealthComponent(150));
    StatusEffectComponentArray.addComponent(golem, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.burning | StatusEffectConst.poisoned));
-
-   golem.mass = 7;
 
    return golem;
 }

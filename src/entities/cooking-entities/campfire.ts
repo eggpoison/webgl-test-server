@@ -15,7 +15,7 @@ const LIFETIME_SECONDS = 30;
 export function createCampfire(position: Point): Entity {
    const campfire = new Entity(position, IEntityType.campfire, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(campfire, 0, 0, CAMPFIRE_SIZE / 2, 0);
+   const hitbox = new CircularHitbox(campfire, 2, 0, 0, CAMPFIRE_SIZE / 2, 0);
    campfire.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(campfire, new HealthComponent(25));

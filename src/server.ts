@@ -12,7 +12,7 @@ import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, FishComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
-import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
+import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 import { getTilesOfBiome } from "./census";
@@ -28,20 +28,22 @@ node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
 
 const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitboxData => {
    return {
+      mass: hitbox.mass,
+      offsetX: hitbox.offset.x,
+      offsetY: hitbox.offset.y,
       localID: hitbox.localID,
       width: hitbox.width,
       height: hitbox.height,
-      offsetX: hitbox.offset.x,
-      offsetY: hitbox.offset.y
    };
 }
 
 const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData => {
    return {
-      localID: hitbox.localID,
-      radius: hitbox.radius,
+      mass: hitbox.mass,
       offsetX: hitbox.offset.x,
-      offsetY: hitbox.offset.y
+      offsetY: hitbox.offset.y,
+      localID: hitbox.localID,
+      radius: hitbox.radius
    };
 }
 
@@ -547,7 +549,6 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       position: entity.position.package(),
       velocity: entity.velocity.package(),
       rotation: entity.rotation,
-      mass: entity.mass,
       circularHitboxes: circularHitboxes,
       rectangularHitboxes: rectangularHitboxes,
       ageTicks: entity.ageTicks,
@@ -738,6 +739,10 @@ class GameServer {
          let tribeType: TribeType;
          let visibleChunkBounds: VisibleChunkBounds;
          let spawnPosition: Point;
+
+         setTimeout(() => {
+            createCow(new Point(spawnPosition.x + 100, spawnPosition.y));
+         }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
             username = _username;

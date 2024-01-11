@@ -3,16 +3,18 @@ import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { createItemEntity } from "../item-entity";
 import { HealthComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
-import { damageEntity } from "../../components/HealthComponent";
+import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
+import Hitbox from "../../hitboxes/Hitbox";
+import { SERVER } from "../../server";
 
 const DROP_VELOCITY = 400;
 
 export function createSpearProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const spear = new Entity(position, IEntityType.spearProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(spear, 0, 0, 12, 60, 0);
+   const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, 12, 60, 0);
    spear.addHitbox(hitbox);
 
    ThrowingProjectileComponentArray.addComponent(spear, new ThrowingProjectileComponent(tribeMemberID, item));
@@ -43,8 +45,19 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
       const damage = Math.floor(spear.velocity.length() / 140);
       
       // Damage the entity
-      const direction = spear.position.calculateAngleBetween(collidingEntity.position);
-      damageEntity(collidingEntity, damage, 150, direction, tribeMember, PlayerCauseOfDeath.spear, 0);
+      const hitDirection = spear.position.calculateAngleBetween(collidingEntity.position);
+      damageEntity(collidingEntity, damage, tribeMember, PlayerCauseOfDeath.spear);
+      applyHitKnockback(collidingEntity, 150, hitDirection);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: damage,
+         knockback: 150,
+         angleFromAttacker: hitDirection,
+         attackerID: spear.id,
+         flags: 0
+      });
       
       spear.remove();
    }

@@ -2,12 +2,12 @@ import { Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-s
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Entity from "./Entity";
+import Entity, { NO_COLLISION } from "./Entity";
 
 const TURN_CONSTANT = Math.PI / SETTINGS.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 0, 0, -1, 0);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, 0);
 
 export function getClosestEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
    if (entities.length === 0) {
@@ -16,10 +16,10 @@ export function getClosestEntity(entity: Entity, entities: ReadonlyArray<Entity>
 
    let closestEntity!: Entity;
    let minDistance = Number.MAX_SAFE_INTEGER;
-   for (const entity of entities) {
-      const dist = entity.position.calculateDistanceBetween(entity.position);
+   for (const currentEntity of entities) {
+      const dist = entity.position.calculateDistanceBetween(currentEntity.position);
       if (dist < minDistance) {
-         closestEntity = entity;
+         closestEntity = currentEntity;
          minDistance = dist;
       }
    }
@@ -41,7 +41,7 @@ export function willStopAtDesiredDistance(entity: Entity, desiredDistance: numbe
 }
 
 export function chaseAndEatItemEntity(entity: Entity, itemEntity: Entity, acceleration: number): boolean {
-   if (entity.isColliding(itemEntity)) {
+   if (entity.isColliding(itemEntity) !== NO_COLLISION) {
       itemEntity.remove();
       return true;
    }

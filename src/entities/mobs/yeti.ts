@@ -1,8 +1,8 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
-import Entity from "../../Entity";
+import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, damageEntity, healEntity } from "../../components/HealthComponent";
+import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
@@ -13,6 +13,8 @@ import Board from "../../Board";
 import { createItemsOverEntity } from "../../entity-shared";
 import { createSnowball } from "../snowball";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { SERVER } from "../../server";
+import Hitbox from "../../hitboxes/Hitbox";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -142,7 +144,7 @@ export function yetiSpawnPositionIsValid(positionX: number, positionY: number): 
 export function createYeti(position: Point): Entity {
    const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(yeti, 0, 0, YETI_SIZE / 2, 0);
+   const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2, 0);
    yeti.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
@@ -329,7 +331,7 @@ export function tickYeti(yeti: Entity): void {
       }
       if (closestFoodItem !== null) {
          moveEntityToPosition(yeti, closestFoodItem.position.x, closestFoodItem.position.y, 100);
-         if (yeti.isColliding(closestFoodItem)) {
+         if (yeti.isColliding(closestFoodItem) !== NO_COLLISION) {
             healEntity(yeti, 3);
             closestFoodItem.remove();
          }
@@ -373,8 +375,23 @@ export function onYetiCollision(yeti: Entity, collidingEntity: Entity): void {
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      if (!canDamageEntity(healthComponent, "yeti")) {
+         return;
+      }
+      
       const hitDirection = yeti.position.calculateAngleBetween(collidingEntity.position);
-      damageEntity(collidingEntity, 3, 200, hitDirection, yeti, PlayerCauseOfDeath.yeti, 0, "yeti");
+      damageEntity(collidingEntity, 3, yeti, PlayerCauseOfDeath.yeti, "yeti");
+      applyHitKnockback(collidingEntity, 200, hitDirection);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: 3,
+         knockback: 200,
+         angleFromAttacker: hitDirection,
+         attackerID: yeti.id,
+         flags: 0
+      });
       addLocalInvulnerabilityHash(healthComponent, "yeti", 0.3);
    }
 }

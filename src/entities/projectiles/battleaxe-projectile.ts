@@ -1,19 +1,21 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SETTINGS, lerp } from "webgl-test-shared";
-import Entity from "../../Entity";
+import Entity, { NO_COLLISION } from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
-import { addLocalInvulnerabilityHash, damageEntity } from "../../components/HealthComponent";
+import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
 import { findInventoryContainingItem } from "../../components/InventoryComponent";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { SERVER } from "../../server";
+import Hitbox from "../../hitboxes/Hitbox";
 
 const RETURN_TIME_TICKS = 1 * SETTINGS.TPS;
 
 export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new CircularHitbox(battleaxe, 0, 0, 32, 0);
+   const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, 32, 0);
    battleaxe.addHitbox(hitbox);
    
    ThrowingProjectileComponentArray.addComponent(battleaxe, new ThrowingProjectileComponent(tribeMemberID, item));
@@ -35,7 +37,7 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       
       const owner = Board.entityRecord[throwingProjectileComponent.tribeMemberID];
 
-      if (battleaxe.isColliding(owner)) {
+      if (battleaxe.isColliding(owner) !== NO_COLLISION) {
          battleaxe.remove();
          return;
       }
@@ -60,6 +62,12 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
    }
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const attackHash = "battleaxe-" + battleaxe.id;
+      if (!canDamageEntity(healthComponent, attackHash)) {
+         return;
+      }
+      
       let tribeMember: Entity | null = null;
       if (Board.entityRecord.hasOwnProperty(spearComponent.tribeMemberID)) {
          tribeMember = Board.entityRecord[spearComponent.tribeMemberID];
@@ -67,9 +75,20 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
 
       // Damage the entity
       const direction = battleaxe.position.calculateAngleBetween(collidingEntity.position);
-      const attackHash = "battleaxe-" + battleaxe.id;
+
       // @Incomplete cause of death
-      damageEntity(collidingEntity, 4, 150, direction, tribeMember, PlayerCauseOfDeath.spear, 0, attackHash);
+      damageEntity(collidingEntity, 4, tribeMember, PlayerCauseOfDeath.spear, attackHash);
+      applyHitKnockback(collidingEntity, 150, direction);
+      SERVER.registerEntityHit({
+         entityPositionX: collidingEntity.position.x,
+         entityPositionY: collidingEntity.position.y,
+         hitEntityID: collidingEntity.id,
+         damage: 4,
+         knockback: 150,
+         angleFromAttacker: direction,
+         attackerID: battleaxe.id,
+         flags: 0
+      });
       addLocalInvulnerabilityHash(HealthComponentArray.getComponent(collidingEntity), attackHash, 0.3);
    }
 }

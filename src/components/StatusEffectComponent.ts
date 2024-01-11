@@ -2,6 +2,7 @@ import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffectConst, customT
 import { StatusEffectComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
+import { SERVER } from "../server";
 
 export const NUM_STATUS_EFFECTS = Object.keys(STATUS_EFFECT_MODIFIERS).length;
 
@@ -73,7 +74,17 @@ export function tickStatusEffectComponent(entity: Entity): void {
                   // Fire tick
                   const ticksElapsed = statusEffectComponent.ticksElapsed[StatusEffectConst.burning];
                   if (customTickIntervalHasPassed(ticksElapsed, 0.75)) {
-                     damageEntity(entity, 1, 0, null, null, PlayerCauseOfDeath.fire, 0);
+                     damageEntity(entity, 1, null, PlayerCauseOfDeath.fire);
+                     SERVER.registerEntityHit({
+                        entityPositionX: entity.position.x,
+                        entityPositionY: entity.position.y,
+                        hitEntityID: entity.id,
+                        damage: 1,
+                        knockback: 0,
+                        angleFromAttacker: null,
+                        attackerID: -1,
+                        flags: 0
+                     });
                   }
                }
                break;
@@ -81,14 +92,34 @@ export function tickStatusEffectComponent(entity: Entity): void {
             case StatusEffectConst.poisoned: {
                const ticksElapsed = statusEffectComponent.ticksElapsed[StatusEffectConst.poisoned];
                if (customTickIntervalHasPassed(ticksElapsed, 0.5)) {
-                  damageEntity(entity, 1, 0, null, null, PlayerCauseOfDeath.poison, 0);
+                  damageEntity(entity, 1, null, PlayerCauseOfDeath.poison);
+                  SERVER.registerEntityHit({
+                     entityPositionX: entity.position.x,
+                     entityPositionY: entity.position.y,
+                     hitEntityID: entity.id,
+                     damage: 1,
+                     knockback: 0,
+                     angleFromAttacker: null,
+                     attackerID: -1,
+                     flags: 0
+                  });
                }
                break;
             }
             case StatusEffectConst.bleeding: {
                const ticksElapsed = statusEffectComponent.ticksElapsed[StatusEffectConst.bleeding];
                if (customTickIntervalHasPassed(ticksElapsed, 1)) {
-                  damageEntity(entity, 1, 0, null, null, PlayerCauseOfDeath.bloodloss, 0);
+                  damageEntity(entity, 1, null, PlayerCauseOfDeath.bloodloss);
+                  SERVER.registerEntityHit({
+                     entityPositionX: entity.position.x,
+                     entityPositionY: entity.position.y,
+                     hitEntityID: entity.id,
+                     damage: 1,
+                     knockback: 0,
+                     angleFromAttacker: null,
+                     attackerID: -1,
+                     flags: 0
+                  });
                }
                break;
             }

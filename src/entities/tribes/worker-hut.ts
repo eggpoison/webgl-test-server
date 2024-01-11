@@ -12,7 +12,7 @@ export const WORKER_HUT_SIZE = 88;
 export function createWorkerHut(position: Point, tribe: Tribe): Entity {
    const hut = new Entity(position, IEntityType.workerHut, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(hut, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE, 0);
+   const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE, 0);
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(20));

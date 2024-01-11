@@ -12,7 +12,7 @@ import { TribeComponent } from "./components/TribeComponent";
 import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
-import Entity from "./Entity";
+import Entity, { NO_COLLISION } from "./Entity";
 import { tickHealthComponent } from "./components/HealthComponent";
 import { onBerryBushRemove, tickBerryBush } from "./entities/resources/berry-bush";
 import { onIceShardRemove, tickIceShard } from "./entities/projectiles/ice-shards";
@@ -598,12 +598,21 @@ abstract class Board {
       for (let i = 0; i < numChunks; i++) {
          const chunk = this.chunks1d[i];
          for (let j = 0; j <= chunk.entities.length - 2; j++) {
-            const gameObject1 = chunk.entities[j];
+            const entity1 = chunk.entities[j];
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
-               const gameObject2 = chunk.entities[k];
-               if (gameObject1.collidingEntityIDs.indexOf(gameObject2.id) === -1 && gameObject1.isColliding(gameObject2)) {
-                  gameObject1.collide(gameObject2);
-                  gameObject2.collide(gameObject1);
+               const entity2 = chunk.entities[k];
+               // If the entities have already collided this tick, don't try again
+               if (entity1.collidingEntityIDs.indexOf(entity2.id) !== -1) {
+                  continue;
+               }
+
+               const collisionNum = entity1.isColliding(entity2);
+               if (collisionNum !== NO_COLLISION) {
+                  const entity1HitboxLocalID = collisionNum & 0xFF;
+                  const entity2HitboxLocalID = (collisionNum & 0xFF00) >> 8;
+                  
+                  entity1.collide(entity2, entity1HitboxLocalID, entity2HitboxLocalID);
+                  entity2.collide(entity1, entity2HitboxLocalID, entity1HitboxLocalID);
                }
             }
          }
