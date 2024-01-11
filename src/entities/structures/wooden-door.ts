@@ -15,7 +15,7 @@ export function createWoodenDoor(position: Point, tribe: Tribe | null, rotation:
    
    HealthComponentArray.addComponent(door, new HealthComponent(15));
    StatusEffectComponentArray.addComponent(door, new StatusEffectComponent(0));
-   DoorComponentArray.addComponent(door, new DoorComponent(rotation));
+   DoorComponentArray.addComponent(door, new DoorComponent(position.x, position.y, rotation));
 
    TribeComponentArray.addComponent(door, {
       tribeType: tribe !== null ? tribe.tribeType : 0,

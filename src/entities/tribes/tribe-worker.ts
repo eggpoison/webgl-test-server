@@ -32,7 +32,7 @@ export enum TribesmanAIType {
 export function createTribeWorker(position: Point, tribeType: TribeType, tribe: Tribe, hutID: number): Entity {
    const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(worker, 0.75, 0, 0, TRIBE_WORKER_RADIUS, 0);
+   const hitbox = new CircularHitbox(worker, 0.85, 0, 0, TRIBE_WORKER_RADIUS, 0);
    worker.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];

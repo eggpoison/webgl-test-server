@@ -5,7 +5,7 @@ import { HealthComponentArray, TribeComponentArray } from "../../components/Comp
 import { HealthComponent } from "../../components/HealthComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 
-const SIZE = 64;
+const SIZE = 64 - 0.05;
 
 export function createWoodenWall(position: Point, tribe: Tribe | null): Entity {
    const wall = new Entity(position, IEntityType.woodenWall, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);

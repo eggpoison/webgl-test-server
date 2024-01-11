@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, StatusEffectConst, StructureType, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BowItemInfo, FoodItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -118,12 +118,6 @@ function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is Plac
    }
 }
 
-export enum AttackToolType {
-   weapon,
-   pickaxe,
-   axe
-}
-
 // /** Relationships a tribe member can have, in increasing order of threat */
 export enum EntityRelationship {
    friendly,
@@ -193,32 +187,15 @@ export function getTribeMemberRelationship(tribeMember: Entity, entity: Entity):
    return EntityRelationship.neutral;
 }
 
-export function getEntityAttackToolType(entity: Entity): AttackToolType | null {
-   // @Cleanup: This shouldn't be hardcoded ideally
-   
-   if (SWORD_DAMAGEABLE_ENTITIES.includes(entity.type)) {
-      return AttackToolType.weapon;
-   }
-   if (PICKAXE_DAMAGEABLE_ENTITIES.includes(entity.type)) {
-      return AttackToolType.pickaxe;
-   }
-   if (AXE_DAMAGEABLE_ENTITIES.includes(entity.type)) {
-      return AttackToolType.axe;
-   }
-
-   return null;
-}
-
 export function calculateItemDamage(item: Item | null, entityToAttack: Entity): number {
    if (item === null) {
       return 1;
    }
 
-   const attackToolType = getEntityAttackToolType(entityToAttack);
    const itemCategory = ITEM_TYPE_RECORD[item.type];
    switch (itemCategory) {
       case "battleaxe": {
-         if (attackToolType === AttackToolType.weapon || attackToolType === AttackToolType.axe) {
+         if (SWORD_DAMAGEABLE_ENTITIES.includes(entityToAttack.type) || AXE_DAMAGEABLE_ENTITIES.includes(entityToAttack.type)) {
             const itemInfo = ITEM_INFO_RECORD[item.type] as BattleaxeItemInfo;
             return itemInfo.damage;
          }
@@ -226,7 +203,7 @@ export function calculateItemDamage(item: Item | null, entityToAttack: Entity): 
       }
       case "spear":
       case "sword": {
-         if (attackToolType === AttackToolType.weapon) {
+         if (SWORD_DAMAGEABLE_ENTITIES.includes(entityToAttack.type)) {
             const itemInfo = ITEM_INFO_RECORD[item.type] as SwordItemInfo;
             return itemInfo.damage;
          }
@@ -234,17 +211,17 @@ export function calculateItemDamage(item: Item | null, entityToAttack: Entity): 
       }
       case "axe": {
          const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
-         if (attackToolType === AttackToolType.axe) {
+         if (AXE_DAMAGEABLE_ENTITIES.includes(entityToAttack.type)) {
             return itemInfo.damage;
          }
          return Math.floor(itemInfo.damage / 2);
       }
       case "pickaxe": {
          const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
-         if (attackToolType === AttackToolType.pickaxe) {
+         if (PICKAXE_DAMAGEABLE_ENTITIES.includes(entityToAttack.type)) {
             return itemInfo.damage;
          } else {
-            return Math.floor(itemInfo.damage / 2);
+            return Math.floor(itemInfo.damage / 4);
          }
       }
       default: {
@@ -401,7 +378,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
                continue;
             }
             
-            if (currentEntity.type === IEntityType.woodenWall) {
+            if (STRUCTURE_TYPES_CONST.includes(currentEntity.type as StructureTypeConst)) {
                snappableEntities.push(currentEntity);
             }
          }
@@ -409,7 +386,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
    }
 
    for (const snapEntity of snappableEntities) {
-      const snapOffset = SNAP_OFFSETS[snapEntity.type as unknown as StructureType];
+      const snapOffset = SNAP_OFFSETS[snapEntity.type as StructureTypeConst];
       // Check the 4 potential snap positions for matches
       for (let i = 0; i < 4; i++) {
          const direction = i * Math.PI / 2;
@@ -458,7 +435,6 @@ const calculatePlaceRotation = (entity: Entity, snapInfo: BuildingSnapInfo): num
       return entity.rotation;
    }
 
-   console.log("getting snapDir");
    return snapInfo.direction;
 }
 

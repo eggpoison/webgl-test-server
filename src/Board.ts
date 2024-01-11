@@ -611,8 +611,8 @@ abstract class Board {
                   const entity1HitboxLocalID = collisionNum & 0xFF;
                   const entity2HitboxLocalID = (collisionNum & 0xFF00) >> 8;
                   
-                  entity1.collide(entity2, entity1HitboxLocalID, entity2HitboxLocalID);
-                  entity2.collide(entity1, entity2HitboxLocalID, entity1HitboxLocalID);
+                  entity1.collide(entity2, entity2HitboxLocalID);
+                  entity2.collide(entity1, entity1HitboxLocalID);
                }
             }
          }

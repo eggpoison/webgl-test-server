@@ -42,12 +42,12 @@ class RectangularHitbox extends Hitbox {
       // Top right vertex
       this.vertexOffsets[1].x = rotateXAroundOrigin(x2, y2, this.rotation + this.object.rotation);
       this.vertexOffsets[1].y = rotateYAroundOrigin(x2, y2, this.rotation + this.object.rotation);
-      // Bottom left vertex
-      this.vertexOffsets[2].x = rotateXAroundOrigin(x1, y1, this.rotation + this.object.rotation);
-      this.vertexOffsets[2].y = rotateYAroundOrigin(x1, y1, this.rotation + this.object.rotation);
       // Bottom right vertex
-      this.vertexOffsets[3].x = rotateXAroundOrigin(x2, y1, this.rotation + this.object.rotation);
-      this.vertexOffsets[3].y = rotateYAroundOrigin(x2, y1, this.rotation + this.object.rotation);
+      this.vertexOffsets[2].x = rotateXAroundOrigin(x2, y1, this.rotation + this.object.rotation);
+      this.vertexOffsets[2].y = rotateYAroundOrigin(x2, y1, this.rotation + this.object.rotation);
+      // Bottom left vertex
+      this.vertexOffsets[3].x = rotateXAroundOrigin(x1, y1, this.rotation + this.object.rotation);
+      this.vertexOffsets[3].y = rotateYAroundOrigin(x1, y1, this.rotation + this.object.rotation);
 
       this.calculateSideAxes();
    }
@@ -58,8 +58,8 @@ class RectangularHitbox extends Hitbox {
       this.sideAxes[0].x = Math.sin(angle1);
       this.sideAxes[0].y = Math.cos(angle1);
       
-      // Angle between vertex 2 (bottom left) and vertex 3 (bottom right)
-      const angle2 = this.vertexOffsets[2].calculateAngleBetween(this.vertexOffsets[3]);
+      // Angle between vertex 1 (top right) and vertex 2 (bottom right)
+      const angle2 = angle1 + Math.PI/2;
       this.sideAxes[1].x = Math.sin(angle2);
       this.sideAxes[1].y = Math.cos(angle2);
    }

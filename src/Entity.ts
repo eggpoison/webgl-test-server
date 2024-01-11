@@ -887,22 +887,23 @@ class Entity<T extends IEntityType = IEntityType> {
       throw new Error("Can't find hitbox for local ID " + localID);
    }
 
-   public collide(collidingEntity: Entity, thisHitboxLocalID: number, collidingHitboxLocalID: number): void {
+   public collide(collidingEntity: Entity, collidingHitboxLocalID: number): void {
       if ((collidingEntity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & collidingEntity.collisionBit) === 0) {
          return;
       }
       
       if (!this.isStatic) {
-         const thisHitbox = this.getHitboxByLocalID(thisHitboxLocalID);
          const collidingHitbox = collidingEntity.getHitboxByLocalID(collidingHitboxLocalID);
          
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
-         const distanceBetweenEntities = this.position.calculateDistanceBetween(collidingEntity.position);
+         const collidingHitboxX = collidingEntity.position.x + collidingHitbox.offset.x;
+         const collidingHitboxY = collidingEntity.position.y + collidingHitbox.offset.y;
+         const distanceBetweenEntities = distance(this.position.x, this.position.y, collidingHitboxX, collidingHitboxY);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
          const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
          
-         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingHitbox.mass / thisHitbox.mass * collidingEntity.collisionPushForceMultiplier;
+         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
          const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
          this.velocity.x += force * Math.sin(pushAngle);
          this.velocity.y += force * Math.cos(pushAngle);

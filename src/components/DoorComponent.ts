@@ -1,73 +1,38 @@
-import { Point, SETTINGS, angle, lerp } from "webgl-test-shared";
+import { DoorToggleType, SETTINGS, angle, lerp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { DoorComponentArray } from "./ComponentArray";
-import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
-const DOOR_SWING_SPEED = 2 / SETTINGS.TPS;
-
-enum DoorToggleType {
-   none,
-   close,
-   open
-}
+const DOOR_SWING_SPEED = 5 / SETTINGS.TPS;
 
 export class DoorComponent {
+   public readonly originX: number;
+   public readonly originY: number;
    public readonly closedRotation: number;
    
    public toggleType = DoorToggleType.none;
    public doorOpenProgress = 0;
 
-   constructor(closedRotation: number) {
+   constructor(originX: number, originY: number, closedRotation: number) {
+      this.originX = originX;
+      this.originY = originY;
       this.closedRotation = closedRotation;
    }
 }
 
+const doorHalfDiagonalLength = Math.sqrt(16 * 16 + 64 * 64) / 2;
+const angleToCenter = angle(16, 64);
+
 const updateDoorOpenProgress = (door: Entity, doorComponent: DoorComponent): void => {
-   // @Incomplete: We would update the position of the door as well.
-
-   // @Speed
-   // @Speed
-   // @Speed
+   const rotation = doorComponent.closedRotation + lerp(0, -Math.PI/2 + 0.1, doorComponent.doorOpenProgress);
    
-   const rotation = doorComponent.closedRotation + lerp(0, Math.PI/2, doorComponent.doorOpenProgress);
+   // Rotate around the top left corner of the door
+   const offsetDirection = rotation + Math.PI/2 + angleToCenter;
+   const xOffset = doorHalfDiagonalLength * Math.sin(offsetDirection) - doorHalfDiagonalLength * Math.sin(doorComponent.closedRotation + Math.PI/2 + angleToCenter);
+   const yOffset = doorHalfDiagonalLength * Math.cos(offsetDirection) - doorHalfDiagonalLength * Math.cos(doorComponent.closedRotation + Math.PI/2 + angleToCenter);
+
+   door.position.x = doorComponent.originX + xOffset;
+   door.position.y = doorComponent.originY + yOffset;
    door.rotation = rotation;
-
-   const hitbox = door.hitboxes[0] as RectangularHitbox;
-
-   const doorWidth = 64;
-   const doorHeight = 16;
-   
-   const startX = door.position.x - doorWidth / 2;
-   const startY = door.position.y - doorHeight / 2;
-
-   const direction = rotation - doorComponent.closedRotation + angle(-doorWidth, -doorHeight);
-   // const direction = rotation + angle(-doorWidth, -doorHeight);
-   // const direction = angle(-doorWidth, -doorHeight);
-   const magnitude = Math.sqrt(doorWidth * doorWidth / 4 + doorHeight * doorHeight / 4);
-   const endX = door.position.x + magnitude * Math.sin(direction);
-   const endY = door.position.y + magnitude * Math.cos(direction);
-
-   const offsetX = startX - endX;
-   const offsetY = startY - endY;
-   const offset = new Point(offsetX, offsetY).convertToVector();
-   // offset.direction -= rotation;
-   console.log(startX, endX, startY, endY);
-   console.log(offsetX, offsetY);
-   // hitbox.offset.x = offsetX;
-   // hitbox.offset.y = offsetY;
-   hitbox.offset.x = offset.convertToPoint().x;
-   hitbox.offset.y = offset.convertToPoint().y;
-
-   // hitbox.offset.x = 0;
-   // hitbox.offset.y = 0;
-   // // const doorRotation = lerp(Math.PI/2, 0, this.doorSwingAmount);
-   // const doorRotation = rotation + Math.PI/2;
-   // // const rotationOffset = new Point(0, WorkerHut.DOOR_HEIGHT / 2 - 2).convertToVector();
-   // const rotationOffset = new Point(0, 64 / 2 - 2).convertToVector();
-   // rotationOffset.direction = doorRotation;
-   // hitbox.offset.add(rotationOffset.convertToPoint());
-
-   // hitbox.rotation = rotation;
 }
 
 export function tickDoorComponent(door: Entity): void {
