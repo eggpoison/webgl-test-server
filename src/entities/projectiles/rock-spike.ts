@@ -5,7 +5,6 @@ import { HealthComponentArray, RockSpikeProjectileComponentArray } from "../../c
 import { RockSpikeProjectileComponent } from "../../components/RockSpikeProjectileComponent";
 import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { SERVER } from "../../server";
-import Hitbox from "../../hitboxes/Hitbox";
 
 export const ROCK_SPIKE_HITBOX_SIZES = [12 * 2, 16 * 2, 20 * 2];
 export const ROCK_SPIKE_MASSES = [1, 1.75, 2.5];

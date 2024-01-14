@@ -1,4 +1,4 @@
-import { BiomeName, DecorationInfo, GrassTileInfo, IEntityType, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset, randItem } from "webgl-test-shared";
+import { BiomeName, DecorationInfo, GrassTileInfo, IEntityType, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersectWithOffset, circlesDoIntersectWithOffset, randItem, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -9,7 +9,7 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity, { NO_COLLISION } from "./Entity";
@@ -32,7 +32,7 @@ import { tickStatusEffectComponent } from "./components/StatusEffectComponent";
 import { onTreeRemove } from "./entities/resources/tree";
 import { onBoulderRemove } from "./entities/resources/boulder";
 import { onCactusRemove } from "./entities/resources/cactus";
-import { onIceSpikesRemove } from "./entities/resources/ice-spikes";
+import { onIceSpikesRemove, tickIceSpikes } from "./entities/resources/ice-spikes";
 import { onTribeTotemRemove } from "./entities/tribes/tribe-totem";
 import { tickItemEntity } from "./entities/item-entity";
 import { onBarrelRemove } from "./entities/tribes/barrel";
@@ -52,7 +52,9 @@ import { tickSpitPoison } from "./entities/projectiles/spit-poison";
 import { onWoodenDoorRemove } from "./entities/structures/wooden-door";
 import { tickDoorComponent } from "./components/DoorComponent";
 import { onBattleaxeProjectileRemove, tickBattleaxeProjectile } from "./entities/projectiles/battleaxe-projectile";
-import { onGolemRemove } from "./entities/mobs/golem";
+import { onGolemRemove, tickGolem } from "./entities/mobs/golem";
+import { onPlanterBoxRemove } from "./entities/structures/planter-box";
+import { onIceArrowRemove, tickIceArrow } from "./entities/projectiles/ice-arrow";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -388,6 +390,14 @@ abstract class Board {
                onGolemRemove(entity);
                break;
             }
+            case IEntityType.planterBox: {
+               onPlanterBoxRemove(entity);
+               break;
+            }
+            case IEntityType.iceArrow: {
+               onIceArrowRemove(entity);
+               break;
+            }
          }
       }
 
@@ -500,6 +510,18 @@ abstract class Board {
             }
             case IEntityType.battleaxeProjectile: {
                tickBattleaxeProjectile(entity);
+               break;
+            }
+            case IEntityType.golem: {
+               tickGolem(entity);
+               break;
+            }
+            case IEntityType.iceSpikes: {
+               tickIceSpikes(entity);
+               break;
+            }
+            case IEntityType.iceArrow: {
+               tickIceArrow(entity);
                break;
             }
          }
@@ -731,6 +753,8 @@ abstract class Board {
       this.pushComponentsFromArray(HutComponentArray);
       this.pushComponentsFromArray(SlimeSpitComponentArray);
       this.pushComponentsFromArray(DoorComponentArray);
+      this.pushComponentsFromArray(GolemComponentArray);
+      this.pushComponentsFromArray(IceSpikesComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {
@@ -824,7 +848,7 @@ abstract class Board {
       const chunk = this.getChunk(chunkX, chunkY);
       for (const entity of chunk.entities) {
          for (const hitbox of entity.hitboxes) {
-            if (this.hitboxIsInRange(testPosition, hitbox)) {
+            if (this.hitboxIsInRange(testPosition, hitbox, entity.rotation)) {
                entities.add(entity);
                break;
             }
@@ -834,12 +858,15 @@ abstract class Board {
       return entities;
    }
 
-   private static hitboxIsInRange(testPosition: Point, hitbox: Hitbox): boolean {
+   private static hitboxIsInRange(testPosition: Point, hitbox: Hitbox, externalRotation: number): boolean {
       // @Speed: This check is slow
       if (hitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         // @Speed: Garbage collection
-         return circulesDoIntersectWithOffset(testPosition, new Point(0, 0), 1, hitbox.object.position, hitbox.offset, (hitbox as CircularHitbox).radius);
+         const otherOffsetX = rotateXAroundOrigin(hitbox.offset.x, hitbox.offset.y, externalRotation);
+         const otherOffsetY = rotateYAroundOrigin(hitbox.offset.x, hitbox.offset.y, externalRotation);
+         const otherPosX = hitbox.object.position.x + otherOffsetX;
+         const otherPosY = hitbox.object.position.y + otherOffsetY;
+         return circlesDoIntersectWithOffset(testPosition.x, testPosition.y, 1, otherPosX, otherPosY, (hitbox as CircularHitbox).radius);
       } else {
          // Rectangular hitbox
          // @Speed: Garbage collection

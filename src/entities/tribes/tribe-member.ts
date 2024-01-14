@@ -25,6 +25,8 @@ import { createWoodenWall } from "../structures/wooden-wall";
 import { InventoryUseInfo, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { createBattleaxeProjectile } from "../projectiles/battleaxe-projectile";
 import { SERVER } from "../../server";
+import { createPlanterBox } from "../structures/planter-box";
+import { createIceArrow } from "../projectiles/ice-arrow";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -57,6 +59,7 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
    readonly height: number;
 }
 
+// @Cleanup: Shared between both client and server
 const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo> = {
    [ItemType.workbench]: {
       type: PlaceableItemHitboxType.rectangular,
@@ -109,6 +112,12 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
       width: 64,
       height: 64,
       placeOffset: 32
+   },
+   [ItemType.planter_box]: {
+      type: PlaceableItemHitboxType.rectangular,
+      width: 80,
+      height: 80,
+      placeOffset: 40
    }
 };
 
@@ -255,8 +264,8 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
-   // Don't attack if on cooldown
-   if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
+   // Don't attack if on cooldown or not doing another action
+   if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot) || useInfo.currentAction !== TribeMemberAction.none) {
       return false;
    }
    
@@ -476,7 +485,7 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
          for (const entity of chunk.entities) {
             if (!previouslyCheckedEntityIDs.has(entity.id)) {
                for (const hitbox of entity.hitboxes) {   
-                  if (placeTestHitbox.isColliding(hitbox)) {
+                  if (placeTestHitbox.isColliding(hitbox, entity.rotation)) {
                      return false;
                   }
                }
@@ -512,6 +521,22 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          // Move from hotbar to armour slot
          removeItemFromInventory(inventoryComponent, inventoryName, itemSlot);
          addItemToSlot(inventoryComponent, "armourSlot", 1, item.type, 1);
+         break;
+      }
+      case "glove": {
+         // 
+         // Equip the glove
+         // 
+         
+         const targetItem = getItem(inventoryComponent, "gloveSlot", 1);
+         // If the target item slot has a different item type, don't attempt to transfer
+         if (targetItem !== null && targetItem.type !== item.type) {
+            return;
+         }
+
+         // Move from hotbar to glove slot
+         removeItemFromInventory(inventoryComponent, inventoryName, itemSlot);
+         addItemToSlot(inventoryComponent, "gloveSlot", 1, item.type, 1);
          break;
       }
       case "food": {
@@ -607,6 +632,10 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                placedEntity = createWoodenWall(placePosition, tribeComponent.tribe);
                break;
             }
+            case ItemType.planter_box: {
+               placedEntity = createPlanterBox(placePosition);
+               break;
+            }
             default: {
                // @Robustness: Should automatically detect this before compiled
                throw new Error("No case for placing item type '" + item.type + "'.");
@@ -638,7 +667,24 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const offset = Point.fromVectorForm(35, tribeMember.rotation);
          spawnPosition.add(offset);
 
-         createWoodenArrow(spawnPosition, tribeMember);
+         let arrow: Entity;
+         switch (item.type) {
+            case ItemType.wooden_bow:
+            case ItemType.reinforced_bow: {
+               arrow = createWoodenArrow(spawnPosition, tribeMember, item.type);
+               break;
+            }
+            case ItemType.ice_bow: {
+               arrow = createIceArrow(spawnPosition, tribeMember);
+               break;
+            }
+            default: {
+               throw new Error("No case for bow type " + item.type);
+            }
+         }
+
+         arrow.velocity.x = itemInfo.projectileSpeed * Math.sin(tribeMember.rotation);
+         arrow.velocity.y = itemInfo.projectileSpeed * Math.cos(tribeMember.rotation);
          
          break;
       }

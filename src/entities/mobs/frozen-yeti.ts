@@ -15,7 +15,6 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { ROCK_SPIKE_HITBOX_SIZES, createRockSpikeProjectile } from "../projectiles/rock-spike";
 import { createSnowball } from "../snowball";
 import { SERVER } from "../../server";
-import Hitbox from "../../hitboxes/Hitbox";
 
 const FROZEN_YETI_SIZE = 144;
 const HEAD_HITBOX_SIZE = 72;
@@ -27,7 +26,7 @@ const PAW_RESTING_ANGLE = Math.PI / 3.5;
 const TARGET_ENTITY_FORGET_TIME = 10;
 
 const SLOW_ACCELERATION = 200;
-const ACCELERATION = 300;
+const ACCELERATION = 400;
 
 const VISION_RANGE = 350;
 const BITE_RANGE = 150;
@@ -35,10 +34,10 @@ const ROAR_ARC = Math.PI / 6;
 const ROAR_REACH = 450;
 
 export const FROZEN_YETI_GLOBAL_ATTACK_COOLDOWN = 1.25;
-export const FROZEN_YETI_BITE_COOLDOWN = 30;
+export const FROZEN_YETI_BITE_COOLDOWN = 5;
 export const FROZEN_YETI_SNOWBALL_THROW_COOLDOWN = 10;
-export const FROZEN_YETI_ROAR_COOLDOWN = 100;
-export const FROZEN_YETI_STOMP_COOLDOWN = 100;
+export const FROZEN_YETI_ROAR_COOLDOWN = 10;
+export const FROZEN_YETI_STOMP_COOLDOWN = 10;
 
 const SNOWBALL_THROW_OFFSET = 150;
 const STOMP_START_OFFSET = 40;
@@ -326,10 +325,12 @@ const duringRoar = (frozenYeti: Entity, targets: ReadonlyArray<Entity>): void =>
       const angle = frozenYeti.position.calculateAngleBetween(entity.position);
       const angleDifference = getAngleDifference(frozenYeti.rotation, angle);
       if (Math.abs(angleDifference) <= ROAR_ARC / 2) {
-         entity.velocity.x += 50 * Math.sin(angle);
-         entity.velocity.y += 50 * Math.cos(angle);
+         entity.velocity.x += 1500 / SETTINGS.TPS * Math.sin(angle);
+         entity.velocity.y += 1500 / SETTINGS.TPS * Math.cos(angle);
 
-         applyStatusEffect(entity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+         if (StatusEffectComponentArray.hasComponent(entity)) {
+            applyStatusEffect(entity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+         }
       }
    }
 }
@@ -448,7 +449,6 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
    // If any target has dealt damage to the yeti, choose the target based on which one has dealt the most damage to it
    // Otherwise attack the closest target
    let target: Entity | null = null; 
-   let a = 0;
    if (Object.keys(frozenYetiComponent.attackingEntities).length === 0) {
       // Choose based on distance
       let minDist = Number.MAX_SAFE_INTEGER;
@@ -460,7 +460,6 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
          }
       }
    } else {
-      a = 1;
       let mostDamageDealt = -1;
       for (const currentTarget of targets) {
          if (frozenYetiComponent.attackingEntities.hasOwnProperty(currentTarget.id)) {
@@ -603,7 +602,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
                // Move towards the target
                frozenYeti.acceleration.x = 0;
                frozenYeti.acceleration.y = 0;
-               frozenYeti.turn(angleToTarget, 1.3);
+               frozenYeti.turn(angleToTarget, 0.9);
 
                frozenYetiComponent.stageProgress += 1.15 / SETTINGS.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
@@ -688,7 +687,7 @@ export function onFrozenYetiHurt(frozenYeti: Entity, attackingEntity: Entity, da
    // Update/create the entity's targetInfo record
    if (frozenYetiComponent.attackingEntities.hasOwnProperty(attackingEntity.id)) {
       frozenYetiComponent.attackingEntities[attackingEntity.id].damageDealtToSelf += damage;
-      frozenYetiComponent.attackingEntities[attackingEntity.id].timeSinceLastAggro += 0;
+      frozenYetiComponent.attackingEntities[attackingEntity.id].timeSinceLastAggro = 0;
    } else {
       frozenYetiComponent.attackingEntities[attackingEntity.id] = {
          damageDealtToSelf: damage,

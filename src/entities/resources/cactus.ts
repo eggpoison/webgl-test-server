@@ -6,7 +6,6 @@ import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDam
 import { createItemsOverEntity } from "../../entity-shared";
 import { CactusComponent } from "../../components/CactusComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import Hitbox from "../../hitboxes/Hitbox";
 import { SERVER } from "../../server";
 
 const RADIUS = 40;
@@ -45,6 +44,7 @@ const generateRandomLimbs = (): ReadonlyArray<CactusLimbData> => {
    while (Math.random() < 4/5 - numLimbs/5 && numLimbs < 3) {
       numLimbs++;
    }
+   numLimbs = 2; // @Temporary
 
    const limbs = new Array<CactusLimbData>();
 

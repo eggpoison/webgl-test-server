@@ -57,6 +57,7 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
    createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
+   createNewInventory(inventoryComponent, "gloveSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
    if (tribe.tribeType === TribeType.barbarians) {
       const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);

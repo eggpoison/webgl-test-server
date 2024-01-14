@@ -17,6 +17,7 @@ import { onPlayerHurt } from "../entities/tribes/player";
 import { onTribeWorkerHurt } from "../entities/tribes/tribe-worker";
 import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
 import Hitbox from "../hitboxes/Hitbox";
+import { onGolemHurt } from "../entities/mobs/golem";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -168,6 +169,12 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
       case IEntityType.tribeWarrior: {
          if (attackingEntity !== null) {
             onTribeWarriorHurt(entity, attackingEntity);
+         }
+         break;
+      }
+      case IEntityType.golem: {
+         if (attackingEntity !== null) {
+            onGolemHurt(entity, attackingEntity, damage);
          }
          break;
       }

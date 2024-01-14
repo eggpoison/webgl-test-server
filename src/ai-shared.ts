@@ -1,4 +1,4 @@
-import { Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
+import { Point, SETTINGS, TileTypeConst, angle, curveWeight, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -329,7 +329,7 @@ export function entityIsInVisionRange(position: Point, visionRange: number, enti
 
    // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
    for (const hitbox of entity.hitboxes) {
-      if (testCircularHitbox.isColliding(hitbox)) {
+      if (testCircularHitbox.isColliding(hitbox, entity.rotation)) {
          return true;
       }
    }
@@ -368,7 +368,7 @@ export function getEntitiesInVisionRange(x: number, y: number, visionRange: numb
 
             // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
             for (const hitbox of entity.hitboxes) {
-               if (testCircularHitbox.isColliding(hitbox)) {
+               if (testCircularHitbox.isColliding(hitbox, entity.rotation)) {
                   entities.push(entity);
                   seenIDs.add(entity.id);
                   break;

@@ -29,6 +29,7 @@ import { onSlimeSpitCollision, onSlimeSpitDeath } from "./entities/projectiles/s
 import { onSpitPoisonCollision } from "./entities/projectiles/spit-poison";
 import { onBattleaxeProjectileCollision, onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
 import Hitbox from "./hitboxes/Hitbox";
+import { onIceArrowCollision } from "./entities/projectiles/ice-arrow";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -863,10 +864,10 @@ class Entity<T extends IEntityType = IEntityType> {
          const hitbox = this.hitboxes[i];
 
          const numOtherHitboxes = entity.hitboxes.length;
-         for (let i = 0; i < numOtherHitboxes; i++) {
-            const otherHitbox = entity.hitboxes[i];
+         for (let j = 0; j < numOtherHitboxes; j++) {
+            const otherHitbox = entity.hitboxes[j];
             // If the objects are colliding, add the colliding object and this object
-            if (hitbox.isColliding(otherHitbox)) {
+            if (hitbox.isColliding(otherHitbox, entity.rotation)) {
                return hitbox.localID + (otherHitbox.localID << 8);
             }
          }
@@ -982,6 +983,10 @@ class Entity<T extends IEntityType = IEntityType> {
          }
          case IEntityType.battleaxeProjectile: {
             onBattleaxeProjectileCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.iceArrow: {
+            onIceArrowCollision(this, collidingEntity);
             break;
          }
       }

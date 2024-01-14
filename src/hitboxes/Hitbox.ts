@@ -26,7 +26,7 @@ abstract class Hitbox {
    public abstract calculateHitboxBoundsMinY(): number;
    public abstract calculateHitboxBoundsMaxY(): number;
 
-   public abstract isColliding(otherHitbox: RectangularHitbox | CircularHitbox): boolean;
+   public abstract isColliding(otherHitbox: RectangularHitbox | CircularHitbox, externalRotation: number): boolean;
 }
 
 export default Hitbox;

@@ -9,7 +9,7 @@ import { TreeComponent } from "./TreeComponent";
 import { BerryBushComponent } from "./BerryBushComponent";
 import { InventoryUseComponent } from "./InventoryUseComponent";
 import { BoulderComponent } from "./BoulderComponent";
-import { IceShardComponent } from "./IceSpikesComponent";
+import { IceShardComponent } from "./IceShardComponent";
 import { CowComponent } from "./CowComponent";
 import { WanderAIComponent } from "./WanderAIComponent";
 import { EscapeAIComponent } from "./EscapeAIComponent";
@@ -35,6 +35,8 @@ import { ThrowingProjectileComponent } from "./ThrowingProjectileComponent";
 import { HutComponent } from "./HutComponent";
 import { SlimeSpitComponent } from "./SlimeSpitComponent";
 import { DoorComponent } from "./DoorComponent";
+import { GolemComponent } from "./GolemComponent";
+import { IceSpikesComponent } from "./IceSpikesComponent";
 
 export class ComponentArray<T extends {} = {}> {
    public components = new Array<T>();
@@ -145,3 +147,5 @@ export const ThrowingProjectileComponentArray = new ComponentArray<ThrowingProje
 export const HutComponentArray = new ComponentArray<HutComponent>();
 export const SlimeSpitComponentArray = new ComponentArray<SlimeSpitComponent>();
 export const DoorComponentArray = new ComponentArray<DoorComponent>();
+export const GolemComponentArray = new ComponentArray<GolemComponent>();
+export const IceSpikesComponentArray = new ComponentArray<IceSpikesComponent>();

@@ -47,10 +47,10 @@ export function tickSnowball(snowball: Entity): void {
 }
 
 export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): void {
-   // Don't let the snowball damage other snowballs
    if (collidingEntity.type === IEntityType.snowball) {
       return;
    }
+
    // Don't let the snowball damage the yeti which threw it
    if (collidingEntity.type === IEntityType.yeti) {
       const snowballComponent = SnowballComponentArray.getComponent(snowball);

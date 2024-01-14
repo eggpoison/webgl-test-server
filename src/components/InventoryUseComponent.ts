@@ -7,6 +7,7 @@ export interface InventoryUseInfo {
    bowCooldownTicks: number;
    readonly itemAttackCooldowns: Record<number, number>;
    readonly spearWindupCooldowns: Record<number, number>;
+   readonly crossbowLoadProgressRecord: Record<number, number>;
    foodEatingTimer: number;
    // @Cleanup: Type name should not be 'tribe member action' as non tribe members can have this component
    currentAction: TribeMemberAction;
@@ -16,6 +17,7 @@ export interface InventoryUseInfo {
    lastBowChargeTicks: number;
    lastSpearChargeTicks: number;
    lastBattleaxeChargeTicks: number;
+   lastCrossbowLoadTicks: number;
    thrownBattleaxeItemID: number;
 }
 
@@ -29,6 +31,7 @@ export class InventoryUseComponent {
          bowCooldownTicks: 0,
          itemAttackCooldowns: {},
          spearWindupCooldowns: {},
+         crossbowLoadProgressRecord: {},
          foodEatingTimer: 0,
          currentAction: TribeMemberAction.none,
          lastAttackTicks: 0,
@@ -36,6 +39,7 @@ export class InventoryUseComponent {
          lastBowChargeTicks: 0,
          lastSpearChargeTicks: 0,
          lastBattleaxeChargeTicks: 0,
+         lastCrossbowLoadTicks: 0,
          thrownBattleaxeItemID: -1
       });
    }

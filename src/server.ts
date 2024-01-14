@@ -9,15 +9,17 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
-import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
+import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 import { getTilesOfBiome } from "./census";
 import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
 import { getInventoryUseInfo } from "./components/InventoryUseComponent";
+import { GOLEM_WAKE_TIME_TICKS, createGolem } from "./entities/mobs/golem";
+import { createFrozenYeti } from "./entities/mobs/frozen-yeti";
 
 /*
 
@@ -71,6 +73,9 @@ const getLastActionTicks = (tribeMember: Entity, inventoryName: string): number 
       }
       case TribeMemberAction.chargeBattleaxe: {
          return useInfo.lastBattleaxeChargeTicks;
+      }
+      case TribeMemberAction.loadCrossbow: {
+         return useInfo.lastCrossbowLoadTicks;
       }
       case TribeMemberAction.eat: {
          return useInfo.lastEatTicks;
@@ -150,9 +155,13 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.frozenYeti: {
-         // @Incomplete
-         // attackType: FrozenYetiAttackType, attackStage: number, stageProgress: number, rockSpikePositions: Array<[number, number]>
-         clientArgs = [FrozenYetiAttackType.none, 0, 0, []];
+         const frozenYetiComponent = FrozenYetiComponentArray.getComponent(entity);
+         clientArgs = [
+            frozenYetiComponent.attackType,
+            frozenYetiComponent.attackStage,
+            frozenYetiComponent.stageProgress,
+            frozenYetiComponent.rockSpikeInfoArray.map(info => [info.positionX, info.positionY])
+         ];
          break;
       }
       case IEntityType.furnace: {
@@ -461,7 +470,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.rockSpikeProjectile: {
-         clientArgs = [];
+         const rockSpikeComponent = RockSpikeProjectileComponentArray.getComponent(entity);
+         clientArgs = [rockSpikeComponent.size, rockSpikeComponent.lifetimeTicks / SETTINGS.TPS];
          break;
       }
       case IEntityType.workbench: {
@@ -526,6 +536,15 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.golem: {
+         const golemComponent = GolemComponentArray.getComponent(entity);
+         clientArgs = [golemComponent.wakeTimerTicks / GOLEM_WAKE_TIME_TICKS];
+         break;
+      }
+      case IEntityType.planterBox: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.iceArrow: {
          clientArgs = [];
          break;
       }
@@ -742,7 +761,7 @@ class GameServer {
          let spawnPosition: Point;
 
          setTimeout(() => {
-            createCow(new Point(spawnPosition.x + 100, spawnPosition.y));
+            createGolem(new Point(spawnPosition.x + 200, spawnPosition.y));
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -863,6 +882,12 @@ class GameServer {
                      width: 1,
                      height: 1,
                      inventoryName: "armourSlot"
+                  },
+                  gloveSlot: {
+                     itemSlots: {},
+                     width: 1,
+                     height: 1,
+                     inventoryName: "gloveSlot"
                   }
                },
                tileUpdates: [],
@@ -1155,6 +1180,12 @@ class GameServer {
                width: 1,
                height: 1,
                inventoryName: "offhand"
+            },
+            gloveSlot: {
+               itemSlots: {},
+               width: 1,
+               height: 1,
+               inventoryName: "gloveSlot"
             }
          };
       } else {
@@ -1172,7 +1203,8 @@ class GameServer {
                width: 1,
                height: 1,
                inventoryName: "offhand"
-            }
+            },
+            gloveSlot: SERVER.bundleInventory(player, "gloveSlot")
          };
       }
    }
@@ -1214,6 +1246,15 @@ class GameServer {
          const playerData = SERVER.playerDataRecord[socket.id];
          const player = this.getPlayerInstance(playerData);
          if (player === null) {
+            // If the player is dead, send a default packet
+            socket.emit("game_data_sync_packet", {
+               position: [0, 0],
+               velocity: [0, 0],
+               acceleration: [0, 0],
+               rotation: 0,
+               health: 0,
+               inventory: SERVER.bundlePlayerInventoryData(player)
+            });
             return;
          }
 
