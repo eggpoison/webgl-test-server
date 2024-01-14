@@ -55,7 +55,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
          damage: damage,
          knockback: 150,
          angleFromAttacker: hitDirection,
-         attackerID: spear.id,
+         attackerID: tribeMember !== null ? tribeMember.id : -1,
          flags: 0
       });
       

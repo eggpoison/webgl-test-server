@@ -896,7 +896,8 @@ class GameServer {
                playerHealth: 20,
                tribeData: bundleTribeData(playerData),
                hasFrostShield: false,
-               pickedUpItem: false
+               pickedUpItem: false,
+               hotbarCrossbowLoadProgressRecord: {}
             };
 
             SERVER.playerDataRecord[socket.id] = playerData;
@@ -1053,6 +1054,17 @@ class GameServer {
       });
    }
 
+   private bundleHotbarCrossbowLoadProgressRecord(player: Entity | null): Record<number, number> {
+      if (player === null) {
+         return {};
+      }
+      
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+
+      return useInfo.crossbowLoadProgressRecord;
+   }
+
    /** Send data about the server to all players */
    public sendGameDataPackets(): void {
       if (SERVER.io === null) return;
@@ -1101,7 +1113,8 @@ class GameServer {
             // @Incomplete
             // hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
             hasFrostShield: false,
-            pickedUpItem: playerData.pickedUpItem
+            pickedUpItem: playerData.pickedUpItem,
+            hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player)
          };
 
          // Send the game data to the player

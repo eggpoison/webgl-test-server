@@ -32,7 +32,7 @@ const DEFAULT_ATTACK_KNOCKBACK = 125;
 
 const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow, IEntityType.golem];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace, IEntityType.golem];
-const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree];
+const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.woodenWall, IEntityType.woodenDoor, IEntityType.researchBench, IEntityType.workbench];
 const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime];
 
 const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, -1, 0);
@@ -688,6 +688,30 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          
          break;
       }
+      case "crossbow": {
+         // Don't fire if not loaded
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
+         if (!useInfo.crossbowLoadProgressRecord.hasOwnProperty(itemSlot) || useInfo.crossbowLoadProgressRecord[itemSlot] < 1) {
+            return;
+         }
+
+         // Offset the arrow's spawn to be just outside of the tribe member's hitbox
+         // @Speed: Garbage collection
+         const spawnPosition = tribeMember.position.copy();
+         const offset = Point.fromVectorForm(35, tribeMember.rotation);
+         spawnPosition.add(offset);
+         
+         const arrow = createWoodenArrow(spawnPosition, tribeMember, item.type);
+         
+         const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
+         arrow.velocity.x = itemInfo.projectileSpeed * Math.sin(tribeMember.rotation);
+         arrow.velocity.y = itemInfo.projectileSpeed * Math.cos(tribeMember.rotation);
+
+         delete useInfo.crossbowLoadProgressRecord[itemSlot];
+         
+         break;
+      }
       case "spear": {
          // 
          // Throw the spear
@@ -803,20 +827,37 @@ export function pickupItemEntity(tribeMember: Entity, itemEntity: Entity): boole
 }
 
 const tickInventoryUseInfo = (tribeMember: Entity, inventoryUseInfo: InventoryUseInfo): void => {
-   if (inventoryUseInfo.currentAction === TribeMemberAction.eat) {
-      inventoryUseInfo.foodEatingTimer -= 1 / SETTINGS.TPS;
-
-      if (inventoryUseInfo.foodEatingTimer <= 0) {
-         const selectedItem = getItemFromInventory(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot);
-         if (selectedItem !== null) {
-            const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];
-            if (itemCategory === "food") {
-               useItem(tribeMember, selectedItem, inventoryUseInfo.inventory.name, inventoryUseInfo.selectedItemSlot);
-
-               const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as FoodItemInfo;
-               inventoryUseInfo.foodEatingTimer = itemInfo.eatTime;
+   switch (inventoryUseInfo.currentAction) {
+      case TribeMemberAction.eat: {
+         inventoryUseInfo.foodEatingTimer -= 1 / SETTINGS.TPS;
+   
+         if (inventoryUseInfo.foodEatingTimer <= 0) {
+            const selectedItem = getItemFromInventory(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot);
+            if (selectedItem !== null) {
+               const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];
+               if (itemCategory === "food") {
+                  useItem(tribeMember, selectedItem, inventoryUseInfo.inventory.name, inventoryUseInfo.selectedItemSlot);
+   
+                  const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as FoodItemInfo;
+                  inventoryUseInfo.foodEatingTimer = itemInfo.eatTime;
+               }
             }
          }
+         break;
+      }
+      case TribeMemberAction.loadCrossbow: {
+         if (!inventoryUseInfo.crossbowLoadProgressRecord.hasOwnProperty(inventoryUseInfo.selectedItemSlot)) {
+            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] = 1 / SETTINGS.TPS;
+         } else {
+            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] += 1 / SETTINGS.TPS;
+         }
+         
+         if (inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] >= 1) {
+            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] = 1;
+            inventoryUseInfo.currentAction = TribeMemberAction.none;
+         }
+         
+         break;
       }
    }
 }

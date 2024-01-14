@@ -86,7 +86,7 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
          damage: 4,
          knockback: 150,
          angleFromAttacker: direction,
-         attackerID: battleaxe.id,
+         attackerID: tribeMember !== null ? tribeMember.id : -1,
          flags: 0
       });
       addLocalInvulnerabilityHash(HealthComponentArray.getComponent(collidingEntity), attackHash, 0.3);
