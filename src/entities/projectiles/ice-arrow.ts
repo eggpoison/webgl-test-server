@@ -1,11 +1,12 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { ArrowComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
+import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { EntityRelationship, getTribeMemberRelationship } from "../tribes/tribe-member";
 import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const ARROW_WIDTH = 5 * 4;
 const ARROW_HEIGHT = 14 * 4;
@@ -13,14 +14,13 @@ const ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(ARROW_WIDTH / 2, 2) + Math.pow
 
 export function createIceArrow(position: Point, tribeMember: Entity): Entity {
    const iceArrow = new Entity(position, IEntityType.iceArrow, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   iceArrow.rotation = tribeMember.rotation;
    
    const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
    iceArrow.addHitbox(hitbox);
    
+   PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false));
    ArrowComponentArray.addComponent(iceArrow, new ArrowComponent(tribeMember.id, ItemType.ice_bow));
-   
-   iceArrow.isAffectedByFriction = false;
-   iceArrow.rotation = tribeMember.rotation;
 
    return iceArrow;
 }
@@ -69,5 +69,6 @@ export function onIceArrowCollision(arrow: Entity, collidingEntity: Entity): voi
 }
 
 export function onIceArrowRemove(arrow: Entity): void {
+   PhysicsComponentArray.removeComponent(arrow);
    ArrowComponentArray.removeComponent(arrow);
 }

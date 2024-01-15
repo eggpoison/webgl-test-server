@@ -14,6 +14,7 @@ const BERRY_GROW_TIME = 30;
 
 export function createBerryBush(position: Point): Entity {
    const berryBush = new Entity(position, IEntityType.berryBush, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   berryBush.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(berryBush, 1, 0, 0, BERRY_BUSH_RADIUS, 0);
    berryBush.addHitbox(hitbox);
@@ -24,9 +25,6 @@ export function createBerryBush(position: Point): Entity {
       numBerries: 5,
       berryGrowTimer: 0
    });
-
-   berryBush.isStatic = true;
-   berryBush.rotation = 2 * Math.PI * Math.random();
 
    return berryBush;
 }

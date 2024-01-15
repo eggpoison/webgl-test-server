@@ -13,8 +13,6 @@ export function createPlanterBox(position: Point): Entity {
    HealthComponentArray.addComponent(planterBox, new HealthComponent(15));
    StatusEffectComponentArray.addComponent(planterBox, new StatusEffectComponent(StatusEffectConst.poisoned));
    
-   planterBox.isStatic = true;
-   
    return planterBox;
 }
 

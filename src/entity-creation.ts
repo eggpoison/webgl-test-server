@@ -24,6 +24,7 @@ import { createSpitPoison } from "./entities/projectiles/spit-poison";
 import { createWoodenDoor } from "./entities/structures/wooden-door";
 import { createGolem } from "./entities/mobs/golem";
 import { createPlanterBox } from "./entities/structures/planter-box";
+import { createPebblum } from "./entities/mobs/pebblum";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -51,6 +52,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.spitPoison: return createSpitPoison(position);
       case IEntityType.golem: return createGolem(position);
       case IEntityType.planterBox: return createPlanterBox(position);
+      case IEntityType.pebblum: return createPebblum(position, ID_SENTINEL_VALUE);
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow:

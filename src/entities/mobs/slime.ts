@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Mutable, PlayerCauseOfDeath, Point, SETTINGS, SlimeOrbData, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, HealthComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, PhysicsComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { SlimeComponent } from "../../components/SlimeComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
@@ -14,6 +14,7 @@ import Board from "../../Board";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { createSlimeSpit } from "../projectiles/slime-spit";
 import { SERVER } from "../../server";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
 const MAX_HEALTH: ReadonlyArray<number> = [10, 20, 35];
@@ -59,19 +60,19 @@ interface AngerPropagationInfo {
 
 export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, startingOrbs: Array<MovingOrbData> = []): Entity {
    const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   slime.rotation = 2 * Math.PI * Math.random();
+   slime.collisionPushForceMultiplier = 0.5;
 
    const mass = 1 + size * 0.5;
    const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size], 0);
    slime.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(slime, new PhysicsComponent(true));
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));
    StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent(StatusEffectConst.poisoned));
    SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size], startingOrbs));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slime, new AIHelperComponent(VISION_RANGES[size]));
-
-   slime.rotation = 2 * Math.PI * Math.random();
-   slime.collisionPushForceMultiplier = 0.5;
 
    return slime;
 }
@@ -176,7 +177,11 @@ export function tickSlime(slime: Entity): void {
       slimeComponent.eyeRotation = slime.position.calculateAngleBetween(angerTarget.position);
 
       if (slimeComponent.size > SlimeSize.small && (Board.ticks - slimeComponent.lastSpitTicks) >= SPIT_COOLDOWN_TICKS) {
-         slime.rotation = slime.position.calculateAngleBetween(angerTarget.position);
+         const direction = slime.position.calculateAngleBetween(angerTarget.position);
+         if (direction !== slime.rotation) {
+            slime.rotation = direction;
+            slime.hitboxesAreDirty = true;
+         }
          stopEntity(slime);
          
          // Spit attack
@@ -433,6 +438,7 @@ export function onSlimeDeath(slime: Entity, attackingEntity: Entity): void {
 }
 
 export function onSlimeRemove(slime: Entity): void {
+   PhysicsComponentArray.removeComponent(slime);
    HealthComponentArray.removeComponent(slime);
    StatusEffectComponentArray.removeComponent(slime);
    SlimeComponentArray.removeComponent(slime);

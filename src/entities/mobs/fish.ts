@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { AIHelperComponentArray, EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -16,6 +16,7 @@ import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } f
 import { getInventory } from "../../components/InventoryComponent";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 5;
 
@@ -39,18 +40,18 @@ const LUNGE_INTERVAL = 1;
 
 export function createFish(position: Point): Entity {
    const fish = new Entity(position, IEntityType.fish, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   fish.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, FISH_WIDTH, FISH_HEIGHT, 0);
    fish.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(fish, new PhysicsComponent(true));
    HealthComponentArray.addComponent(fish, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(fish, new StatusEffectComponent(0));
    WanderAIComponentArray.addComponent(fish, new WanderAIComponent());
    EscapeAIComponentArray.addComponent(fish, new EscapeAIComponent());
    FishComponentArray.addComponent(fish, new FishComponent(randInt(0, 3)));
    AIHelperComponentArray.addComponent(fish, new AIHelperComponent(VISION_RANGE));
-   
-   fish.rotation = 2 * Math.PI * Math.random();
    
    return fish;
 }
@@ -82,6 +83,7 @@ const move = (fish: Entity, direction: number): void => {
       fish.acceleration.x = 40 * Math.sin(direction);
       fish.acceleration.y = 40 * Math.cos(direction);
       fish.rotation = direction;
+      fish.hitboxesAreDirty = true;
    } else {
       // 
       // Lunge on land
@@ -310,6 +312,7 @@ export function onFishRemove(fish: Entity): void {
       unfollowLeader(fish, fishComponent.leader);
    }
    
+   PhysicsComponentArray.removeComponent(fish);
    HealthComponentArray.removeComponent(fish);
    StatusEffectComponentArray.removeComponent(fish);
    WanderAIComponentArray.removeComponent(fish);

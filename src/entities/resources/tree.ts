@@ -18,6 +18,7 @@ export function createTree(position: Point): Entity {
    const size = Math.random() > 1/3 ? 1 : 0;
 
    const tree = new Entity(position, IEntityType.tree, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   tree.rotation = 2 * Math.PI * Math.random();
 
    const mass = 1.25 + size * 0.25;
    const hitbox = new CircularHitbox(tree, mass, 0, 0, TREE_RADII[size], 0);
@@ -28,9 +29,6 @@ export function createTree(position: Point): Entity {
    TreeComponentArray.addComponent(tree, {
       treeSize: size
    });
-
-   tree.isStatic = true;
-   tree.rotation = 2 * Math.PI * Math.random();
 
    return tree;
 }

@@ -18,6 +18,9 @@ export function runFromAttackingEntity(entity: Entity, attackingEntity: Entity, 
    const direction = attackingEntity.position.calculateAngleBetween(entity.position);
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
+   if (direction !== entity.rotation) {
+      entity.hitboxesAreDirty = true;
+   }
    entity.rotation = direction;
 }
 

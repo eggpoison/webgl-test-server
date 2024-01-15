@@ -1,12 +1,13 @@
 import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { ArrowComponentArray, HealthComponentArray } from "../../components/ComponentArray";
+import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray } from "../../components/ComponentArray";
 import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../tribes/tribe-member";
 import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const ARROW_WIDTH = 20;
 const ARROW_HEIGHT = 64;
@@ -14,15 +15,14 @@ const ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(ARROW_WIDTH / 2, 2) + Math.pow
 
 export function createWoodenArrow(position: Point, tribeMember: Entity, arrowType: ItemType): Entity {
    const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   arrow.rotation = tribeMember.rotation;
    
    const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
    arrow.addHitbox(hitbox);
    
+   PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false));
    ArrowComponentArray.addComponent(arrow, new ArrowComponent(tribeMember.id, arrowType));
    
-   arrow.isAffectedByFriction = false;
-   arrow.rotation = tribeMember.rotation;
-
    return arrow;
 }
 
@@ -85,5 +85,6 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
 }
 
 export function onArrowRemove(arrow: Entity): void {
+   PhysicsComponentArray.removeComponent(arrow);
    ArrowComponentArray.removeComponent(arrow);
 }

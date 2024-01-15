@@ -1,6 +1,6 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE, NO_COLLISION } from "../../Entity";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -16,6 +16,7 @@ import { InventoryUseComponent, getInventoryUseInfo } from "../../components/Inv
 import { attackEntity, calculateRadialAttackTargets } from "../tribes/tribe-member";
 import Hitbox from "../../hitboxes/Hitbox";
 import { SERVER } from "../../server";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 20;
 
@@ -39,10 +40,10 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32, 0);
    zombie.addHitbox(hitbox);
    
+   PhysicsComponentArray.addComponent(zombie, new PhysicsComponent(true));
    HealthComponentArray.addComponent(zombie, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(zombie, new StatusEffectComponent(0));
-   const zombieType = isGolden ? 3 : randInt(0, 2);
-   ZombieComponentArray.addComponent(zombie, new ZombieComponent(zombieType, tombstoneID));
+   ZombieComponentArray.addComponent(zombie, new ZombieComponent(isGolden ? 3 : randInt(0, 2), tombstoneID));
    WanderAIComponentArray.addComponent(zombie, new WanderAIComponent());
    AIHelperComponentArray.addComponent(zombie, new AIHelperComponent(VISION_RANGE));
 
@@ -284,6 +285,7 @@ export function onZombieDeath(zombie: Entity): void {
 }
 
 export function onZombieRemove(zombie: Entity): void {
+   PhysicsComponentArray.removeComponent(zombie);
    HealthComponentArray.removeComponent(zombie);
    StatusEffectComponentArray.removeComponent(zombie);
    ZombieComponentArray.removeComponent(zombie);

@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, HealthComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, PhysicsComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
@@ -11,6 +11,7 @@ import { SlimewispComponent } from "../../components/SlimewispComponent";
 import { createSlime } from "./slime";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 3;
 const RADIUS = 16;
@@ -23,19 +24,19 @@ export const SLIMEWISP_MERGE_TIME = 2;
 
 export function createSlimewisp(position: Point): Entity {
    const slimewisp = new Entity(position, IEntityType.slimewisp, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   slimewisp.rotation = 2 * Math.PI * Math.random();
+   slimewisp.collisionPushForceMultiplier = 0.3;
 
    const hitbox = new CircularHitbox(slimewisp, 0.4, 0, 0, RADIUS, 0);
    slimewisp.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(slimewisp, new PhysicsComponent(true));
    HealthComponentArray.addComponent(slimewisp, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(slimewisp, new StatusEffectComponent(StatusEffectConst.poisoned));
    SlimewispComponentArray.addComponent(slimewisp, new SlimewispComponent());
    WanderAIComponentArray.addComponent(slimewisp, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slimewisp, new AIHelperComponent(VISION_RANGE));
 
-   slimewisp.rotation = 2 * Math.PI * Math.random();
-   slimewisp.collisionPushForceMultiplier = 0.3;
-   
    return slimewisp;
 }
 
@@ -91,6 +92,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
 }
 
 export function onSlimewispRemove(slimewisp: Entity): void {
+   PhysicsComponentArray.removeComponent(slimewisp);
    HealthComponentArray.removeComponent(slimewisp);
    StatusEffectComponentArray.removeComponent(slimewisp);
    SlimewispComponentArray.removeComponent(slimewisp);

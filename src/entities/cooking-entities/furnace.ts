@@ -27,8 +27,6 @@ export function createFurnace(position: Point): Entity {
 
    CookingEntityComponentArray.addComponent(furnace, new CookingEntityComponent());
 
-   furnace.isStatic = true;
-
    return furnace;
 }
 

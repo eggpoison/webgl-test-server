@@ -1,4 +1,4 @@
-import { Point, SETTINGS, circleAndRectangleDoIntersectWithOffset, circlesDoIntersectWithOffset, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { Point, SETTINGS, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import Entity from "../Entity";
 import { AIHelperComponentArray } from "./ComponentArray";
@@ -23,19 +23,15 @@ export class AIHelperComponent {
    }
 }
 
-const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, externalRotation: number, visionRange: number): boolean => {
+const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): boolean => {
    // @Speed: This check is slow
    if (hitbox.hasOwnProperty("radius")) {
       // Circular hitbox
-         const otherOffsetX = rotateXAroundOrigin(hitbox.offset.x, hitbox.offset.y, externalRotation);
-         const otherOffsetY = rotateYAroundOrigin(hitbox.offset.x, hitbox.offset.y, externalRotation);
-         const otherPosX = hitbox.object.position.x + otherOffsetX;
-         const otherPosY = hitbox.object.position.y + otherOffsetY;
-      return circlesDoIntersectWithOffset(entity.position.x, entity.position.y, visionRange, otherPosX, otherPosY, (hitbox as CircularHitbox).radius);
+      return circlesDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
    } else {
       // Rectangular hitbox
       // @Speed
-      return circleAndRectangleDoIntersectWithOffset(entity.position, new Point(0, 0), visionRange, hitbox.object.position, hitbox.offset, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+      return circleAndRectangleDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
    }
 }
 
@@ -49,7 +45,7 @@ const entityIsVisible = (entity: Entity, checkEntity: Entity, visionRange: numbe
    // If the mob can see any of the game object's hitboxes, it is visible
    for (let j = 0; j < checkEntity.hitboxes.length; j++) {
       const hitbox = checkEntity.hitboxes[j];
-      if (hitboxIsVisible(entity, hitbox, checkEntity.rotation, visionRange)) {
+      if (hitboxIsVisible(entity, hitbox, visionRange)) {
          return true;
       }
    }

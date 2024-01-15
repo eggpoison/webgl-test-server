@@ -15,8 +15,6 @@ export function createSpitPoison(position: Point): Entity {
    const hitbox = new CircularHitbox(poison, Number.EPSILON, 0, 0, RADIUS, 0);
    poison.addHitbox(hitbox);
    
-   poison.isStatic = true;
-   
    return poison;
 }
 

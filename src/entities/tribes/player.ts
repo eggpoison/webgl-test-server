@@ -2,7 +2,7 @@ import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_CO
 import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, onTribeMemberHurt, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
@@ -16,6 +16,7 @@ import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { createItem } from "../../Item";
 import { createWoodenDoor } from "../structures/wooden-door";
 import { toggleDoor } from "../../components/DoorComponent";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -35,6 +36,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.tribeType];
+   PhysicsComponentArray.addComponent(player, new PhysicsComponent(true));
    HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(player, new StatusEffectComponent(0));
 
@@ -126,6 +128,7 @@ export function onPlayerDeath(player: Entity): void {
 }
 
 export function onPlayerRemove(player: Entity): void {
+   PhysicsComponentArray.removeComponent(player);
    HealthComponentArray.removeComponent(player);
    StatusEffectComponentArray.removeComponent(player);
    TribeComponentArray.removeComponent(player);

@@ -11,15 +11,13 @@ export const ROCK_SPIKE_MASSES = [1, 1.75, 2.5];
 
 export function createRockSpikeProjectile(spawnPosition: Point, size: number, frozenYetiID: number): Entity {
    const rockSpikeProjectile = new Entity(spawnPosition, IEntityType.rockSpikeProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   rockSpikeProjectile.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(rockSpikeProjectile, ROCK_SPIKE_MASSES[size], 0, 0, ROCK_SPIKE_HITBOX_SIZES[size], 0);
    rockSpikeProjectile.addHitbox(hitbox);
 
    const lifetimeTicks = Math.floor(randFloat(3.5, 4.5) * SETTINGS.TPS);
    RockSpikeProjectileComponentArray.addComponent(rockSpikeProjectile, new RockSpikeProjectileComponent(size, lifetimeTicks, frozenYetiID));
-
-   rockSpikeProjectile.isStatic = true;
-   rockSpikeProjectile.rotation = 2 * Math.PI * Math.random();
 
    return rockSpikeProjectile;
 }
@@ -63,4 +61,8 @@ export function onRockSpikeProjectileCollision(rockSpikeProjectile: Entity, coll
       });
       addLocalInvulnerabilityHash(healthComponent, "rock_spike", 0.3);
    }
+}
+
+export function onRockSpikeRemove(rockSpike: Entity): void {
+   RockSpikeProjectileComponentArray.removeComponent(rockSpike);
 }

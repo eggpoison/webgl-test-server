@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, addItemToSlot, createNewInventory, pickupItemEntity } from "../../components/InventoryComponent";
@@ -13,6 +13,7 @@ import { TribesmanComponent } from "../../components/TribesmanComponent";
 import Board from "../../Board";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { tickTribesman } from "./tribesman";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 export const TRIBE_WORKER_RADIUS = 28;
 const INVENTORY_SIZE = 3;
@@ -36,9 +37,9 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    worker.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];
+   PhysicsComponentArray.addComponent(worker, new PhysicsComponent(true));
    HealthComponentArray.addComponent(worker, new HealthComponent(tribeInfo.maxHealthWorker));
    StatusEffectComponentArray.addComponent(worker, new StatusEffectComponent(0));
-
    TribeComponentArray.addComponent(worker, {
       tribeType: tribeType,
       tribe: tribe
@@ -103,6 +104,7 @@ export function onTribeWorkerDeath(worker: Entity): void {
 }
 
 export function onTribeWorkerRemove(worker: Entity): void {
+   PhysicsComponentArray.removeComponent(worker);
    HealthComponentArray.removeComponent(worker);
    StatusEffectComponentArray.removeComponent(worker);
    TribeComponentArray.removeComponent(worker);

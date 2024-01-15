@@ -1,5 +1,5 @@
 import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffectConst, customTickIntervalHasPassed } from "webgl-test-shared";
-import { StatusEffectComponentArray } from "./ComponentArray";
+import { PhysicsComponentArray, StatusEffectComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
 import { SERVER } from "../server";
@@ -33,7 +33,10 @@ export function applyStatusEffect(entity: Entity, statusEffect: StatusEffectCons
       statusEffectComponent.ticksElapsed[statusEffect] = 0;
       statusEffectComponent.ticksRemaining[statusEffect] = durationTicks;
 
-      entity.moveSpeedMultiplier *= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
+      if (PhysicsComponentArray.hasComponent(entity)) {
+         const physicsComponent = PhysicsComponentArray.getComponent(entity);
+         physicsComponent.moveSpeedMultiplier *= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
+      }
    } else {
       // Existing status effect
 
@@ -50,7 +53,11 @@ export function hasStatusEffect(statusEffectComponent: StatusEffectComponent, st
 export function clearStatusEffect(entity: Entity, statusEffect: StatusEffectConst): void {
    const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
    statusEffectComponent.ticksRemaining[statusEffect] = 0;
-   entity.moveSpeedMultiplier /= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
+
+   if (PhysicsComponentArray.hasComponent(entity)) {
+      const physicsComponent = PhysicsComponentArray.getComponent(entity);
+      physicsComponent.moveSpeedMultiplier /= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
+   }
 }
 
 export function tickStatusEffectComponent(entity: Entity): void {

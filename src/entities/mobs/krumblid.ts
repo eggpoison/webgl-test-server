@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -14,6 +14,7 @@ import Board from "../../Board";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 15;
 const KRUMBLID_SIZE = 48;
@@ -24,18 +25,18 @@ const MAX_FOLLOW_COOLDOWN = 9;
 
 export function createKrumblid(position: Point): Entity {
    const krumblid = new Entity(position, IEntityType.krumblid, COLLISION_BITS.other, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.cactus);
+   krumblid.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(krumblid, 0.75, 0, 0, KRUMBLID_SIZE / 2, 0);
    krumblid.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(krumblid, new PhysicsComponent(true));
    HealthComponentArray.addComponent(krumblid, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(krumblid, new StatusEffectComponent(0));
    WanderAIComponentArray.addComponent(krumblid, new WanderAIComponent());
    FollowAIComponentArray.addComponent(krumblid, new FollowAIComponent(randInt(MIN_FOLLOW_COOLDOWN, MAX_FOLLOW_COOLDOWN)));
    EscapeAIComponentArray.addComponent(krumblid, new EscapeAIComponent());
    AIHelperComponentArray.addComponent(krumblid, new AIHelperComponent(VISION_RANGE));
-
-   krumblid.rotation = 2 * Math.PI * Math.random();
 
    return krumblid;
 }
@@ -104,6 +105,7 @@ export function onKrumblidDeath(krumblid: Entity): void {
 }
 
 export function onKrumblidRemove(krumblid: Entity): void {
+   PhysicsComponentArray.removeComponent(krumblid);
    HealthComponentArray.removeComponent(krumblid);
    StatusEffectComponentArray.removeComponent(krumblid);
    WanderAIComponentArray.removeComponent(krumblid);

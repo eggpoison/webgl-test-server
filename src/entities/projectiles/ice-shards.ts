@@ -1,18 +1,20 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { HealthComponentArray, IceShardComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, IceShardComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
-import Hitbox from "../../hitboxes/Hitbox";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
-export function createIceShard(position: Point): Entity {
+export function createIceShard(position: Point, moveDirection: number): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   iceShard.rotation = moveDirection;
 
    const hitbox = new RectangularHitbox(iceShard, 0.4, 0, 0, 24, 24, 0);
    iceShard.addHitbox(hitbox);
    
+   PhysicsComponentArray.addComponent(iceShard, new PhysicsComponent(true));
    IceShardComponentArray.addComponent(iceShard, {
       lifetime: randFloat(0.1, 0.2)
    });
@@ -67,5 +69,6 @@ export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): 
 }
 
 export function onIceShardRemove(iceShard: Entity): void {
+   PhysicsComponentArray.removeComponent(iceShard);
    IceShardComponentArray.removeComponent(iceShard);
 }

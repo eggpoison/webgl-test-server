@@ -1,12 +1,12 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import { HealthComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
+import { HealthComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../components/HealthComponent";
 import { StatusEffectComponent } from "../components/StatusEffectComponent";
 import { SnowballComponent } from "../components/SnowballComponent";
-import Hitbox from "../hitboxes/Hitbox";
 import { SERVER } from "../server";
+import { PhysicsComponent } from "../components/PhysicsComponent";
    
 const MAX_HEALTHS: ReadonlyArray<number> = [5, 10];
 
@@ -14,17 +14,17 @@ const DAMAGE_VELOCITY_THRESHOLD = 100;
 
 export function createSnowball(position: Point, size: SnowballSize = SnowballSize.small, yetiID: number = ID_SENTINEL_VALUE): Entity {
    const snowball = new Entity(position, IEntityType.snowball, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   snowball.rotation = 2 * Math.PI * Math.random();
 
    const mass = size === SnowballSize.small ? 1 : 1.5;
    const hitbox = new CircularHitbox(snowball, mass, 0, 0, SNOWBALL_SIZES[size] / 2, 0);
    snowball.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(snowball, new PhysicsComponent(true));
    HealthComponentArray.addComponent(snowball, new HealthComponent(MAX_HEALTHS[size]));
-   StatusEffectComponentArray.addComponent(snowball, new StatusEffectComponent(StatusEffectConst.poisoned));
+   StatusEffectComponentArray.addComponent(snowball, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.freezing));
    SnowballComponentArray.addComponent(snowball, new SnowballComponent(yetiID, size, Math.floor(randFloat(10, 15) * SETTINGS.TPS)));
    
-   snowball.rotation = 2 * Math.PI * Math.random();
-
    return snowball;
 }
 
@@ -32,8 +32,10 @@ export function tickSnowball(snowball: Entity): void {
    const snowballComponent = SnowballComponentArray.getComponent(snowball);
    
    // Angular velocity
-   snowball.rotation += snowballComponent.angularVelocity / SETTINGS.TPS;
    if (snowballComponent.angularVelocity !== 0) {
+      snowball.rotation += snowballComponent.angularVelocity / SETTINGS.TPS;
+      snowball.hitboxesAreDirty = true;
+      
       const beforeSign = Math.sign(snowballComponent.angularVelocity);
       snowballComponent.angularVelocity -= Math.PI / SETTINGS.TPS * beforeSign;
       if (beforeSign !== Math.sign(snowballComponent.angularVelocity)) {
@@ -86,6 +88,7 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
 }
 
 export function onSnowballRemove(snowball: Entity): void {
+   PhysicsComponentArray.removeComponent(snowball);
    HealthComponentArray.removeComponent(snowball);
    StatusEffectComponentArray.removeComponent(snowball);
    SnowballComponentArray.removeComponent(snowball);

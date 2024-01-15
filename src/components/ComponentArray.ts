@@ -37,6 +37,8 @@ import { SlimeSpitComponent } from "./SlimeSpitComponent";
 import { DoorComponent } from "./DoorComponent";
 import { GolemComponent } from "./GolemComponent";
 import { IceSpikesComponent } from "./IceSpikesComponent";
+import { PebblumComponent } from "./PebblumComponent";
+import { PhysicsComponent } from "./PhysicsComponent";
 
 export class ComponentArray<T extends {} = {}> {
    public components = new Array<T>();
@@ -149,3 +151,5 @@ export const SlimeSpitComponentArray = new ComponentArray<SlimeSpitComponent>();
 export const DoorComponentArray = new ComponentArray<DoorComponent>();
 export const GolemComponentArray = new ComponentArray<GolemComponent>();
 export const IceSpikesComponentArray = new ComponentArray<IceSpikesComponent>();
+export const PebblumComponentArray = new ComponentArray<PebblumComponent>();
+export const PhysicsComponentArray = new ComponentArray<PhysicsComponent>();

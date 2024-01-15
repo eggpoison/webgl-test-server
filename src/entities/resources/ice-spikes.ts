@@ -18,6 +18,7 @@ const GROWTH_OFFSET = 60;
 
 export function createIceSpikes(position: Point, rootIceSpike?: Entity): Entity {
    const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   iceSpikes.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, ICE_SPIKE_RADIUS, 0);
    iceSpikes.addHitbox(hitbox);
@@ -25,9 +26,6 @@ export function createIceSpikes(position: Point, rootIceSpike?: Entity): Entity 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));
    StatusEffectComponentArray.addComponent(iceSpikes, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.freezing));
    IceSpikesComponentArray.addComponent(iceSpikes, new IceSpikesComponent(rootIceSpike || iceSpikes));
-
-   iceSpikes.isStatic = true;
-   iceSpikes.rotation = 2 * Math.PI * Math.random();
 
    return iceSpikes;
 }
@@ -131,9 +129,8 @@ export function onIceSpikesDeath(iceSpikes: Entity): void {
       position.x += 10 * Math.sin(moveDirection);
       position.y += 10 * Math.cos(moveDirection);
 
-      const iceShard = createIceShard(position);
+      const iceShard = createIceShard(position, moveDirection);
 
-      iceShard.rotation = moveDirection;
       iceShard.velocity.x = 700 * Math.sin(moveDirection);
       iceShard.velocity.y = 700 * Math.cos(moveDirection);
    }

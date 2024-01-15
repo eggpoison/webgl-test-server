@@ -1,7 +1,7 @@
 import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { AIHelperComponentArray, BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -16,6 +16,7 @@ import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } f
 import { CowComponent, updateCowComponent } from "../../components/CowComponent";
 import { dropBerry } from "../resources/berry-bush";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 10;
 const VISION_RANGE = 256;
@@ -42,6 +43,7 @@ export function createCow(position: Point): Entity {
    const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100, 0);
    cow.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true));
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent(0));
    AIHelperComponentArray.addComponent(cow, new AIHelperComponent(VISION_RANGE));
@@ -248,6 +250,7 @@ export function onCowDeath(cow: Entity): void {
 }
 
 export function onCowRemove(cow: Entity): void {
+   PhysicsComponentArray.removeComponent(cow);
    HealthComponentArray.removeComponent(cow);
    StatusEffectComponentArray.removeComponent(cow);
    AIHelperComponentArray.removeComponent(cow);

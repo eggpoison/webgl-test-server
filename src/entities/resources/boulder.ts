@@ -10,6 +10,7 @@ const RADIUS = 40;
 
 export function createBoulder(position: Point): Entity {
    const boulder = new Entity(position, IEntityType.boulder, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   boulder.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(boulder, 1.25, 0, 0, RADIUS, 0);
    boulder.addHitbox(hitbox);
@@ -19,9 +20,6 @@ export function createBoulder(position: Point): Entity {
    BoulderComponentArray.addComponent(boulder, {
       boulderType: Math.floor(Math.random() * 2)
    });
-   
-   boulder.isStatic = true;
-   boulder.rotation = 2 * Math.PI * Math.random();
    
    return boulder;
 }

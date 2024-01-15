@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, addItemToSlot, createNewInventory, pickupItemEntity } from "../../components/InventoryComponent";
@@ -13,6 +13,7 @@ import { TribesmanComponent } from "../../components/TribesmanComponent";
 import Board from "../../Board";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { tickTribesman } from "./tribesman";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 export const TRIBE_WARRIOR_RADIUS = 32;
 const INVENTORY_SIZE = 3;
@@ -25,9 +26,9 @@ export function createTribeWarrior(position: Point, tribeType: TribeType, tribe:
    warrior.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribeType];
+   PhysicsComponentArray.addComponent(warrior, new PhysicsComponent(true));
    HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent(0));
-
    TribeComponentArray.addComponent(warrior, {
       tribeType: tribeType,
       tribe: tribe
@@ -92,6 +93,7 @@ export function onTribeWarriorDeath(warrior: Entity): void {
 }
 
 export function onTribeWarriorRemove(warrior: Entity): void {
+   PhysicsComponentArray.removeComponent(warrior);
    HealthComponentArray.removeComponent(warrior);
    StatusEffectComponentArray.removeComponent(warrior);
    TribeComponentArray.removeComponent(warrior);

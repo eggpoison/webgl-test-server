@@ -1,4 +1,4 @@
-import { Point } from "webgl-test-shared";
+import { Point, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
 import RectangularHitbox from "./RectangularHitbox";
 import CircularHitbox from "./CircularHitbox";
 
@@ -9,16 +9,28 @@ export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: numb
 abstract class Hitbox {
    public object: HitboxObject;
    public readonly mass: number;
-   public offset: Point;
+   public offsetX: number;
+   public offsetY: number;
    public localID: number;
+
+   public rotatedOffsetX!: number;
+   public rotatedOffsetY!: number;
 
    public chunkBounds: HitboxBounds = [-1, -1, -1, -1];
 
    constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, localID: number) {
       this.object = object;
       this.mass = mass;
-      this.offset = new Point(offsetX, offsetY);
+      this.offsetX = offsetX;
+      this.offsetY = offsetY;
       this.localID = localID;
+
+      this.updateOffset();
+   }
+
+   public updateOffset(): void {
+      this.rotatedOffsetX = rotateXAroundOrigin(this.offsetX, this.offsetY, this.object.rotation);
+      this.rotatedOffsetY = rotateYAroundOrigin(this.offsetX, this.offsetY, this.object.rotation);
    }
 
    public abstract calculateHitboxBoundsMinX(): number;

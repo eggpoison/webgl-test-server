@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -15,6 +15,7 @@ import { createSnowball } from "../snowball";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
 import Hitbox from "../../hitboxes/Hitbox";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -143,10 +144,12 @@ export function yetiSpawnPositionIsValid(positionX: number, positionY: number): 
 
 export function createYeti(position: Point): Entity {
    const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   yeti.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2, 0);
    yeti.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true));
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent(StatusEffectConst.freezing));
    WanderAIComponentArray.addComponent(yeti, new WanderAIComponent());
@@ -155,8 +158,6 @@ export function createYeti(position: Point): Entity {
    const territory = generateYetiTerritoryTiles(yeti.tile.x, yeti.tile.y);
    registerYetiTerritory(yeti, territory);
    YetiComponentArray.addComponent(yeti, new YetiComponent(territory));
-
-   yeti.rotation = 2 * Math.PI * Math.random();
 
    return yeti;
 }
@@ -264,7 +265,11 @@ export function tickYeti(yeti: Entity): void {
                   yetiComponent.snowThrowHoldTimer = 0;
                }
 
-               yeti.rotation = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+               const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+               if (direction !== yeti.rotation) {
+                  yeti.rotation = direction;
+                  yeti.hitboxesAreDirty = true;
+               }
                stopEntity(yeti);
                return;
             }
@@ -274,7 +279,11 @@ export function tickYeti(yeti: Entity): void {
                   yetiComponent.snowThrowStage = SnowThrowStage.return;
                }
 
-               yeti.rotation = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+               const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+               if (direction !== yeti.rotation) {
+                  yeti.rotation = direction;
+                  yeti.hitboxesAreDirty = true;
+               }
                stopEntity(yeti);
                return;
             }
@@ -414,6 +423,7 @@ export function onYetiDeath(yeti: Entity): void {
 }
 
 export function onYetiRemove(yeti: Entity): void {
+   PhysicsComponentArray.removeComponent(yeti);
    HealthComponentArray.removeComponent(yeti);
    StatusEffectComponentArray.removeComponent(yeti);
    WanderAIComponentArray.removeComponent(yeti);

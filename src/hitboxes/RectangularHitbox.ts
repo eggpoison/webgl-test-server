@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersectWithOffset, HitboxVertexPositions, Point, rectanglePointsDoIntersectWithOffset, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
 import Hitbox, { HitboxObject } from "./Hitbox";
 import CircularHitbox from "./CircularHitbox";
 
@@ -81,16 +81,16 @@ class RectangularHitbox extends Hitbox {
       // @Speed: This check is slow
       if (otherHitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circleAndRectangleDoIntersectWithOffset(otherHitbox.object.position, otherHitbox.offset, (otherHitbox as CircularHitbox).radius, this.object.position, this.offset, this.width, this.height, this.rotation + this.object.rotation);
+         return circleAndRectangleDoIntersect(otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, (otherHitbox as CircularHitbox).radius, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, this.width, this.height, this.rotation + this.object.rotation);
       } else {
          // Rectangular hitbox
          // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
-         const distanceSquared = Math.pow(this.object.position.x + this.offset.x - otherHitbox.object.position.x - otherHitbox.offset.x, 2) + Math.pow(this.object.position.y + this.offset.y - otherHitbox.object.position.y - otherHitbox.offset.y, 2);
+         const distanceSquared = Math.pow(this.object.position.x + this.rotatedOffsetX - otherHitbox.object.position.x - otherHitbox.rotatedOffsetX, 2) + Math.pow(this.object.position.y + this.rotatedOffsetY - otherHitbox.object.position.y - otherHitbox.rotatedOffsetY, 2);
          if (distanceSquared > Math.pow(this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength, 2)) {
             return false;
          }
          
-         return rectanglePointsDoIntersectWithOffset(this.vertexOffsets, (otherHitbox as RectangularHitbox).vertexOffsets, this.object.position, otherHitbox.object.position, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
+         return rectanglePointsDoIntersect(this.vertexOffsets, (otherHitbox as RectangularHitbox).vertexOffsets, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
       }
    }
 }

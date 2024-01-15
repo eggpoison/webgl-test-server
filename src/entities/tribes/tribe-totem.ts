@@ -41,8 +41,6 @@ export function createTribeTotem(position: Point, tribe: Tribe): Entity {
       availableBannerPositions: Array.from(new Set(TRIBE_TOTEM_POSITIONS))
    });
 
-   totem.isStatic = true;
-
    tribe.setTotem(totem);
    
    return totem;

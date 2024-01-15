@@ -2,12 +2,12 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, ItemType, Pl
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { createItemEntity } from "../item-entity";
-import { HealthComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
-import Hitbox from "../../hitboxes/Hitbox";
 import { SERVER } from "../../server";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const DROP_VELOCITY = 400;
 
@@ -17,6 +17,7 @@ export function createSpearProjectile(position: Point, tribeMemberID: number, it
    const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, 12, 60, 0);
    spear.addHitbox(hitbox);
 
+   PhysicsComponentArray.addComponent(spear, new PhysicsComponent(true));
    ThrowingProjectileComponentArray.addComponent(spear, new ThrowingProjectileComponent(tribeMemberID, item));
 
    return spear;
@@ -64,5 +65,6 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
 }
 
 export function onSpearProjectileRemove(spear: Entity): void {
+   PhysicsComponentArray.removeComponent(spear);
    ThrowingProjectileComponentArray.removeComponent(spear);
 }

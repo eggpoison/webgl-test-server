@@ -18,7 +18,7 @@ import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
 import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
 import { onFishDeath } from "./entities/mobs/fish";
-import { AIHelperComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, PhysicsComponentArray } from "./components/ComponentArray";
 import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
@@ -30,15 +30,8 @@ import { onSpitPoisonCollision } from "./entities/projectiles/spit-poison";
 import { onBattleaxeProjectileCollision, onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
 import Hitbox from "./hitboxes/Hitbox";
 import { onIceArrowCollision } from "./entities/projectiles/ice-arrow";
-
-// @Cleanup: Variable names
-const a = new Array<number>();
-const b = new Array<number>();
-for (let i = 0; i < 8; i++) {
-   const angle = i / 4 * Math.PI;
-   a.push(Math.sin(angle));
-   b.push(Math.cos(angle));
-}
+import { onPebblumCollision } from "./entities/mobs/pebblum";
+import { onGolemCollision } from "./entities/mobs/golem";
 
 export const ID_SENTINEL_VALUE = 99999999;
 
@@ -87,10 +80,11 @@ class Entity<T extends IEntityType = IEntityType> {
    /** Acceleration of the entity */
    public acceleration = new Point(0, 0);
 
+   /** Last position when the entities' hitboxes were clean */
+   private lastCleanedPosition: Point;
+
    /** Direction the entity is facing in radians */
    public rotation = Number.EPSILON;
-
-   public moveSpeedMultiplier = 1 + Number.EPSILON;
 
    public collisionPushForceMultiplier = 1;
 
@@ -108,12 +102,6 @@ class Entity<T extends IEntityType = IEntityType> {
    
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
-
-   /** If this flag is set to true, then the game object will not be able to be moved */
-   public isStatic = false;
-
-   /** If set to false, the game object will not experience friction from moving over tiles. */
-   public isAffectedByFriction = true;
 
    // @Incomplete: Make the following flags false by default and make sure the hitboxes and other stuff is correct when spawning in
 
@@ -137,6 +125,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
    constructor(position: Point, type: T, collisionBit: number, collisionMask: number) {
       this.position = position;
+      this.lastCleanedPosition = new Point(position.x, position.y);
       this.type = type;
       this.collisionBit = collisionBit;
       this.collisionMask = collisionMask;
@@ -212,8 +201,9 @@ class Entity<T extends IEntityType = IEntityType> {
          const hitbox = this.hitboxes[i];
 
          // @Speed: This check is slow
-         if (!hitbox.hasOwnProperty("radius")) {
-            // Rectangular hitbox
+         if (hitbox.hasOwnProperty("radius")) {
+            (hitbox as CircularHitbox).updateOffset();
+         } else {
             (hitbox as RectangularHitbox).updateVertexPositions();
          }
 
@@ -281,6 +271,77 @@ class Entity<T extends IEntityType = IEntityType> {
             }
          }
       }
+
+      this.lastCleanedPosition.x = this.position.x;
+      this.lastCleanedPosition.y = this.position.y;
+   }
+
+   public updateHitboxes(): void {
+      const shiftX = this.position.x - this.lastCleanedPosition.x;
+      const shiftY = this.position.y - this.lastCleanedPosition.y;
+      
+      this.boundingArea[0] += shiftX;
+      this.boundingArea[1] += shiftX;
+      this.boundingArea[2] += shiftY;
+      this.boundingArea[3] += shiftY;
+
+      // An object only changes their chunks if a hitboxes' bounds change chunks.
+      let hitboxChunkBoundsHaveChanged = false;
+      const numHitboxes = this.hitboxes.length;
+      for (let i = 0; i < numHitboxes; i++) {
+         const hitbox = this.hitboxes[i];
+
+         const boundsMinX = hitbox.calculateHitboxBoundsMinX();
+         const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
+         const boundsMinY = hitbox.calculateHitboxBoundsMinY();
+         const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
+
+         // Check if the hitboxes' chunk bounds have changed
+         if (!hitboxChunkBoundsHaveChanged) {
+            const minChunkX = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
+            const maxChunkX = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
+            const minChunkY = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
+            const maxChunkY = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+
+            if (minChunkX !== hitbox.chunkBounds[0] ||
+                maxChunkX !== hitbox.chunkBounds[1] ||
+                minChunkY !== hitbox.chunkBounds[2] ||
+                maxChunkY !== hitbox.chunkBounds[3]) {
+               hitboxChunkBoundsHaveChanged = true;
+
+               hitbox.chunkBounds[0] = minChunkX;
+               hitbox.chunkBounds[1] = maxChunkX;
+               hitbox.chunkBounds[2] = minChunkY;
+               hitbox.chunkBounds[3] = maxChunkY;
+            }
+         }
+      }
+
+      // Check if the chunk bounds have changed
+      if (hitboxChunkBoundsHaveChanged) {
+         this.updateContainingChunks();
+
+         // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
+
+         const minTileX = Math.max(Math.min(Math.floor(this.boundingArea[0] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         const maxTileX = Math.max(Math.min(Math.floor(this.boundingArea[1] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         const minTileY = Math.max(Math.min(Math.floor(this.boundingArea[2] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         const maxTileY = Math.max(Math.min(Math.floor(this.boundingArea[3] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+         
+         this.hasPotentialWallTileCollisions = false;
+         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+            for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+               const tile = Board.getTile(tileX, tileY);
+               if (tile.isWall) {
+                  this.hasPotentialWallTileCollisions = true;
+                  return;
+               }
+            }
+         }
+      }
+
+      this.lastCleanedPosition.x = this.position.x;
+      this.lastCleanedPosition.y = this.position.y;
    }
 
    public tick(): void {
@@ -303,8 +364,15 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public checkIsInRiver(): boolean {
-      if (this.tile.type !== TileTypeConst.water || !this.isAffectedByFriction) {
+      if (this.tile.type !== TileTypeConst.water) {
          return false;
+      }
+
+      if (PhysicsComponentArray.hasComponent(this)) {
+         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         if (!physicsComponent.isAffectedByFriction) {
+            return false;
+         }
       }
 
       // If the game object is standing on a stepping stone they aren't in a river
@@ -323,55 +391,6 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public applyPhysics(): void {
-      // Apply acceleration
-      if (this.acceleration.x !== 0 || this.acceleration.y !== 0) {
-         // @Speed: very complicated logic
-         let moveSpeedMultiplier: number;
-         if (this.overrideMoveSpeedMultiplier || !this.isAffectedByFriction) {
-            moveSpeedMultiplier = 1;
-         } else if (this.tile.type === TileTypeConst.water && !this.isInRiver) {
-            moveSpeedMultiplier = this.moveSpeedMultiplier;
-         } else {
-            moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[this.tile.type] * this.moveSpeedMultiplier;
-         }
-
-         const friction = TILE_FRICTIONS[this.tile.type];
-         
-         this.velocity.x += this.acceleration.x * friction * moveSpeedMultiplier * I_TPS;
-         this.velocity.y += this.acceleration.y * friction * moveSpeedMultiplier * I_TPS;
-      }
-
-      // If the game object is in a river, push them in the flow direction of the river
-      // The tileMoveSpeedMultiplier check is so that game objects on stepping stones aren't pushed
-      if (this.isInRiver && !this.overrideMoveSpeedMultiplier && this.isAffectedByFriction) {
-         const flowDirection = this.tile.riverFlowDirection;
-         this.velocity.x += 240 / SETTINGS.TPS * a[flowDirection];
-         this.velocity.y += 240 / SETTINGS.TPS * b[flowDirection];
-      }
-
-      // Apply velocity
-      if (this.velocity.x !== 0 || this.velocity.y !== 0) {
-         const friction = TILE_FRICTIONS[this.tile.type];
-
-         if (this.isAffectedByFriction) {
-            // Apply a friction based on the tile type to air resistance (???)
-            this.velocity.x *= 1 - friction * I_TPS * 2;
-            this.velocity.y *= 1 - friction * I_TPS * 2;
-   
-            // Apply a constant friction based on the tile type to simulate ground friction
-            const velocityMagnitude = this.velocity.length();
-            if (velocityMagnitude > 0) {
-               const groundFriction = Math.min(friction, velocityMagnitude);
-               this.velocity.x -= groundFriction * this.velocity.x / velocityMagnitude;
-               this.velocity.y -= groundFriction * this.velocity.y / velocityMagnitude;
-            }
-         }
-         
-         this.position.x += this.velocity.x * I_TPS;
-         this.position.y += this.velocity.y * I_TPS;
-
-         this.positionIsDirty = true;
-      }
    }
 
    public updateContainingChunks(): void {
@@ -727,7 +746,9 @@ class Entity<T extends IEntityType = IEntityType> {
       let tileVertexX!: number;
       let tileVertexY!: number;
       for (const pair of pairs2) {
-         if (pointIsInRectangle(pair[0], pair[1], this.position, hitbox.offset, hitbox.width, hitbox.height, this.rotation + hitbox.rotation)) {
+         const tilePosX = this.position.x + hitbox.rotatedOffsetX;
+         const tilePosY = this.position.y + hitbox.rotatedOffsetY;
+         if (pointIsInRectangle(pair[0], pair[1], tilePosX, tilePosY, hitbox.width, hitbox.height, this.rotation + hitbox.rotation)) {
             tileVertexX = pair[0];
             tileVertexY = pair[1];
             break;
@@ -867,7 +888,7 @@ class Entity<T extends IEntityType = IEntityType> {
          for (let j = 0; j < numOtherHitboxes; j++) {
             const otherHitbox = entity.hitboxes[j];
             // If the objects are colliding, add the colliding object and this object
-            if (hitbox.isColliding(otherHitbox, entity.rotation)) {
+            if (hitbox.isColliding(otherHitbox)) {
                return hitbox.localID + (otherHitbox.localID << 8);
             }
          }
@@ -893,13 +914,13 @@ class Entity<T extends IEntityType = IEntityType> {
          return;
       }
       
-      if (!this.isStatic) {
+      if (PhysicsComponentArray.hasComponent(this)) {
          const collidingHitbox = collidingEntity.getHitboxByLocalID(collidingHitboxLocalID);
          
          // Calculate the force of the push
          // Force gets greater the closer together the objects are
-         const collidingHitboxX = collidingEntity.position.x + collidingHitbox.offset.x;
-         const collidingHitboxY = collidingEntity.position.y + collidingHitbox.offset.y;
+         const collidingHitboxX = collidingEntity.position.x + collidingHitbox.rotatedOffsetX;
+         const collidingHitboxY = collidingEntity.position.y + collidingHitbox.rotatedOffsetY;
          const distanceBetweenEntities = distance(this.position.x, this.position.y, collidingHitboxX, collidingHitboxY);
          const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
          const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
@@ -987,6 +1008,14 @@ class Entity<T extends IEntityType = IEntityType> {
          }
          case IEntityType.iceArrow: {
             onIceArrowCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.pebblum: {
+            onPebblumCollision(this, collidingEntity);
+            break;
+         }
+         case IEntityType.golem: {
+            onGolemCollision(this, collidingEntity);
             break;
          }
       }

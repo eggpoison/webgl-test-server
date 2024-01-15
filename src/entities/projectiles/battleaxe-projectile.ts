@@ -1,6 +1,6 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SETTINGS, lerp } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
@@ -8,7 +8,7 @@ import { findInventoryContainingItem } from "../../components/InventoryComponent
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
-import Hitbox from "../../hitboxes/Hitbox";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const RETURN_TIME_TICKS = 1 * SETTINGS.TPS;
 
@@ -18,6 +18,7 @@ export function createBattleaxeProjectile(position: Point, tribeMemberID: number
    const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, 32, 0);
    battleaxe.addHitbox(hitbox);
    
+   PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true));
    ThrowingProjectileComponentArray.addComponent(battleaxe, new ThrowingProjectileComponent(tribeMemberID, item));
 
    // @Incomplete: Make the battleaxe not be pushed by collisions 
@@ -52,6 +53,8 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       // Turn to face the owner
       battleaxe.turn(owner.rotation, ticksSinceReturn / SETTINGS.TPS * Math.PI);
    }
+   
+   battleaxe.hitboxesAreDirty = true;
 }
 
 export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntity: Entity): void {
@@ -113,5 +116,6 @@ export function onBattleaxeProjectileDeath(battleaxe: Entity): void {
 }
 
 export function onBattleaxeProjectileRemove(battleaxe: Entity): void {
+   PhysicsComponentArray.removeComponent(battleaxe);
    ThrowingProjectileComponentArray.removeComponent(battleaxe);
 }

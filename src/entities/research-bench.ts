@@ -14,8 +14,6 @@ export function createResearchBench(position: Point): Entity {
    HealthComponentArray.addComponent(bench, new HealthComponent(40));
    StatusEffectComponentArray.addComponent(bench, new StatusEffectComponent(StatusEffectConst.poisoned));
 
-   bench.isStatic = true;
-   
    return bench;
 }
 

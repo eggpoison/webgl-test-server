@@ -31,8 +31,6 @@ export function createCampfire(position: Point): Entity {
    cookingEntityComponent.remainingHeatSeconds = LIFETIME_SECONDS;
    CookingEntityComponentArray.addComponent(campfire, cookingEntityComponent);
 
-   campfire.isStatic = true;
-   
    return campfire;
 }
 

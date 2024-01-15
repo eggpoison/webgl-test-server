@@ -59,6 +59,9 @@ export function moveEntityToPosition(entity: Entity, positionX: number, position
    const direction = angle(positionX - entity.position.x, positionY - entity.position.y);
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
+   if (direction !== entity.rotation) {
+      entity.hitboxesAreDirty = true;
+   }
    entity.rotation = direction;
 }
 
@@ -260,6 +263,7 @@ export function runHerdAI(entity: Entity, herdMembers: ReadonlyArray<Entity>, vi
    }
 
    entity.rotation += angularVelocity;
+   entity.hitboxesAreDirty = true;
 }
 
 /** Gets all tiles within a given distance from a position */
@@ -329,7 +333,7 @@ export function entityIsInVisionRange(position: Point, visionRange: number, enti
 
    // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
    for (const hitbox of entity.hitboxes) {
-      if (testCircularHitbox.isColliding(hitbox, entity.rotation)) {
+      if (testCircularHitbox.isColliding(hitbox)) {
          return true;
       }
    }
@@ -368,7 +372,7 @@ export function getEntitiesInVisionRange(x: number, y: number, visionRange: numb
 
             // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
             for (const hitbox of entity.hitboxes) {
-               if (testCircularHitbox.isColliding(hitbox, entity.rotation)) {
+               if (testCircularHitbox.isColliding(hitbox)) {
                   entities.push(entity);
                   seenIDs.add(entity.id);
                   break;

@@ -1,6 +1,6 @@
 import { IEntityType, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
 import Entity from "../Entity";
-import { HealthComponentArray } from "./ComponentArray";
+import { HealthComponentArray, PhysicsComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { SERVER } from "../server";
 import { onBerryBushHurt } from "../entities/resources/berry-bush";
@@ -185,7 +185,7 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
 
 // @Cleanup: Should this be here?
 export function applyHitKnockback(entity: Entity, knockback: number, knockbackDirection: number): void {
-   if (entity.isStatic) {
+   if (!PhysicsComponentArray.hasComponent(entity)) {
       return;
    }
    

@@ -33,6 +33,7 @@ const updateDoorOpenProgress = (door: Entity, doorComponent: DoorComponent): voi
    door.position.x = doorComponent.originX + xOffset;
    door.position.y = doorComponent.originY + yOffset;
    door.rotation = rotation;
+   door.hitboxesAreDirty = true;
 }
 
 export function tickDoorComponent(door: Entity): void {

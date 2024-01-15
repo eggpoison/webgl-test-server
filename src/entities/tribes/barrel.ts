@@ -27,8 +27,6 @@ export function createBarrel(position: Point, tribeType: TribeType, tribe: Tribe
       tribe: tribe
    });
 
-   barrel.isStatic = true;
-
    return barrel;
 }
 

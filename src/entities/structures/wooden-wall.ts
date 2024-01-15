@@ -14,14 +14,11 @@ export function createWoodenWall(position: Point, tribe: Tribe | null): Entity {
    wall.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(wall, new HealthComponent(25));
-
    TribeComponentArray.addComponent(wall, {
       tribeType: 0,
       tribe: tribe
    });
 
-   wall.isStatic = true;
-   
    return wall;
 }
 

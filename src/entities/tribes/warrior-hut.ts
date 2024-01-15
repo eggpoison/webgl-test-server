@@ -18,13 +18,10 @@ export function createWarriorHut(position: Point, tribe: Tribe): Entity {
    HealthComponentArray.addComponent(hut, new HealthComponent(20));
    StatusEffectComponentArray.addComponent(hut, new StatusEffectComponent(StatusEffectConst.poisoned));
    HutComponentArray.addComponent(hut, new HutComponent());
-   
    TribeComponentArray.addComponent(hut, {
       tribeType: tribe.tribeType,
       tribe: tribe
    });
-
-   hut.isStatic = true;
 
    return hut;
 }

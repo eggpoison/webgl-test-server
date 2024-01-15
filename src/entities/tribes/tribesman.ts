@@ -186,7 +186,11 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
 }
 
 const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
-   tribesman.rotation = tribesman.position.calculateAngleBetween(barrel.position);
+   const direction = tribesman.position.calculateAngleBetween(barrel.position);
+   if (direction !== tribesman.rotation) {
+      tribesman.rotation = direction;
+      tribesman.hitboxesAreDirty = true;
+   }
    tribesman.hitboxesAreDirty = true;
    tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
    tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
@@ -774,7 +778,7 @@ const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number 
    let minDistance = tribesman.position.calculateDistanceBetween(entity.position);
    for (const hitbox of entity.hitboxes) {
       if (hitbox.hasOwnProperty("radius")) {
-         const rawDistance = distance(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.offset.x, hitbox.object.position.y + hitbox.offset.y);
+         const rawDistance = distance(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY);
          const hitboxDistance = rawDistance - getRadius(tribesman) - (hitbox as CircularHitbox).radius;
          if (hitboxDistance < minDistance) {
             minDistance = hitboxDistance;

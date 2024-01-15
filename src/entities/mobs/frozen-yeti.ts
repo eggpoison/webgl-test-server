@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, FrozenYetiComponentArray, HealthComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { AIHelperComponentArray, FrozenYetiComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
@@ -15,6 +15,7 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { ROCK_SPIKE_HITBOX_SIZES, createRockSpikeProjectile } from "../projectiles/rock-spike";
 import { createSnowball } from "../snowball";
 import { SERVER } from "../../server";
+import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const FROZEN_YETI_SIZE = 144;
 const HEAD_HITBOX_SIZE = 72;
@@ -59,6 +60,7 @@ export interface FrozenYetiRockSpikeInfo {
 
 export function createFrozenYeti(position: Point): Entity {
    const frozenYeti = new Entity(position, IEntityType.frozenYeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   frozenYeti.rotation = 2 * Math.PI * Math.random();
 
    const bodyHitbox = new CircularHitbox(frozenYeti, 4, 0, 0, FROZEN_YETI_SIZE / 2, 0);
    frozenYeti.addHitbox(bodyHitbox);
@@ -73,13 +75,12 @@ export function createFrozenYeti(position: Point): Entity {
       frozenYeti.addHitbox(hitbox);
    }
 
+   PhysicsComponentArray.addComponent(frozenYeti, new PhysicsComponent(true));
    HealthComponentArray.addComponent(frozenYeti, new HealthComponent(250));
    StatusEffectComponentArray.addComponent(frozenYeti, new StatusEffectComponent(StatusEffectConst.freezing));
    AIHelperComponentArray.addComponent(frozenYeti, new AIHelperComponent(VISION_RANGE));
    FrozenYetiComponentArray.addComponent(frozenYeti, new FrozenYetiComponent());
    WanderAIComponentArray.addComponent(frozenYeti, new WanderAIComponent());
-
-   frozenYeti.rotation = 2 * Math.PI * Math.random();
 
    return frozenYeti;
 }
@@ -657,6 +658,14 @@ export function onFrozenYetiCollision(frozenYeti: Entity, collidingEntity: Entit
       return;
    }
 
+   // Don't deal collision damage to frozen yetis which aren't attacking them
+   if (collidingEntity.type === IEntityType.frozenYeti) {
+      const yetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti);
+      if (!yetiComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
+         return;
+      }
+   }
+
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       const healthComponent = HealthComponentArray.getComponent(collidingEntity);
       if (!canDamageEntity(healthComponent, "frozen_yeti")) {
@@ -706,6 +715,7 @@ export function onFrozenYetiDeath(frozenYeti: Entity, attackingEntity: Entity | 
 }
 
 export function onFrozenYetiRemove(frozenYeti: Entity): void {
+   PhysicsComponentArray.removeComponent(frozenYeti);
    HealthComponentArray.removeComponent(frozenYeti);
    StatusEffectComponentArray.removeComponent(frozenYeti);
    AIHelperComponentArray.removeComponent(frozenYeti);
