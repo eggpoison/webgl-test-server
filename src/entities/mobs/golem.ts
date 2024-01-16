@@ -32,7 +32,7 @@ const hitboxIsTooClose = (golem: Entity, hitboxX: number, hitboxY: number): bool
    for (let j = 0; j < golem.hitboxes.length; j++) {
       const otherHitbox = golem.hitboxes[j];
 
-      const dist = distance(hitboxX, hitboxY, golem.position.x + otherHitbox.rotatedOffsetX, golem.position.y + otherHitbox.rotatedOffsetY);
+      const dist = distance(hitboxX, hitboxY, golem.position.x + otherHitbox.offsetX, golem.position.y + otherHitbox.offsetY);
       if (dist <= (otherHitbox as CircularHitbox).radius + 1) {
          return true;
       }
@@ -46,7 +46,7 @@ const getMinSeparationFromOtherHitboxes = (golem: Entity, hitboxX: number, hitbo
    for (let i = 0; i < golem.hitboxes.length; i++) {
       const otherHitbox = golem.hitboxes[i] as CircularHitbox;
 
-      const dist = distance(hitboxX, hitboxY, golem.position.x + otherHitbox.rotatedOffsetX, golem.position.y + otherHitbox.rotatedOffsetY);
+      const dist = distance(hitboxX, hitboxY, golem.position.x + otherHitbox.offsetX, golem.position.y + otherHitbox.offsetY);
       const separation = dist - otherHitbox.radius - hitboxRadius;
       if (separation < minSeparation) {
          minSeparation = separation;

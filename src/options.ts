@@ -13,9 +13,9 @@ const OPTIONS: Options = {
    spawnTribes: true,
    generateRivers: true,
    generateWalls: true,
-   inBenchmarkMode: true,
+   inBenchmarkMode: false,
    logging: false,
-   warp: true
+   warp: false
 };
 
 

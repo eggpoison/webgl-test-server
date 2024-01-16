@@ -17,7 +17,7 @@ import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 export const TRIBE_WORKER_RADIUS = 28;
 const INVENTORY_SIZE = 3;
-export const TRIBE_WORKER_VISION_RANGE = 320;
+export const TRIBE_WORKER_VISION_RANGE = 300;
 
 export enum TribesmanAIType {
    escaping,

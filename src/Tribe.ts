@@ -102,6 +102,7 @@ class Tribe {
    public unlockTech(techID: TechID): void {
       if (!this.unlockedTechs.includes(techID)) {
          this.unlockedTechs.push(techID);
+         this.selectedTechID = null;
       }
    }
 
@@ -423,7 +424,7 @@ class Tribe {
 
    public unlockAllTechs(): void {
       for (const techInfo of TECHS) {
-         if (this.hasUnlockedTech(techInfo.id)) {
+         if (this.hasUnlockedTech(techInfo.id) || techInfo.blacklistedTribes.includes(this.tribeType)) {
             continue;
          }
 
