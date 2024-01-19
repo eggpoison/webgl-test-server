@@ -32,6 +32,7 @@ import Hitbox from "./hitboxes/Hitbox";
 import { onIceArrowCollision } from "./entities/projectiles/ice-arrow";
 import { onPebblumCollision } from "./entities/mobs/pebblum";
 import { onGolemCollision } from "./entities/mobs/golem";
+import { onWoodenFloorSpikesCollision } from "./entities/structures/wooden-floor-spikes";
 
 export const ID_SENTINEL_VALUE = 99999999;
 
@@ -942,82 +943,26 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       switch (this.type) {
-         case IEntityType.player: {
-            onPlayerCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.tribeWorker: {
-            onTribeWorkerCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.iceSpikes: {
-            onIceSpikesCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.iceShardProjectile: {
-            onIceShardCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.cactus: {
-            onCactusCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.zombie: {
-            onZombieCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.slime: {
-            onSlimeCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.woodenArrowProjectile: {
-            onWoodenArrowCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.yeti: {
-            onYetiCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.snowball: {
-            onSnowballCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.frozenYeti: {
-            onFrozenYetiCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.rockSpikeProjectile: {
-            onRockSpikeProjectileCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.spearProjectile: {
-            onSpearProjectileCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.slimeSpit: {
-            onSlimeSpitCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.spitPoison: {
-            onSpitPoisonCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.battleaxeProjectile: {
-            onBattleaxeProjectileCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.iceArrow: {
-            onIceArrowCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.pebblum: {
-            onPebblumCollision(this, collidingEntity);
-            break;
-         }
-         case IEntityType.golem: {
-            onGolemCollision(this, collidingEntity);
-            break;
-         }
+         case IEntityType.player: onPlayerCollision(this, collidingEntity); break;
+         case IEntityType.tribeWorker: onTribeWorkerCollision(this, collidingEntity); break;
+         case IEntityType.iceSpikes: onIceSpikesCollision(this, collidingEntity); break;
+         case IEntityType.iceShardProjectile: onIceShardCollision(this, collidingEntity); break;
+         case IEntityType.cactus: onCactusCollision(this, collidingEntity); break;
+         case IEntityType.zombie: onZombieCollision(this, collidingEntity); break;
+         case IEntityType.slime: onSlimeCollision(this, collidingEntity); break;
+         case IEntityType.woodenArrowProjectile: onWoodenArrowCollision(this, collidingEntity); break;
+         case IEntityType.yeti: onYetiCollision(this, collidingEntity); break;
+         case IEntityType.snowball: onSnowballCollision(this, collidingEntity); break;
+         case IEntityType.frozenYeti: onFrozenYetiCollision(this, collidingEntity); break;
+         case IEntityType.rockSpikeProjectile: onRockSpikeProjectileCollision(this, collidingEntity); break;
+         case IEntityType.spearProjectile: onSpearProjectileCollision(this, collidingEntity); break;
+         case IEntityType.slimeSpit: onSlimeSpitCollision(this, collidingEntity); break;
+         case IEntityType.spitPoison: onSpitPoisonCollision(this, collidingEntity); break;
+         case IEntityType.battleaxeProjectile: onBattleaxeProjectileCollision(this, collidingEntity); break;
+         case IEntityType.iceArrow: onIceArrowCollision(this, collidingEntity); break;
+         case IEntityType.pebblum: onPebblumCollision(this, collidingEntity); break;
+         case IEntityType.golem: onGolemCollision(this, collidingEntity); break;
+         case IEntityType.woodenFloorSpikes: onWoodenFloorSpikesCollision(this, collidingEntity); break;
       }
    }
 

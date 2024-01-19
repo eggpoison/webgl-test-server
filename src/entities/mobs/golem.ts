@@ -67,7 +67,7 @@ const updateGolemHitboxPositions = (golem: Entity, golemComponent: GolemComponen
 }
 
 export function createGolem(position: Point): Entity {
-   const golem = new Entity(position, IEntityType.golem, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const golem = new Entity(position, IEntityType.golem, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    golem.rotation = 2 * Math.PI * Math.random();
 
    // Create core hitbox

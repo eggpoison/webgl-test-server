@@ -43,7 +43,7 @@ class Tribe {
    
    public readonly id: number;
    
-   public readonly tribeType: TribeType;
+   public readonly type: TribeType;
 
    public totem: Entity | null = null;
    
@@ -72,7 +72,7 @@ class Tribe {
    
    constructor(tribeType: TribeType) {
       this.id = getAvailableID();
-      this.tribeType = tribeType;
+      this.type = tribeType;
 
       this.tribesmanCap = TRIBE_INFO_RECORD[tribeType].baseTribesmanCap;
 
@@ -250,9 +250,9 @@ class Tribe {
       
       let tribesman: Entity;
       if (hut.type === IEntityType.workerHut) {
-         tribesman = createTribeWorker(position, this.tribeType, this, hut.id);
+         tribesman = createTribeWorker(position, this, hut.id);
       } else {
-         tribesman = createTribeWarrior(position, this.tribeType, this, hut.id);
+         tribesman = createTribeWarrior(position, this, hut.id);
       }
       tribesman.rotation = hut.rotation;
 
@@ -424,7 +424,7 @@ class Tribe {
 
    public unlockAllTechs(): void {
       for (const techInfo of TECHS) {
-         if (this.hasUnlockedTech(techInfo.id) || techInfo.blacklistedTribes.includes(this.tribeType)) {
+         if (this.hasUnlockedTech(techInfo.id) || techInfo.blacklistedTribes.includes(this.type)) {
             continue;
          }
 

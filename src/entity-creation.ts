@@ -25,6 +25,11 @@ import { createWoodenDoor } from "./entities/structures/wooden-door";
 import { createGolem } from "./entities/mobs/golem";
 import { createPlanterBox } from "./entities/structures/planter-box";
 import { createPebblum } from "./entities/mobs/pebblum";
+import { createWoodenEmbrasure } from "./entities/structures/wooden-embrasure";
+import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
+import { createWoodenWallSpikes } from "./entities/structures/wooden-wall-spikes";
+import { createFloorPunjiSticks } from "./entities/structures/floor-punji-sticks";
+import { createWallPunjiSticks } from "./entities/structures/wall-punji-sticks";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -49,10 +54,15 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.researchBench: return createResearchBench(position);
       case IEntityType.woodenWall: return createWoodenWall(position, null);
       case IEntityType.woodenDoor: return createWoodenDoor(position, null, 0);
+      case IEntityType.woodenEmbrasure: return createWoodenEmbrasure(position, null, 0);
       case IEntityType.spitPoison: return createSpitPoison(position);
       case IEntityType.golem: return createGolem(position);
       case IEntityType.planterBox: return createPlanterBox(position);
       case IEntityType.pebblum: return createPebblum(position, ID_SENTINEL_VALUE);
+      case IEntityType.woodenFloorSpikes: return createWoodenFloorSpikes(position, null);
+      case IEntityType.woodenWallSpikes: return createWoodenWallSpikes(position);
+      case IEntityType.floorPunjiSticks: return createFloorPunjiSticks(position);
+      case IEntityType.wallPunjiSticks: return createWallPunjiSticks(position);
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow:
@@ -67,6 +77,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.tribeTotem:
       case IEntityType.workerHut:
       case IEntityType.warriorHut:
+      case IEntityType.blueprintEntity:
       case IEntityType.itemEntity: throw new Error("Can't dynamically create entity of type '" + entityType + "'.");
    }
 }

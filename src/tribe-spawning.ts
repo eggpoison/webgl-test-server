@@ -94,7 +94,7 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
       const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
       const position = new Point(x, y);
 
-      const minHutDistance = HUT_MIN_DISTANCES[tribe.tribeType];
+      const minHutDistance = HUT_MIN_DISTANCES[tribe.type];
 
       // Make sure it isn't too close to any other buildings
       for (const buildingPosition of otherBuildingPositions) {
@@ -139,7 +139,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    // Spawn barrel
    const barrelSpawnPosition = findValidBuildingPosition(tribe, buildingPositions);
    if (barrelSpawnPosition !== null) {
-      createBarrel(barrelSpawnPosition, tribe.tribeType, tribe);
+      createBarrel(barrelSpawnPosition, tribe);
    }
 }
 

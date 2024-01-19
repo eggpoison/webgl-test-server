@@ -13,7 +13,7 @@ import { PhysicsComponent } from "../../components/PhysicsComponent";
 const RETURN_TIME_TICKS = 1 * SETTINGS.TPS;
 
 export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
-   const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
    const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, 32, 0);
    battleaxe.addHitbox(hitbox);

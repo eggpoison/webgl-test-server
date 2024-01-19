@@ -4,7 +4,7 @@ import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, 
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { InventoryComponent, createNewInventory, getInventory, pickupItemEntity } from "../../components/InventoryComponent";
+import { InventoryComponent, createNewInventory, dropInventory, getInventory, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { StatusEffectComponent, applyStatusEffect, hasStatusEffect } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -13,10 +13,11 @@ import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { InventoryUseComponent, getInventoryUseInfo } from "../../components/InventoryUseComponent";
-import { attackEntity, calculateRadialAttackTargets } from "../tribes/tribe-member";
+import { attackEntity, calculateRadialAttackTargets, wasTribeMemberKill } from "../tribes/tribe-member";
 import Hitbox from "../../hitboxes/Hitbox";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { createItemsOverEntity } from "../../entity-shared";
 
 const MAX_HEALTH = 20;
 
@@ -35,7 +36,7 @@ const ATTACK_RADIUS = 30;
 
 // @Cleanup: We don't need to pass the isGolden parameter, can deduce whether the tombstone is golden from the tombstoneID instead
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
-   const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32, 0);
    zombie.addHitbox(hitbox);
@@ -276,11 +277,18 @@ export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
 }
 
 export function onZombieDeath(zombie: Entity): void {
+   const inventoryComponent = InventoryComponentArray.getComponent(zombie);
+   dropInventory(zombie, inventoryComponent, "handSlot", 38);
+
    const zombieComponent = ZombieComponentArray.getComponent(zombie);
    if (zombieComponent.tombstoneID !== ID_SENTINEL_VALUE && Board.entityRecord.hasOwnProperty(zombieComponent.tombstoneID)) {
       const tombstone = Board.entityRecord[zombieComponent.tombstoneID];
       const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone);
       tombstoneComponent.numZombies--;
+   }
+
+   if (wasTribeMemberKill(zombie) && Math.random() < 0.1) {
+      createItemsOverEntity(zombie, ItemType.eyeball, 1);
    }
 }
 

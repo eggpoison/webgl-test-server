@@ -94,6 +94,11 @@ export function createCactus(position: Point): Entity {
 }
 
 export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void {
+   if (collidingEntity.type === IEntityType.itemEntity) {
+      collidingEntity.remove();
+      return;
+   }
+   
    if (!HealthComponentArray.hasComponent(collidingEntity)) {
       return;
    }

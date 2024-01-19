@@ -23,11 +23,11 @@ const ACCELERATION = 100;
 export const SLIMEWISP_MERGE_TIME = 2;
 
 export function createSlimewisp(position: Point): Entity {
-   const slimewisp = new Entity(position, IEntityType.slimewisp, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const slimewisp = new Entity(position, IEntityType.slimewisp, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slimewisp.rotation = 2 * Math.PI * Math.random();
    slimewisp.collisionPushForceMultiplier = 0.3;
 
-   const hitbox = new CircularHitbox(slimewisp, 0.4, 0, 0, RADIUS, 0);
+   const hitbox = new CircularHitbox(slimewisp, 0.5, 0, 0, RADIUS, 0);
    slimewisp.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(slimewisp, new PhysicsComponent(true));

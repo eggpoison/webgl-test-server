@@ -5,11 +5,12 @@ import { BoulderComponentArray, HealthComponentArray, StatusEffectComponentArray
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { wasTribeMemberKill } from "../tribes/tribe-member";
 
 const RADIUS = 40;
 
 export function createBoulder(position: Point): Entity {
-   const boulder = new Entity(position, IEntityType.boulder, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const boulder = new Entity(position, IEntityType.boulder, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    boulder.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(boulder, 1.25, 0, 0, RADIUS, 0);
@@ -25,7 +26,7 @@ export function createBoulder(position: Point): Entity {
 }
 
 export function onBoulderDeath(boulder: Entity, attackingEntity: Entity): void {
-   if (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior) {
+   if (wasTribeMemberKill(attackingEntity)) {
       createItemsOverEntity(boulder, ItemType.rock, randInt(5, 7));
    }
 }

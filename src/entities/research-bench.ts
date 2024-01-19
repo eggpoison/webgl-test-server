@@ -6,7 +6,7 @@ import { StatusEffectComponent } from "../components/StatusEffectComponent";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
 export function createResearchBench(position: Point): Entity {
-   const bench = new Entity(position, IEntityType.researchBench, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const bench = new Entity(position, IEntityType.researchBench, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitbox = new RectangularHitbox(bench, 1.8, 0, 0, 32 * 4, 20 * 4, 0);
    bench.addHitbox(hitbox);

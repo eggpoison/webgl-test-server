@@ -14,7 +14,7 @@ const BREAK_VELOCITY = 100;
 const SIZES = [20, 30];
 
 export function createSlimeSpit(position: Point, size: number): Entity {
-   const spit = new Entity(position, IEntityType.slimeSpit, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const spit = new Entity(position, IEntityType.slimeSpit, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitboxSize = SIZES[size];
    const hitbox = new RectangularHitbox(spit, 0.2, 0, 0, hitboxSize, hitboxSize, 0);

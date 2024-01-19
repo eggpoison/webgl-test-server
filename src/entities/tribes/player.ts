@@ -17,6 +17,9 @@ import { createItem } from "../../Item";
 import { createWoodenDoor } from "../structures/wooden-door";
 import { toggleDoor } from "../../components/DoorComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { createWoodenEmbrasure } from "../structures/wooden-embrasure";
+import { TribeComponent } from "../../components/TribeComponent";
+import { createBlueprintEntity } from "../blueprint-entity";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -30,21 +33,18 @@ const VACUUM_RANGE = 85;
 const VACUUM_STRENGTH = 25;
 
 export function createPlayer(position: Point, tribe: Tribe): Entity {
-   const player = new Entity(position, IEntityType.player, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(player, 1, 0, 0, 32, 0);
    player.addHitbox(hitbox);
 
-   const tribeInfo = TRIBE_INFO_RECORD[tribe.tribeType];
+   const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
    PhysicsComponentArray.addComponent(player, new PhysicsComponent(true));
    HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(player, new StatusEffectComponent(0));
 
-   TribeComponentArray.addComponent(player, {
-      tribeType: tribe.tribeType,
-      tribe: tribe
-   });
-   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribe.tribeType));
+   TribeComponentArray.addComponent(player, new TribeComponent(tribe));
+   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribe.type));
    PlayerComponentArray.addComponent(player, new PlayerComponent());
 
    const inventoryUseComponent = new InventoryUseComponent();
@@ -61,7 +61,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "gloveSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
-   if (tribe.tribeType === TribeType.barbarians) {
+   if (tribe.type === TribeType.barbarians) {
       const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
       inventoryUseComponent.addInventoryUseInfo(offhandInventory);
    }
@@ -69,6 +69,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
    addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 50));
 
    return player;
 }
@@ -241,7 +242,7 @@ export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPa
       // If a barbarian, attack with offhand
       if (!didAttackWithRightHand) {
          const tribeComponent = TribeComponentArray.getComponent(player);
-         if (tribeComponent.tribeType === TribeType.barbarians) {
+         if (tribeComponent.tribe!.type === TribeType.barbarians) {
             attackEntity(player, target, 1, "offhand");
          }
       }
@@ -420,7 +421,18 @@ export function processTechUnlock(player: Entity, techID: TechID): void {
    }
 }
 
-export function shapeStructure(player: Entity, structureID: number, type: StructureShapeType): void {
+const snapRotationToPlayer = (player: Entity, placePosition: Point, rotation: number): number => {
+   const playerDirection = player.position.calculateAngleBetween(placePosition);
+   let snapRotation = playerDirection - rotation;
+
+   // Snap to nearest PI/2 interval
+   snapRotation = Math.round(snapRotation / Math.PI*2) * Math.PI/2;
+
+   snapRotation += rotation;
+   return snapRotation;
+}
+
+export function shapeStructure(player: Entity, structureID: number, shapeType: StructureShapeType): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }
@@ -428,12 +440,27 @@ export function shapeStructure(player: Entity, structureID: number, type: Struct
    const previousStructure = Board.entityRecord[structureID];
    previousStructure.remove();
 
+   const rotation = snapRotationToPlayer(player, previousStructure.position, previousStructure.rotation);
+
+   let position: Point;
+   switch (shapeType) {
+      case StructureShapeType.door: {
+         position = previousStructure.position.copy();
+         break;
+      }
+      case StructureShapeType.embrasure: {
+         position = previousStructure.position.copy();
+         position.x += 22 * Math.sin(rotation);
+         position.y += 22 * Math.cos(rotation);
+         break;
+      }
+   }
+
    const tribeComponent = TribeComponentArray.getComponent(player);
-   const newStructure = createWoodenDoor(previousStructure.position, tribeComponent.tribe, previousStructure.rotation);
-   newStructure.rotation = previousStructure.rotation;
+   createBlueprintEntity(position, shapeType, tribeComponent.tribe, rotation);
 }
 
-export function interactWithStructure(player: Entity, structureID: number): void {
+export function interactWithStructure(structureID: number): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }

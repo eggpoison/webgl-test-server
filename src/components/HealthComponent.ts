@@ -195,6 +195,10 @@ export function applyHitKnockback(entity: Entity, knockback: number, knockbackDi
 }
 
 export function healEntity(entity: Entity, healAmount: number): void {
+   if (healAmount <= 0) {
+      return;
+   }
+   
    const healthComponent = HealthComponentArray.getComponent(entity);
 
    let amountHealed: number;

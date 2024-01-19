@@ -1,7 +1,9 @@
-import { TribeType } from "webgl-test-shared";
 import Tribe from "../Tribe";
 
-export interface TribeComponent {
-   readonly tribeType: TribeType;
+export class TribeComponent {
    tribe: Tribe | null;
+
+   constructor(tribe: Tribe | null) {
+      this.tribe = tribe;
+   }
 }

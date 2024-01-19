@@ -14,6 +14,7 @@ import Board from "../../Board";
 import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { tickTribesman } from "./tribesman";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { TribeComponent } from "../../components/TribeComponent";
 
 export const TRIBE_WORKER_RADIUS = 28;
 const INVENTORY_SIZE = 3;
@@ -30,21 +31,18 @@ export enum TribesmanAIType {
    idle
 }
 
-export function createTribeWorker(position: Point, tribeType: TribeType, tribe: Tribe, hutID: number): Entity {
-   const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+export function createTribeWorker(position: Point, tribe: Tribe, hutID: number): Entity {
+   const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitbox = new CircularHitbox(worker, 0.85, 0, 0, TRIBE_WORKER_RADIUS, 0);
    worker.addHitbox(hitbox);
    
-   const tribeInfo = TRIBE_INFO_RECORD[tribeType];
+   const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
    PhysicsComponentArray.addComponent(worker, new PhysicsComponent(true));
    HealthComponentArray.addComponent(worker, new HealthComponent(tribeInfo.maxHealthWorker));
    StatusEffectComponentArray.addComponent(worker, new StatusEffectComponent(0));
-   TribeComponentArray.addComponent(worker, {
-      tribeType: tribeType,
-      tribe: tribe
-   });
-   TribeMemberComponentArray.addComponent(worker, new TribeMemberComponent(tribeType));
+   TribeComponentArray.addComponent(worker, new TribeComponent(tribe));
+   TribeMemberComponentArray.addComponent(worker, new TribeMemberComponent(tribe.type));
    TribesmanComponentArray.addComponent(worker, new TribesmanComponent(hutID));
    AIHelperComponentArray.addComponent(worker, new AIHelperComponent(TRIBE_WORKER_VISION_RANGE));
 
@@ -60,14 +58,14 @@ export function createTribeWorker(position: Point, tribeType: TribeType, tribe: 
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "gloveSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
-   if (tribe.tribeType === TribeType.barbarians) {
+   if (tribe.type === TribeType.barbarians) {
       const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
       inventoryUseComponent.addInventoryUseInfo(offhandInventory);
    }
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done
-   if (tribeType === TribeType.frostlings) {
+   if (tribe.type === TribeType.frostlings) {
       addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.wooden_bow, 1);
    }
    

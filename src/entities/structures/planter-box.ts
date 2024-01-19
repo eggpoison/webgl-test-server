@@ -6,7 +6,7 @@ import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 
 export function createPlanterBox(position: Point): Entity {
-   const planterBox = new Entity(position, IEntityType.planterBox, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const planterBox = new Entity(position, IEntityType.planterBox, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    planterBox.addHitbox(new RectangularHitbox(planterBox, 1.5, 0, 0, 80, 80, 0));
 

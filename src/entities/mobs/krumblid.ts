@@ -24,7 +24,7 @@ const MIN_FOLLOW_COOLDOWN = 7;
 const MAX_FOLLOW_COOLDOWN = 9;
 
 export function createKrumblid(position: Point): Entity {
-   const krumblid = new Entity(position, IEntityType.krumblid, COLLISION_BITS.other, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.cactus);
+   const krumblid = new Entity(position, IEntityType.krumblid, COLLISION_BITS.default, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.cactus);
    krumblid.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(krumblid, 0.75, 0, 0, KRUMBLID_SIZE / 2, 0);

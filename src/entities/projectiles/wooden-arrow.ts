@@ -1,7 +1,7 @@
 import { BowItemInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ITEM_INFO_RECORD, ItemType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray } from "../../components/ComponentArray";
+import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../tribes/tribe-member";
 import { ArrowComponent } from "../../components/ArrowComponent";
@@ -9,12 +9,12 @@ import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
-const ARROW_WIDTH = 20;
+const ARROW_WIDTH = 12;
 const ARROW_HEIGHT = 64;
 const ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(ARROW_WIDTH / 2, 2) + Math.pow(ARROW_HEIGHT, 2));
 
 export function createWoodenArrow(position: Point, tribeMember: Entity, arrowType: ItemType): Entity {
-   const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    arrow.rotation = tribeMember.rotation;
    
    const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
@@ -54,12 +54,36 @@ export function tickArrowProjectile(arrow: Entity): void {
 }
 
 export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): void {
-   // Don't damage any friendly entities
    const arrowComponent = ArrowComponentArray.getComponent(arrow);
+   
+   // Don't damage any friendly entities
    if (Board.entityRecord.hasOwnProperty(arrowComponent.tribeMemberID) && getTribeMemberRelationship(Board.entityRecord[arrowComponent.tribeMemberID], collidingEntity) === EntityRelationship.friendly) {
       return;
    }
-   
+
+   // Break without damaging friendly embrasures
+   if (collidingEntity.type === IEntityType.woodenEmbrasure && Board.entityRecord.hasOwnProperty(arrowComponent.tribeMemberID)) {
+      const shooter = Board.entityRecord[arrowComponent.tribeMemberID];
+      const shooterTribeComponent = TribeComponentArray.getComponent(shooter);
+      
+      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity);
+      if (shooterTribeComponent.tribe === collidingEntityTribeComponent.tribe) {
+         arrow.remove();
+         return;
+      }
+   }
+
+   // Pass over friendly spikes
+   if (collidingEntity.type === IEntityType.woodenFloorSpikes && Board.entityRecord.hasOwnProperty(arrowComponent.tribeMemberID)) {
+      const shooter = Board.entityRecord[arrowComponent.tribeMemberID];
+      const shooterTribeComponent = TribeComponentArray.getComponent(shooter);
+      
+      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity);
+      if (shooterTribeComponent.tribe !== null && shooterTribeComponent.tribe === collidingEntityTribeComponent.tribe) {
+         return;
+      }
+   }
+
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       const arrowComponent = ArrowComponentArray.getComponent(arrow);
 

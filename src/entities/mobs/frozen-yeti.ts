@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponentArray, FrozenYetiComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -16,6 +16,7 @@ import { ROCK_SPIKE_HITBOX_SIZES, createRockSpikeProjectile } from "../projectil
 import { createSnowball } from "../snowball";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { wasTribeMemberKill } from "../tribes/tribe-member";
 
 const FROZEN_YETI_SIZE = 144;
 const HEAD_HITBOX_SIZE = 72;
@@ -59,7 +60,7 @@ export interface FrozenYetiRockSpikeInfo {
 }
 
 export function createFrozenYeti(position: Point): Entity {
-   const frozenYeti = new Entity(position, IEntityType.frozenYeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const frozenYeti = new Entity(position, IEntityType.frozenYeti, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    frozenYeti.rotation = 2 * Math.PI * Math.random();
 
    const bodyHitbox = new CircularHitbox(frozenYeti, 4, 0, 0, FROZEN_YETI_SIZE / 2, 0);
@@ -414,7 +415,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
          let targetTile: Tile;
          do {
             targetTile = getWanderTargetTile(frozenYeti, VISION_RANGE);
-         } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "grasslands"));
+         } while (++attempts <= 50 && (targetTile.isWall || targetTile.type !== TileTypeConst.fimbultur));
 
          const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
          const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
@@ -708,7 +709,7 @@ export function onFrozenYetiHurt(frozenYeti: Entity, attackingEntity: Entity, da
 export function onFrozenYetiDeath(frozenYeti: Entity, attackingEntity: Entity | null): void {
    createItemsOverEntity(frozenYeti, ItemType.raw_beef, randInt(13, 18));
 
-   if (attackingEntity !== null && (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior)) {
+   if (wasTribeMemberKill(attackingEntity)) {
       createItemsOverEntity(frozenYeti, ItemType.deepfrost_heart, randInt(2, 3));
       createItemsOverEntity(frozenYeti, ItemType.yeti_hide, randInt(5, 7));
    }

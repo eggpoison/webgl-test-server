@@ -17,7 +17,7 @@ const WOOD_DROP_AMOUNTS: ReadonlyArray<[number, number]> = [
 export function createTree(position: Point): Entity {
    const size = Math.random() > 1/3 ? 1 : 0;
 
-   const tree = new Entity(position, IEntityType.tree, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const tree = new Entity(position, IEntityType.tree, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    tree.rotation = 2 * Math.PI * Math.random();
 
    const mass = 1.25 + size * 0.25;

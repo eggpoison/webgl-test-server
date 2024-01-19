@@ -6,6 +6,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import Tribe from "../../Tribe";
+import { TribeComponent } from "../../components/TribeComponent";
 
 export const TRIBE_TOTEM_SIZE = 120;
 
@@ -24,17 +25,14 @@ for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
 }
 
 export function createTribeTotem(position: Point, tribe: Tribe): Entity {
-   const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
    const hitbox = new CircularHitbox(totem, 2.2, 0, 0, TRIBE_TOTEM_SIZE / 2, 0);
    totem.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(totem, new HealthComponent(50));
    StatusEffectComponentArray.addComponent(totem, new StatusEffectComponent(StatusEffectConst.poisoned));
-   TribeComponentArray.addComponent(totem, {
-      tribeType: tribe.tribeType,
-      tribe: tribe
-   });
+   TribeComponentArray.addComponent(totem, new TribeComponent(tribe));
    TotemBannerComponentArray.addComponent(totem, {
       banners: {},
       // @Speed: Garbage collection

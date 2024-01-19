@@ -9,7 +9,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
@@ -19,6 +19,7 @@ import { getTilesOfBiome } from "./census";
 import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
 import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
+import { getBlueprintProgress } from "./components/BlueprintComponent";
 
 /*
 
@@ -35,6 +36,7 @@ const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitb
       localID: hitbox.localID,
       width: hitbox.width,
       height: hitbox.height,
+      rotation: hitbox.rotation
    };
 }
 
@@ -215,7 +217,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          let offhandAction = TribeMemberAction.none;
          let offhandLastActionTicks = 0;
          let offhandThrownBattleaxeItemID = -1;
-         if (tribeComponent.tribeType === TribeType.barbarians) {
+         if (tribeComponent.tribe!.type === TribeType.barbarians) {
             const offhandInventory = getInventory(inventoryComponent, "offhand");
             const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
             
@@ -232,7 +234,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          // @Incomplete
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            tribeComponent.tribeType,
+            tribeComponent.tribe!.type,
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
@@ -272,7 +274,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          let offhandAction = TribeMemberAction.none;
          let offhandLastActionTicks = 0;
          let offhandThrownBattleaxeItemID = -1;
-         if (tribeComponent.tribeType === TribeType.barbarians) {
+         if (tribeComponent.tribe!.type === TribeType.barbarians) {
             const offhandInventory = getInventory(inventoryComponent, "offhand");
             const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
             
@@ -289,7 +291,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          // @Incomplete
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            tribeComponent.tribeType,
+            tribeComponent.tribe!.type,
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
@@ -330,7 +332,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          let offhandAction = TribeMemberAction.none;
          let offhandLastActionTicks = 0;
          let offhandThrownBattleaxeItemID = -1;
-         if (tribeComponent.tribeType === TribeType.barbarians) {
+         if (tribeComponent.tribe!.type === TribeType.barbarians) {
             const offhandInventory = getInventory(inventoryComponent, "offhand");
             const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
             
@@ -347,7 +349,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          // @Incomplete
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            tribeComponent.tribeType,
+            tribeComponent.tribe!.type,
             serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
             serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
@@ -454,7 +456,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
 
          clientArgs = [
             tribeComponent.tribe!.id, // Totems always have a tribe
-            tribeComponent.tribeType,
+            tribeComponent.tribe!.type,
             // @Speed
             Object.values(totemBannerComponent.banners)
          ];
@@ -551,6 +553,22 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [];
          break;
       }
+      case IEntityType.woodenEmbrasure: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.woodenFloorSpikes:
+      case IEntityType.woodenWallSpikes:
+      case IEntityType.floorPunjiSticks:
+      case IEntityType.wallPunjiSticks: {
+         clientArgs = [];
+         break;
+      }
+      case IEntityType.blueprintEntity: {
+         const blueprintComponent = BlueprintComponentArray.getComponent(entity);
+         clientArgs = [blueprintComponent.shapeType, getBlueprintProgress(blueprintComponent)];
+         break;
+      }
    }
 
    const statusEffectData = new Array<StatusEffectData>();
@@ -632,7 +650,7 @@ interface PlayerData {
 const bundleTribeData = (playerData: PlayerData): TribeData => {
    return {
       id: playerData.tribe.id,
-      tribeType: playerData.tribe.tribeType,
+      tribeType: playerData.tribe.type,
       hasTotem: playerData.tribe.totem !== null,
       numHuts: playerData.tribe.getNumHuts(),
       tribesmanCap: playerData.tribe.tribesmanCap,
@@ -1034,6 +1052,11 @@ class GameServer {
             }
          });
 
+         socket.on("force_unlock_tech", (techID: TechID): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            playerData.tribe.unlockTech(techID);
+         })
+
          socket.on("study_tech", (studyAmount: number): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             playerData.tribe.studyTech(studyAmount);
@@ -1051,7 +1074,7 @@ class GameServer {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               interactWithStructure(player, structureID);
+               interactWithStructure(structureID);
             };
          });
       });
@@ -1214,7 +1237,7 @@ class GameServer {
             heldItemSlot: SERVER.bundleInventory(player, "heldItemSlot"),
             craftingOutputItemSlot: SERVER.bundleInventory(player, "craftingOutputSlot"),
             armourSlot: SERVER.bundleInventory(player, "armourSlot"),
-            offhand: tribeComponent.tribeType === TribeType.barbarians ? SERVER.bundleInventory(player, "offhand") : {
+            offhand: tribeComponent.tribe!.type === TribeType.barbarians ? SERVER.bundleInventory(player, "offhand") : {
                itemSlots: {},
                width: 1,
                height: 1,
@@ -1323,7 +1346,7 @@ class GameServer {
       }
 
       const tribeComponent = TribeComponentArray.getComponent(player);
-      if (tribeComponent.tribeType === TribeType.barbarians) {
+      if (tribeComponent.tribe!.type === TribeType.barbarians) {
          const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
 
          if (playerDataPacket.offhandAction === TribeMemberAction.eat && offhandUseInfo.currentAction !== TribeMemberAction.eat) {
@@ -1373,7 +1396,7 @@ class GameServer {
          spawnPosition.x += 100 * Math.sin(offsetDirection);
          spawnPosition.y += 100 * Math.cos(offsetDirection);
       } else {
-         spawnPosition = this.generatePlayerSpawnPosition(playerData.tribe.tribeType);
+         spawnPosition = this.generatePlayerSpawnPosition(playerData.tribe.type);
       }
 
       const player = createPlayer(spawnPosition, playerData.tribe);

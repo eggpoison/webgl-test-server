@@ -17,6 +17,7 @@ import { CowComponent, updateCowComponent } from "../../components/CowComponent"
 import { dropBerry } from "../resources/berry-bush";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { createItemEntity } from "../item-entity";
 
 const MAX_HEALTH = 10;
 const VISION_RANGE = 256;
@@ -38,7 +39,7 @@ const COHESION_INFLUENCE = 0.3;
 export function createCow(position: Point): Entity {
    const species: CowSpecies = randInt(0, 1);
    
-   const cow = new Entity(position, IEntityType.cow, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const cow = new Entity(position, IEntityType.cow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100, 0);
    cow.addHitbox(hitbox);
@@ -69,6 +70,14 @@ const graze = (cow: Entity, cowComponent: CowComponent): void => {
 
       healEntity(cow, 3);
       cowComponent.grazeCooldownTicks = randInt(MIN_GRAZE_COOLDOWN, MAX_GRAZE_COOLDOWN);
+
+      // Create poop item entity
+      // @Incomplete: Only create if tamed and in an enclosure
+      // const poopOffsetMagnitude = 32 * Math.random();
+      // const poopOffsetDirection = 2 * Math.PI * Math.random();
+      // const poopX = cow.position.x + poopOffsetMagnitude * Math.sin(poopOffsetDirection);
+      // const poopY = cow.position.y + poopOffsetMagnitude * Math.cos(poopOffsetDirection);
+      // createItemEntity(new Point(poopX, poopY), ItemType.poop, 1);
    }
 }
 

@@ -9,7 +9,7 @@ import { SERVER } from "../../server";
 const RADIUS = 55;
 
 export function createSpitPoison(position: Point): Entity {
-   const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
    // @Hack mass
    const hitbox = new CircularHitbox(poison, Number.EPSILON, 0, 0, RADIUS, 0);

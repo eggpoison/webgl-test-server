@@ -9,7 +9,7 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray } from "./components/ComponentArray";
+import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray, BlueprintComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity, { NO_COLLISION } from "./Entity";
@@ -58,6 +58,12 @@ import { onIceArrowRemove, tickIceArrow } from "./entities/projectiles/ice-arrow
 import { onPebblumRemove, tickPebblum } from "./entities/mobs/pebblum";
 import { tickPhysicsComponent } from "./components/PhysicsComponent";
 import { onWorkbenchRemove } from "./entities/workbench";
+import { onWoodenFloorSpikesRemove } from "./entities/structures/wooden-floor-spikes";
+import { onWoodenWallSpikesRemove } from "./entities/structures/wooden-wall-spikes";
+import { onFloorPunjiSticksRemove } from "./entities/structures/floor-punji-sticks";
+import { onWallPunjiSticksRemove } from "./entities/structures/wall-punji-sticks";
+import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure";
+import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -265,162 +271,51 @@ abstract class Board {
          }
 
          switch (entity.type) {
-            case IEntityType.cow: {
-               onCowRemove(entity);
-               break;
-            }
-            case IEntityType.fish: {
-               onFishRemove(entity);
-               break;
-            }
-            case IEntityType.krumblid: {
-               onKrumblidRemove(entity);
-               break;
-            }
-            case IEntityType.slime: {
-               onSlimeRemove(entity);
-               break;
-            }
-            case IEntityType.slimewisp: {
-               onSlimewispRemove(entity);
-               break;
-            }
-            case IEntityType.woodenArrowProjectile: {
-               onArrowRemove(entity);
-               break;
-            }
-            case IEntityType.iceShardProjectile: {
-               onIceShardRemove(entity);
-               break;
-            }
-            case IEntityType.yeti: {
-               onYetiRemove(entity);
-               break;
-            }
-            case IEntityType.tree: {
-               onTreeRemove(entity);
-               break;
-            }
-            case IEntityType.zombie: {
-               onZombieRemove(entity);
-               break;
-            }
-            case IEntityType.berryBush: {
-               onBerryBushRemove(entity);
-               break;
-            }
-            case IEntityType.boulder: {
-               onBoulderRemove(entity);
-               break;
-            }
-            case IEntityType.cactus: {
-               onCactusRemove(entity);
-               break;
-            }
-            case IEntityType.iceSpikes: {
-               onIceSpikesRemove(entity);
-               break;
-            }
-            case IEntityType.tribeTotem: {
-               onTribeTotemRemove(entity);
-               break;
-            }
-            case IEntityType.barrel: {
-               onBarrelRemove(entity);
-               break;
-            }
-            case IEntityType.frozenYeti: {
-               onFrozenYetiRemove(entity);
-               break;
-            }
-            case IEntityType.campfire: {
-               onCampfireRemove(entity);
-               break;
-            }
-            case IEntityType.furnace: {
-               onFurnaceRemove(entity);
-               break;
-            }
-            case IEntityType.spearProjectile: {
-               onSpearProjectileRemove(entity);
-               break;
-            }
-            case IEntityType.snowball: {
-               onSnowballRemove(entity);
-               break;
-            }
-            case IEntityType.tombstone: {
-               onTombstoneRemove(entity);
-               break;
-            }
-            case IEntityType.player: {
-               onPlayerRemove(entity);
-               break;
-            }
-            case IEntityType.workerHut: {
-               onWorkerHutRemove(entity);
-               break;
-            }
-            case IEntityType.warriorHut: {
-               onWarriorHutRemove(entity);
-               break;
-            }
-            case IEntityType.tribeWorker: {
-               onTribeWorkerRemove(entity);
-               break;
-            }
-            case IEntityType.tribeWarrior: {
-               onTribeWarriorRemove(entity);
-               break;
-            }
-            case IEntityType.researchBench: {
-               onResearchBenchRemove(entity);
-               break;
-            }
-            case IEntityType.woodenWall: {
-               onWoodenWallRemove(entity);
-               break;
-            }
-            case IEntityType.woodenDoor: {
-               onWoodenDoorRemove(entity);
-               break;
-            }
-            case IEntityType.battleaxeProjectile: {
-               onBattleaxeProjectileRemove(entity);
-               break;
-            }
-            case IEntityType.golem: {
-               onGolemRemove(entity);
-               break;
-            }
-            case IEntityType.planterBox: {
-               onPlanterBoxRemove(entity);
-               break;
-            }
-            case IEntityType.iceArrow: {
-               onIceArrowRemove(entity);
-               break;
-            }
-            case IEntityType.pebblum: {
-               onPebblumRemove(entity);
-               break;
-            }
-            case IEntityType.slimeSpit: {
-               onSlimeSpitRemove(entity);
-               break;
-            }
-            case IEntityType.rockSpikeProjectile: {
-               onRockSpikeRemove(entity);
-               break;
-            }
-            case IEntityType.itemEntity: {
-               onItemEntityRemove(entity);
-               break;
-            }
-            case IEntityType.workbench: {
-               onWorkbenchRemove(entity);
-               break;
-            }
+            case IEntityType.cow: onCowRemove(entity); break;
+            case IEntityType.fish: onFishRemove(entity); break;
+            case IEntityType.krumblid: onKrumblidRemove(entity); break;
+            case IEntityType.slime: onSlimeRemove(entity); break;
+            case IEntityType.slimewisp: onSlimewispRemove(entity); break;
+            case IEntityType.woodenArrowProjectile: onArrowRemove(entity); break;
+            case IEntityType.iceShardProjectile: onIceShardRemove(entity); break;
+            case IEntityType.yeti: onYetiRemove(entity); break;
+            case IEntityType.tree: onTreeRemove(entity); break;
+            case IEntityType.zombie: onZombieRemove(entity); break;
+            case IEntityType.berryBush: onBerryBushRemove(entity); break;
+            case IEntityType.boulder: onBoulderRemove(entity); break;
+            case IEntityType.cactus: onCactusRemove(entity); break;
+            case IEntityType.iceSpikes: onIceSpikesRemove(entity); break;
+            case IEntityType.tribeTotem: onTribeTotemRemove(entity); break;
+            case IEntityType.barrel: onBarrelRemove(entity); break;
+            case IEntityType.frozenYeti: onFrozenYetiRemove(entity); break;
+            case IEntityType.campfire: onCampfireRemove(entity); break;
+            case IEntityType.furnace: onFurnaceRemove(entity); break;
+            case IEntityType.spearProjectile: onSpearProjectileRemove(entity); break;
+            case IEntityType.snowball: onSnowballRemove(entity); break;
+            case IEntityType.tombstone: onTombstoneRemove(entity); break;
+            case IEntityType.player: onPlayerRemove(entity); break;
+            case IEntityType.workerHut: onWorkerHutRemove(entity); break;
+            case IEntityType.warriorHut: onWarriorHutRemove(entity); break;
+            case IEntityType.tribeWorker: onTribeWorkerRemove(entity); break;
+            case IEntityType.tribeWarrior: onTribeWarriorRemove(entity); break;
+            case IEntityType.researchBench: onResearchBenchRemove(entity); break;
+            case IEntityType.woodenWall: onWoodenWallRemove(entity); break;
+            case IEntityType.woodenDoor: onWoodenDoorRemove(entity); break;
+            case IEntityType.battleaxeProjectile: onBattleaxeProjectileRemove(entity); break;
+            case IEntityType.golem: onGolemRemove(entity); break;
+            case IEntityType.planterBox: onPlanterBoxRemove(entity); break;
+            case IEntityType.iceArrow: onIceArrowRemove(entity); break;
+            case IEntityType.pebblum: onPebblumRemove(entity); break;
+            case IEntityType.slimeSpit: onSlimeSpitRemove(entity); break;
+            case IEntityType.rockSpikeProjectile: onRockSpikeRemove(entity); break;
+            case IEntityType.itemEntity: onItemEntityRemove(entity); break;
+            case IEntityType.workbench: onWorkbenchRemove(entity); break;
+            case IEntityType.woodenFloorSpikes: onWoodenFloorSpikesRemove(entity); break;
+            case IEntityType.woodenWallSpikes: onWoodenWallSpikesRemove(entity); break;
+            case IEntityType.floorPunjiSticks: onFloorPunjiSticksRemove(entity); break;
+            case IEntityType.wallPunjiSticks: onWallPunjiSticksRemove(entity); break;
+            case IEntityType.woodenEmbrasure: onWoodenEmbrasureRemove(entity); break;
+            case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;
          }
       }
 
@@ -789,6 +684,7 @@ abstract class Board {
       this.pushComponentsFromArray(IceSpikesComponentArray);
       this.pushComponentsFromArray(PebblumComponentArray);
       this.pushComponentsFromArray(PhysicsComponentArray);
+      this.pushComponentsFromArray(BlueprintComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {

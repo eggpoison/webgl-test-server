@@ -13,7 +13,7 @@ const MAX_HEALTHS: ReadonlyArray<number> = [5, 10];
 const DAMAGE_VELOCITY_THRESHOLD = 100;
 
 export function createSnowball(position: Point, size: SnowballSize = SnowballSize.small, yetiID: number = ID_SENTINEL_VALUE): Entity {
-   const snowball = new Entity(position, IEntityType.snowball, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const snowball = new Entity(position, IEntityType.snowball, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    snowball.rotation = 2 * Math.PI * Math.random();
 
    const mass = size === SnowballSize.small ? 1 : 1.5;

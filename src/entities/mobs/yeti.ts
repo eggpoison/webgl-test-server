@@ -143,7 +143,7 @@ export function yetiSpawnPositionIsValid(positionX: number, positionY: number): 
 }
 
 export function createYeti(position: Point): Entity {
-   const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    yeti.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2, 0);
@@ -215,7 +215,7 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
       // Don't chase frostlings which aren't attacking the yeti
       if ((entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior || entity.type === IEntityType.player) && !yetiComponent.attackingEntities.hasOwnProperty(entity.id)) {
          const tribeComponent = TribeComponentArray.getComponent(entity);
-         if (tribeComponent.tribeType === TribeType.frostlings) {
+         if (tribeComponent.tribe !== null && tribeComponent.tribe.type === TribeType.frostlings) {
             continue;
          }
       }

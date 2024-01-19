@@ -15,6 +15,7 @@ import { AIHelperComponent } from "../../components/AIHelperComponent";
 import { createSlimeSpit } from "../projectiles/slime-spit";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { wasTribeMemberKill } from "../tribes/tribe-member";
 
 const RADII: ReadonlyArray<number> = [32, 44, 60];
 const MAX_HEALTH: ReadonlyArray<number> = [10, 20, 35];
@@ -59,7 +60,7 @@ interface AngerPropagationInfo {
 }
 
 export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, startingOrbs: Array<MovingOrbData> = []): Entity {
-   const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slime.rotation = 2 * Math.PI * Math.random();
    slime.collisionPushForceMultiplier = 0.5;
 
@@ -431,7 +432,7 @@ export function onSlimeHurt(slime: Entity, attackingEntity: Entity): void {
 }
 
 export function onSlimeDeath(slime: Entity, attackingEntity: Entity): void {
-   if (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior) {
+   if (wasTribeMemberKill(attackingEntity)) {
       const slimeComponent = SlimeComponentArray.getComponent(slime);
       createItemsOverEntity(slime, ItemType.slimeball, randInt(...SLIME_DROP_AMOUNTS[slimeComponent.size]));
    }

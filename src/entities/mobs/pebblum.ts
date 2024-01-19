@@ -10,7 +10,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 export function createPebblum(position: Point, targetID: number): Entity {
-   const pebblum = new Entity(position, IEntityType.pebblum, COLLISION_BITS.other, DEFAULT_COLLISION_MASK);
+   const pebblum = new Entity(position, IEntityType.pebblum, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // Body
    pebblum.addHitbox(new CircularHitbox(pebblum, 0.4, 0, -4, 10 * 2, 0));
