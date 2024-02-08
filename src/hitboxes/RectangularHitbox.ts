@@ -22,46 +22,52 @@ class RectangularHitbox extends Hitbox {
       this.height = height;
       this.updateHalfDiagonalLength();
       this.updateVertexPositions();
+      this.calculateSideAxes();
    }
 
    public updateHalfDiagonalLength(): void {
-      this.halfDiagonalLength = Math.sqrt(Math.pow(this.width / 2, 2) + Math.pow(this.height / 2, 2));
+      this.halfDiagonalLength = Math.sqrt(this.width * this.width / 4 + this.height * this.height / 4);
    }
 
    public updateVertexPositions(): void {
-      const x1 = -this.width / 2;
-      const x2 = this.width / 2;
-      const y1 = -this.height / 2;
-      const y2 = this.height / 2;
+      const x1 = -this.width * 0.5;
+      const x2 = this.width * 0.5;
+      const y2 = this.height * 0.5;
+
+      const rotation = this.rotation + this.object.rotation;
+
+      const sinRotation = Math.sin(rotation);
+      const cosRotation = Math.cos(rotation);
 
       // Rotate vertices
 
       // Top left vertex
-      this.vertexOffsets[0].x = rotateXAroundOrigin(x1, y2, this.rotation + this.object.rotation);
-      this.vertexOffsets[0].y = rotateYAroundOrigin(x1, y2, this.rotation + this.object.rotation);
+      this.vertexOffsets[0].x = cosRotation * x1 + sinRotation * y2;
+      this.vertexOffsets[0].y = cosRotation * y2 - sinRotation * x1;
       // Top right vertex
-      this.vertexOffsets[1].x = rotateXAroundOrigin(x2, y2, this.rotation + this.object.rotation);
-      this.vertexOffsets[1].y = rotateYAroundOrigin(x2, y2, this.rotation + this.object.rotation);
+      this.vertexOffsets[1].x = cosRotation * x2 + sinRotation * y2;
+      this.vertexOffsets[1].y = cosRotation * y2 - sinRotation * x2;
       // Bottom right vertex
-      this.vertexOffsets[2].x = rotateXAroundOrigin(x2, y1, this.rotation + this.object.rotation);
-      this.vertexOffsets[2].y = rotateYAroundOrigin(x2, y1, this.rotation + this.object.rotation);
+      this.vertexOffsets[2].x = -this.vertexOffsets[0].x;
+      this.vertexOffsets[2].y = -this.vertexOffsets[0].y;
       // Bottom left vertex
-      this.vertexOffsets[3].x = rotateXAroundOrigin(x1, y1, this.rotation + this.object.rotation);
-      this.vertexOffsets[3].y = rotateYAroundOrigin(x1, y1, this.rotation + this.object.rotation);
-
-      this.calculateSideAxes();
+      this.vertexOffsets[3].x = -this.vertexOffsets[1].x;
+      this.vertexOffsets[3].y = -this.vertexOffsets[1].y;
    }
 
-   private calculateSideAxes(): void {
+   public calculateSideAxes(): void {
+      const angle = this.rotation + this.object.rotation + Math.PI/2;
+      // @Speed: Might be able to use the trig results from updateVertexPositions to avoid doing these
+      const sinAngle = Math.sin(angle);
+      const cosAngle = Math.cos(angle);
+
       // Angle between vertex 0 (top left) and vertex 1 (top right)
-      const angle1 = this.vertexOffsets[0].calculateAngleBetween(this.vertexOffsets[1]);
-      this.sideAxes[0].x = Math.sin(angle1);
-      this.sideAxes[0].y = Math.cos(angle1);
+      this.sideAxes[0].x = sinAngle;
+      this.sideAxes[0].y = cosAngle;
       
       // Angle between vertex 1 (top right) and vertex 2 (bottom right)
-      const angle2 = angle1 + Math.PI/2;
-      this.sideAxes[1].x = Math.sin(angle2);
-      this.sideAxes[1].y = Math.cos(angle2);
+      this.sideAxes[1].x = cosAngle;
+      this.sideAxes[1].y = -sinAngle;
    }
 
    public calculateHitboxBoundsMinX(): number {

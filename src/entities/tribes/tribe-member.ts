@@ -1,8 +1,8 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BowItemInfo, FoodItemInfo, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
+import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { addDefence, applyHitKnockback, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
@@ -13,7 +13,7 @@ import { BARREL_SIZE, createBarrel } from "./barrel";
 import { CAMPFIRE_SIZE, createCampfire } from "../cooking-entities/campfire";
 import { FURNACE_SIZE, createFurnace } from "../cooking-entities/furnace";
 import Hitbox from "../../hitboxes/Hitbox";
-import { createWoodenArrow } from "../projectiles/wooden-arrow";
+import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { itemEntityCanBePickedUp } from "../item-entity";
@@ -30,16 +30,23 @@ import { createIceArrow } from "../projectiles/ice-arrow";
 import { createWoodenFloorSpikes } from "../structures/wooden-floor-spikes";
 import { createFloorPunjiSticks } from "../structures/floor-punji-sticks";
 import { doBlueprintWork } from "../../components/BlueprintComponent";
+import { createWoodenWallSpikes } from "../structures/wooden-wall-spikes";
+import { createWallPunjiSticks } from "../structures/wall-punji-sticks";
+import { createBallista } from "../structures/ballista";
+import { createSlingTurret } from "../structures/sling-turret";
+import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
-const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow, IEntityType.golem];
+const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow, IEntityType.golem, IEntityType.slime, IEntityType.slimewisp];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace, IEntityType.golem];
-const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.woodenWall, IEntityType.woodenDoor, IEntityType.researchBench, IEntityType.workbench];
-const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime];
+const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.woodenWall, IEntityType.woodenDoor, IEntityType.woodenEmbrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.woodenFloorSpikes, IEntityType.woodenWallSpikes, IEntityType.floorPunjiSticks, IEntityType.wallPunjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut];
+export const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime, IEntityType.golem]; // @Incomplete: Golems should only hostile when awake
 
-const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, -1, 0);
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, 0);
+const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1, 0);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0);
+
+// @Cleanup: Copy and paste. This placeable entity stuff is shared between server and client
 
 enum PlaceableItemHitboxType {
    circular = 0,
@@ -48,6 +55,7 @@ enum PlaceableItemHitboxType {
 
 interface PlaceableItemHitboxInfo {
    readonly entityType: IEntityType;
+   readonly wallEntityType: IEntityType;
    readonly type: PlaceableItemHitboxType;
    readonly placeOffset: number;
 }
@@ -67,6 +75,7 @@ interface PlaceableItemRectangularHitboxInfo extends PlaceableItemHitboxInfo {
 const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircularHitboxInfo | PlaceableItemRectangularHitboxInfo> = {
    [ItemType.workbench]: {
       entityType: IEntityType.workbench,
+      wallEntityType: IEntityType.workbench,
       type: PlaceableItemHitboxType.rectangular,
       width: WORKBENCH_SIZE,
       height: WORKBENCH_SIZE,
@@ -74,12 +83,14 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.tribe_totem]: {
       entityType: IEntityType.tribeTotem,
+      wallEntityType: IEntityType.tribeTotem,
       type: PlaceableItemHitboxType.circular,
       radius: TRIBE_TOTEM_SIZE / 2,
       placeOffset: TRIBE_TOTEM_SIZE / 2
    },
    [ItemType.worker_hut]: {
       entityType: IEntityType.workerHut,
+      wallEntityType: IEntityType.workerHut,
       type: PlaceableItemHitboxType.rectangular,
       width: WORKER_HUT_SIZE,
       height: WORKER_HUT_SIZE,
@@ -87,6 +98,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.warrior_hut]: {
       entityType: IEntityType.warriorHut,
+      wallEntityType: IEntityType.warriorHut,
       type: PlaceableItemHitboxType.rectangular,
       width: WARRIOR_HUT_SIZE,
       height: WARRIOR_HUT_SIZE,
@@ -94,12 +106,14 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.barrel]: {
       entityType: IEntityType.barrel,
+      wallEntityType: IEntityType.barrel,
       type: PlaceableItemHitboxType.circular,
       radius: BARREL_SIZE / 2,
       placeOffset: BARREL_SIZE / 2
    },
    [ItemType.campfire]: {
       entityType: IEntityType.campfire,
+      wallEntityType: IEntityType.campfire,
       type: PlaceableItemHitboxType.rectangular,
       width: CAMPFIRE_SIZE,
       height: CAMPFIRE_SIZE,
@@ -107,6 +121,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.furnace]: {
       entityType: IEntityType.furnace,
+      wallEntityType: IEntityType.furnace,
       type: PlaceableItemHitboxType.rectangular,
       width: FURNACE_SIZE,
       height: FURNACE_SIZE,
@@ -114,6 +129,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.research_bench]: {
       entityType: IEntityType.researchBench,
+      wallEntityType: IEntityType.researchBench,
       type: PlaceableItemHitboxType.rectangular,
       width: 32 * 4,
       height: 20 * 4,
@@ -121,6 +137,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.wooden_wall]: {
       entityType: IEntityType.woodenWall,
+      wallEntityType: IEntityType.woodenWall,
       type: PlaceableItemHitboxType.rectangular,
       width: 64,
       height: 64,
@@ -128,6 +145,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.planter_box]: {
       entityType: IEntityType.planterBox,
+      wallEntityType: IEntityType.planterBox,
       type: PlaceableItemHitboxType.rectangular,
       width: 80,
       height: 80,
@@ -135,6 +153,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.wooden_spikes]: {
       entityType: IEntityType.woodenFloorSpikes,
+      wallEntityType: IEntityType.woodenWallSpikes,
       type: PlaceableItemHitboxType.rectangular,
       width: 48,
       height: 48,
@@ -142,86 +161,33 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
    },
    [ItemType.punji_sticks]: {
       entityType: IEntityType.floorPunjiSticks,
+      wallEntityType: IEntityType.wallPunjiSticks,
       type: PlaceableItemHitboxType.rectangular,
       width: 48,
       height: 48,
       placeOffset: 20
-   }
+   },
+   [ItemType.ballista]: {
+      entityType: IEntityType.ballista,
+      wallEntityType: IEntityType.ballista,
+      type: PlaceableItemHitboxType.rectangular,
+      width: 100,
+      height: 100,
+      placeOffset: 50
+   },
+   [ItemType.sling_turret]: {
+      entityType: IEntityType.slingTurret,
+      wallEntityType: IEntityType.slingTurret,
+      type: PlaceableItemHitboxType.circular,
+      radius: 36,
+      placeOffset: 36
+   },
 };
 
 function assertItemTypeIsPlaceable(itemType: ItemType): asserts itemType is PlaceableItemType {
    if (!PLACEABLE_ITEM_HITBOX_INFO.hasOwnProperty(itemType)) {
       throw new Error(`Entity type '${itemType}' is not placeable.`);
    }
-}
-
-// /** Relationships a tribe member can have, in increasing order of threat */
-export enum EntityRelationship {
-   friendly,
-   neutral,
-   resource,
-   hostileMob,
-   enemyBuilding,
-   enemy
-}
-
-export function getTribeMemberRelationship(tribeMember: Entity, entity: Entity): EntityRelationship {
-   // Necessary for when the tribe member is not in a tribe
-   if (entity === tribeMember) {
-      return EntityRelationship.friendly;
-   }
-
-   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-   
-   switch (entity.type) {
-      case IEntityType.workerHut: {
-         if (tribeComponent.tribe === null || !tribeComponent.tribe.hasHut(entity)) {
-            return EntityRelationship.enemyBuilding;
-         }
-         return EntityRelationship.friendly;
-      }
-      case IEntityType.warriorHut: {
-         if (tribeComponent.tribe === null || !tribeComponent.tribe.hasHut(entity)) {
-            return EntityRelationship.enemyBuilding;
-         }
-         return EntityRelationship.friendly;
-      }
-      case IEntityType.tribeTotem: {
-         if (tribeComponent.tribe === null || !tribeComponent.tribe.hasTotem(entity)) {
-            return EntityRelationship.enemyBuilding;
-         }
-         return EntityRelationship.friendly;
-      }
-      case IEntityType.barrel: {
-         const entityTribeComponent = TribeComponentArray.getComponent(entity);
-         if (tribeComponent.tribe === null || entityTribeComponent === null) {
-            return EntityRelationship.neutral;
-         }
-         if (entityTribeComponent.tribe === tribeComponent.tribe) {
-            return EntityRelationship.friendly;
-         }
-         return EntityRelationship.enemyBuilding;
-      }
-      case IEntityType.player:
-      case IEntityType.tribeWorker:
-      case IEntityType.tribeWarrior: {
-         const entityTribeComponent = TribeComponentArray.getComponent(entity);
-         if (tribeComponent.tribe !== null && entityTribeComponent.tribe === tribeComponent.tribe) {
-            return EntityRelationship.friendly;
-         }
-         return EntityRelationship.enemy;
-      }
-   }
-
-   if (HOSTILE_MOB_TYPES.includes(entity.type)) {
-      return EntityRelationship.hostileMob;
-   }
-
-   if (RESOURCE_ENTITY_TYPES.includes(entity.type)) {
-      return EntityRelationship.resource;
-   }
-
-   return EntityRelationship.neutral;
 }
 
 export function calculateItemDamage(item: Item | null, entityToAttack: Entity): number {
@@ -251,7 +217,7 @@ export function calculateItemDamage(item: Item | null, entityToAttack: Entity): 
          if (AXE_DAMAGEABLE_ENTITIES.includes(entityToAttack.type)) {
             return itemInfo.damage;
          }
-         return Math.floor(itemInfo.damage / 2);
+         return Math.ceil(itemInfo.damage / 3);
       }
       case "pickaxe": {
          const itemInfo = ITEM_INFO_RECORD[item.type] as AxeItemInfo;
@@ -278,6 +244,64 @@ const calculateItemKnockback = (item: Item | null): number => {
    }
 
    return DEFAULT_ATTACK_KNOCKBACK;
+}
+
+// @Cleanup: Maybe split this up into repair and work functions
+export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+
+   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
+
+   // Don't attack if on cooldown or not doing another action
+   if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot) || useInfo.currentAction !== TribeMemberAction.none) {
+      return false;
+   }
+   
+   // Find the selected item
+   const item = getItem(inventoryComponent, inventoryName, itemSlot);
+   if (item === null) {
+      console.warn("Tried to repair a building without a hammer!");
+      return false;
+   }
+
+   // Reset attack cooldown
+   if (item !== null) {
+      const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
+      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer" || itemTypeInfo === "battleaxe") {
+         const itemInfo = ITEM_INFO_RECORD[item.type];
+         useInfo.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
+      } else {
+         useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+      }
+   } else {
+      useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+   }
+
+   // @Incomplete: Should this instead be its own lastConstructTicks?
+   useInfo.lastAttackTicks = Board.ticks;
+
+   if (targetEntity.type === IEntityType.blueprintEntity) {
+      // If holding a hammer and attacking a friendly blueprint, work on the blueprint instead of damaging it
+      const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+      const blueprintTribeComponent = TribeComponentArray.getComponent(targetEntity);
+      if (blueprintTribeComponent.tribe === tribeComponent.tribe) {
+         doBlueprintWork(targetEntity, item);
+         return true;
+      }
+   } else if (STRUCTURE_TYPES_CONST.includes(targetEntity.type as StructureTypeConst)) {
+      // Heal friendly structures
+      const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+      const buildingTribeComponent = TribeComponentArray.getComponent(targetEntity);
+      if (buildingTribeComponent.tribe === tribeComponent.tribe) {
+         const itemInfo = ITEM_INFO_RECORD[item.type] as HammerItemInfo;
+         healEntity(targetEntity, itemInfo.repairAmount);
+         return true;
+      }
+   }
+
+   console.warn("Couldn't repair/build the entity: not a blueprint or in STRUCTURE_TYPES_CONST.")
+   return false;
 }
 
 /**
@@ -313,27 +337,6 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
       useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
    }
 
-   if (item !== null && ITEM_TYPE_RECORD[item.type] === "hammer") {
-      if (targetEntity.type === IEntityType.blueprintEntity) {
-         // If holding a hammer and attacking a friendly blueprint, work on the blueprint instead of damaging it
-         const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-         const blueprintTribeComponent = TribeComponentArray.getComponent(targetEntity);
-         if (blueprintTribeComponent.tribe === tribeComponent.tribe) {
-            doBlueprintWork(targetEntity, item);
-            return false;
-         }
-      } else if (STRUCTURE_TYPES_CONST.includes(targetEntity.type as StructureTypeConst)) {
-         // Heal friendly structures
-         const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-         const buildingTribeComponent = TribeComponentArray.getComponent(targetEntity);
-         if (buildingTribeComponent.tribe === tribeComponent.tribe) {
-            const itemInfo = ITEM_INFO_RECORD[item.type] as HammerItemInfo;
-            healEntity(targetEntity, itemInfo.repairAmount);
-            return false;
-         }
-      }
-   }
-
    const attackDamage = calculateItemDamage(item, targetEntity);
    const attackKnockback = calculateItemKnockback(item);
 
@@ -363,7 +366,9 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
 }
 
 // @Cleanup: Not just for tribe members, move to different file
-export function calculateAttackTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>): Entity | null {
+export function calculateAttackTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>, attackableEntityRelationshipMask: number): Entity | null {
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+   
    let closestEntity: Entity | null = null;
    let minDistance = Number.MAX_SAFE_INTEGER;
    for (const targetEntity of targetEntities) {
@@ -372,16 +377,75 @@ export function calculateAttackTarget(tribeMember: Entity, targetEntities: Reado
          continue;
       }
 
-      // @Cleanup: Don't hardcode the zombie condition. Instead move the relationship check to outside this function
-      if (tribeMember.type === IEntityType.zombie || getTribeMemberRelationship(tribeMember, targetEntity) !== EntityRelationship.friendly) {
-         const dist = tribeMember.position.calculateDistanceBetween(targetEntity.position);
-         if (dist < minDistance) {
-            closestEntity = targetEntity;
-            minDistance = dist;
-         }
+      const relationship = getTribeMemberRelationship(tribeComponent, targetEntity);
+      if ((relationship & attackableEntityRelationshipMask) === 0) {
+         continue;
+      }
+
+      const dist = tribeMember.position.calculateDistanceBetween(targetEntity.position);
+      if (dist < minDistance) {
+         closestEntity = targetEntity;
+         minDistance = dist;
       }
    }
+   
+   if (closestEntity === null) return null;
 
+   return closestEntity;
+}
+
+
+export function calculateRepairTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>): Entity | null {
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+   
+   let closestEntity: Entity | null = null;
+   let minDistance = Number.MAX_SAFE_INTEGER;
+   for (const targetEntity of targetEntities) {
+      // Don't attack entities without health components
+      if (!HealthComponentArray.hasComponent(targetEntity)) {
+         continue;
+      }
+
+      // Only repair damaged buildings
+      const healthComponent = HealthComponentArray.getComponent(targetEntity);
+      if (healthComponent.health === healthComponent.maxHealth) {
+         continue;
+      }
+
+      const relationship = getTribeMemberRelationship(tribeComponent, targetEntity);
+      if (relationship !== EntityRelationship.friendlyBuilding) {
+         continue;
+      }
+
+      const dist = tribeMember.position.calculateDistanceBetween(targetEntity.position);
+      if (dist < minDistance) {
+         closestEntity = targetEntity;
+         minDistance = dist;
+      }
+   }
+   
+   if (closestEntity === null) return null;
+
+   return closestEntity;
+}
+
+
+export function calculateBlueprintWorkTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>): Entity | null {
+   let closestEntity: Entity | null = null;
+   let minDistance = Number.MAX_SAFE_INTEGER;
+   for (const targetEntity of targetEntities) {
+      // Don't attack entities without health components
+      if (targetEntity.type !== IEntityType.blueprintEntity) {
+         continue;
+      }
+
+      const dist = tribeMember.position.calculateDistanceBetween(targetEntity.position);
+      if (dist < minDistance) {
+         closestEntity = targetEntity;
+         minDistance = dist;
+      }
+   }
+   
    if (closestEntity === null) return null;
 
    return closestEntity;
@@ -416,9 +480,10 @@ interface BuildingSnapInfo {
    /** -1 if no snap was found */
    readonly x: number;
    readonly y: number;
-   readonly direction: number;
+   readonly rotation: number;
+   readonly entityType: IEntityType;
 }
-export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitboxInfo): BuildingSnapInfo {
+export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitboxInfo): BuildingSnapInfo | null {
    const regularPlacePosition = calculateRegularPlacePosition(entity, placeInfo);
 
    const minChunkX = Math.max(Math.floor((regularPlacePosition.x - SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), 0);
@@ -449,7 +514,11 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
          case IEntityType.woodenWall:
          case IEntityType.woodenDoor:
          case IEntityType.woodenFloorSpikes:
-         case IEntityType.woodenWallSpikes: {
+         case IEntityType.woodenWallSpikes:
+         case IEntityType.floorPunjiSticks:
+         case IEntityType.wallPunjiSticks:
+         case IEntityType.ballista:
+         case IEntityType.slingTurret: {
             snapOrigin = snapEntity.position;
             break;
          }
@@ -461,7 +530,9 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
          }
       }
 
-      const snapOffset = SNAP_OFFSETS[snapEntity.type as StructureTypeConst] / 2 + SNAP_OFFSETS[placeInfo.entityType as StructureTypeConst] / 2;
+      const placingEntityType = snapEntity.type === IEntityType.woodenWall ? placeInfo.wallEntityType : placeInfo.entityType;
+      const snapOffset = SNAP_OFFSETS[snapEntity.type as StructureTypeConst] / 2 + SNAP_OFFSETS[placingEntityType as StructureTypeConst] / 2;
+
       // Check the 4 potential snap positions for matches
       for (let i = 0; i < 4; i++) {
          const direction = i * Math.PI / 2;
@@ -473,44 +544,52 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
             continue;
          }
 
-         const placingEntityRotation = (entity.rotation + Math.PI) % (Math.PI * 2) - Math.PI;
-         for (let i = 0; i < 4; i++) {
-            const direction = i * Math.PI / 2;
-            const placeDirection = (snapEntity.rotation + direction + Math.PI) % (Math.PI * 2) - Math.PI;
-            let angleDiff = placingEntityRotation - placeDirection;
-            angleDiff = (angleDiff + Math.PI) % (Math.PI * 2) - Math.PI;
-            if (Math.abs(angleDiff) <= SETTINGS.STRUCTURE_ROTATION_SNAP) {
-               return {
-                  x: x,
-                  y: y,
-                  direction: placeDirection
-               };
+         let placeRotation = -999;
+         if (placingEntityType === placeInfo.entityType) {
+            const placingEntityRotation = (entity.rotation + Math.PI) % (Math.PI * 2) - Math.PI;
+            for (let i = 0; i < 4; i++) {
+               const direction = i * Math.PI / 2;
+               const placeDirection = (snapEntity.rotation + direction + Math.PI) % (Math.PI * 2) - Math.PI;
+               let angleDiff = placingEntityRotation - placeDirection;
+               angleDiff = (angleDiff + Math.PI) % (Math.PI * 2) - Math.PI;
+               if (Math.abs(angleDiff) <= SETTINGS.STRUCTURE_ROTATION_SNAP) {
+                  placeRotation = placeDirection;
+               }
             }
+         } else {
+            // If placing on wall, always face away from the wall
+            // @Speed: Garbage collection
+            placeRotation = snapEntity.position.calculateAngleBetween(new Point(x, y));
+         }
+
+         if (placeRotation !== -999) {
+            return {
+               x: x,
+               y: y,
+               rotation: placeRotation,
+               entityType: placingEntityType
+            };
          }
       }
    }
    
-   return {
-      x: -1,
-      y: -1,
-      direction: -1
-   };
+   return null;
 }
 
-const calculatePlacePosition = (entity: Entity, placeInfo: PlaceableItemHitboxInfo, snapInfo: BuildingSnapInfo): Point => {
-   if (snapInfo.x === -1) {
+const calculatePlacePosition = (entity: Entity, placeInfo: PlaceableItemHitboxInfo, snapInfo: BuildingSnapInfo | null): Point => {
+   if (snapInfo === null) {
       return calculateRegularPlacePosition(entity, placeInfo);
    }
 
    return new Point(snapInfo.x, snapInfo.y);
 }
 
-const calculatePlaceRotation = (entity: Entity, snapInfo: BuildingSnapInfo): number => {
-   if (snapInfo.x === -1) {
+const calculatePlaceRotation = (entity: Entity, snapInfo: BuildingSnapInfo | null): number => {
+   if (snapInfo === null) {
       return entity.rotation;
    }
 
-   return snapInfo.direction;
+   return snapInfo.rotation;
 }
 
 const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, placeRotation: number, itemType: PlaceableItemType): boolean => {
@@ -635,12 +714,13 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          
          // Spawn the placeable entity
          let placedEntity: Entity;
-         switch (item.type) {
-            case ItemType.workbench: {
+         const placedEntityType = snapInfo !== null ? snapInfo.entityType : placeInfo.entityType;
+         switch (placedEntityType) {
+            case IEntityType.workbench: {
                placedEntity = createWorkbench(placePosition);
                break;
             }
-            case ItemType.tribe_totem: {
+            case IEntityType.tribeTotem: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
                // Don't place a tribe totem if they aren't in a tribe
                if (tribeComponent.tribe === null) {
@@ -650,7 +730,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                placedEntity = createTribeTotem(placePosition, tribeComponent.tribe);
                break;
             }
-            case ItemType.worker_hut: {
+            case IEntityType.workerHut: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
                if (tribeComponent.tribe === null) {
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
@@ -661,7 +741,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                tribeComponent.tribe.registerNewWorkerHut(placedEntity);
                break;
             }
-            case ItemType.warrior_hut: {
+            case IEntityType.warriorHut: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
                if (tribeComponent.tribe === null) {
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
@@ -672,7 +752,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                tribeComponent.tribe.registerNewWarriorHut(placedEntity);
                break;
             }
-            case ItemType.barrel: {
+            case IEntityType.barrel: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
 
                placedEntity = createBarrel(placePosition, tribeComponent.tribe);
@@ -681,34 +761,55 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                }
                break;
             }
-            case ItemType.campfire: {
+            case IEntityType.campfire: {
                placedEntity = createCampfire(placePosition);
                break;
             }
-            case ItemType.furnace: {
+            case IEntityType.furnace: {
                placedEntity = createFurnace(placePosition);
                break;
             }
-            case ItemType.research_bench: {
+            case IEntityType.researchBench: {
                placedEntity = createResearchBench(placePosition);
                break;
             }
-            case ItemType.wooden_wall: {
+            case IEntityType.woodenWall: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
                placedEntity = createWoodenWall(placePosition, tribeComponent.tribe);
                break;
             }
-            case ItemType.planter_box: {
+            case IEntityType.planterBox: {
                placedEntity = createPlanterBox(placePosition);
                break;
             }
-            case ItemType.wooden_spikes: {
+            case IEntityType.woodenFloorSpikes: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
                placedEntity = createWoodenFloorSpikes(placePosition, tribeComponent.tribe);
                break;
             }
-            case ItemType.punji_sticks: {
-               placedEntity = createFloorPunjiSticks(placePosition);
+            case IEntityType.woodenWallSpikes: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createWoodenWallSpikes(placePosition, tribeComponent.tribe);
+               break;
+            }
+            case IEntityType.floorPunjiSticks: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createFloorPunjiSticks(placePosition, tribeComponent.tribe);
+               break;
+            }
+            case IEntityType.wallPunjiSticks: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createWallPunjiSticks(placePosition, tribeComponent.tribe);
+               break;
+            }
+            case IEntityType.ballista: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createBallista(placePosition, tribeComponent.tribe);
+               break;
+            }
+            case IEntityType.slingTurret: {
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createSlingTurret(placePosition, tribeComponent.tribe);
                break;
             }
             default: {
@@ -746,11 +847,20 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          switch (item.type) {
             case ItemType.wooden_bow:
             case ItemType.reinforced_bow: {
-               arrow = createWoodenArrow(spawnPosition, tribeMember, item.type);
+               const arrowInfo: GenericArrowInfo = {
+                  type: GenericArrowType.woodenArrow,
+                  damage: itemInfo.projectileDamage,
+                  knockback: itemInfo.projectileKnockback,
+                  width: 12,
+                  height: 64,
+                  ignoreFriendlyBuildings: false
+               }
+               arrow = createWoodenArrow(spawnPosition, tribeMember, arrowInfo);
                break;
             }
             case ItemType.ice_bow: {
-               arrow = createIceArrow(spawnPosition, tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               arrow = createIceArrow(spawnPosition, tribeMember.rotation, tribeComponent.tribe);
                break;
             }
             default: {
@@ -777,9 +887,18 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const offset = Point.fromVectorForm(35, tribeMember.rotation);
          spawnPosition.add(offset);
          
-         const arrow = createWoodenArrow(spawnPosition, tribeMember, item.type);
-         
          const itemInfo = ITEM_INFO_RECORD[item.type] as BowItemInfo;
+         // @Copynpaste from bow above
+         const arrowInfo: GenericArrowInfo = {
+            type: GenericArrowType.woodenArrow,
+            damage: itemInfo.projectileDamage,
+            knockback: itemInfo.projectileKnockback,
+            width: 12,
+            height: 64,
+            ignoreFriendlyBuildings: false
+         }
+         const arrow = createWoodenArrow(spawnPosition, tribeMember, arrowInfo);
+         
          arrow.velocity.x = itemInfo.projectileSpeed * Math.sin(tribeMember.rotation);
          arrow.velocity.y = itemInfo.projectileSpeed * Math.cos(tribeMember.rotation);
 
@@ -906,7 +1025,7 @@ const tickInventoryUseInfo = (tribeMember: Entity, inventoryUseInfo: InventoryUs
       case TribeMemberAction.eat: {
          inventoryUseInfo.foodEatingTimer -= 1 / SETTINGS.TPS;
    
-         if (inventoryUseInfo.foodEatingTimer <= 0) {
+         if (inventoryUseInfo.foodEatingTimer <= 0 && inventoryHasItemInSlot(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot)) {
             const selectedItem = getItemFromInventory(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot);
             if (selectedItem !== null) {
                const itemCategory = ITEM_TYPE_RECORD[selectedItem.type];

@@ -1,11 +1,11 @@
-import { Point, SETTINGS, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
+import { SETTINGS, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import Entity from "../Entity";
-import { AIHelperComponentArray } from "./ComponentArray";
 import Board from "../Board";
 import Hitbox from "../hitboxes/Hitbox";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
+import { ComponentArray } from "./ComponentArray";
 
 export class AIHelperComponent {
    public visibleChunkBounds = [999, 999, 999, 999];
@@ -22,6 +22,8 @@ export class AIHelperComponent {
       this.visionRange = visionRange;
    }
 }
+
+export const AIHelperComponentArray = new ComponentArray<AIHelperComponent>();
 
 const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): boolean => {
    // @Speed: This check is slow

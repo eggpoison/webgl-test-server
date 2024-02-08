@@ -23,7 +23,7 @@ export function createWoodenFloorSpikes(position: Point, tribe: Tribe | null): E
    return spikes;
 }
 
-export function onWoodenFloorSpikesCollision(spikes: Entity, collidingEntity: Entity): void {
+export function onWoodenSpikesCollision(spikes: Entity, collidingEntity: Entity): void {
    if (collidingEntity.type === IEntityType.woodenFloorSpikes || collidingEntity.type === IEntityType.woodenDoor) {
       return;
    }
@@ -50,6 +50,7 @@ export function onWoodenFloorSpikesCollision(spikes: Entity, collidingEntity: En
       attackerID: spikes.id,
       flags: 0
    });
+   // @Temporary
    addLocalInvulnerabilityHash(healthComponent, "woodenSpikes", 0.3);
 }
 

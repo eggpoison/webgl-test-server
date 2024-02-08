@@ -44,7 +44,6 @@ const generateRandomLimbs = (): ReadonlyArray<CactusLimbData> => {
    while (Math.random() < 4/5 - numLimbs/5 && numLimbs < 3) {
       numLimbs++;
    }
-   numLimbs = 2; // @Temporary
 
    const limbs = new Array<CactusLimbData>();
 

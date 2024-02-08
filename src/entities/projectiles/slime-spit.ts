@@ -8,6 +8,7 @@ import { applyHitKnockback, damageEntity } from "../../components/HealthComponen
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import Board from "../../Board";
 
 const BREAK_VELOCITY = 100;
 

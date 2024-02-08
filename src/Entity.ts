@@ -1,4 +1,4 @@
-import { GameObjectDebugData, IEntityType, I_TPS, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle } from "webgl-test-shared";
+import { DoorToggleType, GameObjectDebugData, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -18,7 +18,7 @@ import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
 import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
 import { onFishDeath } from "./entities/mobs/fish";
-import { AIHelperComponentArray, PhysicsComponentArray } from "./components/ComponentArray";
+import { DoorComponentArray, PhysicsComponentArray } from "./components/ComponentArray";
 import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
@@ -32,7 +32,10 @@ import Hitbox from "./hitboxes/Hitbox";
 import { onIceArrowCollision } from "./entities/projectiles/ice-arrow";
 import { onPebblumCollision } from "./entities/mobs/pebblum";
 import { onGolemCollision } from "./entities/mobs/golem";
-import { onWoodenFloorSpikesCollision } from "./entities/structures/wooden-floor-spikes";
+import { onWoodenSpikesCollision } from "./entities/structures/wooden-floor-spikes";
+import { onPunjiSticksCollision } from "./entities/structures/floor-punji-sticks";
+import { AIHelperComponentArray } from "./components/AIHelperComponent";
+import { onSlingRockCollision } from "./entities/projectiles/sling-rock";
 
 export const ID_SENTINEL_VALUE = 99999999;
 
@@ -59,10 +62,52 @@ export const NUM_ENTITY_TYPES = 37;
 
 export const NO_COLLISION = 0xFFFF;
 
+const entityHasHardCollision = (entity: Entity): boolean => {
+   // Doors have hard collision when closing/closed
+   if (entity.type === IEntityType.woodenDoor) {
+      const doorComponent = DoorComponentArray.getComponent(entity);
+      return doorComponent.toggleType === DoorToggleType.close || doorComponent.doorOpenProgress === 0;
+   }
+   
+   return entity.type === IEntityType.woodenWall || entity.type === IEntityType.woodenEmbrasure;
+}
+
+// @Cleanup
+
+const findMinWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offsetY: number, axis: Point): number => {
+   const firstVertex = vertices[0];
+   let min = axis.x * (firstVertex.x + offsetX) + axis.y * (firstVertex.y + offsetY);
+
+   for (let i = 1; i < 4; i++) {
+      const vertex = vertices[i];
+      const dotProduct = axis.x * (vertex.x + offsetX) + axis.y * (vertex.y + offsetY);
+      if (dotProduct < min) {
+         min = dotProduct;
+      }
+   }
+
+   return min;
+}
+
+const findMaxWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offsetY: number, axis: Point): number => {
+   const firstVertex = vertices[0];
+   let max = axis.x * (firstVertex.x + offsetX) + axis.y * (firstVertex.y + offsetY);
+
+   for (let i = 1; i < 4; i++) {
+      const vertex = vertices[i];
+      const dotProduct = axis.x * (vertex.x + offsetX) + axis.y * (vertex.y + offsetY);
+      if (dotProduct > max) {
+         max = dotProduct;
+      }
+   }
+
+   return max;
+}
+
 /** A generic class for any object in the world */
 class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
-   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, -1, 0);
+   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1, 0);
    
    /** Unique identifier for each entity */
    public readonly id: number;
@@ -76,8 +121,10 @@ class Entity<T extends IEntityType = IEntityType> {
 
    /** Position of the entity in the world */
    public position: Point;
+   // @Cleanup: Might be able to be put on the physics component
    /** Velocity of the entity */
    public velocity = new Point(0, 0);
+   // @Cleanup: Might be able to be put on the physics component
    /** Acceleration of the entity */
    public acceleration = new Point(0, 0);
 
@@ -90,7 +137,7 @@ class Entity<T extends IEntityType = IEntityType> {
    public collisionPushForceMultiplier = 1;
 
    /** Set of all chunks the entity is contained in */
-   public chunks = new Set<Chunk>();
+   public chunks = new Array<Chunk>();
 
    /** The tile the entity is currently standing on. */
    public tile!: Tile;
@@ -98,25 +145,17 @@ class Entity<T extends IEntityType = IEntityType> {
    /** All hitboxes attached to the entity */
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
-   public collidingEntityTicks = new Array<number>();
+   /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
+   public hitboxesAreDirty = false;
+
    public collidingEntityIDs = new Array<number>();
    
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
-
-   // @Incomplete: Make the following flags false by default and make sure the hitboxes and other stuff is correct when spawning in
-
-   /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
-   public positionIsDirty = true;
-
-   /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
-   public hitboxesAreDirty = false;
    
-   /** Indicates whether the game object could potentially collide with a wall tile */
-   public hasPotentialWallTileCollisions = false;
+   public isInRiver!: boolean;
 
-   public isInRiver = false;
-
+   // @Cleanup: Might be able to be put on the physics component
    public overrideMoveSpeedMultiplier = false;
    
    public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
@@ -140,7 +179,7 @@ class Entity<T extends IEntityType = IEntityType> {
       if (this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) this.position.y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
 
       this.updateTile();
-      this.isInRiver = this.checkIsInRiver();
+      this.strictCheckIsInRiver();
 
       Board.addEntityToJoinBuffer(this);
    }
@@ -172,20 +211,6 @@ class Entity<T extends IEntityType = IEntityType> {
       hitbox.chunkBounds[1] = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
       hitbox.chunkBounds[2] = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
       hitbox.chunkBounds[3] = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
-
-      // Flag if the hitbox could be in a wall
-      const minTileX = clampToBoardDimensions(Math.floor(boundsMinX / SETTINGS.TILE_SIZE));
-      const maxTileX = clampToBoardDimensions(Math.floor(boundsMaxX / SETTINGS.TILE_SIZE));
-      const minTileY = clampToBoardDimensions(Math.floor(boundsMinY / SETTINGS.TILE_SIZE));
-      const maxTileY = clampToBoardDimensions(Math.floor(boundsMaxY / SETTINGS.TILE_SIZE));
-      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-         for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-            const tile = Board.getTile(tileX, tileY);
-            if (tile.isWall) {
-               this.hasPotentialWallTileCollisions = true;
-            }
-         }
-      }
    }
 
    /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
@@ -201,11 +226,11 @@ class Entity<T extends IEntityType = IEntityType> {
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
+         hitbox.updateOffset();
          // @Speed: This check is slow
-         if (hitbox.hasOwnProperty("radius")) {
-            (hitbox as CircularHitbox).updateOffset();
-         } else {
+         if (!hitbox.hasOwnProperty("radius")) {
             (hitbox as RectangularHitbox).updateVertexPositions();
+            (hitbox as RectangularHitbox).calculateSideAxes();
          }
 
          const boundsMinX = hitbox.calculateHitboxBoundsMinX();
@@ -228,6 +253,9 @@ class Entity<T extends IEntityType = IEntityType> {
          }
 
          // Check if the hitboxes' chunk bounds have changed
+         // @Speed
+         // @Speed
+         // @Speed
          if (!hitboxChunkBoundsHaveChanged) {
             const minChunkX = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
             const maxChunkX = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
@@ -250,31 +278,12 @@ class Entity<T extends IEntityType = IEntityType> {
 
       this.hitboxesAreDirty = false;
 
-      // Check if the chunk bounds have changed
-      if (hitboxChunkBoundsHaveChanged) {
-         this.updateContainingChunks();
-
-         // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
-
-         const minTileX = Math.max(Math.min(Math.floor(this.boundingArea[0] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         const maxTileX = Math.max(Math.min(Math.floor(this.boundingArea[1] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         const minTileY = Math.max(Math.min(Math.floor(this.boundingArea[2] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         const maxTileY = Math.max(Math.min(Math.floor(this.boundingArea[3] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         
-         this.hasPotentialWallTileCollisions = false;
-         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-            for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-               const tile = Board.getTile(tileX, tileY);
-               if (tile.isWall) {
-                  this.hasPotentialWallTileCollisions = true;
-                  return;
-               }
-            }
-         }
-      }
-
       this.lastCleanedPosition.x = this.position.x;
       this.lastCleanedPosition.y = this.position.y;
+
+      if (hitboxChunkBoundsHaveChanged) {
+         this.updateContainingChunks();
+      }
    }
 
    public updateHitboxes(): void {
@@ -286,7 +295,13 @@ class Entity<T extends IEntityType = IEntityType> {
       this.boundingArea[2] += shiftY;
       this.boundingArea[3] += shiftY;
 
-      // An object only changes their chunks if a hitboxes' bounds change chunks.
+      this.lastCleanedPosition.x = this.position.x;
+      this.lastCleanedPosition.y = this.position.y;
+
+      // @Speed
+      // @Speed
+      // @Speed
+
       let hitboxChunkBoundsHaveChanged = false;
       const numHitboxes = this.hitboxes.length;
       for (let i = 0; i < numHitboxes; i++) {
@@ -318,61 +333,35 @@ class Entity<T extends IEntityType = IEntityType> {
          }
       }
 
-      // Check if the chunk bounds have changed
       if (hitboxChunkBoundsHaveChanged) {
          this.updateContainingChunks();
-
-         // If there are any wall tiles in the game object's bounds, mark that it could potentially collide with them
-
-         const minTileX = Math.max(Math.min(Math.floor(this.boundingArea[0] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         const maxTileX = Math.max(Math.min(Math.floor(this.boundingArea[1] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         const minTileY = Math.max(Math.min(Math.floor(this.boundingArea[2] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         const maxTileY = Math.max(Math.min(Math.floor(this.boundingArea[3] / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-         
-         this.hasPotentialWallTileCollisions = false;
-         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-            for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
-               const tile = Board.getTile(tileX, tileY);
-               if (tile.isWall) {
-                  this.hasPotentialWallTileCollisions = true;
-                  return;
-               }
-            }
-         }
       }
-
-      this.lastCleanedPosition.x = this.position.x;
-      this.lastCleanedPosition.y = this.position.y;
    }
 
    public tick(): void {
+      // @Cleanup: Maybe move to AgeComponent or something
       this.ageTicks++;
-
-      this.applyPhysics();
    }
 
    /** Updates the tile the object is on. */
    public updateTile(): void {
       const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
       const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
-
+      
       this.tile = Board.getTile(tileX, tileY);
-      if (typeof this.tile === "undefined") {
-         console.log(this.position.x, this.position.y);
-         console.log(tileX, tileY);
-         throw new Error();
-      }
    }
 
-   public checkIsInRiver(): boolean {
+   public strictCheckIsInRiver(): void {
       if (this.tile.type !== TileTypeConst.water) {
-         return false;
+         this.isInRiver = false;
+         return;
       }
 
       if (PhysicsComponentArray.hasComponent(this)) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
          if (!physicsComponent.isAffectedByFriction) {
-            return false;
+            this.isInRiver = false;
+            return;
          }
       }
 
@@ -381,22 +370,54 @@ class Entity<T extends IEntityType = IEntityType> {
          for (const steppingStone of chunk.riverSteppingStones) {
             const size = RIVER_STEPPING_STONE_SIZES[steppingStone.size];
             
-            const dist = distance(this.position.x, this.position.y, steppingStone.positionX, steppingStone.positionY);
-            if (dist <= size/2) {
-               return false;
+            const distX = this.position.x - steppingStone.positionX;
+            const distY = this.position.y - steppingStone.positionY;
+            if (distX * distX + distY * distY <= size * size / 4) {
+               this.isInRiver = false;
+               return;
             }
          }
       }
 
-      return true;
+      this.isInRiver = true;
    }
 
-   public applyPhysics(): void {
+   public checkIsInRiver(): void {
+      if (typeof this.tile === "undefined") {
+         console.log("tile undefined???");
+      }
+      
+      if (this.tile.type !== TileTypeConst.water) {
+         this.isInRiver = false;
+         return;
+      }
+
+      const physicsComponent = PhysicsComponentArray.getComponent(this);
+      if (!physicsComponent.isAffectedByFriction) {
+         this.isInRiver = false;
+         return;
+      }
+
+      // If the game object is standing on a stepping stone they aren't in a river
+      for (const chunk of this.chunks) {
+         for (const steppingStone of chunk.riverSteppingStones) {
+            const size = RIVER_STEPPING_STONE_SIZES[steppingStone.size];
+            
+            const distX = this.position.x - steppingStone.positionX;
+            const distY = this.position.y - steppingStone.positionY;
+            if (distX * distX + distY * distY <= size * size / 4) {
+               this.isInRiver = false;
+               return;
+            }
+         }
+      }
+
+      this.isInRiver = true;
    }
 
    public updateContainingChunks(): void {
       // Calculate containing chunks
-      const containingChunks = new Set<Chunk>();
+      const containingChunks = new Array<Chunk>();
       for (let i = 0; i < this.hitboxes.length; i++) {
          const hitbox = this.hitboxes[i];
 
@@ -413,26 +434,29 @@ class Entity<T extends IEntityType = IEntityType> {
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
                const chunk = Board.getChunk(chunkX, chunkY);
-               if (!containingChunks.has(chunk)) {
-                  containingChunks.add(chunk);
+               if (containingChunks.indexOf(chunk) === -1) {
+                  containingChunks.push(chunk);
                }
             }
          }
       }
 
       // Add all new chunks
-      for (const chunk of containingChunks) {
-         if (!this.chunks.has(chunk)) {
+      for (let i = 0; i < containingChunks.length; i++) {
+         const chunk = containingChunks[i];
+         if (this.chunks.indexOf(chunk) === -1) {
             this.addToChunk(chunk);
-            this.chunks.add(chunk);
+            this.chunks.push(chunk);
          }
       }
 
       // Find all chunks which aren't present in the new chunks and remove them
-      for (const chunk of this.chunks) {
-         if (!containingChunks.has(chunk)) {
+      for (let i = 0; i < this.chunks.length; i++) {
+         const chunk = this.chunks[i]
+         if (containingChunks.indexOf(chunk) === -1) {
             this.removeFromChunk(chunk);
-            this.chunks.delete(chunk);
+            this.chunks.splice(i, 1);
+            i--;
          }
       }
    }
@@ -771,7 +795,21 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public resolveWallTileCollisions(): void {
-      for (const hitbox of this.hitboxes) {
+      // Looser check that there are any wall tiles in any of the entities' chunks
+      let hasWallTiles = false;
+      for (let i = 0; i < this.chunks.length; i++) {
+         const chunk = this.chunks[i];
+         if (chunk.hasWallTiles) {
+            hasWallTiles = true;
+         }
+      }
+      if (!hasWallTiles) {
+         return;
+      }
+      
+      for (let i = 0; i < this.hitboxes.length; i++) {
+         const hitbox = this.hitboxes[i];
+
          const boundsMinX = hitbox.calculateHitboxBoundsMinX();
          const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
          const boundsMinY = hitbox.calculateHitboxBoundsMinY();
@@ -790,6 +828,7 @@ class Entity<T extends IEntityType = IEntityType> {
                for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
                   const tile = Board.getTile(tileX, tileY);
                   if (tile.isWall) {
+                     const physicsComponent = PhysicsComponentArray.getComponent(this);
                      const collisionAxis = this.checkForCircularTileCollision(tile, hitbox as CircularHitbox);
                      switch (collisionAxis) {
                         case TileCollisionAxis.x: {
@@ -805,7 +844,7 @@ class Entity<T extends IEntityType = IEntityType> {
                            break;
                         }
                      }
-                     this.positionIsDirty = true;
+                     physicsComponent.positionIsDirty = true;
                   }
                }
             }
@@ -814,6 +853,7 @@ class Entity<T extends IEntityType = IEntityType> {
                for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
                   const tile = Board.getTile(tileX, tileY);
                   if (tile.isWall) {
+                     const physicsComponent = PhysicsComponentArray.getComponent(this);
                      const collisionAxis = this.checkForRectangularTileCollision(tile, hitbox as RectangularHitbox);
                      switch (collisionAxis) {
                         case TileCollisionAxis.x: {
@@ -829,7 +869,7 @@ class Entity<T extends IEntityType = IEntityType> {
                            break;
                         }
                      }
-                     this.positionIsDirty = true;
+                     physicsComponent.positionIsDirty = true;
                   }
                }
             }
@@ -840,38 +880,252 @@ class Entity<T extends IEntityType = IEntityType> {
    public resolveBorderCollisions(): void {
       // Left border
       if (this.boundingArea[0] < 0) {
+         const physicsComponent = PhysicsComponentArray.getComponent(this);
          this.position.x -= this.boundingArea[0];
          this.velocity.x = 0;
-         this.positionIsDirty = true;
+         physicsComponent.positionIsDirty = true;
          // Right border
       } else if (this.boundingArea[1] > SETTINGS.BOARD_UNITS) {
+         const physicsComponent = PhysicsComponentArray.getComponent(this);
          this.position.x -= this.boundingArea[1] - SETTINGS.BOARD_UNITS;
          this.velocity.x = 0;
-         this.positionIsDirty = true;
+         physicsComponent.positionIsDirty = true;
       }
 
       // Bottom border
       if (this.boundingArea[2] < 0) {
+         const physicsComponent = PhysicsComponentArray.getComponent(this);
          this.position.y -= this.boundingArea[2];
          this.velocity.y = 0;
-         this.positionIsDirty = true;
+         physicsComponent.positionIsDirty = true;
          // Top border
       } else if (this.boundingArea[3] > SETTINGS.BOARD_UNITS) {
+         const physicsComponent = PhysicsComponentArray.getComponent(this);
          this.position.y -= this.boundingArea[3] - SETTINGS.BOARD_UNITS;
          this.velocity.y = 0;
-         this.positionIsDirty = true;
+         physicsComponent.positionIsDirty = true;
       }
 
+      // @Temporary
       if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_UNITS || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_UNITS) {
          console.log(this);
          throw new Error("Unable to properly resolve wall collisions.");
       }
    }
 
+   private resolveCircleRectangleCollision(circleHitbox: CircularHitbox, rectangularHitbox: RectangularHitbox): void {
+      const rectRotation = rectangularHitbox.rotation + rectangularHitbox.object.rotation;
+
+      const rectPosX = rectangularHitbox.object.position.x + rectangularHitbox.rotatedOffsetX;
+      const rectPosY = rectangularHitbox.object.position.y + rectangularHitbox.rotatedOffsetY;
+      
+      const unrotatedCirclePosX = circleHitbox.object.position.x + circleHitbox.rotatedOffsetX;
+      const unrotatedCirclePosY = circleHitbox.object.position.y + circleHitbox.rotatedOffsetY;
+      const circlePosX = rotateXAroundPoint(unrotatedCirclePosX, unrotatedCirclePosY, rectPosX, rectPosY, -rectRotation);
+      const circlePosY = rotateYAroundPoint(unrotatedCirclePosX, unrotatedCirclePosY, rectPosX, rectPosY, -rectRotation);
+      
+      const distanceX = circlePosX - rectPosX;
+      const distanceY = circlePosY - rectPosY;
+
+      const absDistanceX = Math.abs(distanceX);
+      const absDistanceY = Math.abs(distanceY);
+
+      // Top and bottom collisions
+      if (absDistanceX <= (rectangularHitbox.width/2)) {
+         const amountIn = absDistanceY - rectangularHitbox.height/2 - circleHitbox.radius;
+         const offsetMagnitude = -amountIn * Math.sign(distanceY);
+
+         this.position.x += offsetMagnitude * Math.sin(rectRotation);
+         this.position.y += offsetMagnitude * Math.cos(rectRotation);
+
+         const direction = rectRotation + Math.PI/2;
+         const bx = Math.sin(direction);
+         const by = Math.cos(direction);
+         const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
+         this.velocity.x = bx * projectionCoeff;
+         this.velocity.y = by * projectionCoeff;
+         return;
+      }
+
+      // Left and right collisions
+      if (absDistanceY <= (rectangularHitbox.height/2)) {
+         const amountIn = absDistanceX - rectangularHitbox.width/2 - circleHitbox.radius;
+         const offsetMagnitude = -amountIn * Math.sign(distanceX);
+
+         this.position.x += offsetMagnitude * Math.sin(rectRotation + Math.PI/2);
+         this.position.y += offsetMagnitude * Math.cos(rectRotation + Math.PI/2);
+
+         const bx = Math.sin(rectRotation);
+         const by = Math.cos(rectRotation);
+         const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
+         this.velocity.x = bx * projectionCoeff;
+         this.velocity.y = by * projectionCoeff;
+         return;
+      }
+
+      const cornerDistanceSquared = Math.pow(absDistanceX - rectangularHitbox.width/2, 2) + Math.pow(absDistanceY - rectangularHitbox.height/2, 2);
+      if (cornerDistanceSquared <= circleHitbox.radius * circleHitbox.radius) {
+         // @Cleanup: Whole lot of copy and paste
+         const amountInX = absDistanceX - rectangularHitbox.width/2 - circleHitbox.radius;
+         const amountInY = absDistanceY - rectangularHitbox.height/2 - circleHitbox.radius;
+         if (Math.abs(amountInY) < Math.abs(amountInX)) {
+            const closestRectBorderY = circlePosY < rectPosY ? rectPosY - rectangularHitbox.height/2 : rectPosY + rectangularHitbox.height/2;
+            
+            const closestRectBorderX = circlePosX < rectPosX ? rectPosX - rectangularHitbox.width/2 : rectPosX + rectangularHitbox.width/2;
+            const xDistanceFromRectBorder = Math.abs(closestRectBorderX - circlePosX);
+            const len = Math.sqrt(circleHitbox.radius * circleHitbox.radius - xDistanceFromRectBorder * xDistanceFromRectBorder);
+
+            const amountIn = Math.abs(closestRectBorderY - (circlePosY - len * Math.sign(distanceY)));
+            const offsetMagnitude = amountIn * Math.sign(distanceY);
+   
+            this.position.x += offsetMagnitude * Math.sin(rectRotation);
+            this.position.y += offsetMagnitude * Math.cos(rectRotation);
+   
+            const direction = rectRotation + Math.PI/2;
+            const bx = Math.sin(direction);
+            const by = Math.cos(direction);
+            const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
+            this.velocity.x = bx * projectionCoeff;
+            this.velocity.y = by * projectionCoeff;
+         } else {
+            const closestRectBorderX = circlePosX < rectPosX ? rectPosX - rectangularHitbox.width/2 : rectPosX + rectangularHitbox.width/2;
+            
+            const closestRectBorderY = circlePosY < rectPosY ? rectPosY - rectangularHitbox.height/2 : rectPosY + rectangularHitbox.height/2;
+            const yDistanceFromRectBorder = Math.abs(closestRectBorderY - circlePosY);
+            const len = Math.sqrt(circleHitbox.radius * circleHitbox.radius - yDistanceFromRectBorder * yDistanceFromRectBorder);
+
+            const amountIn = Math.abs(closestRectBorderX - (circlePosX - len * Math.sign(distanceX)));
+            const offsetMagnitude = amountIn * Math.sign(distanceX);
+   
+            this.position.x += offsetMagnitude * Math.sin(rectRotation + Math.PI/2);
+            this.position.y += offsetMagnitude * Math.cos(rectRotation + Math.PI/2);
+   
+            const bx = Math.sin(rectRotation);
+            const by = Math.cos(rectRotation);
+            const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
+            this.velocity.x = bx * projectionCoeff;
+            this.velocity.y = by * projectionCoeff;
+         }
+      }
+   }
+
+   private resolveRectangleRectangleCollision(hitbox: RectangularHitbox, collidingHitbox: RectangularHitbox): void {
+      const offset1x = this.position.x + hitbox.rotatedOffsetX;
+      const offset1y = this.position.y + hitbox.rotatedOffsetY;
+      const offset2x = collidingHitbox.object.position.x + collidingHitbox.rotatedOffsetX;
+      const offset2y = collidingHitbox.object.position.y + collidingHitbox.rotatedOffsetY;
+      
+      let minDiff = 99999.9;
+      let minDiffAxis!: Point;
+      let minDiffIsPositive = true;
+      
+      // main: hitbox1
+      for (let i = 0; i < 2; i++) {
+         const axis = hitbox.sideAxes[i];
+
+         const min1 = findMinWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
+         const max1 = findMaxWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
+         const min2 = findMinWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
+         const max2 = findMaxWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
+
+         const isIntersection = min2 < max1 && min1 < max2;
+         if (isIntersection) {
+            const diff1 = max1 - min2;
+            const diff2 = max2 - min1;
+
+            if (diff1 < minDiff) {
+               minDiff = diff1;
+               minDiffAxis = axis;
+               minDiffIsPositive = true;
+            }
+            if (diff2 < minDiff) {
+               minDiff = diff2;
+               minDiffAxis = axis;
+               minDiffIsPositive = false;
+            }
+         }
+      }
+
+      for (let i = 0; i < 2; i++) {
+         const axis = collidingHitbox.sideAxes[i];
+
+         const min1 = findMinWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
+         const max1 = findMaxWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
+         const min2 = findMinWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
+         const max2 = findMaxWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
+
+         const isIntersection = min2 < max1 && min1 < max2;
+         if (isIntersection) {
+            const diff1 = max1 - min2;
+            const diff2 = max2 - min1;
+
+            if (diff1 < minDiff) {
+               minDiff = diff1;
+               minDiffAxis = axis;
+               minDiffIsPositive = true;
+            }
+            if (diff2 < minDiff) {
+               minDiff = diff2;
+               minDiffAxis = axis;
+               minDiffIsPositive = false;
+            }
+         }
+      }
+
+      const diffMult = (minDiffIsPositive ? 1 : -1) * -1;
+
+      this.position.x += minDiff * minDiffAxis.x * diffMult;
+      this.position.y += minDiff * minDiffAxis.y * diffMult;
+
+      // console.log(minDiff);
+      // const direction = rectRotation + Math.PI/2;
+      // const direction = minDiffAxis;
+      // const bx = Math.sin(direction);
+      // const by = Math.cos(direction);
+      // const bx = minDiffAxis.x;
+      // const by = minDiffAxis.y;
+      // const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
+      // this.velocity.x = bx * projectionCoeff;
+      // this.velocity.y = by * projectionCoeff;
+   }
+
+   private resolveCollisionHard(hitbox: Hitbox, collidingHitbox: Hitbox): void {
+      // @Incomplete: Rectangle + rectangle, circle + circle
+      
+      if (hitbox.hasOwnProperty("radius") && !collidingHitbox.hasOwnProperty("radius")) {
+         this.resolveCircleRectangleCollision(hitbox as CircularHitbox, collidingHitbox as RectangularHitbox);
+      } else if (!hitbox.hasOwnProperty("radius") && collidingHitbox.hasOwnProperty("radius")) {
+         this.resolveCircleRectangleCollision(collidingHitbox as CircularHitbox, hitbox as RectangularHitbox);
+      } else if (!hitbox.hasOwnProperty("radius") && !collidingHitbox.hasOwnProperty("radius")) {
+         this.resolveRectangleRectangleCollision(hitbox as RectangularHitbox, collidingHitbox as RectangularHitbox);
+      }
+   }
+
+   private resolveCollisionSoft(collidingEntity: Entity, collidingHitbox: Hitbox): void {
+      // @Bug @Incomplete: base the push force and distance on this hitbox not this entity
+
+      // Calculate the force of the push
+      // Force gets greater the closer together the objects are
+      const collidingHitboxX = collidingEntity.position.x + collidingHitbox.rotatedOffsetX;
+      const collidingHitboxY = collidingEntity.position.y + collidingHitbox.rotatedOffsetY;
+      const distanceBetweenEntities = distance(this.position.x, this.position.y, collidingHitboxX, collidingHitboxY);
+      const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
+      const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
+      
+      const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
+      const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
+      this.velocity.x += force * Math.sin(pushAngle);
+      this.velocity.y += force * Math.cos(pushAngle);
+   }
+
    /**
     * @returns A number where the first 8 bits hold the local ID of the entity's colliding hitbox, and the next 8 bits hold the local ID of the other entity's colliding hitbox
    */
    public isColliding(entity: Entity): number {
+      if ((entity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & entity.collisionBit) === 0) {
+         return NO_COLLISION;
+      }
+
       // AABB bounding area check
       if (this.boundingArea[0] > entity.boundingArea[1] || // minX(1) > maxX(2)
           this.boundingArea[1] < entity.boundingArea[0] || // maxX(1) < minX(2)
@@ -910,36 +1164,23 @@ class Entity<T extends IEntityType = IEntityType> {
       throw new Error("Can't find hitbox for local ID " + localID);
    }
 
-   public collide(collidingEntity: Entity, collidingHitboxLocalID: number): void {
-      if ((collidingEntity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & collidingEntity.collisionBit) === 0) {
-         return;
-      }
-      
+   public collide(collidingEntity: Entity, hitboxLocalID: number, collidingHitboxLocalID: number): void {
       if (PhysicsComponentArray.hasComponent(this)) {
          const collidingHitbox = collidingEntity.getHitboxByLocalID(collidingHitboxLocalID);
-         
-         // Calculate the force of the push
-         // Force gets greater the closer together the objects are
-         const collidingHitboxX = collidingEntity.position.x + collidingHitbox.rotatedOffsetX;
-         const collidingHitboxY = collidingEntity.position.y + collidingHitbox.rotatedOffsetY;
-         const distanceBetweenEntities = distance(this.position.x, this.position.y, collidingHitboxX, collidingHitboxY);
-         const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
-         const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
-         
-         const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
-         const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
-         this.velocity.x += force * Math.sin(pushAngle);
-         this.velocity.y += force * Math.cos(pushAngle);
+
+         if (entityHasHardCollision(collidingEntity)) {
+            const hitbox = this.getHitboxByLocalID(hitboxLocalID);
+            this.resolveCollisionHard(hitbox, collidingHitbox);
+         } else {
+            this.resolveCollisionSoft(collidingEntity, collidingHitbox);
+         }
       }
 
       const idx = this.collidingEntityIDs.indexOf(collidingEntity.id);
+      // @Speed: Do we need this check?
       if (idx === -1) {
          // New colliding game object
          this.collidingEntityIDs.push(collidingEntity.id);
-         this.collidingEntityTicks.push(Board.ticks);
-      } else {
-         // Existing colliding game object
-         this.collidingEntityTicks[idx] = Board.ticks;
       }
 
       switch (this.type) {
@@ -962,7 +1203,11 @@ class Entity<T extends IEntityType = IEntityType> {
          case IEntityType.iceArrow: onIceArrowCollision(this, collidingEntity); break;
          case IEntityType.pebblum: onPebblumCollision(this, collidingEntity); break;
          case IEntityType.golem: onGolemCollision(this, collidingEntity); break;
-         case IEntityType.woodenFloorSpikes: onWoodenFloorSpikesCollision(this, collidingEntity); break;
+         case IEntityType.woodenWallSpikes:
+         case IEntityType.woodenFloorSpikes: onWoodenSpikesCollision(this, collidingEntity); break;
+         case IEntityType.floorPunjiSticks:
+         case IEntityType.wallPunjiSticks: onPunjiSticksCollision(this, collidingEntity); break;
+         case IEntityType.slingRock: onSlingRockCollision(this, collidingEntity); break;
       }
    }
 
@@ -1090,6 +1335,7 @@ class Entity<T extends IEntityType = IEntityType> {
             this.rotation += Math.PI * 2;
          }
       }
+
       this.hitboxesAreDirty = true;
    }
 

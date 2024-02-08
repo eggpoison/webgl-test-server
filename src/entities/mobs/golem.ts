@@ -63,6 +63,7 @@ const updateGolemHitboxPositions = (golem: Entity, golemComponent: GolemComponen
       hitbox.offsetX = lerp(rockInfo.sleepOffsetX, rockInfo.awakeOffsetX, wakeProgress);
       hitbox.offsetY = lerp(rockInfo.sleepOffsetY, rockInfo.awakeOffsetY, wakeProgress);
    }
+
    golem.hitboxesAreDirty = true;
 }
 

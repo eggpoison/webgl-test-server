@@ -1,15 +1,14 @@
-import { BiomeName, DecorationInfo, GrassTileInfo, IEntityType, ItemType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { BiomeName, DecorationInfo, EntityType, GrassTileInfo, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { addTileToCensus, getTilesOfType, removeEntityFromCensus, removeTileFromCensus } from "./census";
-import { addFleshSword, removeFleshSword } from "./flesh-sword-ai";
 import Tribe from "./Tribe";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { AIHelperComponentArray, ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray, BlueprintComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray, BlueprintComponentArray, TurretComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity, { NO_COLLISION } from "./Entity";
@@ -38,7 +37,7 @@ import { onItemEntityRemove, tickItemEntity } from "./entities/item-entity";
 import { onBarrelRemove } from "./entities/tribes/barrel";
 import { onFrozenYetiRemove, tickFrozenYeti } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeRemove, tickRockSpikeProjectile } from "./entities/projectiles/rock-spike";
-import { tickAIHelperComponent } from "./components/AIHelperComponent";
+import { AIHelperComponentArray, tickAIHelperComponent } from "./components/AIHelperComponent";
 import { onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
 import { onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
 import { onSpearProjectileRemove, tickSpearProjectile } from "./entities/projectiles/spear-projectile";
@@ -64,6 +63,9 @@ import { onFloorPunjiSticksRemove } from "./entities/structures/floor-punji-stic
 import { onWallPunjiSticksRemove } from "./entities/structures/wall-punji-sticks";
 import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure";
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
+import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
+import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
+import { onSlingRockRemove, tickSlingRock } from "./entities/projectiles/sling-rock";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -76,20 +78,24 @@ const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [1, 1],
 ];
 
+interface Testt {
+   readonly entity1: Entity;
+   readonly entity2: Entity;
+   readonly collisionNum: number;
+}
+
 abstract class Board {
    public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time = 6 + Number.EPSILON;
+   public static time = 6;
 
-   /** This is an array as game objects get created/removed fairly slowly */
-   public static entities = new Array<Entity>();
+   private static readonly entities = new Array<Entity>();
 
    public static entityRecord: { [id: number]: Entity } = {};
 
    public static tiles: Array<Tile>;
-   private static chunks1d = new Array<Chunk>();
-   private static chunks = new Array<Array<Chunk>>();
+   public static chunks = new Array<Chunk>();
 
    private static riverFlowDirections: Record<number, Record<number, number>>;
    public static waterRocks: ReadonlyArray<WaterRockData>;
@@ -114,11 +120,6 @@ abstract class Board {
 
    public static tribeComponents = new Array<TribeComponent>();
 
-   public static reset(): void {
-      this.entities = [];
-      this.entityRecord = {};
-   }
-
    public static setup(): void {
       this.initialiseChunks();
 
@@ -132,6 +133,16 @@ abstract class Board {
       this.edgeRiverSteppingStones = generationInfo.edgeRiverSteppingStones;
       this.grassInfo = generationInfo.grassInfo;
       this.decorations = generationInfo.decorations;
+
+      for (let i = 0; i < generationInfo.tiles.length; i++) {
+         const tile = generationInfo.tiles[i];
+         if (tile.isWall) {
+            const chunkX = Math.floor(tile.x / SETTINGS.CHUNK_SIZE);
+            const chunkY = Math.floor(tile.y / SETTINGS.CHUNK_SIZE);
+            const chunk = this.getChunk(chunkX, chunkY);
+            chunk.hasWallTiles = true;
+         }
+      }
 
       this.tileUpdateCoordinates = new Set<number>();
 
@@ -150,21 +161,17 @@ abstract class Board {
             }
          }
       }
-   } 
+   }
 
    public static isNight(): boolean {
       return Board.time < 6 || Board.time >= 18;
    }
 
    private static initialiseChunks(): void {
-      for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
-         this.chunks[x] = new Array<Chunk>(SETTINGS.BOARD_SIZE);
-         for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
+      for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
+         for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
             const chunk = new Chunk(x, y);
-            
-            this.chunks[x][y] = chunk;
-            const chunkIndex = y * SETTINGS.BOARD_SIZE + x;
-            this.chunks1d[chunkIndex] = chunk;
+            this.chunks.push(chunk);
          }
       }
    }
@@ -179,18 +186,6 @@ abstract class Board {
 
    public static getRiverFlowDirections(): Record<number, Record<number, number>> {
       return this.riverFlowDirections;
-   }
-
-   public static getEntityByID(id: number): Entity {
-      return this.entityRecord[id];
-   }
-
-   public static worldToTileX(x: number): number {
-      return Math.floor(x / SETTINGS.TILE_SIZE);
-   }
-
-   public static worldToTileY(y: number): number {
-      return Math.floor(y / SETTINGS.TILE_SIZE);
    }
 
    public static getTile(tileX: number, tileY: number): Tile {
@@ -213,7 +208,8 @@ abstract class Board {
    }
 
    public static getChunk(chunkX: number, chunkY: number): Chunk {
-      return this.chunks[chunkX][chunkY];
+      const chunkIndex = chunkY * SETTINGS.BOARD_SIZE + chunkX;
+      return this.chunks[chunkIndex];
    }
 
    public static addTribe(tribe: Tribe): void {
@@ -238,7 +234,7 @@ abstract class Board {
    }
 
    /** Removes game objects flagged for deletion */
-   public static removeFlaggedGameObjects(): void {
+   public static removeFlaggedEntities(): void {
       for (const entity of this.entityRemoveBuffer) {
          const idx = this.entities.indexOf(entity);
          if (idx === -1) {
@@ -247,7 +243,8 @@ abstract class Board {
    
          this.entities.splice(idx, 1);
    
-         for (const chunk of entity.chunks) {
+         for (let i = 0; i < entity.chunks.length; i++) {
+            const chunk = entity.chunks[i];
             entity.removeFromChunk(chunk);
          }
 
@@ -261,14 +258,6 @@ abstract class Board {
 
          delete this.entityRecord[entity.id];
          removeEntityFromCensus(entity);
-
-         // @Cleanup
-         if (entity.type === IEntityType.itemEntity) {
-            const itemComponent = ItemComponentArray.getComponent(entity);
-            if (itemComponent.itemType === ItemType.flesh_sword) {
-               removeFleshSword(entity);
-            }
-         }
 
          switch (entity.type) {
             case IEntityType.cow: onCowRemove(entity); break;
@@ -316,13 +305,16 @@ abstract class Board {
             case IEntityType.wallPunjiSticks: onWallPunjiSticksRemove(entity); break;
             case IEntityType.woodenEmbrasure: onWoodenEmbrasureRemove(entity); break;
             case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;
+            case IEntityType.ballista: onBallistaRemove(entity); break;
+            case IEntityType.slingTurret: onSlingTurretRemove(entity); break;
+            case IEntityType.slingRock: onSlingRockRemove(entity); break;
          }
       }
 
       this.entityRemoveBuffer = new Array<Entity>();
    }
 
-   public static updateGameObjects(): void {
+   public static updateEntities(): void {
       if (Board.ticks % 3 === 0) {
          for (let i = 0; i < AIHelperComponentArray.components.length; i++) {
             const entity = AIHelperComponentArray.getEntity(i);
@@ -333,127 +325,45 @@ abstract class Board {
       for (let i = 0; i < this.entities.length; i++) {
          const entity = this.entities[i];
 
+         // Remove old collisions
+         // @Speed: yeah no.
+         entity.collidingEntityIDs = [];
+
          switch (entity.type) {
-            case IEntityType.player: {
-               tickPlayer(entity);
-               break;
-            }
-            case IEntityType.tribeWorker: {
-               tickTribeWorker(entity);
-               break;
-            }
-            case IEntityType.tribeWarrior: {
-               tickTribeWarrior(entity);
-               break;
-            }
-            case IEntityType.berryBush: {
-               tickBerryBush(entity);
-               break;
-            }
-            case IEntityType.iceShardProjectile: {
-               tickIceShard(entity);
-               break;
-            }
-            case IEntityType.cow: {
-               tickCow(entity);
-               break;
-            }
-            case IEntityType.krumblid: {
-               tickKrumblid(entity);
-               break;
-            }
-            case IEntityType.tombstone: {
-               tickTombstone(entity);
-               break;
-            }
-            case IEntityType.zombie: {
-               tickZombie(entity);
-               break;
-            }
-            case IEntityType.slimewisp: {
-               tickSlimewisp(entity);
-               break;
-            }
-            case IEntityType.slime: {
-               tickSlime(entity);
-               break;
-            }
-            case IEntityType.woodenArrowProjectile: {
-               tickArrowProjectile(entity);
-               break;
-            }
-            case IEntityType.yeti: {
-               tickYeti(entity);
-               break;
-            }
-            case IEntityType.snowball: {
-               tickSnowball(entity);
-               break;
-            }
-            case IEntityType.fish: {
-               tickFish(entity);
-               break;
-            }
-            case IEntityType.itemEntity: {
-               tickItemEntity(entity);
-               break;
-            }
-            case IEntityType.frozenYeti: {
-               tickFrozenYeti(entity);
-               break;
-            }
-            case IEntityType.rockSpikeProjectile: {
-               tickRockSpikeProjectile(entity);
-               break;
-            }
-            case IEntityType.campfire: {
-               tickCampfire(entity);
-               break;
-            }
-            case IEntityType.furnace: {
-               tickFurnace(entity);
-               break;
-            }
-            case IEntityType.spearProjectile: {
-               tickSpearProjectile(entity);
-               break;
-            }
-            case IEntityType.slimeSpit: {
-               tickSlimeSpit(entity);
-               break;
-            }
-            case IEntityType.spitPoison: {
-               tickSpitPoison(entity);
-               break;
-            }
-            case IEntityType.battleaxeProjectile: {
-               tickBattleaxeProjectile(entity);
-               break;
-            }
-            case IEntityType.golem: {
-               tickGolem(entity);
-               break;
-            }
-            case IEntityType.iceSpikes: {
-               tickIceSpikes(entity);
-               break;
-            }
-            case IEntityType.iceArrow: {
-               tickIceArrow(entity);
-               break;
-            }
-            case IEntityType.pebblum: {
-               tickPebblum(entity);
-               break;
-            }
+            case IEntityType.player: tickPlayer(entity); break;
+            case IEntityType.tribeWorker: tickTribeWorker(entity); break;
+            case IEntityType.tribeWarrior: tickTribeWarrior(entity); break;
+            case IEntityType.berryBush: tickBerryBush(entity); break;
+            case IEntityType.iceShardProjectile: tickIceShard(entity); break;
+            case IEntityType.cow: tickCow(entity); break;
+            case IEntityType.krumblid: tickKrumblid(entity); break;
+            case IEntityType.tombstone: tickTombstone(entity); break;
+            case IEntityType.zombie: tickZombie(entity); break;
+            case IEntityType.slimewisp: tickSlimewisp(entity); break;
+            case IEntityType.slime: tickSlime(entity); break;
+            case IEntityType.woodenArrowProjectile: tickArrowProjectile(entity); break;
+            case IEntityType.yeti: tickYeti(entity); break;
+            case IEntityType.snowball: tickSnowball(entity); break;
+            case IEntityType.fish: tickFish(entity); break;
+            case IEntityType.itemEntity: tickItemEntity(entity); break;
+            case IEntityType.frozenYeti: tickFrozenYeti(entity); break;
+            case IEntityType.rockSpikeProjectile: tickRockSpikeProjectile(entity); break;
+            case IEntityType.campfire: tickCampfire(entity); break;
+            case IEntityType.furnace: tickFurnace(entity); break;
+            case IEntityType.spearProjectile: tickSpearProjectile(entity); break;
+            case IEntityType.slimeSpit: tickSlimeSpit(entity); break;
+            case IEntityType.spitPoison: tickSpitPoison(entity); break;
+            case IEntityType.battleaxeProjectile: tickBattleaxeProjectile(entity); break;
+            case IEntityType.golem: tickGolem(entity); break;
+            case IEntityType.iceSpikes: tickIceSpikes(entity); break;
+            case IEntityType.iceArrow: tickIceArrow(entity); break;
+            case IEntityType.pebblum: tickPebblum(entity); break;
+            case IEntityType.ballista: tickBallista(entity); break;
+            case IEntityType.slingTurret: tickSlingTurret(entity); break;
+            case IEntityType.slingRock: tickSlingRock(entity); break;
          }
 
          entity.tick();
-      }
-
-      for (let i = 0; i < PhysicsComponentArray.components.length; i++) {
-         const entity = PhysicsComponentArray.getEntity(i);
-         tickPhysicsComponent(entity);
       }
 
       for (let i = 0; i < InventoryUseComponentArray.components.length; i++) {
@@ -480,91 +390,78 @@ abstract class Board {
          const door = DoorComponentArray.getEntity(i);
          tickDoorComponent(door);
       }
-   }
 
-   public static resolveOtherCollisions(): void {
-      const numGameObjects = this.entities.length;
-      for (let i = 0; i < numGameObjects; i++) {
-         const gameObject = this.entities[i];
-
-         // Remove old collisions
-         // @Speed
-         let numCollisions = gameObject.collidingEntityIDs.length;
-         for (let i = 0; i < numCollisions; i++) {
-            if (gameObject.collidingEntityTicks[i] !== Board.ticks) {
-               gameObject.collidingEntityIDs.splice(i, 1);
-               gameObject.collidingEntityTicks.splice(i, 1);
-               i--;
-               numCollisions--;
-            }
-         }
-
-         if (gameObject.hitboxesAreDirty) {
-            gameObject.cleanHitboxes();
-         } else if (gameObject.positionIsDirty) {
-            gameObject.updateHitboxes();
-         }
-
-         if (gameObject.positionIsDirty) {
-            gameObject.positionIsDirty = false;
-   
-            if (gameObject.hasPotentialWallTileCollisions) {
-               gameObject.resolveWallTileCollisions();
-            }
-         
-            // If the object moved due to resolving wall tile collisions, recalculate
-            if (gameObject.positionIsDirty) {
-               gameObject.cleanHitboxes();
-            }
-   
-            gameObject.resolveBorderCollisions();
-         
-            // If the object moved due to resolving border collisions, recalculate
-            if (gameObject.positionIsDirty) {
-               gameObject.cleanHitboxes();
-            }
-
-            // If the game object has moved to a new tile, update its tile
-            // Tile is only dirty if position is dirty so we can do this check inside
-            if (gameObject.tile.x !== Math.floor(gameObject.position.x / SETTINGS.TILE_SIZE) ||
-                gameObject.tile.y !== Math.floor(gameObject.position.y / SETTINGS.TILE_SIZE)) {
-               gameObject.updateTile();
-            }
-
-            gameObject.isInRiver = gameObject.checkIsInRiver();
-         }
+      // The physics component ticking must be done at the end so there is time for the positionIsDirty and hitboxesAreDirty flags to collect
+      for (let i = 0; i < PhysicsComponentArray.components.length; i++) {
+         const entity = PhysicsComponentArray.getEntity(i);
+         tickPhysicsComponent(entity);
       }
    }
 
-   public static resolveGameObjectCollisions(): void {
+   public static resolveEntityCollisions(): void {
       // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
       // Ideal implementation:
       // Ensure that any two game objects only get checked together ONCE
       // As few checks as possible (e.g. check for if they have already collided this tick)
       // BSP?
+
+      const a = new Array<Testt>();
       
       const numChunks = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
       for (let i = 0; i < numChunks; i++) {
-         const chunk = this.chunks1d[i];
+         const chunk = this.chunks[i];
          for (let j = 0; j <= chunk.entities.length - 2; j++) {
             const entity1 = chunk.entities[j];
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const entity2 = chunk.entities[k];
+
                // If the entities have already collided this tick, don't try again
-               if (entity1.collidingEntityIDs.indexOf(entity2.id) !== -1) {
-                  continue;
-               }
+               // @Speed: slow slow slow slow
+               // if (entity1.collidingEntityIDs.indexOf(entity2.id) !== -1) {
+               //    // note: happens about 2% of the time
+               //    continue;
+               // }
 
                const collisionNum = entity1.isColliding(entity2);
                if (collisionNum !== NO_COLLISION) {
-                  const entity1HitboxLocalID = collisionNum & 0xFF;
-                  const entity2HitboxLocalID = (collisionNum & 0xFF00) >> 8;
+                  // perhaps just add to list
+                  a.push({
+                     entity1: entity1,
+                     entity2: entity2,
+                     collisionNum: collisionNum
+                  });
                   
-                  entity1.collide(entity2, entity2HitboxLocalID);
-                  entity2.collide(entity1, entity1HitboxLocalID);
+                  // const entity1HitboxLocalID = collisionNum & 0xFF;
+                  // const entity2HitboxLocalID = (collisionNum & 0xFF00) >> 8;
+                  
+                  // entity1.collide(entity2, entity1HitboxLocalID, entity2HitboxLocalID);
+                  // entity2.collide(entity1, entity2HitboxLocalID, entity1HitboxLocalID);
                }
             }
          }
+      }
+
+      for (let i = 0; i < a.length; i++) {
+         const test = a[i];
+
+         // Check for duplicates
+         let isDupe = false;
+         for (let j = 0; j < i; j++) {
+            const test2 = a[j];
+            if (test.entity1.id === test2.entity1.id && test.entity2.id === test2.entity2.id && test.collisionNum === test2.collisionNum) {
+               isDupe = true;
+               break;
+            }
+         }
+         if (isDupe) {
+            continue;
+         }
+                  
+         const entity1HitboxLocalID = test.collisionNum & 0xFF;
+         const entity2HitboxLocalID = (test.collisionNum & 0xFF00) >> 8;
+         
+         test.entity1.collide(test.entity2, entity1HitboxLocalID, entity2HitboxLocalID);
+         test.entity2.collide(test.entity1, entity2HitboxLocalID, entity1HitboxLocalID);
       }
    }
 
@@ -685,6 +582,7 @@ abstract class Board {
       this.pushComponentsFromArray(PebblumComponentArray);
       this.pushComponentsFromArray(PhysicsComponentArray);
       this.pushComponentsFromArray(BlueprintComponentArray);
+      this.pushComponentsFromArray(TurretComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {
@@ -694,14 +592,6 @@ abstract class Board {
    
          this.entities.push(entity);
          this.entityRecord[entity.id] = entity;
-
-         // @Cleanup
-         if (entity.type === IEntityType.itemEntity) {
-            const itemComponent = ItemComponentArray.getComponent(entity);
-            if (itemComponent.itemType === ItemType.flesh_sword) {
-               addFleshSword(entity);
-            }
-         }
       }
 
       this.entityJoinBuffer = new Array<Entity>();
@@ -709,28 +599,6 @@ abstract class Board {
 
    public static isInBoard(position: Point): boolean {
       return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
-   }
-
-   private static gameObjectIsInBoard(gameObject: Entity): boolean {
-      // Check the game objects
-      if (this.entities.indexOf(gameObject) !== -1) return true;
-
-      // Check the chunks
-      for (let chunkX = 0; chunkX < SETTINGS.BOARD_SIZE; chunkX++) {
-         for (let chunkY = 0; chunkY < SETTINGS.BOARD_SIZE; chunkY++) {
-            const chunk = this.getChunk(chunkX, chunkY);
-
-            // Check if it is in the chunk's game objects
-            if (chunk.entities.indexOf(gameObject) !== -1) return true;
-         }
-      }
-
-      return false;
-   }
-
-   public static entityIsInBoard(entity: Entity): boolean {
-      if (this.gameObjectIsInBoard(entity)) return true;
-      return this.entityJoinBuffer.indexOf(entity) !== -1;
    }
 
    public static distanceToClosestEntity(position: Point): number {
@@ -798,26 +666,6 @@ abstract class Board {
          // @Speed
          return circleAndRectangleDoIntersect(testPosition.x, testPosition.y, 1, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
       }
-   }
-
-   public static getGameObject(id: number): Entity {
-      let gameObject: Entity;
-      for (const currentGameObject of this.entities) {
-         if (currentGameObject.id === id) {
-            gameObject = currentGameObject;
-            break;
-         }
-      }
-      return gameObject!;
-   }
-
-   public static hasGameObject(gameObjectID: number): boolean {
-      for (const gameObject of this.entities) {
-         if (gameObject.id === gameObjectID) {
-            return true;
-         }
-      }
-      return false;
    }
 
    public static tileIsInBoard(tileX: number, tileY: number): boolean {

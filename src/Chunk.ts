@@ -13,6 +13,8 @@ class Chunk {
    public readonly x: number;
    public readonly y: number;
 
+   public hasWallTiles = false;
+
    constructor(x: number, y: number) {
       this.x = x;
       this.y = y;

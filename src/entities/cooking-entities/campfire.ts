@@ -6,7 +6,7 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { InventoryComponent, createNewInventory } from "../../components/InventoryComponent";
 import { tickCookingEntity } from "./cooking-entity";
-import { CookingEntityComponent } from "../../components/CookingEntityComponent";
+import { CookingComponent } from "../../components/CookingEntityComponent";
 
 export const CAMPFIRE_SIZE = 104;
 
@@ -27,7 +27,7 @@ export function createCampfire(position: Point): Entity {
    createNewInventory(inventoryComponent, "ingredientInventory", 1, 1, false);
    createNewInventory(inventoryComponent, "outputInventory", 1, 1, false);
 
-   const cookingEntityComponent = new CookingEntityComponent();
+   const cookingEntityComponent = new CookingComponent();
    cookingEntityComponent.remainingHeatSeconds = LIFETIME_SECONDS;
    CookingEntityComponentArray.addComponent(campfire, cookingEntityComponent);
 

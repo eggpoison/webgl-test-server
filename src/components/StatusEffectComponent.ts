@@ -4,11 +4,10 @@ import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
 import { SERVER } from "../server";
 
-export const NUM_STATUS_EFFECTS = Object.keys(STATUS_EFFECT_MODIFIERS).length;
-
 export class StatusEffectComponent {
-   public readonly ticksRemaining = [0, 0, 0, 0];
-   public readonly ticksElapsed = [0, 0, 0, 0];
+   public readonly activeStatusEffectTypes = new Array<StatusEffectConst>();
+   public readonly activeStatusEffectTicksRemaining = new Array<number>();
+   public readonly activeStatusEffectTicksElapsed = new Array<number>();
 
    public readonly statusEffectImmunityBitset: number;
 
@@ -30,8 +29,9 @@ export function applyStatusEffect(entity: Entity, statusEffect: StatusEffectCons
    if (!hasStatusEffect(statusEffectComponent, statusEffect)) {
       // New status effect
       
-      statusEffectComponent.ticksElapsed[statusEffect] = 0;
-      statusEffectComponent.ticksRemaining[statusEffect] = durationTicks;
+      statusEffectComponent.activeStatusEffectTypes.push(statusEffect);
+      statusEffectComponent.activeStatusEffectTicksElapsed.push(0);
+      statusEffectComponent.activeStatusEffectTicksRemaining.push(durationTicks);
 
       if (PhysicsComponentArray.hasComponent(entity)) {
          const physicsComponent = PhysicsComponentArray.getComponent(entity);
@@ -40,66 +40,64 @@ export function applyStatusEffect(entity: Entity, statusEffect: StatusEffectCons
    } else {
       // Existing status effect
 
-      if (durationTicks > statusEffectComponent.ticksRemaining[statusEffect]) {
-         statusEffectComponent.ticksRemaining[statusEffect] = durationTicks;
+      for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
+         if (durationTicks > statusEffectComponent.activeStatusEffectTicksRemaining[i]) {
+            statusEffectComponent.activeStatusEffectTicksRemaining[i] = durationTicks;
+            break;
+         }
       }
    }
 }
 
 export function hasStatusEffect(statusEffectComponent: StatusEffectComponent, statusEffect: StatusEffectConst): boolean {
-   return statusEffectComponent.ticksRemaining[statusEffect] > 0;
+   for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
+      if (statusEffectComponent.activeStatusEffectTypes[i] === statusEffect) {
+         return true;
+      }
+   }
+   return false;
 }
 
-export function clearStatusEffect(entity: Entity, statusEffect: StatusEffectConst): void {
+export function clearStatusEffect(entity: Entity, statusEffectIndex: number): void {
    const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
-   statusEffectComponent.ticksRemaining[statusEffect] = 0;
 
    if (PhysicsComponentArray.hasComponent(entity)) {
+      const statusEffect = statusEffectComponent.activeStatusEffectTypes[statusEffectIndex];
+      
       const physicsComponent = PhysicsComponentArray.getComponent(entity);
       physicsComponent.moveSpeedMultiplier /= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
    }
+
+   statusEffectComponent.activeStatusEffectTypes.splice(statusEffectIndex, 1);
+   statusEffectComponent.activeStatusEffectTicksRemaining.splice(statusEffectIndex, 1);
+   statusEffectComponent.activeStatusEffectTicksElapsed.splice(statusEffectIndex, 1);
 }
 
 export function tickStatusEffectComponent(entity: Entity): void {
    const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
 
-   for (let statusEffect = 0; statusEffect < NUM_STATUS_EFFECTS; statusEffect++) {
-      const ticksRemaining = statusEffectComponent.ticksRemaining[statusEffect];
-      if (ticksRemaining > 0) {
-         statusEffectComponent.ticksRemaining[statusEffect]--;
-         statusEffectComponent.ticksElapsed[statusEffect]++;
-         if (statusEffectComponent.ticksRemaining[statusEffect] === 0) {
-            clearStatusEffect(entity, statusEffect);
-         }
+   for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
+      const statusEffect = statusEffectComponent.activeStatusEffectTypes[i];
 
-         switch (statusEffect) {
-            case StatusEffectConst.burning: {
-               // If the entity is in a river, clear the fire effect
-               if (entity.isInRiver) {
-                  clearStatusEffect(entity, StatusEffectConst.burning);
-               } else {
-                  // Fire tick
-                  const ticksElapsed = statusEffectComponent.ticksElapsed[StatusEffectConst.burning];
-                  if (customTickIntervalHasPassed(ticksElapsed, 0.75)) {
-                     damageEntity(entity, 1, null, PlayerCauseOfDeath.fire);
-                     SERVER.registerEntityHit({
-                        entityPositionX: entity.position.x,
-                        entityPositionY: entity.position.y,
-                        hitEntityID: entity.id,
-                        damage: 1,
-                        knockback: 0,
-                        angleFromAttacker: null,
-                        attackerID: -1,
-                        flags: 0
-                     });
-                  }
-               }
-               break;
-            }
-            case StatusEffectConst.poisoned: {
-               const ticksElapsed = statusEffectComponent.ticksElapsed[StatusEffectConst.poisoned];
-               if (customTickIntervalHasPassed(ticksElapsed, 0.5)) {
-                  damageEntity(entity, 1, null, PlayerCauseOfDeath.poison);
+      statusEffectComponent.activeStatusEffectTicksRemaining[i]--;
+      if (statusEffectComponent.activeStatusEffectTicksRemaining[i] === 0) {
+         clearStatusEffect(entity, i);
+         i--;
+         continue;
+      }
+
+      statusEffectComponent.activeStatusEffectTicksElapsed[i]++;
+
+      switch (statusEffect) {
+         case StatusEffectConst.burning: {
+            // If the entity is in a river, clear the fire effect
+            if (entity.isInRiver) {
+               clearStatusEffect(entity, i);
+            } else {
+               // Fire tick
+               const ticksElapsed = statusEffectComponent.activeStatusEffectTicksElapsed[i];
+               if (customTickIntervalHasPassed(ticksElapsed, 0.75)) {
+                  damageEntity(entity, 1, null, PlayerCauseOfDeath.fire);
                   SERVER.registerEntityHit({
                      entityPositionX: entity.position.x,
                      entityPositionY: entity.position.y,
@@ -111,25 +109,42 @@ export function tickStatusEffectComponent(entity: Entity): void {
                      flags: 0
                   });
                }
-               break;
             }
-            case StatusEffectConst.bleeding: {
-               const ticksElapsed = statusEffectComponent.ticksElapsed[StatusEffectConst.bleeding];
-               if (customTickIntervalHasPassed(ticksElapsed, 1)) {
-                  damageEntity(entity, 1, null, PlayerCauseOfDeath.bloodloss);
-                  SERVER.registerEntityHit({
-                     entityPositionX: entity.position.x,
-                     entityPositionY: entity.position.y,
-                     hitEntityID: entity.id,
-                     damage: 1,
-                     knockback: 0,
-                     angleFromAttacker: null,
-                     attackerID: -1,
-                     flags: 0
-                  });
-               }
-               break;
+            break;
+         }
+         case StatusEffectConst.poisoned: {
+            const ticksElapsed = statusEffectComponent.activeStatusEffectTicksElapsed[i];
+            if (customTickIntervalHasPassed(ticksElapsed, 0.5)) {
+               damageEntity(entity, 1, null, PlayerCauseOfDeath.poison);
+               SERVER.registerEntityHit({
+                  entityPositionX: entity.position.x,
+                  entityPositionY: entity.position.y,
+                  hitEntityID: entity.id,
+                  damage: 1,
+                  knockback: 0,
+                  angleFromAttacker: null,
+                  attackerID: -1,
+                  flags: 0
+               });
             }
+            break;
+         }
+         case StatusEffectConst.bleeding: {
+            const ticksElapsed = statusEffectComponent.activeStatusEffectTicksElapsed[i];
+            if (customTickIntervalHasPassed(ticksElapsed, 1)) {
+               damageEntity(entity, 1, null, PlayerCauseOfDeath.bloodloss);
+               SERVER.registerEntityHit({
+                  entityPositionX: entity.position.x,
+                  entityPositionY: entity.position.y,
+                  hitEntityID: entity.id,
+                  damage: 1,
+                  knockback: 0,
+                  angleFromAttacker: null,
+                  attackerID: -1,
+                  flags: 0
+               });
+            }
+            break;
          }
       }
    }

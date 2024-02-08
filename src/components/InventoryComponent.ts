@@ -26,7 +26,7 @@ export function serialiseItem(item: Item): ItemData {
    };
 }
 
-export function serializeInventoryData(inventory: Inventory, inventoryName: string): InventoryData {
+export function serializeInventoryData(inventory: Inventory): InventoryData {
    const itemSlots: ItemSlotsData = {};
    for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
       itemSlots[Number(itemSlot)] = serialiseItem(item);
@@ -36,7 +36,7 @@ export function serializeInventoryData(inventory: Inventory, inventoryName: stri
       width: inventory.width,
       height: inventory.height,
       itemSlots: itemSlots,
-      inventoryName: inventoryName
+      inventoryName: inventory.name
    };
    
    return inventoryData;
@@ -86,16 +86,19 @@ export function getInventory(inventoryComponent: InventoryComponent, name: strin
 }
 
 export function getItemFromInventory(inventory: Inventory, itemSlot: number): Item | null {
-   if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
-      return inventory.itemSlots[itemSlot];
-   } else {
-      return null;
-   }
+   return inventory.itemSlots[itemSlot];
+}
+
+export function inventoryHasItemInSlot(inventory: Inventory, itemSlot: number): boolean {
+   return inventory.itemSlots.hasOwnProperty(itemSlot);
 }
 
 export function getItem(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number): Item | null {
    const inventory = getInventory(inventoryComponent, inventoryName);
-   return getItemFromInventory(inventory, itemSlot);
+   if (inventoryHasItemInSlot(inventory, itemSlot)) {
+      return getItemFromInventory(inventory, itemSlot);
+   }
+   return null;
 }
 
 export function setItem(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number, item: Item | null): void {
@@ -364,4 +367,15 @@ export function findInventoryContainingItem(inventoryComponent: InventoryCompone
    }
 
    return null;
+}
+
+/** Returns 0 if there are no occupied slots. */
+export function getFirstOccupiedItemSlotInInventory(inventory: Inventory): number {
+   for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+      if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+         return itemSlot;
+      }
+   }
+   
+   return 0;
 }

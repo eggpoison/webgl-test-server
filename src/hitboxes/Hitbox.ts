@@ -19,6 +19,8 @@ abstract class Hitbox {
    public chunkBounds: HitboxBounds = [-1, -1, -1, -1];
 
    constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, localID: number) {
+      // @Cleanup: Perhaps localID can be inferred from the length of the object's hitboxes
+      
       this.object = object;
       this.mass = mass;
       this.offsetX = offsetX;
@@ -29,8 +31,11 @@ abstract class Hitbox {
    }
 
    public updateOffset(): void {
-      this.rotatedOffsetX = rotateXAroundOrigin(this.offsetX, this.offsetY, this.object.rotation);
-      this.rotatedOffsetY = rotateYAroundOrigin(this.offsetX, this.offsetY, this.object.rotation);
+      const cosRotation = Math.cos(this.object.rotation);
+      const sinRotation = Math.sin(this.object.rotation);
+      
+      this.rotatedOffsetX = cosRotation * this.offsetX + sinRotation * this.offsetY;
+      this.rotatedOffsetY = cosRotation * this.offsetY - sinRotation * this.offsetX;
    }
 
    public abstract calculateHitboxBoundsMinX(): number;

@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, addItemToSlot, createNewInventory, pickupItemEntity } from "../../components/InventoryComponent";
@@ -11,7 +11,7 @@ import { onTribeMemberHurt } from "./tribe-member";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
 import Board from "../../Board";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { tickTribesman } from "./tribesman";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 import { TribeComponent } from "../../components/TribeComponent";

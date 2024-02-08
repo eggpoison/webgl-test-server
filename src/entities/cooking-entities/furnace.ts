@@ -2,7 +2,7 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffec
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray, InventoryComponentArray, CookingEntityComponentArray } from "../../components/ComponentArray";
-import { CookingEntityComponent } from "../../components/CookingEntityComponent";
+import { CookingComponent } from "../../components/CookingEntityComponent";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, createNewInventory } from "../../components/InventoryComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
@@ -25,7 +25,7 @@ export function createFurnace(position: Point): Entity {
    createNewInventory(inventoryComponent, "ingredientInventory", 1, 1, false);
    createNewInventory(inventoryComponent, "outputInventory", 1, 1, false);
 
-   CookingEntityComponentArray.addComponent(furnace, new CookingEntityComponent());
+   CookingEntityComponentArray.addComponent(furnace, new CookingComponent());
 
    return furnace;
 }

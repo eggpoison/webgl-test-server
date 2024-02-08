@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, FrozenYetiAttackType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, StructureShapeType, randFloat, SlimeSize, ItemData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, StructureShapeType, randFloat, SlimeSize, ItemData, StatusEffect } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -9,17 +9,20 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
-import { NUM_STATUS_EFFECTS } from "./components/StatusEffectComponent";
 import { getTilesOfBiome } from "./census";
 import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
 import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
 import { getBlueprintProgress } from "./components/BlueprintComponent";
+import { resetHealthComponentAmountHealed } from "./components/HealthComponent";
+import { getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
+import { forceMaxGrowAllIceSpikes } from "./entities/resources/ice-spikes";
+import { getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
 
 /*
 
@@ -50,7 +53,6 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
    };
 }
 
-// @Incomplete
 const getFoodEatingType = (tribeMember: Entity, activeItemData: ItemData | null): ItemType | -1 => {
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
@@ -113,7 +115,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          const inventoryComponent = InventoryComponentArray.getComponent(entity);
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            serializeInventoryData(getInventory(inventoryComponent, "inventory"), "inventory")
+            serializeInventoryData(getInventory(inventoryComponent, "inventory"))
          ];
          break;
       }
@@ -137,9 +139,9 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
 
          clientArgs = [
-            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory"), "fuelInventory"),
-            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory"), "ingredientInventory"),
-            serializeInventoryData(getInventory(inventoryComponent, "outputInventory"), "outputInventory"),
+            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory")),
+            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory")),
+            serializeInventoryData(getInventory(inventoryComponent, "outputInventory")),
             cookingEntityComponent.currentRecipe !== null ? cookingEntityComponent.heatingTimer / cookingEntityComponent.currentRecipe.cookTime : -1,
             cookingEntityComponent.remainingHeatSeconds > 0
          ];
@@ -170,9 +172,9 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
 
          clientArgs = [
-            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory"), "fuelInventory"),
-            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory"), "ingredientInventory"),
-            serializeInventoryData(getInventory(inventoryComponent, "outputInventory"), "outputInventory"),
+            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory")),
+            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory")),
+            serializeInventoryData(getInventory(inventoryComponent, "outputInventory")),
             cookingEntityComponent.currentRecipe !== null ? cookingEntityComponent.heatingTimer / cookingEntityComponent.currentRecipe.cookTime : -1,
             cookingEntityComponent.remainingHeatSeconds > 0
          ];
@@ -235,9 +237,9 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             tribeComponent.tribe!.type,
-            serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
-            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
-            serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
+            serializeInventoryData(getInventory(inventoryComponent, "armourSlot")),
+            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot")),
+            serializeInventoryData(getInventory(inventoryComponent, "backpack")),
             hotbarActiveItemData,
             hotbarUseInfo.currentAction,
             getFoodEatingType(entity, hotbarActiveItemData),
@@ -292,9 +294,9 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             tribeComponent.tribe!.type,
-            serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
-            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
-            serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
+            serializeInventoryData(getInventory(inventoryComponent, "armourSlot")),
+            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot")),
+            serializeInventoryData(getInventory(inventoryComponent, "backpack")),
             hotbarActiveItem,
             hotbarUseInfo.currentAction,
             getFoodEatingType(entity, hotbarActiveItem),
@@ -307,7 +309,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             offhandThrownBattleaxeItemID,
             false,
             tribeMemberComponent.warPaintType,
-            serializeInventoryData(hotbarInventory, "hotbar"),
+            serializeInventoryData(hotbarInventory),
             hotbarUseInfo.selectedItemSlot,
             0
          ];
@@ -350,9 +352,9 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             tribeComponent.tribe!.type,
-            serializeInventoryData(getInventory(inventoryComponent, "armourSlot"), "armourSlot"),
-            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot"), "backpackSlot"),
-            serializeInventoryData(getInventory(inventoryComponent, "backpack"), "backpack"),
+            serializeInventoryData(getInventory(inventoryComponent, "armourSlot")),
+            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot")),
+            serializeInventoryData(getInventory(inventoryComponent, "backpack")),
             hotbarActiveItem,
             hotbarUseInfo.currentAction,
             getFoodEatingType(entity, hotbarActiveItem),
@@ -365,7 +367,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             offhandThrownBattleaxeItemID,
             false,
             tribeMemberComponent.warPaintType,
-            serializeInventoryData(hotbarInventory, "hotbar"),
+            serializeInventoryData(hotbarInventory),
             hotbarUseInfo.selectedItemSlot,
             0
          ];
@@ -463,7 +465,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.woodenArrowProjectile: {
-         clientArgs = [];
+         const arrowComponent = ArrowComponentArray.getComponent(entity);
+         clientArgs = [arrowComponent.type];
          break;
       }
       case IEntityType.iceShardProjectile: {
@@ -515,7 +518,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.woodenWall: {
-         clientArgs = [];
+         const healthComponent = HealthComponentArray.getComponent(entity);
+         clientArgs = [healthComponent.health];
          break;
       }
       case IEntityType.slimeSpit: {
@@ -529,7 +533,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
       case IEntityType.woodenDoor: {
          const doorComponent = DoorComponentArray.getComponent(entity);
-         clientArgs = [doorComponent.toggleType];
+         clientArgs = [doorComponent.toggleType, doorComponent.doorOpenProgress];
          break;
       }
       case IEntityType.battleaxeProjectile: {
@@ -569,21 +573,39 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [blueprintComponent.shapeType, getBlueprintProgress(blueprintComponent)];
          break;
       }
+      case IEntityType.ballista: {
+         const turretComponent = TurretComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         
+         clientArgs = [
+            turretComponent.aimDirection,
+            getBallistaChargeProgress(entity),
+            getBallistaReloadProgress(entity),
+            serializeInventoryData(getInventory(inventoryComponent, "ammoBoxInventory"))
+         ];
+         break;
+      }
+      case IEntityType.slingTurret: {
+         const turretComponent = TurretComponentArray.getComponent(entity);
+         clientArgs = [turretComponent.aimDirection, getSlingTurretChargeProgress(turretComponent), getSlingTurretReloadProgress(turretComponent)];
+         break;
+      }
+      case IEntityType.slingRock: {
+         clientArgs = [];
+         break;
+      }
    }
 
    const statusEffectData = new Array<StatusEffectData>();
    if (StatusEffectComponentArray.hasComponent(entity)) {
       const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
-      for (let i = 0; i < NUM_STATUS_EFFECTS; i++) {
-         if (statusEffectComponent.ticksRemaining[i] > 0) {
-            statusEffectData.push({
-               type: i,
-               ticksElapsed: statusEffectComponent.ticksElapsed[i]
-            });
-         }
+      for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
+         statusEffectData.push({
+            type: statusEffectComponent.activeStatusEffectTypes[i] as unknown as StatusEffect,
+            ticksElapsed: statusEffectComponent.activeStatusEffectTicksElapsed[i]
+         });
       }
    }
-   
 
    return {
       id: entity.id,
@@ -596,9 +618,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       type: entity.type as unknown as EntityType,
       clientArgs: clientArgs,
       statusEffects: statusEffectData,
-      // @Incomplete
-      amountHealed: 0
-      // amountHealed: healthComponent !== null ? healthComponent.amountHealedThisTick : 0
+      amountHealed: HealthComponentArray.hasComponent(entity) ? HealthComponentArray.getComponent(entity).amountHealedThisTick : 0
    }
 }
 
@@ -674,9 +694,12 @@ class GameServer {
 
    private trackedGameObjectID: number | null = null;
 
+   public isRunning = false;
+
    /** Sets up the various stuff */
    public setup() {
       spawnInitialEntities();
+      forceMaxGrowAllIceSpikes();
    }
 
    public setTrackedGameObject(id: number | null): void {
@@ -693,6 +716,8 @@ class GameServer {
          SERVER.handlePlayerConnections();
          console.log("Server started on port " + SETTINGS.SERVER_PORT);
       }
+
+      SERVER.isRunning = true;
 
       if (typeof SERVER.tickInterval === "undefined") {
          if (OPTIONS.warp) {
@@ -714,24 +739,29 @@ class GameServer {
 
    private tick(): void {
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
-      Board.removeFlaggedGameObjects();
+      Board.removeFlaggedEntities();
+
+      Board.spreadGrass();
 
       Board.updateTribes();
 
-      Board.updateGameObjects();
-      Board.resolveOtherCollisions();
-      Board.resolveGameObjectCollisions();
+      Board.updateEntities();
+      Board.resolveEntityCollisions();
 
       runSpawnAttempt();
       runTribeSpawnAttempt();
       
       Board.pushJoinBuffer();
 
-      Board.spreadGrass();
-
-      Board.removeFlaggedGameObjects();
+      Board.removeFlaggedEntities();
 
       SERVER.sendGameDataPackets();
+
+      // @Cleanup: Out of place
+      for (let i = 0; i < HealthComponentArray.components.length; i++) {
+         const healthComponent = HealthComponentArray.components[i];
+         resetHealthComponentAmountHealed(healthComponent);
+      }
 
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
@@ -1095,14 +1125,14 @@ class GameServer {
    public sendGameDataPackets(): void {
       if (SERVER.io === null) return;
 
-      if (SERVER.trackedGameObjectID !== null && !Board.hasGameObject(SERVER.trackedGameObjectID)) {
+      if (SERVER.trackedGameObjectID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedGameObjectID)) {
          SERVER.trackedGameObjectID = null;
       }
 
       let gameObjectDebugData: GameObjectDebugData | undefined;
       if (SERVER.trackedGameObjectID !== null) {
-         const gameObject = Board.getGameObject(SERVER.trackedGameObjectID);
-         gameObjectDebugData = gameObject.getDebugData();
+         const entity = Board.entityRecord[SERVER.trackedGameObjectID];
+         gameObjectDebugData = entity.getDebugData();
       }
 
       for (const playerData of Object.values(SERVER.playerDataRecord)) {

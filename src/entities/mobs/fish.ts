@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { AIHelperComponentArray, EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -14,7 +14,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { getInventory } from "../../components/InventoryComponent";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
@@ -75,11 +75,10 @@ const isValidWanderPosition = (x: number, y: number): boolean => {
 }
 
 const move = (fish: Entity, direction: number): void => {
+   
    if (fish.tile.type === TileTypeConst.water) {
-      // 
       // Swim on water
-      // 
-
+      
       fish.acceleration.x = 40 * Math.sin(direction);
       fish.acceleration.y = 40 * Math.cos(direction);
       fish.rotation = direction;

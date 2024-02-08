@@ -8,11 +8,14 @@ import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { DoorComponent } from "../../components/DoorComponent";
 import { TribeComponent } from "../../components/TribeComponent";
 
+const HITBOX_WIDTH = 64 - 0.05;
+const HITBOX_HEIGHT = 16 - 0.05;
+
 export function createWoodenDoor(position: Point, tribe: Tribe | null, rotation: number): Entity {
    const door = new Entity(position, IEntityType.woodenDoor, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    door.rotation = rotation;
 
-   const hitbox = new RectangularHitbox(door, 1, 0, 0, 64, 16, 0);
+   const hitbox = new RectangularHitbox(door, 0.5, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT, 0);
    door.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(door, new HealthComponent(15));

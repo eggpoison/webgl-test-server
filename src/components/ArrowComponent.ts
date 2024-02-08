@@ -1,11 +1,17 @@
-import { ItemType } from "webgl-test-shared";
+import { GenericArrowType } from "webgl-test-shared";
 
 export class ArrowComponent {
-   public readonly tribeMemberID: number;
-   public readonly bowType: ItemType;
+   public readonly type: GenericArrowType;
+   public readonly throwerID: number;
+   public readonly damage: number;
+   public readonly knockback: number;
+   public readonly ignoreFriendlyBuildings: boolean;
 
-   constructor(tribeMemberID: number, arrowType: ItemType) {
-      this.tribeMemberID = tribeMemberID;
-      this.bowType = arrowType;
+   constructor(throwerID: number, type: GenericArrowType, damage: number, knockback: number, ignoreFriendlyBuildings: boolean) {
+      this.type = type;
+      this.throwerID = throwerID;
+      this.damage = damage;
+      this.knockback = knockback;
+      this.ignoreFriendlyBuildings = ignoreFriendlyBuildings;
    }
 }

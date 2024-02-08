@@ -1,10 +1,10 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, FrozenYetiComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { FrozenYetiComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { FrozenYetiComponent } from "../../components/FrozenYetiComponent";
 import Board from "../../Board";

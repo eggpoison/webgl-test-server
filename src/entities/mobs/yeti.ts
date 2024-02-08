@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, HealthComponentArray, ItemComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, ItemComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -12,9 +12,8 @@ import { YetiComponent } from "../../components/YetiComponent";
 import Board from "../../Board";
 import { createItemsOverEntity } from "../../entity-shared";
 import { createSnowball } from "../snowball";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
-import Hitbox from "../../hitboxes/Hitbox";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MIN_TERRITORY_SIZE = 50;

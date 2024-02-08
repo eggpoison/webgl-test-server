@@ -4,6 +4,7 @@ import { ItemComponentArray, PhysicsComponentArray } from "../components/Compone
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { ItemComponent } from "../components/ItemComponent";
 import { PhysicsComponent } from "../components/PhysicsComponent";
+import { addFleshSword, removeFleshSword } from "../flesh-sword-ai";
 
 const TICKS_TO_DESPAWN = 300 * SETTINGS.TPS;
 
@@ -27,6 +28,10 @@ export function createItemEntity(position: Point, itemType: ItemType, amount: nu
       itemComponent.entityPickupCooldowns[throwingEntityID] = 1
    }
 
+   if (itemComponent.itemType === ItemType.flesh_sword) {
+      addFleshSword(itemEntity);
+   }
+
    return itemEntity;
 }
 
@@ -48,6 +53,12 @@ export function itemEntityCanBePickedUp(itemEntity: Entity, entityID: number): b
 }
 
 export function onItemEntityRemove(itemEntity: Entity): void {
+   // Remove flesh sword item entities
+   const itemComponent = ItemComponentArray.getComponent(itemEntity);
+   if (itemComponent.itemType === ItemType.flesh_sword) {
+      removeFleshSword(itemEntity);
+   }
+   
    PhysicsComponentArray.removeComponent(itemEntity);
    ItemComponentArray.removeComponent(itemEntity);
 }

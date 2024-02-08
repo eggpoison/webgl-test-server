@@ -183,9 +183,10 @@ export function runFleshSwordAI(itemEntity: Entity) {
 
       const moveAngle = directMoveAngle + moveAngleOffset;
       itemEntity.rotation = moveAngle - Math.PI/4;
-      itemEntity.hitboxesAreDirty = true;
       itemEntity.velocity.x = moveSpeed! * Math.sin(moveAngle);
       itemEntity.velocity.y = moveSpeed! * Math.cos(moveAngle);
+
+      itemEntity.hitboxesAreDirty = true;
    }
 }
 

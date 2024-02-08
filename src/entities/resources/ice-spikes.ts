@@ -17,7 +17,7 @@ const GROWTH_TICK_CHANCE = 0.5;
 const GROWTH_OFFSET = 60;
 
 export function createIceSpikes(position: Point, rootIceSpike?: Entity): Entity {
-   const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.iceSpikes, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.iceSpikes);
    iceSpikes.rotation = 2 * Math.PI * Math.random();
 
    const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, ICE_SPIKE_RADIUS, 0);
@@ -140,4 +140,26 @@ export function onIceSpikesRemove(iceSpikes: Entity): void {
    HealthComponentArray.removeComponent(iceSpikes);
    StatusEffectComponentArray.removeComponent(iceSpikes);
    IceSpikesComponentArray.removeComponent(iceSpikes);
+}
+
+/** Forces an ice spike to immediately grow its maximum number of children */
+const forceMaxGrowIceSpike = (iceSpikes: Entity): void => {
+   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+   
+   const connectedIceSpikes = [iceSpikes];
+
+   while (rootIceSpikesComponent.numChildrenIceSpikes < rootIceSpikesComponent.maxChildren) {
+      const growingIceSpikes = connectedIceSpikes[Math.floor(connectedIceSpikes.length * Math.random())];
+      grow(growingIceSpikes);
+   }
+}
+
+export function forceMaxGrowAllIceSpikes(): void {
+   const entities = Object.values(Board.entityRecord);
+   for (let i = 0; i < entities.length; i++) {
+      const entity = entities[i];
+      if (entity.type === IEntityType.iceSpikes) {
+         forceMaxGrowIceSpike(entity);
+      }
+   }
 }

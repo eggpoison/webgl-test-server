@@ -6,6 +6,7 @@ import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damage
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
+import Board from "../../Board";
 
 export function createIceShard(position: Point, moveDirection: number): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);

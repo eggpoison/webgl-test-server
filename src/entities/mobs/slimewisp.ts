@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, HealthComponentArray, PhysicsComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, PhysicsComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
@@ -10,7 +10,7 @@ import Tile from "../../Tile";
 import { SlimewispComponent } from "../../components/SlimewispComponent";
 import { createSlime } from "./slime";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 3;

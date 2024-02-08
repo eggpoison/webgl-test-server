@@ -2,13 +2,13 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, ItemType, Pl
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { createItemEntity } from "../item-entity";
-import { HealthComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
-import { EntityRelationship, getTribeMemberRelationship } from "../tribes/tribe-member";
+import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 
 const DROP_VELOCITY = 400;
 
@@ -36,7 +36,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
    const spearComponent = ThrowingProjectileComponentArray.getComponent(spear);
    if (Board.entityRecord.hasOwnProperty(spearComponent.tribeMemberID)) {
       const throwingEntity = Board.entityRecord[spearComponent.tribeMemberID];
-      if (getTribeMemberRelationship(throwingEntity, collidingEntity) === EntityRelationship.friendly) {
+      if (getTribeMemberRelationship(TribeComponentArray.getComponent(throwingEntity), collidingEntity) === EntityRelationship.friendly) {
          return;
       }
    }

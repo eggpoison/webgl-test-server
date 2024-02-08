@@ -7,6 +7,7 @@ import { StatusEffectComponent } from "../components/StatusEffectComponent";
 import { SnowballComponent } from "../components/SnowballComponent";
 import { SERVER } from "../server";
 import { PhysicsComponent } from "../components/PhysicsComponent";
+import Board from "../Board";
    
 const MAX_HEALTHS: ReadonlyArray<number> = [5, 10];
 

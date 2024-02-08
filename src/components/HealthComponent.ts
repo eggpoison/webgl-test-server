@@ -16,8 +16,8 @@ import { onFrozenYetiDeath, onFrozenYetiHurt } from "../entities/mobs/frozen-yet
 import { onPlayerHurt } from "../entities/tribes/player";
 import { onTribeWorkerHurt } from "../entities/tribes/tribe-worker";
 import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
-import Hitbox from "../hitboxes/Hitbox";
 import { onGolemHurt } from "../entities/mobs/golem";
+import { onWoodenWallDeath } from "../entities/structures/wooden-wall";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -40,8 +40,6 @@ export class HealthComponent {
 }
 
 export function tickHealthComponent(healthComponent: HealthComponent): void {
-   healthComponent.amountHealedThisTick = 0;
-
    // Update local invulnerability hashes
    for (let i = 0; i < healthComponent.localIframeHashes.length; i++) {
       healthComponent.localIframeDurations[i] -= 1 / SETTINGS.TPS;
@@ -51,6 +49,10 @@ export function tickHealthComponent(healthComponent: HealthComponent): void {
          i--;
       }
    }
+}
+
+export function resetHealthComponentAmountHealed(healthComponent: HealthComponent): void {
+   healthComponent.amountHealedThisTick = 0;
 }
 
 export function canDamageEntity(healthComponent: HealthComponent, attackHash: string): boolean {
@@ -98,6 +100,10 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
          }
          case IEntityType.frozenYeti: {
             onFrozenYetiDeath(entity, attackingEntity);
+            break;
+         }
+         case IEntityType.woodenWall: {
+            onWoodenWallDeath(entity, attackingEntity);
             break;
          }
       }

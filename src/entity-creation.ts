@@ -30,6 +30,8 @@ import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spik
 import { createWoodenWallSpikes } from "./entities/structures/wooden-wall-spikes";
 import { createFloorPunjiSticks } from "./entities/structures/floor-punji-sticks";
 import { createWallPunjiSticks } from "./entities/structures/wall-punji-sticks";
+import { createBallista } from "./entities/structures/ballista";
+import { createSlingTurret } from "./entities/structures/sling-turret";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -60,9 +62,11 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.planterBox: return createPlanterBox(position);
       case IEntityType.pebblum: return createPebblum(position, ID_SENTINEL_VALUE);
       case IEntityType.woodenFloorSpikes: return createWoodenFloorSpikes(position, null);
-      case IEntityType.woodenWallSpikes: return createWoodenWallSpikes(position);
-      case IEntityType.floorPunjiSticks: return createFloorPunjiSticks(position);
-      case IEntityType.wallPunjiSticks: return createWallPunjiSticks(position);
+      case IEntityType.woodenWallSpikes: return createWoodenWallSpikes(position, null);
+      case IEntityType.floorPunjiSticks: return createFloorPunjiSticks(position, null);
+      case IEntityType.wallPunjiSticks: return createWallPunjiSticks(position, null);
+      case IEntityType.ballista: return createBallista(position, null);
+      case IEntityType.slingTurret: return createSlingTurret(position, null);
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow:
@@ -78,6 +82,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.workerHut:
       case IEntityType.warriorHut:
       case IEntityType.blueprintEntity:
+      case IEntityType.slingRock:
       case IEntityType.itemEntity: throw new Error("Can't dynamically create entity of type '" + entityType + "'.");
    }
 }

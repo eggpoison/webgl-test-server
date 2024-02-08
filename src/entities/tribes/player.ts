@@ -1,6 +1,6 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ItemRequirements, ItemType, Point, SETTINGS, SpearItemInfo, StructureShapeType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SETTINGS, SpearItemInfo, StructureShapeType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { attackEntity, calculateAttackTarget, calculateRadialAttackTargets, onTribeMemberHurt, pickupItemEntity, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, pickupItemEntity, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, StatusEffectComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem } from "../../components/InventoryComponent";
@@ -14,12 +14,11 @@ import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { PlayerComponent } from "../../components/PlayerComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
 import { createItem } from "../../Item";
-import { createWoodenDoor } from "../structures/wooden-door";
 import { toggleDoor } from "../../components/DoorComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
-import { createWoodenEmbrasure } from "../structures/wooden-embrasure";
-import { TribeComponent } from "../../components/TribeComponent";
+import { EntityRelationship, TribeComponent } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -35,7 +34,9 @@ const VACUUM_STRENGTH = 25;
 export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(player, 1, 0, 0, 32, 0);
+   // @Temporary
+   // const hitbox = new CircularHitbox(player, 1, 0, 0, 32, 0);
+   const hitbox = new RectangularHitbox(player, 1, 0, 0, 64, 64, 0);
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
@@ -67,9 +68,9 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    }
 
    // @Temporary
-   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
-   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
-   addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 50));
+   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 1));
+   addItem(inventoryComponent, createItem(ItemType.ballista, 99));
+   addItem(inventoryComponent, createItem(ItemType.sling_turret, 99));
 
    return player;
 }
@@ -230,22 +231,54 @@ export function processItemUsePacket(player: Entity, itemSlot: number): void {
    }
 }
 
-export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPacket): void {
-   // Find the attack target
-   const attackTargets = calculateRadialAttackTargets(player, ATTACK_OFFSET, ATTACK_RADIUS);
-   const target = calculateAttackTarget(player, attackTargets);
-
-   // Register the hit
-   if (target !== null) {
-      const didAttackWithRightHand = attackEntity(player, target, attackPacket.itemSlot, "hotbar");
-
-      // If a barbarian, attack with offhand
-      if (!didAttackWithRightHand) {
-         const tribeComponent = TribeComponentArray.getComponent(player);
-         if (tribeComponent.tribe!.type === TribeType.barbarians) {
-            attackEntity(player, target, 1, "offhand");
-         }
+/** Returns whether the swing was successfully swang or not */
+const attemptSwing = (player: Entity, attackTargets: ReadonlyArray<Entity>, itemSlot: number, inventoryName: string): boolean => {
+   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const item = getItem(inventoryComponent, inventoryName, itemSlot);
+   if (item !== null && ITEM_TYPE_RECORD[item.type] === "hammer") {
+      // First look for attack targets
+      const attackTarget = calculateAttackTarget(player, attackTargets, ~(EntityRelationship.friendly | EntityRelationship.friendlyBuilding));
+      if (attackTarget !== null) {
+         return attackEntity(player, attackTarget, itemSlot, inventoryName);
       }
+
+      // Then look for friendly buildings to repair
+      const repairTarget = calculateRepairTarget(player, attackTargets);
+      if (repairTarget !== null) {
+         return repairBuilding(player, repairTarget, itemSlot, inventoryName);
+      }
+
+      // Then look for blueprints to work on
+      const workTarget = calculateBlueprintWorkTarget(player, attackTargets);
+      if (workTarget !== null) {
+         return repairBuilding(player, workTarget, itemSlot, inventoryName);
+      }
+
+      return false;
+   }
+   
+   // For non-hammer items, just look for attack targets
+   const attackTarget = calculateAttackTarget(player, attackTargets, ~EntityRelationship.friendly);
+   if (attackTarget !== null) {
+      return attackEntity(player, attackTarget, itemSlot, inventoryName);
+   }
+
+   return false;
+}
+
+export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPacket): void {
+   // @Cleanup: Rename function. shouldn't be 'attack'
+   const targets = calculateRadialAttackTargets(player, ATTACK_OFFSET, ATTACK_RADIUS);
+
+   const didSwingWithRightHand = attemptSwing(player, targets, attackPacket.itemSlot, "hotbar");
+   if (didSwingWithRightHand) {
+      return;
+   }
+
+   // If a barbarian, attack with offhand
+   const tribeComponent = TribeComponentArray.getComponent(player);
+   if (tribeComponent.tribe!.type === TribeType.barbarians) {
+      attemptSwing(player, targets, 1, "offhand");
    }
 }
 

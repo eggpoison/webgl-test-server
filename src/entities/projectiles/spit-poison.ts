@@ -21,10 +21,12 @@ export function createSpitPoison(position: Point): Entity {
 export function tickSpitPoison(spit: Entity): void {
    const hitbox = spit.hitboxes[0] as CircularHitbox;
    hitbox.radius -= 5 / SETTINGS.TPS;
-   spit.hitboxesAreDirty = true;
    if (hitbox.radius <= 0) {
       spit.remove();
    }
+   
+   // @Incomplete: Shrinking the hitbox should make the hitboxes dirty, but hitboxes being dirty only has an impact on entities with a physics component.
+   // Fundamental problem with the hitbox/dirty system.
 }
 
 export function onSpitPoisonCollision(spit: Entity, collidingEntity: Entity): void {

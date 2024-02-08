@@ -1,8 +1,9 @@
-import { Point, SETTINGS, TileTypeConst, angle, curveWeight, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity, { NO_COLLISION } from "./Entity";
+import RectangularHitbox from "./hitboxes/RectangularHitbox";
 
 const TURN_CONSTANT = Math.PI / SETTINGS.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
@@ -397,4 +398,85 @@ export function getAngleDifference(angle1: number, angle2: number): number {
 
 export function cleanAngle(angle: number): number {
    return angle - 2 * Math.PI * Math.floor(angle / (2 * Math.PI));
+}
+
+export function getAngleDiff(sourceAngle: number, targetAngle: number): number {
+   let a = targetAngle - sourceAngle;
+   a = Math.abs((a + Math.PI) % (Math.PI * 2)) - Math.PI;
+   return a;
+}
+
+export function getMinAngleToCircularHitbox(x: number, y: number, hitbox: CircularHitbox): number {
+   const xDiff = hitbox.object.position.x + hitbox.rotatedOffsetX - x;
+   const yDiff = hitbox.object.position.y + hitbox.rotatedOffsetY - y;
+
+   const angleToHitboxCenter = angle(xDiff, yDiff);
+   
+   const leftXDiff = xDiff + hitbox.radius * Math.sin(angleToHitboxCenter - Math.PI/2);
+   const leftYDiff = yDiff + hitbox.radius * Math.cos(angleToHitboxCenter - Math.PI/2);
+
+   return angle(leftXDiff, leftYDiff);
+}
+
+export function getMaxAngleToCircularHitbox(x: number, y: number, hitbox: CircularHitbox): number {
+   const xDiff = hitbox.object.position.x + hitbox.rotatedOffsetX - x;
+   const yDiff = hitbox.object.position.y + hitbox.rotatedOffsetY - y;
+
+   const angleToHitboxCenter = angle(xDiff, yDiff);
+   
+   const rightXDiff = xDiff + hitbox.radius * Math.sin(angleToHitboxCenter + Math.PI/2);
+   const rightYDiff = yDiff + hitbox.radius * Math.cos(angleToHitboxCenter + Math.PI/2);
+
+   return angle(rightXDiff, rightYDiff);
+}
+
+export function getMinAngleToRectangularHitbox(x: number, y: number, hitbox: RectangularHitbox): number {
+   let minAngle = 99999.9;
+   for (let i = 0; i < 4; i++) {
+      const vertexOffset = hitbox.vertexOffsets[i];
+
+      const vertexX = hitbox.object.position.x + hitbox.rotatedOffsetX + vertexOffset.x;
+      const vertexY = hitbox.object.position.y + hitbox.rotatedOffsetY + vertexOffset.y;
+
+      const angleToVertex = angle(vertexX - x, vertexY - y);
+      if (angleToVertex < minAngle) {
+         minAngle = angleToVertex;
+      }
+   }
+
+   return minAngle;
+}
+
+export function getMaxAngleToRectangularHitbox(x: number, y: number, hitbox: RectangularHitbox): number {
+   let maxAngle = -99999.9;
+   for (let i = 0; i < 4; i++) {
+      const vertexOffset = hitbox.vertexOffsets[i];
+
+      const vertexX = hitbox.object.position.x + hitbox.rotatedOffsetX + vertexOffset.x;
+      const vertexY = hitbox.object.position.y + hitbox.rotatedOffsetY + vertexOffset.y;
+
+      const angleToVertex = angle(vertexX - x, vertexY - y);
+      if (angleToVertex > maxAngle) {
+         maxAngle = angleToVertex;
+      }
+   }
+
+   return maxAngle;
+}
+
+/** Calculates the minimum angle startAngle would need to turn to reach endAngle */
+export function getClockwiseAngleDistance(startAngle: number, endAngle: number): number {
+   let angle = endAngle - startAngle;
+   if (angle < 0) {
+      angle += 2 * Math.PI;
+   }
+   return angle;
+}
+
+export function angleIsInRange(angle: number, minAngle: number, maxAngle: number): boolean {
+   const distFromMinToAngle = getClockwiseAngleDistance(minAngle, angle);
+   const distFromMinToMax = getClockwiseAngleDistance(minAngle, maxAngle);
+
+   // The angle is in the range if the distance to the angle is shorter than the distance to the max
+   return distFromMinToAngle < distFromMinToMax;
 }

@@ -1,7 +1,7 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { AIHelperComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -13,7 +13,7 @@ import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } f
 import Board from "../../Board";
 import { chooseEscapeEntity, registerAttackingEntity, runFromAttackingEntity } from "../../ai/escape-ai";
 import { EscapeAIComponent, updateEscapeAIComponent } from "../../components/EscapeAIComponent";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 15;

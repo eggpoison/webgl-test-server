@@ -6,6 +6,7 @@ import SRandom from "./SRandom";
 import Entity, { NUM_ENTITY_TYPES } from "./Entity";
 import { createEntity } from "./entity-creation";
 import { yetiSpawnPositionIsValid } from "./entities/mobs/yeti";
+import { SERVER } from "./server";
 
 const PACK_SPAWN_RANGE = 200;
 
@@ -189,6 +190,9 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    
    const entity = createEntity(new Point(spawnOriginX, spawnOriginY), spawnInfo.entityType);
    addEntityToCensus(entity);
+   if (!SERVER.isRunning) {
+      Board.pushJoinBuffer();
+   }
 
    // Pack spawning
  
@@ -233,6 +237,9 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
          const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
          const entity = createEntity(spawnPosition, spawnInfo.entityType);
          addEntityToCensus(entity);
+         if (!SERVER.isRunning) {
+            Board.pushJoinBuffer();
+         }
          i++;
       }
    }
@@ -244,20 +251,14 @@ export function spawnPositionIsValid(positionX: number, positionY: number): bool
    const minChunkY = Math.max(Math.min(Math.floor((positionY - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
    const maxChunkY = Math.max(Math.min(Math.floor((positionY + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
-   const checkedEntities = new Set<Entity>();
-   
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const entity of chunk.entities) {
-            if (checkedEntities.has(entity)) continue;
-            
             const distanceSquared = Math.pow(positionX - entity.position.x, 2) + Math.pow(positionY - entity.position.y, 2);
             if (distanceSquared <= MIN_SPAWN_DISTANCE_SQUARED) {
                return false;
             }
-
-            checkedEntities.add(entity);
          }
       }
    }

@@ -1,6 +1,6 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE, NO_COLLISION } from "../../Entity";
-import { AIHelperComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -11,10 +11,9 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
-import { AIHelperComponent } from "../../components/AIHelperComponent";
+import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { InventoryUseComponent, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { attackEntity, calculateRadialAttackTargets, wasTribeMemberKill } from "../tribes/tribe-member";
-import Hitbox from "../../hitboxes/Hitbox";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 import { createItemsOverEntity } from "../../entity-shared";
@@ -104,7 +103,17 @@ const doAttack = (zombie: Entity, target: Entity): void => {
 }
 
 export function tickZombie(zombie: Entity): void {
+   if (zombie.type !== IEntityType.zombie) {
+      throw new Error("not zombie??");
+   }
    const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   // @Temporary
+   if (typeof zombieComponent === "undefined") {
+      console.log("bad");
+      console.log(zombie.type === IEntityType.zombie);
+      console.log(zombie.isRemoved);
+      console.log(ZombieComponentArray.hasComponent(zombie));
+   }
 
    // Update attacking entities
    // @Speed
@@ -229,7 +238,7 @@ const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
       return true;
    }
 
-   return entity.type === IEntityType.tribeTotem || entity.type === IEntityType.workerHut || entity.type === IEntityType.warriorHut || entity.type === IEntityType.barrel || entity.type === IEntityType.researchBench;
+   return entity.type === IEntityType.tribeTotem || entity.type === IEntityType.workerHut || entity.type === IEntityType.warriorHut || entity.type === IEntityType.barrel || entity.type === IEntityType.researchBench || entity.type === IEntityType.ballista || entity.type === IEntityType.woodenDoor || entity.type === IEntityType.slingTurret;
 }
 
 export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void {
@@ -270,7 +279,7 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
 }
 
 export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
-   if (attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus) {
+   if (attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenWallSpikes && attackingEntity.type !== IEntityType.woodenFloorSpikes && attackingEntity.type !== IEntityType.floorPunjiSticks && attackingEntity.type !== IEntityType.wallPunjiSticks) {
       const zombieComponent = ZombieComponentArray.getComponent(zombie);
       zombieComponent.attackingEntityIDs[attackingEntity.id] = CHASE_PURSUE_TIME;
    }

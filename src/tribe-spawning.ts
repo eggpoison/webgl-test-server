@@ -5,6 +5,7 @@ import OPTIONS from "./options";
 import { createTribeTotem } from "./entities/tribes/tribe-totem";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { createBarrel } from "./entities/tribes/barrel";
+import { PhysicsComponentArray } from "./components/ComponentArray";
 
 /** Average number of spawn attempts that are done each second */
 const TRIBE_SPAWN_RATE = 0.5;
@@ -119,6 +120,8 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    Board.addTribe(tribe);
 
    totem.rotation = 2 * Math.PI * Math.random();
+   
+   // @Cleanup: We shouldn't have to do this.
    totem.hitboxesAreDirty = true;
 
    const buildingPositions: Array<Point> = [position];

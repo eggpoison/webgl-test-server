@@ -2,16 +2,18 @@ import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item,
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Tile from "../../Tile";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity } from "../../ai-shared";
-import { InventoryComponentArray, TribeComponentArray, AIHelperComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
+import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, PhysicsComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull } from "../../components/InventoryComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
-import { getTribeMemberRelationship, EntityRelationship, tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem } from "./tribe-member";
+import { tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem } from "./tribe-member";
 import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE, TribesmanAIType } from "./tribe-worker";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import Board from "../../Board";
 import { TRIBE_WARRIOR_VISION_RANGE } from "./tribe-warrior";
+import { AIHelperComponentArray } from "../../components/AIHelperComponent";
+import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -93,9 +95,11 @@ const shouldEscape = (healthComponent: HealthComponent): boolean => {
 }
 
 const positionIsSafe = (tribesman: Entity, x: number, y: number): boolean => {
+   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   
    const visibleEntitiesFromItem = getEntitiesInVisionRange(x, y, getVisionRange(tribesman));
    for (const entity of visibleEntitiesFromItem) {
-      const relationship = getTribeMemberRelationship(tribesman, entity);
+      const relationship = getTribeMemberRelationship(tribeComponent, entity);
       if (relationship >= EntityRelationship.hostileMob) {
          return false;
       }
@@ -197,7 +201,6 @@ const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
       tribesman.rotation = direction;
       tribesman.hitboxesAreDirty = true;
    }
-   tribesman.hitboxesAreDirty = true;
    tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
    tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
 
@@ -323,6 +326,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman);
 
    // @Cleanup: A nicer way to do this might be to sort the visible entities array based on the 'threat level' of each entity
 
@@ -335,7 +339,7 @@ export function tickTribesman(tribesman: Entity): void {
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
       const entity = aiHelperComponent.visibleEntities[i];
 
-      switch (getTribeMemberRelationship(tribesman, entity)) {
+      switch (getTribeMemberRelationship(tribeComponent, entity)) {
          case EntityRelationship.enemy: {
             visibleEnemies.push(entity);
             break;
@@ -384,8 +388,9 @@ export function tickTribesman(tribesman: Entity): void {
 
       const playerComponent = PlayerComponentArray.getComponent(entity);
       if (playerComponent.interactingEntityID === tribesman.id) {
-         tribesman.rotation = tribesman.position.calculateAngleBetween(entity.position);
          tribesman.hitboxesAreDirty = true;
+
+         tribesman.rotation = tribesman.position.calculateAngleBetween(entity.position);
          const distance = tribesman.position.calculateDistanceBetween(entity.position);
          if (willStopAtDesiredDistance(tribesman, 80, distance)) {
             tribesman.acceleration.x = 0;
@@ -461,7 +466,6 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // If any tribe members need reinforcements, attack the requested target
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
    if (tribeComponent.tribe !== null && tribeComponent.tribe.reinforcementInfoArray.length > 0) {
       let closestTarget!: Entity;
       let minDist = Number.MAX_SAFE_INTEGER;
@@ -502,11 +506,13 @@ export function tickTribesman(tribesman: Entity): void {
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          tribesman.rotation = tribesman.position.calculateAngleBetween(closestDroppedItem.position);
-         tribesman.hitboxesAreDirty = true;
          tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
          tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
          useInfo.currentAction = TribeMemberAction.none;
+         
+         tribesman.hitboxesAreDirty = true;
+
          return;
       }
    }
@@ -641,9 +647,9 @@ export function tickTribesman(tribesman: Entity): void {
          tribesmanComponent.targetPatrolPositionY = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
          // @Speed
          tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
-         tribesman.hitboxesAreDirty = true;
          tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
+         tribesman.hitboxesAreDirty = true;
 
          tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
          return;
@@ -660,9 +666,9 @@ export function tickTribesman(tribesman: Entity): void {
       // Move to patrol position
       // @Speed
       tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
-      tribesman.hitboxesAreDirty = true;
       tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
+      tribesman.hitboxesAreDirty = true;
 
       tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
       return;
@@ -703,9 +709,10 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
    // Run away from that position
    const runDirection = angle(averageEnemyX - tribesman.position.x, averageEnemyY - tribesman.position.y) + Math.PI;
    tribesman.rotation = runDirection;
-   tribesman.hitboxesAreDirty = true;
    tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(runDirection);
    tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(runDirection);
+
+   tribesman.hitboxesAreDirty = true;
 }
 
 // @Cleanup: Copy and paste
@@ -816,7 +823,6 @@ const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number 
 const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
    const distance = calculateDistanceFromEntity(tribesman, target);
    tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
-   tribesman.hitboxesAreDirty = true;
    if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
       tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
       tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
@@ -824,12 +830,14 @@ const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
       tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation);
    }
+
+   // @Speed: Shouldn't do always
+   tribesman.hitboxesAreDirty = true;
 }
 
 const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
    const distance = calculateDistanceFromEntity(tribesman, target);
    tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
-   tribesman.hitboxesAreDirty = true;
    if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
       tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
       tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
@@ -837,12 +845,15 @@ const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
       tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
    }
+   
+   // @Speed: Shouldn't do always
+   tribesman.hitboxesAreDirty = true;
 }
 
 const doMeleeAttack = (tribesman: Entity): void => {
    // Find the attack target
    const attackTargets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
-   const target = calculateAttackTarget(tribesman, attackTargets);
+   const target = calculateAttackTarget(tribesman, attackTargets, EntityRelationship.friendlyBuilding);
 
    // Register the hit
    if (target !== null) {
