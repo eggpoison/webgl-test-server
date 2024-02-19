@@ -21,6 +21,8 @@ export interface EntitySpawnInfo {
    readonly minPackSize: number;
    readonly maxPackSize: number;
    readonly onlySpawnsInNight: boolean;
+   /** Minimum distance a spawn event can occur from another entity */
+   readonly minSpawnDistance: number;
 }
 
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
@@ -31,7 +33,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.01,
       minPackSize: 2,
       maxPackSize: 5,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.berry_bush,
@@ -40,7 +43,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.0025,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.tree,
@@ -49,7 +53,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.015,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 75
    },
    {
       entityType: EntityTypeConst.tombstone,
@@ -58,7 +63,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.003,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: true
+      onlySpawnsInNight: true,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.boulder,
@@ -67,7 +73,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.025,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 60
    },
    {
       entityType: EntityTypeConst.cactus,
@@ -76,7 +83,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.03,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 75
    },
    {
       entityType: EntityTypeConst.yeti,
@@ -85,7 +93,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.008,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.ice_spikes,
@@ -94,7 +103,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.06,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.slimewisp,
@@ -103,7 +113,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.3,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 50
    },
    {
       entityType: EntityTypeConst.krumblid,
@@ -112,7 +123,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.015,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.frozen_yeti,
@@ -121,7 +133,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.008,
       minPackSize: 1,
       maxPackSize: 1,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    },
    {
       entityType: EntityTypeConst.fish,
@@ -130,7 +143,8 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxDensity: 0.03,
       minPackSize: 3,
       maxPackSize: 4,
-      onlySpawnsInNight: false
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    }
    // {
    //    entityType: EntityTypeConst.berry_snowbush,
@@ -139,13 +153,10 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    //    maxDensity: 0.0025,
    //    minPackSize: 1,
    //    maxPackSize: 1,
-   //    onlySpawnsInNight: false
+   //    onlySpawnsInNight: false,
+   //    minSpawnDistance: 150
    // }
 ];
-
-/** Minimum distance a spawn event can occur from another entity */
-export const MIN_SPAWN_DISTANCE = 150;
-const MIN_SPAWN_DISTANCE_SQUARED = MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE;
 
 const customSpawnConditionsAreMet = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOriginY: number) => {
    switch (spawnInfo.entityType) {
@@ -227,7 +238,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
          continue;
       }
 
-      if (spawnPositionIsValid(spawnPositionX, spawnPositionY)) {
+      if (spawnPositionIsValid(spawnInfo, spawnPositionX, spawnPositionY)) {
          const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
          const entity = new entityClass(spawnPosition);
          addEntityToCensus(entity);
@@ -240,11 +251,11 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    }
 }
 
-export function spawnPositionIsValid(positionX: number, positionY: number): boolean {
-   const minChunkX = Math.max(Math.min(Math.floor((positionX - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((positionX + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((positionY - MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((positionY + MIN_SPAWN_DISTANCE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+export function spawnPositionIsValid(spawnInfo: EntitySpawnInfo, positionX: number, positionY: number): boolean {
+   const minChunkX = Math.max(Math.min(Math.floor((positionX - spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((positionX + spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((positionY - spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((positionY + spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
    const checkedEntities = new Set<Entity>();
    
@@ -255,7 +266,7 @@ export function spawnPositionIsValid(positionX: number, positionY: number): bool
             if (checkedEntities.has(entity)) continue;
             
             const distanceSquared = Math.pow(positionX - entity.position.x, 2) + Math.pow(positionY - entity.position.y, 2);
-            if (distanceSquared <= MIN_SPAWN_DISTANCE_SQUARED) {
+            if (distanceSquared <= spawnInfo.minSpawnDistance * spawnInfo.minSpawnDistance) {
                return false;
             }
 
@@ -293,7 +304,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
          y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
       }
 
-      if (spawnPositionIsValid(x, y) && customSpawnConditionsAreMet(spawnInfo, x, y)) {
+      if (spawnPositionIsValid(spawnInfo, x, y) && customSpawnConditionsAreMet(spawnInfo, x, y)) {
          spawnEntities(spawnInfo, x, y);
       }
    }
