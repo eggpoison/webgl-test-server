@@ -1,4 +1,4 @@
-import { DoorToggleType, GameObjectDebugData, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { DoorToggleType, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -18,7 +18,7 @@ import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
 import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
 import { onFishDeath } from "./entities/mobs/fish";
-import { DoorComponentArray, PhysicsComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, DoorComponentArray, PhysicsComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
@@ -35,7 +35,7 @@ import { onGolemCollision } from "./entities/mobs/golem";
 import { onWoodenSpikesCollision } from "./entities/structures/wooden-floor-spikes";
 import { onPunjiSticksCollision } from "./entities/structures/floor-punji-sticks";
 import { AIHelperComponentArray } from "./components/AIHelperComponent";
-import { onSlingRockCollision } from "./entities/projectiles/sling-rock";
+import { EntityRelationship, getTribeMemberRelationship } from "./components/TribeComponent";
 
 export const ID_SENTINEL_VALUE = 99999999;
 
@@ -1133,6 +1133,20 @@ class Entity<T extends IEntityType = IEntityType> {
           this.boundingArea[3] < entity.boundingArea[2]) { // maxY(1) < minY(2)
          return NO_COLLISION;
       }
+
+      // @Cleanup @Speed: Figure out something better than this hardcoded bullshit
+      if (entity.type === IEntityType.woodenArrowProjectile && getTribeMemberRelationship(TribeComponentArray.getComponent(entity), this) === EntityRelationship.friendlyBuilding) {
+         const arrowComponent = ArrowComponentArray.getComponent(entity);
+         if (arrowComponent.ignoreFriendlyBuildings) {
+            return NO_COLLISION;
+         }
+      }
+      if (this.type === IEntityType.woodenArrowProjectile && getTribeMemberRelationship(TribeComponentArray.getComponent(this), entity) === EntityRelationship.friendlyBuilding) {
+         const arrowComponent = ArrowComponentArray.getComponent(this);
+         if (arrowComponent.ignoreFriendlyBuildings) {
+            return NO_COLLISION;
+         }
+      }
       
       // More expensive hitbox check
       const numHitboxes = this.hitboxes.length;
@@ -1207,7 +1221,6 @@ class Entity<T extends IEntityType = IEntityType> {
          case IEntityType.woodenFloorSpikes: onWoodenSpikesCollision(this, collidingEntity); break;
          case IEntityType.floorPunjiSticks:
          case IEntityType.wallPunjiSticks: onPunjiSticksCollision(this, collidingEntity); break;
-         case IEntityType.slingRock: onSlingRockCollision(this, collidingEntity); break;
       }
    }
 

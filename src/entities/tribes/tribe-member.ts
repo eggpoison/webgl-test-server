@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintBuildingType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -32,9 +32,9 @@ import { createFloorPunjiSticks } from "../structures/floor-punji-sticks";
 import { doBlueprintWork } from "../../components/BlueprintComponent";
 import { createWoodenWallSpikes } from "../structures/wooden-wall-spikes";
 import { createWallPunjiSticks } from "../structures/wall-punji-sticks";
-import { createBallista } from "../structures/ballista";
 import { createSlingTurret } from "../structures/sling-turret";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { createBlueprintEntity } from "../blueprint-entity";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -804,12 +804,12 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
             case IEntityType.ballista: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-               placedEntity = createBallista(placePosition, tribeComponent.tribe);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.ballista, tribeComponent.tribe, placeRotation);
                break;
             }
             case IEntityType.slingTurret: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-               placedEntity = createSlingTurret(placePosition, tribeComponent.tribe);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.slingTurret, tribeComponent.tribe, placeRotation);
                break;
             }
             default: {
@@ -851,9 +851,10 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                   type: GenericArrowType.woodenArrow,
                   damage: itemInfo.projectileDamage,
                   knockback: itemInfo.projectileKnockback,
-                  width: 12,
-                  height: 64,
-                  ignoreFriendlyBuildings: false
+                  hitboxWidth: 12,
+                  hitboxHeight: 64,
+                  ignoreFriendlyBuildings: false,
+                  statusEffect: null
                }
                arrow = createWoodenArrow(spawnPosition, tribeMember, arrowInfo);
                break;
@@ -893,9 +894,10 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             type: GenericArrowType.woodenArrow,
             damage: itemInfo.projectileDamage,
             knockback: itemInfo.projectileKnockback,
-            width: 12,
-            height: 64,
-            ignoreFriendlyBuildings: false
+            hitboxWidth: 12,
+            hitboxHeight: 64,
+            ignoreFriendlyBuildings: false,
+            statusEffect: null
          }
          const arrow = createWoodenArrow(spawnPosition, tribeMember, arrowInfo);
          
@@ -1102,5 +1104,5 @@ export function onTribeMemberHurt(tribeMember: Entity, attackingEntity: Entity):
 }
 
 export function wasTribeMemberKill(attackingEntity: Entity | null): boolean {
-   return attackingEntity !== null && (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior || attackingEntity.type === IEntityType.woodenFloorSpikes || attackingEntity.type === IEntityType.woodenWallSpikes || attackingEntity.type === IEntityType.floorPunjiSticks || attackingEntity.type === IEntityType.wallPunjiSticks);
+   return attackingEntity !== null && (attackingEntity.type === IEntityType.player || attackingEntity.type === IEntityType.tribeWorker || attackingEntity.type === IEntityType.tribeWarrior || attackingEntity.type === IEntityType.woodenFloorSpikes || attackingEntity.type === IEntityType.woodenWallSpikes || attackingEntity.type === IEntityType.floorPunjiSticks || attackingEntity.type === IEntityType.wallPunjiSticks || attackingEntity.type === IEntityType.ballista || attackingEntity.type === IEntityType.slingTurret);
 }

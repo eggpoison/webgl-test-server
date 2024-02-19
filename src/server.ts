@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, StructureShapeType, randFloat, SlimeSize, ItemData, StatusEffect } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -10,9 +10,9 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { ArrowComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
-import { getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
+import { InventoryComponent, addItemToInventory, getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
-import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
+import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { getTilesOfBiome } from "./census";
 import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
@@ -20,9 +20,14 @@ import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
 import { getBlueprintProgress } from "./components/BlueprintComponent";
 import { resetHealthComponentAmountHealed } from "./components/HealthComponent";
-import { getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
+import { createSlingTurret, getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
 import { forceMaxGrowAllIceSpikes } from "./entities/resources/ice-spikes";
-import { getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
+import { createBallista, getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
+import { createTribeTotem } from "./entities/tribes/tribe-totem";
+import { createWorkerHut } from "./entities/tribes/worker-hut";
+import { createWoodenWall } from "./entities/structures/wooden-wall";
+import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
+import { createYeti } from "./entities/mobs/yeti";
 
 /*
 
@@ -570,14 +575,16 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
       case IEntityType.blueprintEntity: {
          const blueprintComponent = BlueprintComponentArray.getComponent(entity);
-         clientArgs = [blueprintComponent.shapeType, getBlueprintProgress(blueprintComponent)];
+         clientArgs = [blueprintComponent.buildingType, getBlueprintProgress(blueprintComponent)];
          break;
       }
       case IEntityType.ballista: {
+         const tribeComponent = TribeComponentArray.getComponent(entity);
          const turretComponent = TurretComponentArray.getComponent(entity);
          const inventoryComponent = InventoryComponentArray.getComponent(entity);
          
          clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             turretComponent.aimDirection,
             getBallistaChargeProgress(entity),
             getBallistaReloadProgress(entity),
@@ -586,12 +593,15 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.slingTurret: {
+         const tribeComponent = TribeComponentArray.getComponent(entity);
          const turretComponent = TurretComponentArray.getComponent(entity);
-         clientArgs = [turretComponent.aimDirection, getSlingTurretChargeProgress(turretComponent), getSlingTurretReloadProgress(turretComponent)];
-         break;
-      }
-      case IEntityType.slingRock: {
-         clientArgs = [];
+
+         clientArgs = [
+            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
+            turretComponent.aimDirection,
+            getSlingTurretChargeProgress(turretComponent),
+            getSlingTurretReloadProgress(turretComponent)
+         ];
          break;
       }
    }
@@ -812,7 +822,40 @@ class GameServer {
          let spawnPosition: Point;
 
          setTimeout(() => {
-            createCow(new Point(spawnPosition.x + 200, spawnPosition.y));
+            // const tribe = new Tribe(TribeType.barbarians);
+            // Board.addTribe(tribe);
+            // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 1000), tribe);
+
+            // for (let i = 0; i < 3; i++) {
+            //    const hut = createWorkerHut(new Point(spawnPosition.x + i * 200, spawnPosition.y + 700), tribe);
+            //    hut.rotation = Math.PI;
+            //    tribe.registerNewWorkerHut(hut);
+            // }
+            createYeti(new Point(spawnPosition.x, spawnPosition.y + 600));
+
+            const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
+            const tribeComp = TribeComponentArray.getComponent(player);
+            const n = 6;
+            // for (let i = 0; i < n; i++) {
+            //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 100), tribeComp.tribe);
+            // }
+            // for (let i = 0; i < n; i++) {
+            //    createWoodenFloorSpikes(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 180), tribeComp.tribe);
+            // }
+            // const n2 = 2;
+            // for (let i = 0; i < n2; i++) {
+            //    createSlingTurret(new Point(spawnPosition.x + (i - (n2 - 1)/2) * 200, spawnPosition.y + 0), tribeComp.tribe);
+            // }
+            const n3 = 3;
+            for (let i = 0; i < n3; i++) {
+               const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
+               setTimeout(() => {
+                  addItemToInventory(InventoryComponentArray.getComponent(b), "ammoBoxInventory", ItemType.wood, 1);
+               }, 100);
+            }
+            for (let i = 0; i < n; i++) {
+               createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y - 320), tribeComp.tribe);
+            }
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -1092,11 +1135,11 @@ class GameServer {
             playerData.tribe.studyTech(studyAmount);
          });
 
-         socket.on("shape_structure", (structureID: number, type: StructureShapeType): void => {
+         socket.on("shape_structure", (structureID: number, buildingType: BlueprintBuildingType): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               shapeStructure(player, structureID, type);
+               shapeStructure(player, structureID, buildingType);
             };
          });
 

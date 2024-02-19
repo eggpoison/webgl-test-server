@@ -145,6 +145,7 @@ class Tribe {
       this.members.push(member);
    }
 
+   // @Cleanup: Call these functions from the hut create functions
    public registerNewWorkerHut(workerHut: Entity): void {
       if (this.totem === null) {
          console.warn("Can't register hut without a tribe.");

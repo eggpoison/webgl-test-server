@@ -3,7 +3,7 @@ export class ZombieComponent {
    public readonly zombieType: number;
    public readonly tombstoneID: number;
 
-   // Stores the ids of all entities which have recently attacked the zombie
+   /** Maps the IDs of entities which have attacked the zombie to the number of ticks that they should remain in the object for */
    public readonly attackingEntityIDs: Record<number, number> = {};
 
    /** Cooldown before the zombie can do another attack */

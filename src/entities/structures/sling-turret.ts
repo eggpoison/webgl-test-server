@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, StatusEffectComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -7,19 +7,20 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import Tribe from "../../Tribe";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
-import { createSlingRock } from "../projectiles/sling-rock";
 import { getAngleDiff } from "../../ai-shared";
 import { TurretComponent } from "../../components/TurretComponent";
+import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow";
 
 // @Cleanup: A lot of copy and paste from ballista.ts
 
 
 const COOLDOWN_TICKS = 1.5 * SETTINGS.TPS;
 const RELOAD_TIME_TICKS = Math.floor(0.4 * SETTINGS.TPS);
-const VISION_RANGE = 300;
+const VISION_RANGE = 400;
 
-export function createSlingTurret(position: Point, tribe: Tribe | null): Entity {
+export function createSlingTurret(position: Point, tribe: Tribe | null, rotation: number): Entity {
    const turret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   turret.rotation = rotation;
 
    turret.addHitbox(new CircularHitbox(turret, 1.5, 0, 0, 40 - 0.05, 0));
 
@@ -37,7 +38,8 @@ const entityIsTargetted = (entity: Entity, tribeComponent: TribeComponent): bool
       return false;
    }
    
-   return getTribeMemberRelationship(tribeComponent, entity) > EntityRelationship.friendlyBuilding;
+   const relationship = getTribeMemberRelationship(tribeComponent, entity);
+   return relationship > EntityRelationship.friendlyBuilding && relationship !== EntityRelationship.resource;
 }
 
 const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
@@ -65,10 +67,18 @@ const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Enti
 }
 
 const fire = (turret: Entity, slingTurretComponent: TurretComponent): void => {
-   const tribeComponent = TribeComponentArray.getComponent(turret);
+   const arrowInfo: GenericArrowInfo = {
+      type: GenericArrowType.slingRock,
+      damage: 2,
+      knockback: 75,
+      hitboxWidth: 20,
+      hitboxHeight: 20,
+      ignoreFriendlyBuildings: true,
+      statusEffect: null
+   };
    
    const spawnPosition = turret.position.copy();
-   const rock = createSlingRock(spawnPosition, tribeComponent.tribe);
+   const rock = createWoodenArrow(spawnPosition, turret, arrowInfo);
 
    const direction = slingTurretComponent.aimDirection + turret.rotation;
    rock.rotation = direction;

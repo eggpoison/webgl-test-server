@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, STRUCTURE_TYPES_CONST, SnowballSize, StatusEffectConst, StructureTypeConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, ItemComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
@@ -21,7 +21,9 @@ const MAX_TERRITORY_SIZE = 100;
 
 const YETI_SIZE = 128;
 
-const VISION_RANGE = 400;
+// @Temporary
+const VISION_RANGE = 550;
+// const VISION_RANGE = 400;
 
 const ATTACK_PURSUE_TIME = 5;
 
@@ -219,9 +221,12 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
          }
       }
 
-      // Don't attack entities which aren't attacking the yeti and aren't encroaching on its territory
-      if (!yetiComponent.attackingEntities.hasOwnProperty(entity.id) && !yetiComponent.territory.includes(entity.tile)) {
-         continue;
+      // @Temporary? Do we want them to attack bases?
+      if (!STRUCTURE_TYPES_CONST.includes(entity.type as StructureTypeConst) || entity.type === IEntityType.woodenFloorSpikes) {
+         // Don't attack entities which aren't attacking the yeti and aren't encroaching on its territory
+         if (!yetiComponent.attackingEntities.hasOwnProperty(entity.id) && !yetiComponent.territory.includes(entity.tile)) {
+            continue;
+         }
       }
 
       const distanceSquared = yeti.position.calculateDistanceSquaredBetween(entity.position);
@@ -246,63 +251,66 @@ export function tickYeti(yeti: Entity): void {
       }
    }
 
-   if (yetiComponent.isThrowingSnow) {
-      // If the target has run outside the yeti's vision range, cancel the attack
-      if (yetiComponent.attackTarget !== null && yeti.position.calculateDistanceBetween(yetiComponent.attackTarget.position) > VISION_RANGE) {
-         yetiComponent.snowThrowAttackProgress = 1;
-         yetiComponent.attackTarget = null;
-         yetiComponent.isThrowingSnow = false;
-      } else {
-         switch (yetiComponent.snowThrowStage) {
-            case SnowThrowStage.windup: {
-               yetiComponent.snowThrowAttackProgress -= 1 / SETTINGS.TPS / SNOW_THROW_WINDUP_TIME;
-               if (yetiComponent.snowThrowAttackProgress <= 0) {
-                  throwSnow(yeti, yetiComponent.attackTarget!);
-                  yetiComponent.snowThrowAttackProgress = 0;
-                  yetiComponent.snowThrowCooldown = YETI_SNOW_THROW_COOLDOWN;
-                  yetiComponent.snowThrowStage = SnowThrowStage.hold;
-                  yetiComponent.snowThrowHoldTimer = 0;
+   // @Temporary
+   if (1+1===3) {
+      if (yetiComponent.isThrowingSnow) {
+         // If the target has run outside the yeti's vision range, cancel the attack
+         if (yetiComponent.attackTarget !== null && yeti.position.calculateDistanceBetween(yetiComponent.attackTarget.position) > VISION_RANGE) {
+            yetiComponent.snowThrowAttackProgress = 1;
+            yetiComponent.attackTarget = null;
+            yetiComponent.isThrowingSnow = false;
+         } else {
+            switch (yetiComponent.snowThrowStage) {
+               case SnowThrowStage.windup: {
+                  yetiComponent.snowThrowAttackProgress -= 1 / SETTINGS.TPS / SNOW_THROW_WINDUP_TIME;
+                  if (yetiComponent.snowThrowAttackProgress <= 0) {
+                     throwSnow(yeti, yetiComponent.attackTarget!);
+                     yetiComponent.snowThrowAttackProgress = 0;
+                     yetiComponent.snowThrowCooldown = YETI_SNOW_THROW_COOLDOWN;
+                     yetiComponent.snowThrowStage = SnowThrowStage.hold;
+                     yetiComponent.snowThrowHoldTimer = 0;
+                  }
+   
+                  const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+                  if (direction !== yeti.rotation) {
+                     yeti.rotation = direction;
+                     yeti.hitboxesAreDirty = true;
+                  }
+                  stopEntity(yeti);
+                  return;
                }
-
-               const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
-               if (direction !== yeti.rotation) {
-                  yeti.rotation = direction;
-                  yeti.hitboxesAreDirty = true;
+               case SnowThrowStage.hold: {
+                  yetiComponent.snowThrowHoldTimer += 1 / SETTINGS.TPS;
+                  if (yetiComponent.snowThrowHoldTimer >= SNOW_THROW_HOLD_TIME) {
+                     yetiComponent.snowThrowStage = SnowThrowStage.return;
+                  }
+   
+                  const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+                  if (direction !== yeti.rotation) {
+                     yeti.rotation = direction;
+                     yeti.hitboxesAreDirty = true;
+                  }
+                  stopEntity(yeti);
+                  return;
                }
-               stopEntity(yeti);
-               return;
-            }
-            case SnowThrowStage.hold: {
-               yetiComponent.snowThrowHoldTimer += 1 / SETTINGS.TPS;
-               if (yetiComponent.snowThrowHoldTimer >= SNOW_THROW_HOLD_TIME) {
-                  yetiComponent.snowThrowStage = SnowThrowStage.return;
-               }
-
-               const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
-               if (direction !== yeti.rotation) {
-                  yeti.rotation = direction;
-                  yeti.hitboxesAreDirty = true;
-               }
-               stopEntity(yeti);
-               return;
-            }
-            case SnowThrowStage.return: {
-               yetiComponent.snowThrowAttackProgress += 1 / SETTINGS.TPS / SNOW_THROW_RETURN_TIME;
-               if (yetiComponent.snowThrowAttackProgress >= 1) {
-                  yetiComponent.snowThrowAttackProgress = 1;
-                  yetiComponent.attackTarget = null;
-                  yetiComponent.isThrowingSnow = false;
+               case SnowThrowStage.return: {
+                  yetiComponent.snowThrowAttackProgress += 1 / SETTINGS.TPS / SNOW_THROW_RETURN_TIME;
+                  if (yetiComponent.snowThrowAttackProgress >= 1) {
+                     yetiComponent.snowThrowAttackProgress = 1;
+                     yetiComponent.attackTarget = null;
+                     yetiComponent.isThrowingSnow = false;
+                  }
                }
             }
          }
-      }
-   } else if (yetiComponent.snowThrowCooldown === 0 && !yetiComponent.isThrowingSnow) {
-      const target = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
-      if (target !== null) {
-         yetiComponent.isThrowingSnow = true;
-         yetiComponent.attackTarget = target;
-         yetiComponent.snowThrowAttackProgress = 1;
-         yetiComponent.snowThrowStage = SnowThrowStage.windup;
+      } else if (yetiComponent.snowThrowCooldown === 0 && !yetiComponent.isThrowingSnow) {
+         const target = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
+         if (target !== null) {
+            yetiComponent.isThrowingSnow = true;
+            yetiComponent.attackTarget = target;
+            yetiComponent.snowThrowAttackProgress = 1;
+            yetiComponent.snowThrowStage = SnowThrowStage.windup;
+         }
       }
    }
 

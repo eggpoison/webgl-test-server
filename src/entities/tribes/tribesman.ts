@@ -853,7 +853,7 @@ const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
 const doMeleeAttack = (tribesman: Entity): void => {
    // Find the attack target
    const attackTargets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
-   const target = calculateAttackTarget(tribesman, attackTargets, EntityRelationship.friendlyBuilding);
+   const target = calculateAttackTarget(tribesman, attackTargets, ~(EntityRelationship.friendly | EntityRelationship.friendlyBuilding));
 
    // Register the hit
    if (target !== null) {

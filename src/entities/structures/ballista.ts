@@ -12,6 +12,8 @@ import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow
 import { InventoryComponent, createNewInventory, getFirstOccupiedItemSlotInInventory, getInventory, getItemFromInventory } from "../../components/InventoryComponent";
 import { angleIsInRange, getMaxAngleToCircularHitbox, getMaxAngleToRectangularHitbox, getMinAngleToCircularHitbox, getMinAngleToRectangularHitbox } from "../../ai-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
+import { ArrowStatusEffectInfo } from "../../components/ArrowComponent";
+import Board from "../../Board";
 
 interface AmmoInfo {
    readonly type: GenericArrowType;
@@ -23,6 +25,7 @@ interface AmmoInfo {
    readonly hitboxWidth: number;
    readonly hitboxHeight: number;
    readonly ammoMultiplier: number;
+   readonly statusEffect: ArrowStatusEffectInfo | null;
 }
 
 const AMMO_INFO_RECORD: Record<BallistaAmmoType, AmmoInfo> = {
@@ -32,10 +35,11 @@ const AMMO_INFO_RECORD: Record<BallistaAmmoType, AmmoInfo> = {
       knockback: 150,
       shotCooldownTicks: 2.5 * SETTINGS.TPS,
       reloadTimeTicks: Math.floor(0.4 * SETTINGS.TPS),
-      projectileSpeed: 1000,
+      projectileSpeed: 1100,
       hitboxWidth: 12,
       hitboxHeight: 80,
-      ammoMultiplier: 2
+      ammoMultiplier: 2,
+      statusEffect: null
    },
    [ItemType.rock]: {
       type: GenericArrowType.ballistaRock,
@@ -46,10 +50,11 @@ const AMMO_INFO_RECORD: Record<BallistaAmmoType, AmmoInfo> = {
       projectileSpeed: 1000,
       hitboxWidth: 12,
       hitboxHeight: 80,
-      ammoMultiplier: 2
+      ammoMultiplier: 2,
+      statusEffect: null
    },
    [ItemType.slimeball]: {
-      type: GenericArrowType.woodenBolt,
+      type: GenericArrowType.ballistaSlimeball,
       damage: 3,
       knockback: 0,
       shotCooldownTicks: 2 * SETTINGS.TPS,
@@ -57,27 +62,38 @@ const AMMO_INFO_RECORD: Record<BallistaAmmoType, AmmoInfo> = {
       projectileSpeed: 800,
       hitboxWidth: 12,
       hitboxHeight: 80,
-      ammoMultiplier: 3
+      ammoMultiplier: 3,
+      statusEffect: {
+         type: StatusEffectConst.poisoned,
+         durationTicks: 2 * SETTINGS.TPS
+      }
    },
    [ItemType.frostcicle]: {
-      type: GenericArrowType.woodenBolt,
+      type: GenericArrowType.ballistaFrostcicle,
       damage: 1,
       knockback: 50,
-      shotCooldownTicks: 0.6 * SETTINGS.TPS,
+      shotCooldownTicks: 0.5 * SETTINGS.TPS,
       reloadTimeTicks: Math.floor(0.15 * SETTINGS.TPS),
       projectileSpeed: 1500,
       hitboxWidth: 12,
       hitboxHeight: 80,
-      ammoMultiplier: 5
+      ammoMultiplier: 5,
+      statusEffect: {
+         type: StatusEffectConst.freezing,
+         durationTicks: 1 * SETTINGS.TPS
+      }
    }
 }
 
-const VISION_RANGE = 500;
+const VISION_RANGE = 550;
 const HITBOX_SIZE = 100 - 0.05;
-const AIM_ARC_SIZE = Math.PI / 2;
+// @Temporary
+const AIM_ARC_SIZE = Math.PI / 2.3;
+// const AIM_ARC_SIZE = Math.PI * 2;
 
-export function createBallista(position: Point, tribe: Tribe | null): Entity {
+export function createBallista(position: Point, tribe: Tribe | null, rotation: number): Entity {
    const turret = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   turret.rotation = rotation;
 
    turret.addHitbox(new RectangularHitbox(turret, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE, 0));
    
@@ -117,11 +133,27 @@ const entityIsTargetted = (turret: Entity, entity: Entity, tribeComponent: Tribe
       return false;
    }
 
+   if (getTribeMemberRelationship(tribeComponent, entity) <= EntityRelationship.friendlyBuilding) {
+      return false;
+   }
+
+   // Make sure the entity is within the vision range
+   let hasHitboxInRange = false;
+   for (let i = 0; i < entity.hitboxes.length; i++) {
+      const hitbox = entity.hitboxes[i];
+      if (Board.hitboxIsInRange(turret.position, hitbox, VISION_RANGE)) {
+         hasHitboxInRange = true;
+         break;
+      }
+   }
+   if (!hasHitboxInRange) {
+      return false;
+   }
+
    const minAngle = turret.rotation - AIM_ARC_SIZE / 2;
    const maxAngle = turret.rotation + AIM_ARC_SIZE / 2;
 
    // Make sure at least 1 of the entities' hitboxes is within the arc
-   let isInRange = false;
    for (let i = 0; i < entity.hitboxes.length; i++) {
       let minAngleToHitbox: number;
       let maxAngleToHitbox: number;
@@ -138,14 +170,11 @@ const entityIsTargetted = (turret: Entity, entity: Entity, tribeComponent: Tribe
       }
 
       if (angleIsInRange(minAngleToHitbox, minAngle, maxAngle) || angleIsInRange(maxAngleToHitbox, minAngle, maxAngle)) {
-         isInRange = true;
+         return true;
       }
    }
-   if (!isInRange) {
-      return false;
-   }
-   
-   return getTribeMemberRelationship(tribeComponent, entity) > EntityRelationship.friendlyBuilding;
+
+   return false;
 }
 
 const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
@@ -181,9 +210,10 @@ const fire = (turret: Entity, ammoType: BallistaAmmoType): void => {
       type: ammoInfo.type,
       damage: ammoInfo.damage,
       knockback: ammoInfo.knockback,
-      width: ammoInfo.hitboxWidth,
-      height: ammoInfo.hitboxHeight,
-      ignoreFriendlyBuildings: true
+      hitboxWidth: ammoInfo.hitboxWidth,
+      hitboxHeight: ammoInfo.hitboxHeight,
+      ignoreFriendlyBuildings: true,
+      statusEffect: ammoInfo.statusEffect
    };
 
    // @Incomplete: Spawn slightly offset from the turret's position
@@ -206,6 +236,10 @@ const fire = (turret: Entity, ammoType: BallistaAmmoType): void => {
       bolt.rotation = direction;
       bolt.velocity.x = ammoInfo.projectileSpeed * Math.sin(direction);
       bolt.velocity.y = ammoInfo.projectileSpeed * Math.cos(direction);
+
+      if (ammoType === ItemType.rock || ammoType === ItemType.slimeball) {
+         bolt.rotation = 2 * Math.PI * Math.random();
+      }
    }
 }
 
@@ -256,7 +290,14 @@ export function tickBallista(ballista: Entity): void {
    }
 
    turretComponent.hasTarget = false;
-   turretComponent.fireCooldownTicks = 0;
+   if (ammoType === null) {
+      turretComponent.fireCooldownTicks = 0;
+   } else {
+      const ammoInfo = AMMO_INFO_RECORD[ammoType];
+      if (turretComponent.fireCooldownTicks < ammoInfo.shotCooldownTicks) {
+         turretComponent.fireCooldownTicks = ammoInfo.shotCooldownTicks;
+      }
+   }
 }
 
 export function onBallistaRemove(ballista: Entity): void {

@@ -65,7 +65,6 @@ import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure"
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
-import { onSlingRockRemove, tickSlingRock } from "./entities/projectiles/sling-rock";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -307,7 +306,6 @@ abstract class Board {
             case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;
             case IEntityType.ballista: onBallistaRemove(entity); break;
             case IEntityType.slingTurret: onSlingTurretRemove(entity); break;
-            case IEntityType.slingRock: onSlingRockRemove(entity); break;
          }
       }
 
@@ -360,7 +358,6 @@ abstract class Board {
             case IEntityType.pebblum: tickPebblum(entity); break;
             case IEntityType.ballista: tickBallista(entity); break;
             case IEntityType.slingTurret: tickSlingTurret(entity); break;
-            case IEntityType.slingRock: tickSlingRock(entity); break;
          }
 
          entity.tick();
@@ -646,7 +643,7 @@ abstract class Board {
       const chunk = this.getChunk(chunkX, chunkY);
       for (const entity of chunk.entities) {
          for (const hitbox of entity.hitboxes) {
-            if (this.hitboxIsInRange(testPosition, hitbox)) {
+            if (this.hitboxIsInRange(testPosition, hitbox, 1)) {
                entities.add(entity);
                break;
             }
@@ -656,15 +653,16 @@ abstract class Board {
       return entities;
    }
 
-   private static hitboxIsInRange(testPosition: Point, hitbox: Hitbox): boolean {
+   // @Cleanup: Move this into ai-shared
+   public static hitboxIsInRange(testPosition: Point, hitbox: Hitbox, range: number): boolean {
       // @Speed: This check is slow
       if (hitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circlesDoIntersect(testPosition.x, testPosition.y, 1, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
+         return circlesDoIntersect(testPosition.x, testPosition.y, range, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
       } else {
          // Rectangular hitbox
          // @Speed
-         return circleAndRectangleDoIntersect(testPosition.x, testPosition.y, 1, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         return circleAndRectangleDoIntersect(testPosition.x, testPosition.y, range, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
       }
    }
 

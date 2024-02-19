@@ -65,8 +65,8 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.woodenWallSpikes: return createWoodenWallSpikes(position, null);
       case IEntityType.floorPunjiSticks: return createFloorPunjiSticks(position, null);
       case IEntityType.wallPunjiSticks: return createWallPunjiSticks(position, null);
-      case IEntityType.ballista: return createBallista(position, null);
-      case IEntityType.slingTurret: return createSlingTurret(position, null);
+      case IEntityType.ballista: return createBallista(position, null, 0);
+      case IEntityType.slingTurret: return createSlingTurret(position, null, 0);
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow:
@@ -82,7 +82,6 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.workerHut:
       case IEntityType.warriorHut:
       case IEntityType.blueprintEntity:
-      case IEntityType.slingRock:
       case IEntityType.itemEntity: throw new Error("Can't dynamically create entity of type '" + entityType + "'.");
    }
 }

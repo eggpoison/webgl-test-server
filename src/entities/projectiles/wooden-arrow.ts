@@ -1,13 +1,16 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
-import { ArrowComponent } from "../../components/ArrowComponent";
+import { ArrowComponent, ArrowStatusEffectInfo } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { applyStatusEffect } from "../../components/StatusEffectComponent";
+
+// @Cleanup: Rename file to something more generic
 
 const ARROW_WIDTH = 12;
 const ARROW_HEIGHT = 64;
@@ -18,23 +21,24 @@ export interface GenericArrowInfo {
    readonly type: GenericArrowType;
    readonly damage: number;
    readonly knockback: number;
-   readonly width: number;
-   readonly height: number;
+   readonly hitboxWidth: number;
+   readonly hitboxHeight: number;
    readonly ignoreFriendlyBuildings: boolean;
+   readonly statusEffect: ArrowStatusEffectInfo | null;
 }
 
 export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: GenericArrowInfo): Entity {
    const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    arrow.rotation = thrower.rotation;
    
-   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.width, arrowInfo.height, 0);
+   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight, 0);
    arrow.addHitbox(hitbox);
 
    const throwerTribeComponent = TribeComponentArray.getComponent(thrower);
    
    PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false));
    TribeComponentArray.addComponent(arrow, new TribeComponent(throwerTribeComponent.tribe));
-   ArrowComponentArray.addComponent(arrow, new ArrowComponent(thrower.id, arrowInfo.type, arrowInfo.damage, arrowInfo.knockback, arrowInfo.ignoreFriendlyBuildings));
+   ArrowComponentArray.addComponent(arrow, new ArrowComponent(thrower.id, arrowInfo.type, arrowInfo.damage, arrowInfo.knockback, arrowInfo.ignoreFriendlyBuildings, arrowInfo.statusEffect));
    
    return arrow;
 }
@@ -111,6 +115,10 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
          attackerID: arrowComponent.throwerID,
          flags: 0
       });
+
+      if (StatusEffectComponentArray.hasComponent(collidingEntity) && arrowComponent.statusEffect !== null) {
+         applyStatusEffect(collidingEntity, arrowComponent.statusEffect.type, arrowComponent.statusEffect.durationTicks);
+      }
 
       arrow.remove();
    }

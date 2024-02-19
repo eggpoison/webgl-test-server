@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SETTINGS, SpearItemInfo, StructureShapeType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SETTINGS, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, pickupItemEntity, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
@@ -35,8 +35,8 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // @Temporary
-   // const hitbox = new CircularHitbox(player, 1, 0, 0, 32, 0);
-   const hitbox = new RectangularHitbox(player, 1, 0, 0, 64, 64, 0);
+   const hitbox = new CircularHitbox(player, 1, 0, 0, 32, 0);
+   // const hitbox = new RectangularHitbox(player, 1, 0, 0, 64, 64, 0);
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
@@ -68,9 +68,9 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    }
 
    // @Temporary
-   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 1));
-   addItem(inventoryComponent, createItem(ItemType.ballista, 99));
-   addItem(inventoryComponent, createItem(ItemType.sling_turret, 99));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 1));
+   // addItem(inventoryComponent, createItem(ItemType.ballista, 99));
+   // addItem(inventoryComponent, createItem(ItemType.sling_turret, 99));
 
    return player;
 }
@@ -465,32 +465,37 @@ const snapRotationToPlayer = (player: Entity, placePosition: Point, rotation: nu
    return snapRotation;
 }
 
-export function shapeStructure(player: Entity, structureID: number, shapeType: StructureShapeType): void {
+export function shapeStructure(player: Entity, structureID: number, buildingType: BlueprintBuildingType): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }
 
    const previousStructure = Board.entityRecord[structureID];
-   previousStructure.remove();
 
    const rotation = snapRotationToPlayer(player, previousStructure.position, previousStructure.rotation);
 
    let position: Point;
-   switch (shapeType) {
-      case StructureShapeType.door: {
+   switch (buildingType) {
+      case BlueprintBuildingType.door: {
          position = previousStructure.position.copy();
          break;
       }
-      case StructureShapeType.embrasure: {
+      case BlueprintBuildingType.embrasure: {
          position = previousStructure.position.copy();
          position.x += 22 * Math.sin(rotation);
          position.y += 22 * Math.cos(rotation);
          break;
       }
+      default: {
+         console.warn("Can't shape structure into building type " + BlueprintBuildingType[buildingType]);
+         return;
+      }
    }
 
+   previousStructure.remove();
+
    const tribeComponent = TribeComponentArray.getComponent(player);
-   createBlueprintEntity(position, shapeType, tribeComponent.tribe, rotation);
+   createBlueprintEntity(position, buildingType, tribeComponent.tribe, rotation);
 }
 
 export function interactWithStructure(structureID: number): void {

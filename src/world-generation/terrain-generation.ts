@@ -150,9 +150,21 @@ function generateTerrain(): TerrainGenerationInfo {
    const tileTypeArray = new Array<Array<TileTypeConst>>();
    const tileIsWallArray = new Array<Array<boolean>>();
 
+   const getBiomeName = (tileX: number, tileY: number): BiomeName => {
+      return biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+   }
+
    const setBiomeName = (tileX: number, tileY: number, biomeName: BiomeName): void => {
       biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = biomeName;
-   } 
+   }
+
+   const setTileType = (tileX: number, tileY: number, tileType: TileTypeConst): void => {
+      tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = tileType;
+   }
+
+   const setIsWall = (tileX: number, tileY: number, isWall: boolean): void => {
+      tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = isWall;
+   }
 
    const tileIsInBoard = (tileX: number, tileY: number): boolean => {
       return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
@@ -200,11 +212,18 @@ function generateTerrain(): TerrainGenerationInfo {
       riverTiles = [];
    }
 
+   generateTileInfo(biomeNameArray, tileTypeArray, tileIsWallArray);
+
    const riverFlowDirections: Record<number, Record<number, number>> = {};
    const edgeRiverFlowDirections: Record<number, Record<number, number>> = {};
    for (const tileInfo of riverTiles) {
-      // Override biome names for river tiles
-      setBiomeName(tileInfo.tileX, tileInfo.tileY, "river");
+      if (getBiomeName(tileInfo.tileX, tileInfo.tileY) === "tundra") {
+         setTileType(tileInfo.tileX, tileInfo.tileY, TileTypeConst.ice);
+      } else {
+         setBiomeName(tileInfo.tileX, tileInfo.tileY, "river");
+         setTileType(tileInfo.tileX, tileInfo.tileY, TileTypeConst.water);
+      }
+      setIsWall(tileInfo.tileX, tileInfo.tileY, false);
 
       // Set river flow directions
       if (tileIsInBoard(tileInfo.tileX, tileInfo.tileY)) {
@@ -219,8 +238,6 @@ function generateTerrain(): TerrainGenerationInfo {
          edgeRiverFlowDirections[tileInfo.tileX][tileInfo.tileY] = tileInfo.flowDirection;
       }
    }
-
-   generateTileInfo(biomeNameArray, tileTypeArray, tileIsWallArray);
 
    const waterRocks = new Array<WaterRockData>();
    const riverSteppingStones = new Array<RiverSteppingStoneData>();

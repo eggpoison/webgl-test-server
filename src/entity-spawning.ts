@@ -29,7 +29,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       entityType: IEntityType.cow,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
-      maxDensity: 0.01,
+      maxDensity: 0.004,
       minPackSize: 2,
       maxPackSize: 5,
       onlySpawnsInNight: false
