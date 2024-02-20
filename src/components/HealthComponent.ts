@@ -194,7 +194,9 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
          if (aiHelperComponent.visibleEntities.includes(entity)) {
             switch (viewingEntity.type) {
                case IEntityType.zombie: {
-                  onZombieVisibleEntityHurt(viewingEntity, entity);
+                  if (causeOfDeath !== PlayerCauseOfDeath.fire && causeOfDeath !== PlayerCauseOfDeath.poison) {
+                     onZombieVisibleEntityHurt(viewingEntity, entity);
+                  }
                   break;
                }
             }
