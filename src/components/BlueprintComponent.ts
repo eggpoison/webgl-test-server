@@ -52,7 +52,8 @@ export function doBlueprintWork(blueprintEntity: Entity, hammerItem: Item): void
    
    const hammerItemInfo = ITEM_INFO_RECORD[hammerItem.type] as HammerItemInfo;
    // @Temporary
-   blueprintComponent.workProgress += hammerItemInfo.workAmount * 99;
+   // blueprintComponent.workProgress += hammerItemInfo.workAmount * 99;
+   blueprintComponent.workProgress += hammerItemInfo.workAmount;
    if (blueprintComponent.workProgress >= STRUCTURE_WORK_REQUIRED[blueprintComponent.buildingType]) {
       // Construct the building
       constructBlueprint(blueprintEntity, blueprintComponent);

@@ -480,3 +480,23 @@ export function angleIsInRange(angle: number, minAngle: number, maxAngle: number
    // The angle is in the range if the distance to the angle is shorter than the distance to the max
    return distFromMinToAngle < distFromMinToMax;
 }
+
+export function turnAngle(angle: number, targetAngle: number, turnSpeed: number): number {
+   let result = angle;
+   
+   const angleDiff = targetAngle - angle;
+   if (angleDiff < 0) {
+      result -= turnSpeed / SETTINGS.TPS;
+      // @Incomplete: Will this cause the turret to take the long way round?
+      if (result < targetAngle) {
+         result = targetAngle;
+      }
+   } else {
+      result += turnSpeed / SETTINGS.TPS;
+      if (result > targetAngle) {
+         result = targetAngle;
+      }
+   }
+
+   return result;
+}

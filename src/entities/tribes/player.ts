@@ -13,7 +13,7 @@ import { SERVER } from "../../server";
 import { TribeMemberComponent } from "../../components/TribeMemberComponent";
 import { PlayerComponent } from "../../components/PlayerComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { createItem } from "../../Item";
+import { createItem } from "../../items";
 import { toggleDoor } from "../../components/DoorComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent } from "../../components/TribeComponent";
@@ -68,8 +68,10 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    }
 
    // @Temporary
-   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 1));
-   // addItem(inventoryComponent, createItem(ItemType.ballista, 99));
+   addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
+   addItem(inventoryComponent, createItem(ItemType.worker_hut, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.ballista, 1));
    // addItem(inventoryComponent, createItem(ItemType.sling_turret, 99));
 
    return player;
@@ -236,16 +238,16 @@ const attemptSwing = (player: Entity, attackTargets: ReadonlyArray<Entity>, item
    const inventoryComponent = InventoryComponentArray.getComponent(player);
    const item = getItem(inventoryComponent, inventoryName, itemSlot);
    if (item !== null && ITEM_TYPE_RECORD[item.type] === "hammer") {
-      // First look for attack targets
-      const attackTarget = calculateAttackTarget(player, attackTargets, ~(EntityRelationship.friendly | EntityRelationship.friendlyBuilding));
-      if (attackTarget !== null) {
-         return attackEntity(player, attackTarget, itemSlot, inventoryName);
-      }
-
-      // Then look for friendly buildings to repair
+      // First look for friendly buildings to repair
       const repairTarget = calculateRepairTarget(player, attackTargets);
       if (repairTarget !== null) {
          return repairBuilding(player, repairTarget, itemSlot, inventoryName);
+      }
+
+      // Then look for attack targets
+      const attackTarget = calculateAttackTarget(player, attackTargets, ~(EntityRelationship.friendly | EntityRelationship.friendlyBuilding));
+      if (attackTarget !== null) {
+         return attackEntity(player, attackTarget, itemSlot, inventoryName);
       }
 
       // Then look for blueprints to work on

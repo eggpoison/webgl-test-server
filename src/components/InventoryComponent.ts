@@ -2,7 +2,7 @@ import { ITEM_INFO_RECORD, InventoryData, Item, ItemData, ItemSlotsData, ItemTyp
 import Entity from "../Entity";
 import { createItemEntity, itemEntityCanBePickedUp } from "../entities/item-entity";
 import { InventoryComponentArray, ItemComponentArray } from "./ComponentArray";
-import { createItem } from "../Item";
+import { createItem } from "../items";
 
 export type ItemSlots = { [itemSlot: number]: Item };
 

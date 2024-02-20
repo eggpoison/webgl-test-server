@@ -8,7 +8,7 @@ import Entity, { NUM_ENTITY_TYPES } from "./Entity";
 import { InventoryComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { addItem } from "./components/InventoryComponent";
 import { createEntity } from "./entity-creation";
-import { createItem } from "./Item";
+import { createItem } from "./items";
 
 const ENTITY_SPAWN_RANGE = 200;
 

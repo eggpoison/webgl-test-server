@@ -1,12 +1,12 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance, TribeType, TRIBE_INFO_RECORD } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance, TribeType, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Tile from "../../Tile";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, PhysicsComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull } from "../../components/InventoryComponent";
+import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
-import { tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem } from "./tribe-member";
+import { tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem, repairBuilding } from "./tribe-member";
 import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE, TribesmanAIType } from "./tribe-worker";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
@@ -14,6 +14,8 @@ import Board from "../../Board";
 import { TRIBE_WARRIOR_VISION_RANGE } from "./tribe-warrior";
 import { AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { getItemAttackCooldown } from "../../items";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -140,6 +142,8 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
    let bestAxeItemSlot = -1;
    let bestArmourLevel = -1;
    let bestArmourItemSlot = -1;
+   let bestHammerLevel = -1;
+   let bestHammerItemSlot = -1;
    let firstFoodItemSlot = -1; // Tribesman will only keep the first food item type in their inventory
    for (let itemSlot = 1; itemSlot <= tribesmanInventory.width * tribesmanInventory.height; itemSlot++) {
       if (!tribesmanInventory.itemSlots.hasOwnProperty(itemSlot)) {
@@ -172,6 +176,13 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
             }
             break;
          }
+         case "hammer": {
+            if ((itemInfo as ArmourItemInfo).level > bestHammerLevel) {
+               bestHammerLevel = (itemInfo as ArmourItemInfo).level;
+               bestHammerItemSlot = itemSlot;
+            }
+            break;
+         }
          case "food": {
             if (firstFoodItemSlot === -1) {
                firstFoodItemSlot = itemSlot;
@@ -185,7 +196,7 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
    for (const [_itemSlot, item] of Object.entries(tribesmanInventory.itemSlots)) {
       const itemSlot = Number(_itemSlot);
       
-      if (itemSlot === bestWeaponItemSlot || itemSlot === bestAxeItemSlot || itemSlot === bestPickaxeItemSlot || itemSlot === bestArmourItemSlot || itemSlot === firstFoodItemSlot) {
+      if (itemSlot === bestWeaponItemSlot || itemSlot === bestAxeItemSlot || itemSlot === bestPickaxeItemSlot || itemSlot === bestArmourItemSlot || itemSlot === firstFoodItemSlot || itemSlot === bestHammerItemSlot) {
          continue;
       }
       
@@ -301,6 +312,28 @@ const hasReachedPatrolPosition = (tribesman: Entity, tribesmanComponent: Tribesm
    return dotProduct > 0;
 }
 
+/** Returns 0 if no hammer is in the inventory */
+const getHammerItemSlot = (inventory: Inventory): number => {
+   let bestLevel = 0;
+   let bestItemSlot = 0;
+   for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+      if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+         continue;
+      }
+
+      const item = inventory.itemSlots[itemSlot];
+      if (item.type === ItemType.wooden_hammer || item.type === ItemType.stone_hammer) {
+         const itemInfo = ITEM_INFO_RECORD[item.type] as HammerItemInfo;
+         if (itemInfo.level > bestLevel) {
+            bestLevel = itemInfo.level;
+            bestItemSlot = itemSlot;
+         }
+      }
+   }
+
+   return bestItemSlot;
+}
+
 export function tickTribesman(tribesman: Entity): void {
    // @Cleanup: This is an absolutely massive function
    
@@ -411,7 +444,9 @@ export function tickTribesman(tribesman: Entity): void {
       
    // Attack enemies
    if (visibleEnemies.length > 0) {
-      huntEntity(tribesman, getClosestEntity(tribesman, visibleEnemies));
+      const target = getClosestEntity(tribesman, visibleEnemies);
+      tribesmanComponent.huntedEntityID = target.id;
+      huntEntity(tribesman, target);
       return;
    }
 
@@ -421,7 +456,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
    if (tribesmanComponent.huntedEntityID !== ID_SENTINEL_VALUE) {
       const huntedEntity = Board.entityRecord[tribesmanComponent.huntedEntityID];
-
+      
       const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
       if (distance > getHuntingVisionRange(tribesman)) {
          tribesmanComponent.huntedEntityID = ID_SENTINEL_VALUE;
@@ -481,6 +516,66 @@ export function tickTribesman(tribesman: Entity): void {
 
       tribesmanComponent.lastAIType = TribesmanAIType.attacking;
       return;
+   }
+
+   // Help work on blueprints if the tribesman has a hammer
+   // @Incomplete: Doesn't work if hammer is in offhand
+   const hammerItemSlot = getHammerItemSlot(hotbarInventory);
+   if (hammerItemSlot !== 0) {
+      // @Cleanup: Move messy logic out of main function
+      // @Speed: Loops through all visible entities
+      let closestBlueprint: Entity | undefined;
+      let minDistance = Number.MAX_SAFE_INTEGER;
+      for (const entity of aiHelperComponent.visibleEntities) {
+         if (entity.type !== IEntityType.blueprintEntity) {
+            continue;
+         }
+
+         const distance = tribesman.position.calculateDistanceBetween(entity.position);
+         if (distance < minDistance) {
+            closestBlueprint = entity;
+            minDistance = distance;
+         }
+      }
+
+      if (typeof closestBlueprint !== "undefined") {
+         // Rotate to face the blueprint
+         const direction = tribesman.position.calculateAngleBetween(closestBlueprint.position);
+         if (direction !== tribesman.rotation) {
+            tribesman.rotation = direction;
+            tribesman.hitboxesAreDirty = true;
+         }
+
+         // @Cleanup: Copy and pasted from huntEntity. Should be combined into its own function
+         const distance = calculateDistanceFromEntity(tribesman, closestBlueprint);
+         if (distance > 70) {
+            // Move closer
+            tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(direction);
+            tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(direction);
+         } else if (distance > 50) {
+            // Stop at mid distance
+            stopEntity(tribesman);
+         } else {
+            // Backpedal away from the entity if too close
+            const backwards = direction + Math.PI;
+            tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(backwards);
+            tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(backwards);
+         }
+
+         // Select the hammer item slot
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+         useInfo.selectedItemSlot = hammerItemSlot;
+
+         // Find the target
+         const targets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
+         if (targets.includes(closestBlueprint)) {
+            const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+            repairBuilding(tribesman, closestBlueprint, useInfo.selectedItemSlot, "hotbar");
+         }
+         
+         return;
+      }
    }
 
    // Pick up dropped items
@@ -815,6 +910,10 @@ const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number 
          }
       } else {
          // @Incomplete: Rectangular hitbox dist
+         const dist = distBetweenPointAndRectangle(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         if (dist < minDistance) {
+            minDistance = dist;
+         }
       }
    }
    return minDistance;
@@ -869,17 +968,25 @@ const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): numbe
 
    // @Incomplete: Account for status effects
    
-   let bestItemSlot = 999;
-   let mostDamage = 0;
+   let bestItemSlot = 1;
+   let mostDps = 0;
    for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
       if (!hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
+         if (mostDps < 1 / SETTINGS.DEFAULT_ATTACK_COOLDOWN) {
+            mostDps = 1 / SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+            bestItemSlot = itemSlot;
+         }
          continue;
       }
 
       const item = hotbarInventory.itemSlots[itemSlot];
+
+      const attackCooldown = getItemAttackCooldown(item);
       const damage = calculateItemDamage(item, huntedEntity);
-      if (damage > mostDamage) {
-         mostDamage = damage;
+      const dps = damage / attackCooldown;
+
+      if (dps > mostDps) {
+         mostDps = dps;
          bestItemSlot = itemSlot;
       }
    }
@@ -888,20 +995,22 @@ const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): numbe
 }
 
 const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
+   // @Incomplete: Only accounts for hotbar
+   
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
-   tribesmanComponent.huntedEntityID = huntedEntity.id;
    tribesmanComponent.lastAIType = TribesmanAIType.attacking;
    
-   const bestItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
+   const mostDamagingItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
 
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-
-   if (bestItemSlot !== 999) {
-      const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
-      
-      useInfo.selectedItemSlot = bestItemSlot;
-
+   
+   // Select the item slot
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   useInfo.selectedItemSlot = mostDamagingItemSlot;
+   
+   const inventory = getInventory(inventoryComponent, "hotbar");
+   if (inventoryHasItemInSlot(inventory, mostDamagingItemSlot)) {
       const selectedItem = getItem(inventoryComponent, "hotbar", useInfo.selectedItemSlot)!;
       const weaponCategory = ITEM_TYPE_RECORD[selectedItem.type];
 

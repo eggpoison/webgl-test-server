@@ -5,7 +5,7 @@ import { HealthComponentArray, PhysicsComponentArray, SlimeComponentArray, Statu
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { SlimeComponent } from "../../components/SlimeComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity, turnAngle } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -83,7 +83,7 @@ const updateAngerTarget = (slime: Entity): Entity | null => {
 
    // Target the entity which the slime is angry with the most
    let maxAnger = 0;
-   let target!: Entity;
+   let target: Entity;
    for (let i = 0; i < slimeComponent.angeredEntities.length; i++) {
       const angerInfo = slimeComponent.angeredEntities[i];
 
@@ -109,7 +109,7 @@ const updateAngerTarget = (slime: Entity): Entity | null => {
       return null;
    }
    
-   return target;
+   return target!;
 }
 
 /**
@@ -171,18 +171,17 @@ export function tickSlime(slime: Entity): void {
          healEntity(slime, HEALING_ON_SLIME_PER_SECOND * HEALING_PROC_INTERVAL, slime.id);
       }
    }
+
+   // @Cleanup: Lot of copy and paste between the next 3 sections
    
    // Chase entities the slime is angry at
    const angerTarget = updateAngerTarget(slime);
    if (angerTarget !== null) {
-      slimeComponent.eyeRotation = slime.position.calculateAngleBetween(angerTarget.position);
+      const targetDirection = slime.position.calculateAngleBetween(angerTarget.position);
+      slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
+      slime.turn(targetDirection, 2 * Math.PI);
 
       if (slimeComponent.size > SlimeSize.small && (Board.ticks - slimeComponent.lastSpitTicks) >= SPIT_COOLDOWN_TICKS) {
-         const direction = slime.position.calculateAngleBetween(angerTarget.position);
-         if (direction !== slime.rotation) {
-            slime.rotation = direction;
-            slime.hitboxesAreDirty = true;
-         }
          stopEntity(slime);
          
          // Spit attack
@@ -192,8 +191,11 @@ export function tickSlime(slime: Entity): void {
          return;
       }
       
+      // @Cleanup: Why do we need this?
       slimeComponent.spitChargeProgress = 0;
-      moveEntityToPosition(slime, angerTarget.position.x, angerTarget.position.y, ACCELERATION * speedMultiplier);
+
+      slime.acceleration.x = ACCELERATION * speedMultiplier * Math.sin(slime.rotation);
+      slime.acceleration.y = ACCELERATION * speedMultiplier * Math.cos(slime.rotation);
       return;
    }
    slimeComponent.lastSpitTicks = Board.ticks;
@@ -222,8 +224,10 @@ export function tickSlime(slime: Entity): void {
             closestEnemy = entity;
          }
       }
+
       if (closestEnemy !== null) {
-         slimeComponent.eyeRotation = slime.position.calculateAngleBetween(closestEnemy.position);
+         const targetDirection = slime.position.calculateAngleBetween(closestEnemy.position);
+         slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
          moveEntityToPosition(slime, closestEnemy.position.x, closestEnemy.position.y, ACCELERATION * speedMultiplier);
          return;
       }
@@ -245,8 +249,10 @@ export function tickSlime(slime: Entity): void {
             mergeTarget = entity;
          }
       }
+
       if (mergeTarget !== null) {
-         slimeComponent.eyeRotation = slime.position.calculateAngleBetween(mergeTarget.position);
+         const targetDirection = slime.position.calculateAngleBetween(mergeTarget.position);
+         slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
          moveEntityToPosition(slime, mergeTarget.position.x, mergeTarget.position.y, ACCELERATION * speedMultiplier);
          return;
       }

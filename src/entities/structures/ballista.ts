@@ -132,9 +132,18 @@ const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Enti
    return null;
 }
 
-// @Incomplete
-const updateAmmo = (ballista: Entity): void => {
+const attemptAmmoLoad = (ballista: Entity): void => {
+   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   
+   const ammoType = getAmmoType(ballista);
+   if (ammoType !== null) {
+      // Load the ammo
+      ballistaComponent.ammoType = ammoType;
+      ballistaComponent.ammoRemaining = AMMO_INFO_RECORD[ammoType].ammoMultiplier;
 
+      const inventoryComponent = InventoryComponentArray.getComponent(ballista);
+      consumeItemTypeFromInventory(inventoryComponent, "ammoBoxInventory", ammoType, 1);
+   }
 }
 
 const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
@@ -181,7 +190,10 @@ const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
    // Consume ammo
    const ballistaComponent = BallistaComponentArray.getComponent(ballista);
    ballistaComponent.ammoRemaining--;
-   // @Incomplete: We should immediately try to load ammo after this if ammo remaining is 0 to avoid a 1-frame scenario where there's no ammo
+
+   if (ballistaComponent.ammoRemaining === 0) {
+      attemptAmmoLoad(ballista);
+   }
 }
 
 export function tickBallista(ballista: Entity): void {
@@ -190,16 +202,9 @@ export function tickBallista(ballista: Entity): void {
    const ballistaComponent = BallistaComponentArray.getComponent(ballista);
 
    // Attempt to load ammo if there is none loaded
+   // @Speed: ideally shouldn't be done every tick, just when the inventory is changed (ammo is added to the inventory)
    if (ballistaComponent.ammoRemaining === 0) {
-      const ammoType = getAmmoType(ballista);
-      if (ammoType !== null) {
-         // Load the ammo
-         ballistaComponent.ammoType = ammoType;
-         ballistaComponent.ammoRemaining = AMMO_INFO_RECORD[ammoType].ammoMultiplier;
-
-         const inventoryComponent = InventoryComponentArray.getComponent(ballista);
-         consumeItemTypeFromInventory(inventoryComponent, "ammoBoxInventory", ammoType, 1);
-      }
+      attemptAmmoLoad(ballista);
    }
 
    if (aiHelperComponent.visibleEntities.length > 0 && ballistaComponent.ammoRemaining > 0) {

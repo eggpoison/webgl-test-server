@@ -35,6 +35,7 @@ import { createWallPunjiSticks } from "../structures/wall-punji-sticks";
 import { createSlingTurret } from "../structures/sling-turret";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
+import { getItemAttackCooldown, itemIsTool } from "../../items";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -267,13 +268,7 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
 
    // Reset attack cooldown
    if (item !== null) {
-      const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
-      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer" || itemTypeInfo === "battleaxe") {
-         const itemInfo = ITEM_INFO_RECORD[item.type];
-         useInfo.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
-      } else {
-         useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
-      }
+      useInfo.itemAttackCooldowns[itemSlot] = getItemAttackCooldown(item);
    } else {
       useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
    }
@@ -326,13 +321,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
 
    // Reset attack cooldown
    if (item !== null) {
-      const itemTypeInfo = ITEM_TYPE_RECORD[item.type];
-      if (itemTypeInfo === "axe" || itemTypeInfo === "pickaxe" || itemTypeInfo === "sword" || itemTypeInfo === "spear" || itemTypeInfo === "hammer" || itemTypeInfo === "battleaxe") {
-         const itemInfo = ITEM_INFO_RECORD[item.type];
-         useInfo.itemAttackCooldowns[itemSlot] = (itemInfo as ToolItemInfo).attackCooldown;
-      } else {
-         useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
-      }
+      useInfo.itemAttackCooldowns[itemSlot] = getItemAttackCooldown(item);
    } else {
       useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
    }

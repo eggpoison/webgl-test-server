@@ -33,8 +33,7 @@ const applyPhysics = (entity: Entity): void => {
 
    // @Temporary @Hack
    if (isNaN(entity.velocity.x) || isNaN(entity.velocity.x)) {
-      console.log(entity.type);
-      console.warn("Entity velocity was NaN.");
+      console.warn("Entity type " + entity.type + " velocity was NaN.");
       entity.velocity.x = 0;
       entity.velocity.y = 0;
    }
