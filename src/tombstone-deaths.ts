@@ -1,27 +1,30 @@
 import { DeathInfo, PlayerCauseOfDeath } from "webgl-test-shared";
+import Entity from "./Entity";
+import { SERVER } from "./server";
 
 abstract class TombstoneDeathManager {
    private static readonly MAX_TRACKED_DEATHS = 100;
 
    private static readonly deathInfos = new Array<DeathInfo>();
    
-   public static registerNewDeath(username: string, causeOfDeath: PlayerCauseOfDeath): void {
+   public static registerNewDeath(player: Entity, causeOfDeath: PlayerCauseOfDeath): void {
       // If the max number of deaths has been exceeded, remove the first one
       if (this.deathInfos.length === this.MAX_TRACKED_DEATHS) {
          this.deathInfos.splice(0, 1);
       }
+
+      const playerData = SERVER.getPlayerDataFromInstance(player);
+      if (playerData === null) {
+         return;
+      }
       
       this.deathInfos.push({
-         username: username,
+         username: playerData.username,
          causeOfDeath: causeOfDeath
       });
    }
    
    public static popDeath(): DeathInfo | null {
-      return {
-         username: "James Wilson",
-         causeOfDeath: PlayerCauseOfDeath.god
-      };
       if (this.deathInfos.length === 0) {
          return null;
       }

@@ -1,37 +1,37 @@
-import { circleAndRectangleDoIntersectWithOffset, circulesDoIntersectWithOffset } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
 import Hitbox, { HitboxObject } from "./Hitbox";
 import RectangularHitbox from "./RectangularHitbox";
 
 class CircularHitbox extends Hitbox {
    public radius: number;
 
-   constructor(object: HitboxObject, offsetX: number, offsetY: number, radius: number) {
-      super(object, offsetX, offsetY);
+   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, radius: number, localID: number) {
+      super(object, mass, offsetX, offsetY, localID);
 
       this.radius = radius;
    }
 
    public calculateHitboxBoundsMinX(): number {
-      return this.object.position.x - this.radius;
+      return this.object.position.x + this.rotatedOffsetX - this.radius;
    }
    public calculateHitboxBoundsMaxX(): number {
-      return this.object.position.x + this.radius;
+      return this.object.position.x + this.rotatedOffsetX + this.radius;
    }
    public calculateHitboxBoundsMinY(): number {
-      return this.object.position.y - this.radius;
+      return this.object.position.y + this.rotatedOffsetY - this.radius;
    }
    public calculateHitboxBoundsMaxY(): number {
-      return this.object.position.y + this.radius;
+      return this.object.position.y + this.rotatedOffsetY + this.radius;
    }
 
    public isColliding(otherHitbox: Hitbox): boolean {
       // @Speed: This check is slow
       if (otherHitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circulesDoIntersectWithOffset(this.object.position, this.offset, this.radius, otherHitbox.object.position, otherHitbox.offset, (otherHitbox as CircularHitbox).radius);
+         return circlesDoIntersect(this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, this.radius, otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, (otherHitbox as CircularHitbox).radius);
       } else {
          // Rectangular hitbox
-         return circleAndRectangleDoIntersectWithOffset(this.object.position, this.offset, this.radius, otherHitbox.object.position, otherHitbox.offset, (otherHitbox as RectangularHitbox).width, (otherHitbox as RectangularHitbox).height, (otherHitbox as RectangularHitbox).rotation + otherHitbox.object.rotation);
+         return circleAndRectangleDoIntersect(this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, this.radius, otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, (otherHitbox as RectangularHitbox).width, (otherHitbox as RectangularHitbox).height, (otherHitbox as RectangularHitbox).rotation + otherHitbox.object.rotation);
       }
    }
 }

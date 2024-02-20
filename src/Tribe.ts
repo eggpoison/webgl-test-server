@@ -1,13 +1,14 @@
-import { EntityTypeConst, Point, SETTINGS, TribeType, clampToBoardDimensions } from "webgl-test-shared";
-import TribeMember from "./entities/tribes/TribeMember";
-import TribeHut from "./entities/tribes/TribeHut";
-import Tribesman from "./entities/tribes/Tribesman";
-import TribeTotem from "./entities/tribes/TribeTotem";
+import { IEntityType, ItemType, Point, SETTINGS, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
-import Barrel from "./entities/tribes/Barrel";
 import Chunk from "./Chunk";
-import Entity from "./entities/Entity";
+import Entity from "./Entity";
+import { HutComponentArray, TotemBannerComponentArray } from "./components/ComponentArray";
+import { createTribeWorker } from "./entities/tribes/tribe-worker";
+import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
+import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
+
+const RESPAWN_TIME_TICKS = 5 * SETTINGS.TPS;
 
 let idCounter = 0;
 
@@ -16,9 +17,10 @@ const getAvailableID = (): number => {
 }
 
 const TRIBE_BUILDING_AREA_INFLUENCES = {
-   [EntityTypeConst.tribe_totem]: 200,
-   [EntityTypeConst.tribe_hut]: 150
-} satisfies Partial<Record<EntityTypeConst, number>>;
+   [IEntityType.tribeTotem]: 200,
+   [IEntityType.workerHut]: 150,
+   [IEntityType.warriorHut]: 150
+} satisfies Partial<Record<IEntityType, number>>;
 
 interface TileInfluence {
    readonly tile: Tile;
@@ -41,42 +43,85 @@ class Tribe {
    
    public readonly id: number;
    
-   public readonly tribeType: TribeType;
+   public readonly type: TribeType;
 
-   public readonly totem: TribeTotem;
+   public totem: Entity | null = null;
    
-   private readonly members = new Array<TribeMember>();
+   // @Cleanup: Do we actually use this at all?
+   private readonly members = new Array<Entity>();
 
    // /** Stores all tribe huts belonging to the tribe */
-   private readonly huts = new Array<TribeHut>();
+   private readonly huts = new Array<Entity>();
 
-   private barrels = new Set<Barrel>();
+   public barrels = new Array<Entity>();
 
    /** Stores all tiles in the tribe's zone of influence */
    private area: Record<number, TileInfluence> = {};
    private chunkArea: Record<number, ChunkInfluence> = {};
 
-   public tribesmanCap = 0;
+   public tribesmanCap: number;
 
    public readonly reinforcementInfoArray = new Array<ReinforcementInfo>();
+
+   public selectedTechID: TechID | null = null;
+   public readonly unlockedTechs = new Array<TechID>();
+   public readonly techTreeUnlockProgress: TechTreeUnlockProgress = {};
+
+   private readonly respawnTimesRemaining = new Array<number>();
+   private readonly respawnHutIDs = new Array<number>();
    
-   constructor(tribeType: TribeType, totem: TribeTotem) {
+   constructor(tribeType: TribeType) {
       this.id = getAvailableID();
-      
-      this.tribeType = tribeType;
+      this.type = tribeType;
+
+      this.tribesmanCap = TRIBE_INFO_RECORD[tribeType].baseTribesmanCap;
+
+      Board.addTribe(this);
+   }
+
+   public setTotem(totem: Entity): void {
+      if (this.totem !== null) {
+         console.warn("Tribe already has a totem.");
+         return;
+      }
+
       this.totem = totem;
-      totem.setTribe(this);
 
-      totem.createEvent("death", () => {
-         this.destroy();
-      });
+      this.createTribeAreaAroundBuilding(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeTotem]);
+   }
 
-      this.addBuildingToTiles(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_totem]);
+   public clearTotem(): void {
+      if (this.totem === null) {
+         return;
+      }
+
+      this.totem = null;
+      this.destroy();
+   }
+
+   public unlockTech(techID: TechID): void {
+      if (!this.unlockedTechs.includes(techID)) {
+         this.unlockedTechs.push(techID);
+         this.selectedTechID = null;
+      }
    }
 
    public tick(): void {
-      this.updateBarrels();
-
+      for (let i = 0; i < this.respawnTimesRemaining.length; i++) {
+         if (--this.respawnTimesRemaining[i] <= 0) {
+            const hutID = this.respawnHutIDs[i];
+            if (Board.entityRecord.hasOwnProperty(hutID)) {
+               const hut = Board.entityRecord[hutID];
+               this.createNewTribesman(hut);
+            }
+            
+            this.respawnTimesRemaining.splice(i, 1);
+            this.respawnHutIDs.splice(i, 1);
+            i--;
+         }
+      }
+      
+      // @Temporary
       for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
          const info = this.reinforcementInfoArray[i];
 
@@ -96,67 +141,123 @@ class Tribe {
       }
    }
 
-   public addTribeMember(member: TribeMember): void {
+   public addTribeMember(member: Entity): void {
       this.members.push(member);
    }
 
-   public registerNewHut(hut: TribeHut): void {
-      this.huts.push(hut);
+   // @Cleanup: Call these functions from the hut create functions
+   public registerNewWorkerHut(workerHut: Entity): void {
+      if (this.totem === null) {
+         console.warn("Can't register hut without a tribe.");
+         return;
+      }
+
+      this.huts.push(workerHut);
 
       // Create a tribesman for the hut
-      this.createNewTribesman(hut);
+      this.createNewTribesman(workerHut);
 
-      this.addBuildingToTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
+      this.createTribeAreaAroundBuilding(workerHut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.workerHut]);
       
-      this.tribesmanCap++;
+      // @Hack
+      let bannerComponent: TotemBannerComponent;
+      if (TotemBannerComponentArray.hasComponent(this.totem)) {
+         bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+      } else {
+         bannerComponent = TotemBannerComponentArray.getComponentFromBuffer(this.totem);
+      }
 
-      hut.createEvent("death", () => {
-         this.removeHut(hut);
-      });
-
-      this.totem.createNewBanner(this.huts.length - 1);
+      addBannerToTotem(bannerComponent, this.huts.length - 1);
    }
 
-   public removeHut(hut: TribeHut): void {
+   public registerNewWarriorHut(warriorHut: Entity): void {
+      if (this.totem === null) {
+         console.warn("Can't register hut without a tribe.");
+         return;
+      }
+
+      this.huts.push(warriorHut);
+
+      // Create a tribesman for the hut
+      this.createNewTribesman(warriorHut);
+
+      this.createTribeAreaAroundBuilding(warriorHut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.warriorHut]);
+      
+      // @Hack
+      let bannerComponent: TotemBannerComponent;
+      if (TotemBannerComponentArray.hasComponent(this.totem)) {
+         bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+      } else {
+         bannerComponent = TotemBannerComponentArray.getComponentFromBuffer(this.totem);
+      }
+
+      addBannerToTotem(bannerComponent, this.huts.length - 1);
+   }
+
+   public removeWorkerHut(hut: Entity): void {
       const idx = this.huts.indexOf(hut);
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
 
-      this.totem.removeBanner(idx);
+      if (this.totem !== null) {
+         const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+         removeBannerFromTotem(bannerComponent, idx);
+      }
 
-      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[EntityTypeConst.tribe_hut]);
-      
-      this.tribesmanCap--;
+      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.workerHut]);
    }
 
-   public hasHut(hut: TribeHut): boolean {
+   public removeWarriorHut(hut: Entity): void {
+      const idx = this.huts.indexOf(hut);
+      if (idx !== -1) {
+         this.huts.splice(idx, 1);
+      }
+
+      if (this.totem !== null) {
+         const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+         removeBannerFromTotem(bannerComponent, idx);
+      }
+
+      this.removeBuildingFromTiles(hut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.warriorHut]);
+   }
+
+   public hasHut(hut: Entity): boolean {
       return this.huts.includes(hut);
    }
 
-   public hasTotem(totem: TribeTotem): boolean {
+   public hasTotem(totem: Entity): boolean {
       return this.totem === totem;
    }
 
-   private createNewTribesman(hut: TribeHut): void {
-      const position = hut.position.copy();
+   public respawnTribesman(hut: Entity): void {
+      this.respawnTimesRemaining.push(RESPAWN_TIME_TICKS);
+      this.respawnHutIDs.push(hut.id);
+   }
 
+   public createNewTribesman(hut: Entity): void {
+      // Reset door swing ticks
+      // @Cleanup @Hack: This check is necessary as this function is called as soon as a hut is created, when the components haven't been added yet
+      if (HutComponentArray.hasComponent(hut)) {
+         const hutComponent = HutComponentArray.getComponent(hut);
+         hutComponent.lastDoorSwingTicks = Board.ticks;
+      }
+      
+      // @Speed: garbage
       // Offset the spawn position so the tribesman comes out of the correct side of the hut
+      const position = hut.position.copy();
       const offset = Point.fromVectorForm(10, hut.rotation);
       position.add(offset);
       
-      const tribesman = new Tribesman(position, this.tribeType, this);
+      let tribesman: Entity;
+      if (hut.type === IEntityType.workerHut) {
+         tribesman = createTribeWorker(position, this, hut.id);
+      } else {
+         tribesman = createTribeWarrior(position, this, hut.id);
+      }
       tribesman.rotation = hut.rotation;
 
       this.members.push(tribesman);
-
-      // Attempt to respawn the tribesman when it  is killed
-      tribesman.createEvent("death", () => {
-         // Only respawn the tribesman if their hut is alive
-         if (!hut.isRemoved) {
-            this.createNewTribesman(hut);
-         }
-      });
    }
 
    public getNumHuts(): number {
@@ -164,11 +265,8 @@ class Tribe {
    }
 
    /** Destroys the tribe and all its associated buildings */
+   // @Incomplete
    private destroy(): void {
-      for (const tribeMember of this.members) {
-         tribeMember.setTribe(null);
-      }
-
       // Remove huts
       for (const hut of this.huts) {
          hut.remove();
@@ -177,7 +275,7 @@ class Tribe {
       Board.removeTribe(this);
    }
 
-   private addBuildingToTiles(buildingPosition: Point, influence: number): void {
+   private createTribeAreaAroundBuilding(buildingPosition: Point, influence: number): void {
       const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SETTINGS.TILE_SIZE));
       const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SETTINGS.TILE_SIZE));
       const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SETTINGS.TILE_SIZE));
@@ -258,7 +356,6 @@ class Tribe {
 
    public tileIsInArea(tileX: number, tileY: number): boolean {
       const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
-      
       return this.area.hasOwnProperty(tileIndex);
    }
 
@@ -266,30 +363,12 @@ class Tribe {
       return Object.keys(this.area).length;
    }
 
-   /** Updates which barrels belong to the tribe */
-   private updateBarrels(): void {
-      for (const barrel of this.barrels) {
-         barrel.setTribe(null);
-      }
-      
-      const barrels = new Set<Barrel>();
-      for (const chunkInfluence of Object.values(this.chunkArea)) {
-         for (const entity of chunkInfluence.chunk.entities) {
-            if (entity.type === EntityTypeConst.barrel) {
-               (entity as Barrel).setTribe(this);
-               barrels.add(entity as Barrel);
-            }
-         }
-      }
-      this.barrels = barrels;
+   public addBarrel(barrel: Entity): void {
+      this.barrels.push(barrel);
    }
 
-   public hasBarrel(barrel: Barrel): boolean {
-      return this.barrels.has(barrel);
-   }
-
-   public getBarrels(): ReadonlySet<Barrel> {
-      return this.barrels;
+   public hasBarrel(barrel: Entity): boolean {
+      return this.barrels.includes(barrel);
    }
 
    public getArea(): ReadonlyArray<Tile> {
@@ -316,6 +395,52 @@ class Tribe {
          });
       } else {
          this.reinforcementInfoArray[idx].secondsSinceNotice = 0;
+      }
+   }
+
+   public studyTech(studyAmount: number): void {
+      if (this.selectedTechID === null) {
+         return;
+      }
+
+      if (!this.techTreeUnlockProgress.hasOwnProperty(this.selectedTechID)) {
+         this.techTreeUnlockProgress[this.selectedTechID] = {
+            itemProgress: {},
+            studyProgress: studyAmount
+         }
+      } else {
+         this.techTreeUnlockProgress[this.selectedTechID]!.studyProgress += studyAmount;
+         
+         // Don't go over the study requirements
+         const techInfo = getTechByID(this.selectedTechID);
+         if (this.techTreeUnlockProgress[this.selectedTechID]!.studyProgress > techInfo.researchStudyRequirements) {
+            this.techTreeUnlockProgress[this.selectedTechID]!.studyProgress = techInfo.researchStudyRequirements;
+         }
+      }
+   }
+
+   public hasUnlockedTech(techID: TechID): boolean {
+      return this.unlockedTechs.indexOf(techID) !== -1;
+   }
+
+   public unlockAllTechs(): void {
+      for (const techInfo of TECHS) {
+         if (this.hasUnlockedTech(techInfo.id) || techInfo.blacklistedTribes.includes(this.type)) {
+            continue;
+         }
+
+         if (!this.techTreeUnlockProgress.hasOwnProperty(techInfo.id)) {
+            this.techTreeUnlockProgress[techInfo.id] = {
+               itemProgress: {},
+               studyProgress: 0
+            }
+         }
+         this.techTreeUnlockProgress[techInfo.id]!.studyProgress = techInfo.researchStudyRequirements;
+         for (const [itemType, itemAmount] of Object.entries(techInfo.researchItemRequirements)) {
+            this.techTreeUnlockProgress[techInfo.id]!.itemProgress[itemType as unknown as ItemType] = itemAmount;
+         }
+         
+         this.unlockTech(techInfo.id);
       }
    }
 }

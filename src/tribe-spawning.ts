@@ -1,10 +1,11 @@
 import { Point, SETTINGS, TileTypeConst, TribeType, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import Tribe from "./Tribe";
-import TribeTotem from "./entities/tribes/TribeTotem";
-import TribeHut from "./entities/tribes/TribeHut";
-import Barrel from "./entities/tribes/Barrel";
 import OPTIONS from "./options";
+import { createTribeTotem } from "./entities/tribes/tribe-totem";
+import { createWorkerHut } from "./entities/tribes/worker-hut";
+import { createBarrel } from "./entities/tribes/barrel";
+import { PhysicsComponentArray } from "./components/ComponentArray";
 
 /** Average number of spawn attempts that are done each second */
 const TRIBE_SPAWN_RATE = 0.5;
@@ -63,6 +64,10 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
 
    // Don't spawn too close to other tribes
    for (const tribe of Board.getTribes()) {
+      if (tribe.totem === null) {
+         continue;
+      }
+
       const distance = position.calculateDistanceBetween(tribe.totem.position);
       if (distance < MIN_DISTANCE_FROM_OTHER_TRIBE) {
          return false;
@@ -90,7 +95,7 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
       const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
       const position = new Point(x, y);
 
-      const minHutDistance = HUT_MIN_DISTANCES[tribe.tribeType];
+      const minHutDistance = HUT_MIN_DISTANCES[tribe.type];
 
       // Make sure it isn't too close to any other buildings
       for (const buildingPosition of otherBuildingPositions) {
@@ -110,11 +115,13 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
 }
 
 const spawnTribe = (position: Point, tribeType: TribeType): void => {
-   const totem = new TribeTotem(position);
-   const tribe = new Tribe(tribeType, totem);
+   const tribe = new Tribe(tribeType);
+   const totem = createTribeTotem(position, tribe);
    Board.addTribe(tribe);
 
    totem.rotation = 2 * Math.PI * Math.random();
+   
+   // @Cleanup: We shouldn't have to do this.
    totem.hitboxesAreDirty = true;
 
    const buildingPositions: Array<Point> = [position];
@@ -125,8 +132,8 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
       const hutPosition = findValidBuildingPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
-         const hut = new TribeHut(hutPosition, tribe);
-         tribe.registerNewHut(hut);
+         const hut = createWorkerHut(hutPosition, tribe);
+         tribe.registerNewWorkerHut(hut);
          hut.rotation = 2 * Math.PI * Math.random();
          buildingPositions.push(hutPosition);
       }
@@ -135,7 +142,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    // Spawn barrel
    const barrelSpawnPosition = findValidBuildingPosition(tribe, buildingPositions);
    if (barrelSpawnPosition !== null) {
-      new Barrel(barrelSpawnPosition);
+      createBarrel(barrelSpawnPosition, tribe);
    }
 }
 

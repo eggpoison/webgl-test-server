@@ -1,17 +1,18 @@
-import { EntityType, EntityTypeConst, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
-import Entity from "./entities/Entity";
-import ENTITY_CLASS_RECORD from "./entity-classes";
+import { IEntityType, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
-import Yeti, { yetiSpawnPositionIsValid } from "./entities/mobs/Yeti";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
 import SRandom from "./SRandom";
+import Entity, { NUM_ENTITY_TYPES } from "./Entity";
+import { createEntity } from "./entity-creation";
+import { yetiSpawnPositionIsValid } from "./entities/mobs/yeti";
+import { SERVER } from "./server";
 
 const PACK_SPAWN_RANGE = 200;
 
 export interface EntitySpawnInfo {
    /** The type of entity to spawn */
-   readonly entityType: EntityTypeConst;
+   readonly entityType: IEntityType;
    /** Array of all tile types in which the entity is able to be spawned in */
    readonly spawnableTiles: ReadonlyArray<TileTypeConst>;
    /** Average number of spawn attempts that happen each second per chunk. */
@@ -27,17 +28,17 @@ export interface EntitySpawnInfo {
 
 const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
    {
-      entityType: EntityTypeConst.cow,
+      entityType: IEntityType.cow,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
-      maxDensity: 0.01,
+      maxDensity: 0.004,
       minPackSize: 2,
       maxPackSize: 5,
       onlySpawnsInNight: false,
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.berry_bush,
+      entityType: IEntityType.berryBush,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.001,
       maxDensity: 0.0025,
@@ -47,7 +48,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.tree,
+      entityType: IEntityType.tree,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.015,
@@ -57,7 +58,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 75
    },
    {
-      entityType: EntityTypeConst.tombstone,
+      entityType: IEntityType.tombstone,
       spawnableTiles: [TileTypeConst.grass],
       spawnRate: 0.01,
       maxDensity: 0.003,
@@ -67,7 +68,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.boulder,
+      entityType: IEntityType.boulder,
       spawnableTiles: [TileTypeConst.rock],
       spawnRate: 0.005,
       maxDensity: 0.025,
@@ -77,7 +78,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 60
    },
    {
-      entityType: EntityTypeConst.cactus,
+      entityType: IEntityType.cactus,
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.03,
@@ -87,7 +88,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 75
    },
    {
-      entityType: EntityTypeConst.yeti,
+      entityType: IEntityType.yeti,
       spawnableTiles: [TileTypeConst.snow],
       spawnRate: 0.004,
       maxDensity: 0.008,
@@ -97,7 +98,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.ice_spikes,
+      entityType: IEntityType.iceSpikes,
       spawnableTiles: [TileTypeConst.ice, TileTypeConst.permafrost],
       spawnRate: 0.015,
       maxDensity: 0.06,
@@ -107,7 +108,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.slimewisp,
+      entityType: IEntityType.slimewisp,
       spawnableTiles: [TileTypeConst.slime],
       spawnRate: 0.2,
       maxDensity: 0.3,
@@ -117,7 +118,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 50
    },
    {
-      entityType: EntityTypeConst.krumblid,
+      entityType: IEntityType.krumblid,
       spawnableTiles: [TileTypeConst.sand],
       spawnRate: 0.005,
       maxDensity: 0.015,
@@ -127,7 +128,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.frozen_yeti,
+      entityType: IEntityType.frozenYeti,
       spawnableTiles: [TileTypeConst.fimbultur],
       spawnRate: 0.004,
       maxDensity: 0.008,
@@ -137,7 +138,7 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       minSpawnDistance: 150
    },
    {
-      entityType: EntityTypeConst.fish,
+      entityType: IEntityType.fish,
       spawnableTiles: [TileTypeConst.water],
       spawnRate: 0.015,
       maxDensity: 0.03,
@@ -145,22 +146,22 @@ const SPAWN_INFO_RECORD: ReadonlyArray<EntitySpawnInfo> = [
       maxPackSize: 4,
       onlySpawnsInNight: false,
       minSpawnDistance: 150
+   },
+   {
+      entityType: IEntityType.golem,
+      spawnableTiles: [TileTypeConst.rock],
+      spawnRate: 0.004,
+      maxDensity: 0.008,
+      minPackSize: 1,
+      maxPackSize: 1,
+      onlySpawnsInNight: false,
+      minSpawnDistance: 150
    }
-   // {
-   //    entityType: EntityTypeConst.berry_snowbush,
-   //    spawnableTiles: [TileTypeConst.snow, TileTypeConst.permafrost],
-   //    spawnRate: 0.001,
-   //    maxDensity: 0.0025,
-   //    minPackSize: 1,
-   //    maxPackSize: 1,
-   //    onlySpawnsInNight: false,
-   //    minSpawnDistance: 150
-   // }
 ];
 
 const customSpawnConditionsAreMet = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOriginY: number) => {
    switch (spawnInfo.entityType) {
-      case EntityTypeConst.yeti: {
+      case IEntityType.yeti: {
          return yetiSpawnPositionIsValid(spawnOriginX, spawnOriginY);
       }
    }
@@ -198,10 +199,11 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    
    // const cowSpecies = randInt(0, 1);
    
-   const entityClass = ENTITY_CLASS_RECORD[spawnInfo.entityType]();
-   
-   const entity = new entityClass(new Point(spawnOriginX, spawnOriginY));
+   const entity = createEntity(new Point(spawnOriginX, spawnOriginY), spawnInfo.entityType);
    addEntityToCensus(entity);
+   if (!SERVER.isRunning) {
+      Board.pushJoinBuffer();
+   }
 
    // Pack spawning
  
@@ -220,6 +222,10 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    }
 
    for (let i = 0; i < spawnCount - 1;) {
+      if (++totalSpawnAttempts === 100) {
+         break;
+      }
+
       // @Speed: Garbage collection, and doing a whole bunch of unnecessary continues here
       
       // Generate a spawn position near the spawn origin
@@ -240,13 +246,12 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
 
       if (spawnPositionIsValid(spawnInfo, spawnPositionX, spawnPositionY)) {
          const spawnPosition = new Point(randInt(minX, maxX), randInt(minY, maxY));
-         const entity = new entityClass(spawnPosition);
+         const entity = createEntity(spawnPosition, spawnInfo.entityType);
          addEntityToCensus(entity);
+         if (!SERVER.isRunning) {
+            Board.pushJoinBuffer();
+         }
          i++;
-      }
-
-      if (++totalSpawnAttempts === 99) {
-         break;
       }
    }
 }
@@ -257,20 +262,14 @@ export function spawnPositionIsValid(spawnInfo: EntitySpawnInfo, positionX: numb
    const minChunkY = Math.max(Math.min(Math.floor((positionY - spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
    const maxChunkY = Math.max(Math.min(Math.floor((positionY + spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
 
-   const checkedEntities = new Set<Entity>();
-   
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const entity of chunk.entities) {
-            if (checkedEntities.has(entity)) continue;
-            
             const distanceSquared = Math.pow(positionX - entity.position.x, 2) + Math.pow(positionY - entity.position.y, 2);
             if (distanceSquared <= spawnInfo.minSpawnDistance * spawnInfo.minSpawnDistance) {
                return false;
             }
-
-            checkedEntities.add(entity);
          }
       }
    }
@@ -346,6 +345,10 @@ export function spawnInitialEntities(): void {
 
    // For each spawn info object, spawn entities until no more can be spawned
    for (const spawnInfo of SPAWN_INFO_RECORD) {
+      if (spawnInfo.entityType >= NUM_ENTITY_TYPES) {
+         throw new Error("NUM_ENTITY_TYPES too small (need at least" + (spawnInfo.entityType + 1) + ")");
+      }
+      
       numSpawnAttempts = 0;
       while (spawnConditionsAreMet(spawnInfo)) {
          runSpawnEvent(spawnInfo);

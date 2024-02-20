@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersectWithOffset, HitboxVertexPositions, Point, rectanglePointsDoIntersectWithOffset, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
 import Hitbox, { HitboxObject } from "./Hitbox";
 import CircularHitbox from "./CircularHitbox";
 
@@ -15,53 +15,59 @@ class RectangularHitbox extends Hitbox {
    public vertexOffsets: HitboxVertexPositions = [new Point(0, 0), new Point(0, 0), new Point(0, 0), new Point(0, 0)];
    public sideAxes = [new Point(0, 0), new Point(0, 0)] as const;
 
-   constructor(object: HitboxObject, offsetX: number, offsetY: number, width: number, height: number) {
-      super(object, offsetX, offsetY);
+   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, width: number, height: number, localID: number) {
+      super(object, mass, offsetX, offsetY, localID);
 
       this.width = width;
       this.height = height;
       this.updateHalfDiagonalLength();
       this.updateVertexPositions();
+      this.calculateSideAxes();
    }
 
    public updateHalfDiagonalLength(): void {
-      this.halfDiagonalLength = Math.sqrt(Math.pow(this.width / 2, 2) + Math.pow(this.height / 2, 2));
+      this.halfDiagonalLength = Math.sqrt(this.width * this.width / 4 + this.height * this.height / 4);
    }
 
    public updateVertexPositions(): void {
-      const x1 = -this.width / 2;
-      const x2 = this.width / 2;
-      const y1 = -this.height / 2;
-      const y2 = this.height / 2;
+      const x1 = -this.width * 0.5;
+      const x2 = this.width * 0.5;
+      const y2 = this.height * 0.5;
+
+      const rotation = this.rotation + this.object.rotation;
+
+      const sinRotation = Math.sin(rotation);
+      const cosRotation = Math.cos(rotation);
 
       // Rotate vertices
 
       // Top left vertex
-      this.vertexOffsets[0].x = rotateXAroundOrigin(x1, y2, this.rotation + this.object.rotation);
-      this.vertexOffsets[0].y = rotateYAroundOrigin(x1, y2, this.rotation + this.object.rotation);
+      this.vertexOffsets[0].x = cosRotation * x1 + sinRotation * y2;
+      this.vertexOffsets[0].y = cosRotation * y2 - sinRotation * x1;
       // Top right vertex
-      this.vertexOffsets[1].x = rotateXAroundOrigin(x2, y2, this.rotation + this.object.rotation);
-      this.vertexOffsets[1].y = rotateYAroundOrigin(x2, y2, this.rotation + this.object.rotation);
-      // Bottom left vertex
-      this.vertexOffsets[2].x = rotateXAroundOrigin(x1, y1, this.rotation + this.object.rotation);
-      this.vertexOffsets[2].y = rotateYAroundOrigin(x1, y1, this.rotation + this.object.rotation);
+      this.vertexOffsets[1].x = cosRotation * x2 + sinRotation * y2;
+      this.vertexOffsets[1].y = cosRotation * y2 - sinRotation * x2;
       // Bottom right vertex
-      this.vertexOffsets[3].x = rotateXAroundOrigin(x2, y1, this.rotation + this.object.rotation);
-      this.vertexOffsets[3].y = rotateYAroundOrigin(x2, y1, this.rotation + this.object.rotation);
-
-      this.calculateSideAxes();
+      this.vertexOffsets[2].x = -this.vertexOffsets[0].x;
+      this.vertexOffsets[2].y = -this.vertexOffsets[0].y;
+      // Bottom left vertex
+      this.vertexOffsets[3].x = -this.vertexOffsets[1].x;
+      this.vertexOffsets[3].y = -this.vertexOffsets[1].y;
    }
 
-   private calculateSideAxes(): void {
+   public calculateSideAxes(): void {
+      const angle = this.rotation + this.object.rotation + Math.PI/2;
+      // @Speed: Might be able to use the trig results from updateVertexPositions to avoid doing these
+      const sinAngle = Math.sin(angle);
+      const cosAngle = Math.cos(angle);
+
       // Angle between vertex 0 (top left) and vertex 1 (top right)
-      const angle1 = this.vertexOffsets[0].calculateAngleBetween(this.vertexOffsets[1]);
-      this.sideAxes[0].x = Math.sin(angle1);
-      this.sideAxes[0].y = Math.cos(angle1);
+      this.sideAxes[0].x = sinAngle;
+      this.sideAxes[0].y = cosAngle;
       
-      // Angle between vertex 2 (bottom left) and vertex 3 (bottom right)
-      const angle2 = this.vertexOffsets[2].calculateAngleBetween(this.vertexOffsets[3]);
-      this.sideAxes[1].x = Math.sin(angle2);
-      this.sideAxes[1].y = Math.cos(angle2);
+      // Angle between vertex 1 (top right) and vertex 2 (bottom right)
+      this.sideAxes[1].x = cosAngle;
+      this.sideAxes[1].y = -sinAngle;
    }
 
    public calculateHitboxBoundsMinX(): number {
@@ -81,16 +87,16 @@ class RectangularHitbox extends Hitbox {
       // @Speed: This check is slow
       if (otherHitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circleAndRectangleDoIntersectWithOffset(otherHitbox.object.position, otherHitbox.offset, (otherHitbox as CircularHitbox).radius, this.object.position, this.offset, this.width, this.height, this.rotation + this.object.rotation);
+         return circleAndRectangleDoIntersect(otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, (otherHitbox as CircularHitbox).radius, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, this.width, this.height, this.rotation + this.object.rotation);
       } else {
          // Rectangular hitbox
          // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
-         const distanceSquared = Math.pow(this.object.position.x + this.offset.x - otherHitbox.object.position.x - otherHitbox.offset.x, 2) + Math.pow(this.object.position.y + this.offset.y - otherHitbox.object.position.y - otherHitbox.offset.y, 2);
+         const distanceSquared = Math.pow(this.object.position.x + this.rotatedOffsetX - otherHitbox.object.position.x - otherHitbox.rotatedOffsetX, 2) + Math.pow(this.object.position.y + this.rotatedOffsetY - otherHitbox.object.position.y - otherHitbox.rotatedOffsetY, 2);
          if (distanceSquared > Math.pow(this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength, 2)) {
             return false;
          }
          
-         return rectanglePointsDoIntersectWithOffset(this.vertexOffsets, (otherHitbox as RectangularHitbox).vertexOffsets, this.object.position, otherHitbox.object.position, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
+         return rectanglePointsDoIntersect(this.vertexOffsets, (otherHitbox as RectangularHitbox).vertexOffsets, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
       }
    }
 }
