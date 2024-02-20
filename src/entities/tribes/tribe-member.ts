@@ -295,7 +295,7 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
       const buildingTribeComponent = TribeComponentArray.getComponent(targetEntity);
       if (buildingTribeComponent.tribe === tribeComponent.tribe) {
          const itemInfo = ITEM_INFO_RECORD[item.type] as HammerItemInfo;
-         healEntity(targetEntity, itemInfo.repairAmount);
+         healEntity(targetEntity, itemInfo.repairAmount, tribeMember.id);
          return true;
       }
    }
@@ -692,7 +692,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
 
          const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
 
-         healEntity(tribeMember, itemInfo.healAmount);
+         healEntity(tribeMember, itemInfo.healAmount, tribeMember.id);
          consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);

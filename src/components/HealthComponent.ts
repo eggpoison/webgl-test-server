@@ -2,7 +2,6 @@ import { IEntityType, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-sha
 import Entity from "../Entity";
 import { HealthComponentArray, PhysicsComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
-import { SERVER } from "../server";
 import { onBerryBushHurt } from "../entities/resources/berry-bush";
 import { onCowHurt } from "../entities/mobs/cow";
 import { onKrumblidHurt } from "../entities/mobs/krumblid";
@@ -19,6 +18,7 @@ import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
 import { onGolemHurt } from "../entities/mobs/golem";
 import { onWoodenWallDeath } from "../entities/structures/wooden-wall";
 import { AIHelperComponentArray } from "./AIHelperComponent";
+import { SERVER } from "../server";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -30,9 +30,6 @@ export class HealthComponent {
 
    public readonly localIframeHashes = new Array<string>();
    public readonly localIframeDurations = new Array<number>();
-
-   // @Cleanup @Memory: This is only used to send to the player, does it have to be stored here??? (expensive)
-   public amountHealedThisTick = 0;
 
    constructor(maxHealth: number) {
       this.maxHealth = maxHealth;
@@ -50,10 +47,6 @@ export function tickHealthComponent(healthComponent: HealthComponent): void {
          i--;
       }
    }
-}
-
-export function resetHealthComponentAmountHealed(healthComponent: HealthComponent): void {
-   healthComponent.amountHealedThisTick = 0;
 }
 
 export function canDamageEntity(healthComponent: HealthComponent, attackHash: string): boolean {
@@ -225,7 +218,7 @@ export function applyHitKnockback(entity: Entity, knockback: number, knockbackDi
    entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
 }
 
-export function healEntity(entity: Entity, healAmount: number): void {
+export function healEntity(entity: Entity, healAmount: number, healerID: number): void {
    if (healAmount <= 0) {
       return;
    }
@@ -242,7 +235,15 @@ export function healEntity(entity: Entity, healAmount: number): void {
       amountHealed = healAmount;
    }
 
-   healthComponent.amountHealedThisTick += amountHealed;
+   if (amountHealed > 0) {
+      SERVER.registerEntityHeal({
+         entityPositionX: entity.position.x,
+         entityPositionY: entity.position.y,
+         healedID: entity.id,
+         healerID: healerID,
+         healAmount: amountHealed
+      });
+   }
 }
 
 export function addLocalInvulnerabilityHash(healthComponent: HealthComponent, hash: string, invulnerabilityDurationSeconds: number): void {

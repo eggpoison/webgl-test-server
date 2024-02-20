@@ -232,7 +232,7 @@ export function tickZombie(zombie: Entity): void {
       if (closestFoodItem !== null) {
          moveEntityToPosition(zombie, closestFoodItem.position.x, closestFoodItem.position.y, ACCELERATION);
          if (zombie.isColliding(closestFoodItem) !== NO_COLLISION) {
-            healEntity(zombie, 3);
+            healEntity(zombie, 3, zombie.id);
             closestFoodItem.remove();
          }
          return;

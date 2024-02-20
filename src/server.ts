@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -9,8 +9,8 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { ArrowComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
-import { InventoryComponent, addItemToInventory, getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
+import { ArrowComponentArray, BallistaComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { addItemToInventory, getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
@@ -19,8 +19,7 @@ import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
 import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
 import { getBlueprintProgress } from "./components/BlueprintComponent";
-import { resetHealthComponentAmountHealed } from "./components/HealthComponent";
-import { createSlingTurret, getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
+import { getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
 import { forceMaxGrowAllIceSpikes } from "./entities/resources/ice-spikes";
 import { createBallista, getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
 import { createTribeTotem } from "./entities/tribes/tribe-totem";
@@ -582,13 +581,16 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          const tribeComponent = TribeComponentArray.getComponent(entity);
          const turretComponent = TurretComponentArray.getComponent(entity);
          const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const ballistaComponent = BallistaComponentArray.getComponent(entity);
          
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             turretComponent.aimDirection,
             getBallistaChargeProgress(entity),
             getBallistaReloadProgress(entity),
-            serializeInventoryData(getInventory(inventoryComponent, "ammoBoxInventory"))
+            serializeInventoryData(getInventory(inventoryComponent, "ammoBoxInventory")),
+            ballistaComponent.ammoType,
+            ballistaComponent.ammoRemaining
          ];
          break;
       }
@@ -627,8 +629,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       ageTicks: entity.ageTicks,
       type: entity.type as unknown as EntityType,
       clientArgs: clientArgs,
-      statusEffects: statusEffectData,
-      amountHealed: HealthComponentArray.hasComponent(entity) ? HealthComponentArray.getComponent(entity).amountHealedThisTick : 0
+      statusEffects: statusEffectData
    }
 }
 
@@ -673,7 +674,10 @@ interface PlayerData {
    clientIsActive: boolean;
    visibleChunkBounds: VisibleChunkBounds;
    readonly tribe: Tribe;
-   hitsTaken: Array<HitData>;
+   /** All hits that have occured to any entity visible to the player */
+   hits: Array<HitData>;
+   /** All healing done to any entity visible to the player */
+   heals: Array<HealData>;
    pickedUpItem: boolean;
 }
 
@@ -767,12 +771,6 @@ class GameServer {
 
       SERVER.sendGameDataPackets();
 
-      // @Cleanup: Out of place
-      for (let i = 0; i < HealthComponentArray.components.length; i++) {
-         const healthComponent = HealthComponentArray.components[i];
-         resetHealthComponentAmountHealed(healthComponent);
-      }
-
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
       Board.ticks++;
@@ -825,8 +823,8 @@ class GameServer {
          setTimeout(() => {
             createCow(new Point(spawnPosition.x + 200, spawnPosition.y));
             
-            // const tribe = new Tribe(TribeType.barbarians);
-            // Board.addTribe(tribe);
+            const tribe = new Tribe(TribeType.barbarians);
+            Board.addTribe(tribe);
             // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 1000), tribe);
 
             // for (let i = 0; i < 3; i++) {
@@ -836,8 +834,8 @@ class GameServer {
             // }
             // createYeti(new Point(spawnPosition.x, spawnPosition.y + 600));
 
-            // const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
-            // const tribeComp = TribeComponentArray.getComponent(player);
+            const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
+            const tribeComp = TribeComponentArray.getComponent(player);
             // const n = 6;
             // for (let i = 0; i < n; i++) {
             //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 100), tribeComp.tribe);
@@ -849,13 +847,13 @@ class GameServer {
             // for (let i = 0; i < n2; i++) {
             //    createSlingTurret(new Point(spawnPosition.x + (i - (n2 - 1)/2) * 200, spawnPosition.y + 0), tribeComp.tribe);
             // }
-            // const n3 = 3;
-            // for (let i = 0; i < n3; i++) {
-            //    const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
-            //    setTimeout(() => {
-            //       addItemToInventory(InventoryComponentArray.getComponent(b), "ammoBoxInventory", ItemType.wood, 1);
-            //    }, 100);
-            // }
+            const n3 = 3;
+            for (let i = 0; i < n3; i++) {
+               const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
+               setTimeout(() => {
+                  addItemToInventory(InventoryComponentArray.getComponent(b), "ammoBoxInventory", ItemType.wood, 1);
+               }, 100);
+            }
             // for (let i = 0; i < n; i++) {
             //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y - 320), tribeComp.tribe);
             // }
@@ -895,7 +893,8 @@ class GameServer {
                clientIsActive: true,
                visibleChunkBounds: visibleChunkBounds,
                tribe: tribe,
-               hitsTaken: [],
+               hits: [],
+               heals: [],
                pickedUpItem: false
             }
             playerData.instanceID = player.id;
@@ -936,7 +935,8 @@ class GameServer {
                grassInfo: Board.grassInfo,
                decorations: Board.decorations,
                entityDataArray: bundleEntityDataArray(playerData.visibleChunkBounds),
-               hitsTaken: [],
+               hits: [],
+               heals: [],
                inventory: {
                   hotbar: {
                      itemSlots: {},
@@ -1205,7 +1205,8 @@ class GameServer {
          const gameDataPacket: GameDataPacket = {
             entityDataArray: bundleEntityDataArray(extendedVisibleChunkBounds),
             inventory: this.bundlePlayerInventoryData(player),
-            hitsTaken: playerData.hitsTaken,
+            hits: playerData.hits,
+            heals: playerData.heals,
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
@@ -1222,7 +1223,8 @@ class GameServer {
          // Send the game data to the player
          playerData.socket.emit("game_data_packet", gameDataPacket);
 
-         playerData.hitsTaken = [];
+         playerData.hits = [];
+         playerData.heals = [];
          playerData.pickedUpItem = false;
       }
    }
@@ -1234,7 +1236,19 @@ class GameServer {
       const chunkY = Math.floor(hitData.entityPositionY / SETTINGS.CHUNK_UNITS);
       for (const playerData of Object.values(this.playerDataRecord)) {
          if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
-            playerData.hitsTaken.push(hitData);
+            playerData.hits.push(hitData);
+         }
+      }
+   }
+
+   public registerEntityHeal(healData: HealData): void {
+      // @Incomplete: Consider all chunks the entity is in instead of just the one at its position
+      
+      const chunkX = Math.floor(healData.entityPositionX / SETTINGS.CHUNK_UNITS);
+      const chunkY = Math.floor(healData.entityPositionY / SETTINGS.CHUNK_UNITS);
+      for (const playerData of Object.values(this.playerDataRecord)) {
+         if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
+            playerData.heals.push(healData);
          }
       }
    }

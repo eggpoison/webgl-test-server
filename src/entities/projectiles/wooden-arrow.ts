@@ -1,9 +1,9 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
+import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
 import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
-import { ArrowComponent, ArrowStatusEffectInfo } from "../../components/ArrowComponent";
+import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";

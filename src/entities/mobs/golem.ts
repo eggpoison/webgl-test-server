@@ -289,8 +289,9 @@ export function onGolemCollision(golem: Entity, collidingEntity: Entity): void {
       return;
    }
    
+   // Don't hurt entities which aren't attacking the golem
    const golemComponent = GolemComponentArray.getComponent(golem);
-   if (collidingEntity !== getTarget(golemComponent)) {
+   if (!golemComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
       return;
    }
    

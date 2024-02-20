@@ -1,9 +1,4 @@
-import { GenericArrowType, StatusEffectConst } from "webgl-test-shared";
-
-export interface ArrowStatusEffectInfo {
-   readonly type: StatusEffectConst;
-   readonly durationTicks: number;
-}
+import { ArrowStatusEffectInfo, GenericArrowType } from "webgl-test-shared";
 
 export class ArrowComponent {
    public readonly type: GenericArrowType;

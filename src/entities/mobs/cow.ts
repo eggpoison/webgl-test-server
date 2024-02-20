@@ -68,7 +68,7 @@ const graze = (cow: Entity, cowComponent: CowComponent): void => {
       };
       Board.replaceTile(previousTile.x, previousTile.y, newTileInfo.type, newTileInfo.biomeName, newTileInfo.isWall, 0);
 
-      healEntity(cow, 3);
+      healEntity(cow, 3, cow.id);
       cowComponent.grazeCooldownTicks = randInt(MIN_GRAZE_COOLDOWN, MAX_GRAZE_COOLDOWN);
 
       // Create poop item entity
@@ -128,7 +128,7 @@ export function tickCow(cow: Entity): void {
          if (itemComponent.itemType === ItemType.berry) {
             const wasEaten = chaseAndEatItemEntity(cow, itemEntity, 200);
             if (wasEaten) {
-               healEntity(cow, 3);
+               healEntity(cow, 3, cow.id);
                break;
             }
             return;

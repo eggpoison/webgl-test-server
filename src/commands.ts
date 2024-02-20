@@ -126,17 +126,17 @@ export function registerCommand(command: string, player: Entity): void {
 
       case "heal": {
          if (numParameters === 0) {
-            healEntity(player, 99999);
+            healEntity(player, 99999, -1);
          } else if (numParameters === 1) {
             const healing = commandComponents[1] as number;
-            healEntity(player, healing);
+            healEntity(player, healing, -1);
          } else if (numParameters === 2) {
             const username = commandComponents[1] as string;
             const healing = commandComponents[2] as number;
 
             const player = SERVER.getPlayerFromUsername(username);
             if (player !== null) {
-               healEntity(player, healing);
+               healEntity(player, healing, -1);
             }
          }
 

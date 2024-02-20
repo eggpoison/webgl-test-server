@@ -41,6 +41,7 @@ import { PebblumComponent } from "./PebblumComponent";
 import { PhysicsComponent } from "./PhysicsComponent";
 import { BlueprintComponent } from "./BlueprintComponent";
 import { TurretComponent } from "./TurretComponent";
+import { BallistaComponent } from "./BallistaComponent";
 
 export class ComponentArray<T extends {} = {}> {
    public components = new Array<T>();
@@ -156,3 +157,4 @@ export const PebblumComponentArray = new ComponentArray<PebblumComponent>();
 export const PhysicsComponentArray = new ComponentArray<PhysicsComponent>();
 export const BlueprintComponentArray = new ComponentArray<BlueprintComponent>();
 export const TurretComponentArray = new ComponentArray<TurretComponent>();
+export const BallistaComponentArray = new ComponentArray<BallistaComponent>();

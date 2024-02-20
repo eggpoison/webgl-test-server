@@ -348,7 +348,7 @@ export function tickYeti(yeti: Entity): void {
       if (closestFoodItem !== null) {
          moveEntityToPosition(yeti, closestFoodItem.position.x, closestFoodItem.position.y, 100);
          if (yeti.isColliding(closestFoodItem) !== NO_COLLISION) {
-            healEntity(yeti, 3);
+            healEntity(yeti, 3, yeti.id);
             closestFoodItem.remove();
          }
          return;
@@ -387,6 +387,12 @@ export function onYetiCollision(yeti: Entity, collidingEntity: Entity): void {
       if (snowballComponent.yetiID === yeti.id) {
          return;
       }
+   }
+   
+   // Don't damage yetis which haven't damaged it
+   const yetiComponent = YetiComponentArray.getComponent(yeti);
+   if ((collidingEntity.type === IEntityType.yeti || collidingEntity.type === IEntityType.frozenYeti) && !yetiComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
+      return;
    }
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {

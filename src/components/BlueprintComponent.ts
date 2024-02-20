@@ -1,4 +1,4 @@
-import { HammerItemType, Item, ItemType, BlueprintBuildingType, ITEM_INFO_RECORD, HammerItemInfo } from "webgl-test-shared";
+import { Item, BlueprintBuildingType, ITEM_INFO_RECORD, HammerItemInfo } from "webgl-test-shared";
 import Entity from "../Entity";
 import { BlueprintComponentArray, TribeComponentArray } from "./ComponentArray";
 import { createWoodenDoor } from "../entities/structures/wooden-door";

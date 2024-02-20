@@ -168,7 +168,7 @@ export function tickSlime(slime: Entity): void {
    // Heal when standing on slime blocks
    if (slime.tile.type === TileTypeConst.slime) {
       if (Board.tickIntervalHasPassed(HEALING_PROC_INTERVAL)) {
-         healEntity(slime, HEALING_ON_SLIME_PER_SECOND * HEALING_PROC_INTERVAL);
+         healEntity(slime, HEALING_ON_SLIME_PER_SECOND * HEALING_PROC_INTERVAL, slime.id);
       }
    }
    
@@ -314,7 +314,7 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
       // @Incomplete: THis allows small slimes to eat larger slimes. Very bad.
       
       // Add the other slime's health
-      healEntity(slime1, getEntityHealth(slime2))
+      healEntity(slime1, getEntityHealth(slime2), slime1.id)
 
       createNewOrb(slimeComponent1.orbs, slimeComponent2.size);
 
