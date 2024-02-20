@@ -7,7 +7,7 @@ import { onBerryBushHurt } from "../entities/resources/berry-bush";
 import { onCowHurt } from "../entities/mobs/cow";
 import { onKrumblidHurt } from "../entities/mobs/krumblid";
 import { onTombstoneDeath } from "../entities/tombstone";
-import { onZombieHurt } from "../entities/mobs/zombie";
+import { onZombieHurt, onZombieVisibleEntityHurt } from "../entities/mobs/zombie";
 import { onSlimeDeath, onSlimeHurt } from "../entities/mobs/slime";
 import { onYetiHurt } from "../entities/mobs/yeti";
 import { onFishHurt } from "../entities/mobs/fish";
@@ -18,6 +18,7 @@ import { onTribeWorkerHurt } from "../entities/tribes/tribe-worker";
 import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
 import { onGolemHurt } from "../entities/mobs/golem";
 import { onWoodenWallDeath } from "../entities/structures/wooden-wall";
+import { AIHelperComponentArray } from "./AIHelperComponent";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -183,6 +184,30 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
             onGolemHurt(entity, attackingEntity, damage);
          }
          break;
+      }
+   }
+
+   // @Speed
+   const alertedEntityIDs = new Array<number>();
+   for (let i = 0; i < entity.chunks.length; i++) {
+      const chunk = entity.chunks[i];
+      for (let j = 0; j < chunk.viewingEntities.length; j++) {
+         const viewingEntity = chunk.viewingEntities[j];
+         if (alertedEntityIDs.indexOf(viewingEntity.id) !== -1) {
+            continue;
+         }
+
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+         if (aiHelperComponent.visibleEntities.includes(entity)) {
+            switch (viewingEntity.type) {
+               case IEntityType.zombie: {
+                  onZombieVisibleEntityHurt(viewingEntity, entity);
+                  break;
+               }
+            }
+         }
+
+         alertedEntityIDs.push(viewingEntity.id);
       }
    }
 

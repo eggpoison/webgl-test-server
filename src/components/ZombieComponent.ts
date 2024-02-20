@@ -1,3 +1,5 @@
+import { ID_SENTINEL_VALUE } from "../Entity";
+
 export class ZombieComponent {
    /** The type of the zombie, 0-3 */
    public readonly zombieType: number;
@@ -8,6 +10,10 @@ export class ZombieComponent {
 
    /** Cooldown before the zombie can do another attack */
    public attackCooldownTicks = 0;
+
+   public visibleHurtEntityID = ID_SENTINEL_VALUE;
+   /** Ticks since the visible hurt entity was last hit */
+   public visibleHurtEntityTicks = 0;
    
    constructor(zombieType: number, tombstoneID: number) {
       this.zombieType = zombieType;

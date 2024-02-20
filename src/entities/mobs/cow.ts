@@ -96,18 +96,10 @@ const findHerdMembers = (cowComponent: CowComponent, visibleEntities: ReadonlyAr
 }
 
 export function tickCow(cow: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
-
    const cowComponent = CowComponentArray.getComponent(cow);
    updateCowComponent(cowComponent);
 
-   // Graze dirt to recover health
-   if (cowComponent.grazeCooldownTicks === 0 && cow.tile.type === TileTypeConst.grass) {
-      graze(cow, cowComponent);
-      return;
-   } else {
-      cowComponent.grazeProgressTicks = 0;
-   }
+   const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
    
    // Escape AI
    const escapeAIComponent = EscapeAIComponentArray.getComponent(cow);
@@ -118,6 +110,14 @@ export function tickCow(cow: Entity): void {
          runFromAttackingEntity(cow, escapeEntity, 350);
          return;
       }
+   }
+
+   // Graze dirt to recover health
+   if (cowComponent.grazeCooldownTicks === 0 && cow.tile.type === TileTypeConst.grass) {
+      graze(cow, cowComponent);
+      return;
+   } else {
+      cowComponent.grazeProgressTicks = 0;
    }
 
    // Eat berries

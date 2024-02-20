@@ -88,8 +88,8 @@ const AMMO_INFO_RECORD: Record<BallistaAmmoType, AmmoInfo> = {
 const VISION_RANGE = 550;
 const HITBOX_SIZE = 100 - 0.05;
 // @Temporary
-const AIM_ARC_SIZE = Math.PI / 2.3;
-// const AIM_ARC_SIZE = Math.PI * 2;
+// const AIM_ARC_SIZE = Math.PI / 2.3;
+const AIM_ARC_SIZE = Math.PI * 2;
 
 export function createBallista(position: Point, tribe: Tribe | null, rotation: number): Entity {
    const turret = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -294,8 +294,11 @@ export function tickBallista(ballista: Entity): void {
       turretComponent.fireCooldownTicks = 0;
    } else {
       const ammoInfo = AMMO_INFO_RECORD[ammoType];
-      if (turretComponent.fireCooldownTicks < ammoInfo.shotCooldownTicks) {
+      if (turretComponent.fireCooldownTicks <= ammoInfo.shotCooldownTicks) {
          turretComponent.fireCooldownTicks = ammoInfo.shotCooldownTicks;
+      } else {
+         // Continue reloading even when there are no targets
+         turretComponent.fireCooldownTicks--;
       }
    }
 }

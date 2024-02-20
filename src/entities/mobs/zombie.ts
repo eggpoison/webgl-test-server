@@ -20,7 +20,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 
 const MAX_HEALTH = 20;
 
-const VISION_RANGE = 300;
+const VISION_RANGE = 375;
 
 const ACCELERATION = 275;
 const ACCELERATION_SLOW = 150;
@@ -34,11 +34,16 @@ const ATTACK_OFFSET = 40;
 const ATTACK_RADIUS = 30;
 
 // Herd AI constants
-const TURN_RATE = 0.4;
-const MIN_SEPARATION_DISTANCE = 50;
+const TURN_RATE = 0.8;
+const MIN_SEPARATION_DISTANCE = 0; // @Speed: Don't need to calculate separation at all
 const SEPARATION_INFLUENCE = 0.3;
-const ALIGNMENT_INFLUENCE = 0.5;
-const COHESION_INFLUENCE = 0.7;
+const ALIGNMENT_INFLUENCE = 0.7;
+const COHESION_INFLUENCE = 0.3;
+
+/** The time in ticks after being hit that the zombie will move towards the source of damage */
+const DAMAGE_INVESTIGATE_TIME_TICKS = Math.floor(0.8 * SETTINGS.TPS);
+
+const HURT_ENTITY_INVESTIGATE_TICKS= Math.floor(0.5 * SETTINGS.TPS);
 
 // @Cleanup: We don't need to pass the isGolden parameter, can deduce whether the tombstone is golden from the tombstoneID instead
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
@@ -67,6 +72,7 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
 }
 
 const getTarget = (zombie: Entity, aiHelperComponent: AIHelperComponent): Entity | null => {
+   // Attack the closest target in vision range
    let minDist = Number.MAX_SAFE_INTEGER;
    let target: Entity | null = null;
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
@@ -79,6 +85,26 @@ const getTarget = (zombie: Entity, aiHelperComponent: AIHelperComponent): Entity
          }
       }
    }
+
+   if (target !== null) {
+      return target;
+   }
+
+   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+
+   // Investigate recent hits
+   let mostRecentHitTicks = CHASE_PURSUE_TIME_TICKS - DAMAGE_INVESTIGATE_TIME_TICKS - 1;
+   let damageSourceEntity: Entity | null = null;
+   // @Speed
+   for (const id of Object.keys(zombieComponent.attackingEntityIDs).map(idString => Number(idString))) {
+      const hitTicks = zombieComponent.attackingEntityIDs[id];
+      if (hitTicks > mostRecentHitTicks) {
+         mostRecentHitTicks = hitTicks;
+         damageSourceEntity = Board.entityRecord[id];
+      }
+   }
+
+   return damageSourceEntity;
 }
 
 const doMeleeAttack = (zombie: Entity, target: Entity): void => {
@@ -141,7 +167,8 @@ export function tickZombie(zombie: Entity): void {
       throw new Error("not zombie??");
    }
    const zombieComponent = ZombieComponentArray.getComponent(zombie);
-   // @Temporary
+   zombieComponent.visibleHurtEntityTicks++;
+      // @Temporary
    if (typeof zombieComponent === "undefined") {
       console.log("bad");
       console.log(zombie.type === IEntityType.zombie);
@@ -152,8 +179,7 @@ export function tickZombie(zombie: Entity): void {
    // Update attacking entities
    // @Speed
    for (const id of Object.keys(zombieComponent.attackingEntityIDs).map(idString => Number(idString))) {
-      zombieComponent.attackingEntityIDs[id] --;
-      if (zombieComponent.attackingEntityIDs[id] <= 0) {
+      if (!Board.entityRecord.hasOwnProperty(id) || --zombieComponent.attackingEntityIDs[id] <= 0) {
          delete zombieComponent.attackingEntityIDs[id];
       }
    }
@@ -169,34 +195,19 @@ export function tickZombie(zombie: Entity): void {
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(zombie);
 
-   // Attack targets in range
-   {
-      let minDist = Number.MAX_SAFE_INTEGER;
-      let target: Entity | null = null;
-      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
-         const entity = aiHelperComponent.visibleEntities[i];
-         if (shouldAttackEntity(zombie, entity)) {
-            const distance = zombie.position.calculateDistanceBetween(entity.position);
-            if (distance < minDist) {
-               minDist = distance;
-               target = entity;
-            }
-         }
-      }
-
-      if (target !== null) {
-         if (zombieComponent.attackCooldownTicks > 0) {
-            zombieComponent.attackCooldownTicks--;
-         } else {
-            // Do special attack
-            doAttack(zombie, target);
-         }
-         
-         moveEntityToPosition(zombie, target.position.x, target.position.y, ACCELERATION);
-         return;
+   const attackTarget = getTarget(zombie, aiHelperComponent);
+   if (attackTarget !== null) {
+      if (zombieComponent.attackCooldownTicks > 0) {
+         zombieComponent.attackCooldownTicks--;
       } else {
-         zombieComponent.attackCooldownTicks = Math.floor(2.5 * SETTINGS.TPS);
+         // Do special attack
+         doAttack(zombie, attackTarget);
       }
+      
+      moveEntityToPosition(zombie, attackTarget.position.x, attackTarget.position.y, ACCELERATION);
+      return;
+   } else {
+      zombieComponent.attackCooldownTicks = Math.floor(2.5 * SETTINGS.TPS);
    }
 
    // Eat raw beef and fish
@@ -228,13 +239,25 @@ export function tickZombie(zombie: Entity): void {
       }
    }
 
-   // Herd AI
-   const herdMembers = findHerdMembers(aiHelperComponent.visibleEntities);
-   if (herdMembers.length >= 2 && herdMembers.length <= 6) {
-      runHerdAI(zombie, herdMembers, VISION_RANGE, TURN_RATE, MIN_SEPARATION_DISTANCE, SEPARATION_INFLUENCE, ALIGNMENT_INFLUENCE, COHESION_INFLUENCE);
-      zombie.acceleration.x = 200 * Math.sin(zombie.rotation);
-      zombie.acceleration.y = 200 * Math.cos(zombie.rotation);
-      return;
+   // Investigate hurt entities
+   if (zombieComponent.visibleHurtEntityTicks < HURT_ENTITY_INVESTIGATE_TICKS) {
+      if (Board.entityRecord.hasOwnProperty(zombieComponent.visibleHurtEntityID)) {
+         const hurtEntity = Board.entityRecord[zombieComponent.visibleHurtEntityID];
+         moveEntityToPosition(zombie, hurtEntity.position.x, hurtEntity.position.y, ACCELERATION_SLOW);
+         return;
+      }
+   }
+
+   // Don't do herd AI if the zombie was attacked recently
+   if (Object.keys(zombieComponent.attackingEntityIDs).length === 0) {
+      // Herd AI
+      const herdMembers = findHerdMembers(aiHelperComponent.visibleEntities);
+      if (herdMembers.length > 1) {
+         runHerdAI(zombie, herdMembers, VISION_RANGE, TURN_RATE, MIN_SEPARATION_DISTANCE, SEPARATION_INFLUENCE, ALIGNMENT_INFLUENCE, COHESION_INFLUENCE);
+         zombie.acceleration.x = ACCELERATION_SLOW * Math.sin(zombie.rotation);
+         zombie.acceleration.y = ACCELERATION_SLOW * Math.cos(zombie.rotation);
+         return;
+      }
    }
 
    // Wander AI
@@ -361,7 +384,7 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
 }
 
 export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
-   if (attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenWallSpikes && attackingEntity.type !== IEntityType.woodenFloorSpikes && attackingEntity.type !== IEntityType.floorPunjiSticks && attackingEntity.type !== IEntityType.wallPunjiSticks) {
+   if (HealthComponentArray.hasComponent(attackingEntity) && attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenWallSpikes && attackingEntity.type !== IEntityType.woodenFloorSpikes && attackingEntity.type !== IEntityType.floorPunjiSticks && attackingEntity.type !== IEntityType.wallPunjiSticks) {
       const zombieComponent = ZombieComponentArray.getComponent(zombie);
       zombieComponent.attackingEntityIDs[attackingEntity.id] = CHASE_PURSUE_TIME_TICKS;
    }
@@ -381,6 +404,13 @@ export function onZombieDeath(zombie: Entity): void {
    if (wasTribeMemberKill(zombie) && Math.random() < 0.1) {
       createItemsOverEntity(zombie, ItemType.eyeball, 1);
    }
+}
+
+export function onZombieVisibleEntityHurt(zombie: Entity, hurtEntity: Entity): void {
+   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+
+   zombieComponent.visibleHurtEntityID = hurtEntity.id;
+   zombieComponent.visibleHurtEntityTicks = 0;
 }
 
 export function onZombieRemove(zombie: Entity): void {

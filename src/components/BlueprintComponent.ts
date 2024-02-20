@@ -1,4 +1,4 @@
-import { HammerItemType, Item, ItemType, BlueprintBuildingType } from "webgl-test-shared";
+import { HammerItemType, Item, ItemType, BlueprintBuildingType, ITEM_INFO_RECORD, HammerItemInfo } from "webgl-test-shared";
 import Entity from "../Entity";
 import { BlueprintComponentArray, TribeComponentArray } from "./ComponentArray";
 import { createWoodenDoor } from "../entities/structures/wooden-door";
@@ -11,10 +11,6 @@ const STRUCTURE_WORK_REQUIRED: Record<BlueprintBuildingType, number> = {
    [BlueprintBuildingType.embrasure]: 5,
    [BlueprintBuildingType.ballista]: 25,
    [BlueprintBuildingType.slingTurret]: 10
-};
-
-const HAMMER_WORK_AMOUNTS: Record<HammerItemType, number> = {
-   [ItemType.wooden_hammer]: 1
 };
 
 export class BlueprintComponent {
@@ -54,7 +50,9 @@ const constructBlueprint = (blueprintEntity: Entity, blueprintComponent: Bluepri
 export function doBlueprintWork(blueprintEntity: Entity, hammerItem: Item): void {
    const blueprintComponent = BlueprintComponentArray.getComponent(blueprintEntity);
    
-   blueprintComponent.workProgress += HAMMER_WORK_AMOUNTS[hammerItem.type as HammerItemType];
+   const hammerItemInfo = ITEM_INFO_RECORD[hammerItem.type] as HammerItemInfo;
+   // @Temporary
+   blueprintComponent.workProgress += hammerItemInfo.workAmount * 99;
    if (blueprintComponent.workProgress >= STRUCTURE_WORK_REQUIRED[blueprintComponent.buildingType]) {
       // Construct the building
       constructBlueprint(blueprintEntity, blueprintComponent);
