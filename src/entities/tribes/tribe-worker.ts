@@ -20,17 +20,6 @@ export const TRIBE_WORKER_RADIUS = 28;
 const INVENTORY_SIZE = 3;
 export const TRIBE_WORKER_VISION_RANGE = 300;
 
-export enum TribesmanAIType {
-   escaping,
-   attacking,
-   harvestingResources,
-   pickingUpDroppedItems,
-   haulingResources,
-   grabbingFood,
-   patrolling,
-   idle
-}
-
 export function createTribeWorker(position: Point, tribe: Tribe, hutID: number): Entity {
    const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 

@@ -65,6 +65,7 @@ import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure"
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
+import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -386,6 +387,11 @@ abstract class Board {
       for (let i = 0; i < DoorComponentArray.components.length; i++) {
          const door = DoorComponentArray.getEntity(i);
          tickDoorComponent(door);
+      }
+
+      for (let i = 0; i < ResearchBenchComponentArray.components.length; i++) {
+         const entity = ResearchBenchComponentArray.getEntity(i);
+         tickResearchBenchComponent(entity);
       }
 
       // The physics component ticking must be done at the end so there is time for the positionIsDirty and hitboxesAreDirty flags to collect

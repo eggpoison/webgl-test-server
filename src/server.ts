@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -681,6 +681,7 @@ interface PlayerData {
    hits: Array<HitData>;
    /** All healing done to any entity visible to the player */
    heals: Array<HealData>;
+   orbCompletes: Array<ResearchOrbCompleteData>;
    pickedUpItem: boolean;
 }
 
@@ -898,6 +899,7 @@ class GameServer {
                tribe: tribe,
                hits: [],
                heals: [],
+               orbCompletes: [],
                pickedUpItem: false
             }
             playerData.instanceID = player.id;
@@ -940,6 +942,7 @@ class GameServer {
                entityDataArray: bundleEntityDataArray(playerData.visibleChunkBounds),
                hits: [],
                heals: [],
+               orbCompletes: [],
                inventory: {
                   hotbar: {
                      itemSlots: {},
@@ -1138,7 +1141,10 @@ class GameServer {
 
          socket.on("study_tech", (studyAmount: number): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
-            playerData.tribe.studyTech(studyAmount);
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               playerData.tribe.studyTech(player.position.x, player.position.y, studyAmount);
+            }
          });
 
          socket.on("shape_structure", (structureID: number, buildingType: BlueprintBuildingType): void => {
@@ -1218,6 +1224,7 @@ class GameServer {
             inventory: this.bundlePlayerInventoryData(player),
             hits: playerData.hits,
             heals: playerData.heals,
+            orbCompletes: playerData.orbCompletes,
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
@@ -1236,6 +1243,7 @@ class GameServer {
 
          playerData.hits = [];
          playerData.heals = [];
+         playerData.orbCompletes = [];
          playerData.pickedUpItem = false;
       }
    }
@@ -1260,6 +1268,18 @@ class GameServer {
       for (const playerData of Object.values(this.playerDataRecord)) {
          if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
             playerData.heals.push(healData);
+         }
+      }
+   }
+
+   public registerResearchOrbComplete(orbCompleteData: ResearchOrbCompleteData): void {
+      // @Incomplete: Consider all chunks the entity is in instead of just the one at its position
+      
+      const chunkX = Math.floor(orbCompleteData.x / SETTINGS.CHUNK_UNITS);
+      const chunkY = Math.floor(orbCompleteData.y / SETTINGS.CHUNK_UNITS);
+      for (const playerData of Object.values(this.playerDataRecord)) {
+         if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
+            playerData.orbCompletes.push(orbCompleteData);
          }
       }
    }

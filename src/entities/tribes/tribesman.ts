@@ -5,9 +5,9 @@ import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, 
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, PhysicsComponentArray, ResearchBenchComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
-import { TribesmanComponent } from "../../components/TribesmanComponent";
+import { TribesmanAIType, TribesmanComponent } from "../../components/TribesmanComponent";
 import { tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem, repairBuilding } from "./tribe-member";
-import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE, TribesmanAIType } from "./tribe-worker";
+import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE } from "./tribe-worker";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import Board from "../../Board";
@@ -432,6 +432,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
+   tribesmanComponent.targetResearchBenchID = ID_SENTINEL_VALUE;
 
    // Escape from enemies when low on health
    const healthComponent = HealthComponentArray.getComponent(tribesman);
@@ -665,10 +666,11 @@ export function tickTribesman(tribesman: Entity): void {
       const occupiedBenchID = getOccupiedResearchBenchID(tribesman, tribeComponent);
       if (occupiedBenchID !== ID_SENTINEL_VALUE) {
          const bench = Board.entityRecord[occupiedBenchID];
-
-         continueResearching(bench);
+         
+         continueResearching(bench, tribesman);
          moveEntityToPosition(tribesman, bench.position.x, bench.position.y, getSlowAcceleration(tribesman));
-
+         tribesmanComponent.targetResearchBenchID = occupiedBenchID;
+         
          return;
       }
       
@@ -678,6 +680,7 @@ export function tickTribesman(tribesman: Entity): void {
          
          markPreemptiveMoveToBench(bench, tribesman);
          moveEntityToPosition(tribesman, bench.position.x, bench.position.y, getAcceleration(tribesman));
+         tribesmanComponent.targetResearchBenchID = benchID;
 
          // If close enough, switch to doing research
          const dist = calculateDistanceFromEntity(tribesman, bench);

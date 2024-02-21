@@ -7,6 +7,7 @@ import { HutComponentArray, TotemBannerComponentArray } from "./components/Compo
 import { createTribeWorker } from "./entities/tribes/tribe-worker";
 import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
+import { SERVER } from "./server";
 
 const RESPAWN_TIME_TICKS = 5 * SETTINGS.TPS;
 
@@ -411,7 +412,7 @@ class Tribe {
       }
    }
 
-   public studyTech(studyAmount: number): void {
+   public studyTech(researcherX: number, researcherY: number, studyAmount: number): void {
       if (this.selectedTechID === null) {
          return;
       }
@@ -430,6 +431,12 @@ class Tribe {
             this.techTreeUnlockProgress[this.selectedTechID]!.studyProgress = techInfo.researchStudyRequirements;
          }
       }
+
+      SERVER.registerResearchOrbComplete({
+         x: researcherX,
+         y: researcherY,
+         amount: studyAmount
+      });
    }
 
    public hasUnlockedTech(techID: TechID): boolean {
