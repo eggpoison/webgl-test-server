@@ -759,7 +759,8 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.researchBench: {
-               placedEntity = createResearchBench(placePosition);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               placedEntity = createResearchBench(placePosition, tribeComponent.tribe!);
                break;
             }
             case IEntityType.woodenWall: {

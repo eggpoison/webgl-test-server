@@ -18,19 +18,23 @@ const COOLDOWN_TICKS = 1.5 * SETTINGS.TPS;
 const RELOAD_TIME_TICKS = Math.floor(0.4 * SETTINGS.TPS);
 const VISION_RANGE = 400;
 
+export function addSlingTurretHitboxes(entity: Entity): void {
+   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05, 0));
+}
+
 export function createSlingTurret(position: Point, tribe: Tribe | null, rotation: number): Entity {
-   const turret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
-   turret.rotation = rotation;
+   const slingTurret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   slingTurret.rotation = rotation;
 
-   turret.addHitbox(new CircularHitbox(turret, 1.5, 0, 0, 40 - 0.05, 0));
+   addSlingTurretHitboxes(slingTurret);
 
-   HealthComponentArray.addComponent(turret, new HealthComponent(25));
-   StatusEffectComponentArray.addComponent(turret, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));
-   TurretComponentArray.addComponent(turret, new TurretComponent(COOLDOWN_TICKS));
-   TribeComponentArray.addComponent(turret, new TribeComponent(tribe));
-   AIHelperComponentArray.addComponent(turret, new AIHelperComponent(VISION_RANGE));
+   HealthComponentArray.addComponent(slingTurret, new HealthComponent(25));
+   StatusEffectComponentArray.addComponent(slingTurret, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));
+   TurretComponentArray.addComponent(slingTurret, new TurretComponent(COOLDOWN_TICKS));
+   TribeComponentArray.addComponent(slingTurret, new TribeComponent(tribe));
+   AIHelperComponentArray.addComponent(slingTurret, new AIHelperComponent(VISION_RANGE));
    
-   return turret;
+   return slingTurret;
 }
 
 const entityIsTargetted = (entity: Entity, tribeComponent: TribeComponent): boolean => {

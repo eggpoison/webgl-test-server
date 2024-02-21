@@ -3,17 +3,25 @@ import Entity from "../Entity";
 import { BlueprintComponentArray, HealthComponentArray, TribeComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
 import { BlueprintComponent } from "../components/BlueprintComponent";
-import CircularHitbox from "../hitboxes/CircularHitbox";
 import { TribeComponent } from "../components/TribeComponent";
 import Tribe from "../Tribe";
+import { addBallistaHitboxes } from "./structures/ballista";
+import { addSlingTurretHitboxes } from "./structures/sling-turret";
 
 export function createBlueprintEntity(position: Point, buildingType: BlueprintBuildingType, tribe: Tribe | null, rotation: number): Entity {
    const blueprintEntity = new Entity(position, IEntityType.blueprintEntity, COLLISION_BITS.none, 0);
    blueprintEntity.rotation = rotation;
 
-   // @Incomplete: Hitbox shape
-   // @Hack: mass
-   blueprintEntity.addHitbox(new CircularHitbox(blueprintEntity, Number.EPSILON, 0, 0, 10, 0));
+   switch (buildingType) {
+      case BlueprintBuildingType.ballista: {
+         addBallistaHitboxes(blueprintEntity);
+         break;
+      }
+      case BlueprintBuildingType.slingTurret: {
+         addSlingTurretHitboxes(blueprintEntity);
+         break;
+      }
+   }
 
    HealthComponentArray.addComponent(blueprintEntity, new HealthComponent(5));
    BlueprintComponentArray.addComponent(blueprintEntity, new BlueprintComponent(buildingType));

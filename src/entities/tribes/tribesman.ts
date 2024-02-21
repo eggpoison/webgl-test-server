@@ -1,8 +1,8 @@
 import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance, TribeType, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Tile from "../../Tile";
-import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity } from "../../ai-shared";
-import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, PhysicsComponentArray } from "../../components/ComponentArray";
+import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity, moveEntityToPosition } from "../../ai-shared";
+import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, PhysicsComponentArray, ResearchBenchComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
 import { TribesmanComponent } from "../../components/TribesmanComponent";
@@ -13,9 +13,10 @@ import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import Board from "../../Board";
 import { TRIBE_WARRIOR_VISION_RANGE } from "./tribe-warrior";
 import { AIHelperComponentArray } from "../../components/AIHelperComponent";
-import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
 import { getItemAttackCooldown } from "../../items";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
+import { attemptToOccupyResearchBench, canResearchAtBench, continueResearching, markPreemptiveMoveToBench, shouldMoveToResearchBench } from "../../components/ResearchBenchComponent";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -334,6 +335,38 @@ const getHammerItemSlot = (inventory: Inventory): number => {
    return bestItemSlot;
 }
 
+const getOccupiedResearchBenchID = (tribesman: Entity, tribeComponent: TribeComponent): number => {
+   for (let i = 0; i < tribeComponent.tribe!.researchBenches.length; i++) {
+      const bench = tribeComponent.tribe!.researchBenches[i];
+      if (canResearchAtBench(bench, tribesman)) {
+         return bench.id;
+      }
+   }
+
+   return ID_SENTINEL_VALUE;
+}
+
+const getAvailableResearchBenchID = (tribesman: Entity, tribeComponent: TribeComponent): number => {
+   let id = ID_SENTINEL_VALUE;
+   let minDist = Number.MAX_SAFE_INTEGER;
+
+   for (let i = 0; i < tribeComponent.tribe!.researchBenches.length; i++) {
+      const bench = tribeComponent.tribe!.researchBenches[i];
+
+      if (!shouldMoveToResearchBench(bench, tribesman)) {
+         continue;
+      }
+
+      const dist = tribesman.position.calculateDistanceBetween(bench.position);
+      if (dist < minDist) {
+         minDist = dist;
+         id = bench.id;
+      }
+   }
+
+   return id;
+}
+
 export function tickTribesman(tribesman: Entity): void {
    // @Cleanup: This is an absolutely massive function
    
@@ -626,6 +659,36 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
+   // @Speed: shouldn't have to run for tribesmen which can't research
+   if (tribeComponent.tribe!.currentTechRequiresResearching() && tribesman.type === IEntityType.tribeWorker) {
+      // Continue researching at an occupied bench
+      const occupiedBenchID = getOccupiedResearchBenchID(tribesman, tribeComponent);
+      if (occupiedBenchID !== ID_SENTINEL_VALUE) {
+         const bench = Board.entityRecord[occupiedBenchID];
+
+         continueResearching(bench);
+         moveEntityToPosition(tribesman, bench.position.x, bench.position.y, getSlowAcceleration(tribesman));
+
+         return;
+      }
+      
+      const benchID = getAvailableResearchBenchID(tribesman, tribeComponent);
+      if (benchID !== ID_SENTINEL_VALUE) {
+         const bench = Board.entityRecord[benchID];
+         
+         markPreemptiveMoveToBench(bench, tribesman);
+         moveEntityToPosition(tribesman, bench.position.x, bench.position.y, getAcceleration(tribesman));
+
+         // If close enough, switch to doing research
+         const dist = calculateDistanceFromEntity(tribesman, bench);
+         if (dist < 50) {
+            attemptToOccupyResearchBench(bench, tribesman);
+         }
+
+         return;
+      }
+   }
+
    // Attack closest resource
    if (visibleResources.length > 0) {
       // If the inventory is full, the resource should only be attacked if killing it produces an item that can be picked up
@@ -900,17 +963,20 @@ const getBestAxeSlot = (tribesman: Entity): number | null => {
 }
 
 const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number => {
+   const tribesmanRadius = getRadius(tribesman);
+   
    let minDistance = tribesman.position.calculateDistanceBetween(entity.position);
    for (const hitbox of entity.hitboxes) {
       if (hitbox.hasOwnProperty("radius")) {
          const rawDistance = distance(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY);
-         const hitboxDistance = rawDistance - getRadius(tribesman) - (hitbox as CircularHitbox).radius;
+         const hitboxDistance = rawDistance - tribesmanRadius - (hitbox as CircularHitbox).radius;
          if (hitboxDistance < minDistance) {
             minDistance = hitboxDistance;
          }
       } else {
          // @Incomplete: Rectangular hitbox dist
-         const dist = distBetweenPointAndRectangle(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         let dist = distBetweenPointAndRectangle(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         dist -= tribesmanRadius;
          if (dist < minDistance) {
             minDistance = dist;
          }

@@ -9,9 +9,9 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { ArrowComponentArray, BallistaComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BallistaComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, ResearchBenchComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
 import { addItemToInventory, getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
-import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem } from "./entities/tribes/player";
+import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem, uninteractWithStructure } from "./entities/tribes/player";
 import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { getTilesOfBiome } from "./census";
@@ -518,7 +518,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.researchBench: {
-         clientArgs = [];
+         const researchBenchComponent = ResearchBenchComponentArray.getComponent(entity);
+         clientArgs = [researchBenchComponent.isOccupied];
          break;
       }
       case IEntityType.woodenWall: {
@@ -629,8 +630,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       ageTicks: entity.ageTicks,
       type: entity.type as unknown as EntityType,
       clientArgs: clientArgs,
-      statusEffects: statusEffectData
-   }
+      statusEffects: statusEffectData,
+      collisionBit: entity.collisionBit,
+      collisionMask: entity.collisionMask
+   };
 }
 
 const bundleEntityDataArray = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
@@ -1150,7 +1153,15 @@ class GameServer {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               interactWithStructure(structureID);
+               interactWithStructure(player, structureID);
+            };
+         });
+
+         socket.on("structure_uninteract", (structureID: number): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               uninteractWithStructure(player, structureID);
             };
          });
       });

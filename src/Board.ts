@@ -8,7 +8,7 @@ import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
 import { TribeComponent } from "./components/TribeComponent";
-import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray, BlueprintComponentArray, TurretComponentArray, BallistaComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray, BlueprintComponentArray, TurretComponentArray, BallistaComponentArray, ResearchBenchComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity, { NO_COLLISION } from "./Entity";
@@ -538,7 +538,6 @@ abstract class Board {
    }
 
    public static pushJoinBuffer(): void {
-      // Push components
       this.pushComponentsFromArray(TribeComponentArray);
       this.pushComponentsFromArray(InventoryComponentArray);
       this.pushComponentsFromArray(HealthComponentArray);
@@ -581,6 +580,7 @@ abstract class Board {
       this.pushComponentsFromArray(BlueprintComponentArray);
       this.pushComponentsFromArray(TurretComponentArray);
       this.pushComponentsFromArray(BallistaComponentArray);
+      this.pushComponentsFromArray(ResearchBenchComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {
@@ -590,6 +590,12 @@ abstract class Board {
    
          this.entities.push(entity);
          this.entityRecord[entity.id] = entity;
+
+         // @Speed @Cleanup: Should be in its associated file!
+         if (entity.type === IEntityType.researchBench) {
+            const tribeComponent = TribeComponentArray.getComponent(entity);
+            tribeComponent.tribe!.addResearchBench(entity);
+         }
       }
 
       this.entityJoinBuffer = new Array<Entity>();

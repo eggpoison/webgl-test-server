@@ -53,7 +53,6 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.workbench: return createWorkbench(position);
       case IEntityType.yeti: return createYeti(position);
       case IEntityType.zombie: return createZombie(position, false, ID_SENTINEL_VALUE);
-      case IEntityType.researchBench: return createResearchBench(position);
       case IEntityType.woodenWall: return createWoodenWall(position, null);
       case IEntityType.woodenDoor: return createWoodenDoor(position, null, 0);
       case IEntityType.woodenEmbrasure: return createWoodenEmbrasure(position, null, 0);
@@ -82,6 +81,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.workerHut:
       case IEntityType.warriorHut:
       case IEntityType.blueprintEntity:
+      case IEntityType.researchBench:
       case IEntityType.itemEntity: throw new Error("Can't dynamically create entity of type '" + entityType + "'.");
    }
 }

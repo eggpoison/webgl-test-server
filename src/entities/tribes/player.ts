@@ -18,7 +18,7 @@ import { toggleDoor } from "../../components/DoorComponent";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
-import RectangularHitbox from "../../hitboxes/RectangularHitbox";
+import { deoccupyResearchBench, attemptToOccupyResearchBench } from "../../components/ResearchBenchComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -68,10 +68,10 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    }
 
    // @Temporary
+   addItem(inventoryComponent, createItem(ItemType.research_bench, 1));
    addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
    addItem(inventoryComponent, createItem(ItemType.worker_hut, 1));
-   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
-   addItem(inventoryComponent, createItem(ItemType.ballista, 1));
+   // addItem(inventoryComponent, createItem(ItemType.ballista, 1));
    // addItem(inventoryComponent, createItem(ItemType.sling_turret, 99));
 
    return player;
@@ -500,7 +500,7 @@ export function shapeStructure(player: Entity, structureID: number, buildingType
    createBlueprintEntity(position, buildingType, tribeComponent.tribe, rotation);
 }
 
-export function interactWithStructure(structureID: number): void {
+export function interactWithStructure(player: Entity, structureID: number): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }
@@ -509,6 +509,24 @@ export function interactWithStructure(structureID: number): void {
    switch (structure.type) {
       case IEntityType.woodenDoor: {
          toggleDoor(structure);
+         break;
+      }
+      case IEntityType.researchBench: {
+         attemptToOccupyResearchBench(structure, player);
+         break;
+      }
+   }
+}
+
+export function uninteractWithStructure(player: Entity, structureID: number): void {
+   if (!Board.entityRecord.hasOwnProperty(structureID)) {
+      return;
+   }
+
+   const structure = Board.entityRecord[structureID];
+   switch (structure.type) {
+      case IEntityType.researchBench: {
+         deoccupyResearchBench(structure, player);
          break;
       }
    }

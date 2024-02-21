@@ -55,6 +55,8 @@ class Tribe {
 
    public barrels = new Array<Entity>();
 
+   public readonly researchBenches = new Array<Entity>();
+
    /** Stores all tiles in the tribe's zone of influence */
    private area: Record<number, TileInfluence> = {};
    private chunkArea: Record<number, ChunkInfluence> = {};
@@ -141,6 +143,17 @@ class Tribe {
       }
    }
 
+   public addResearchBench(bench: Entity): void {
+      this.researchBenches.push(bench);
+   }
+
+   public removeResearchBench(bench: Entity): void {
+      const idx = this.researchBenches.indexOf(bench);
+      if (idx !== -1) {
+         this.researchBenches.splice(idx, 1);
+      }
+   }
+   
    public addTribeMember(member: Entity): void {
       this.members.push(member);
    }
@@ -442,6 +455,20 @@ class Tribe {
          
          this.unlockTech(techInfo.id);
       }
+   }
+
+   public currentTechRequiresResearching(): boolean {
+      if (this.selectedTechID === null) {
+         return false;
+      }
+
+      if (!this.techTreeUnlockProgress.hasOwnProperty(this.selectedTechID)) {
+         return true;
+      }
+
+      const techInfo = getTechByID(this.selectedTechID);
+      const studyProgress = this.techTreeUnlockProgress[techInfo.id]!.studyProgress;
+      return studyProgress < techInfo.researchStudyRequirements;
    }
 }
 

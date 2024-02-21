@@ -21,24 +21,28 @@ const HITBOX_SIZE = 100 - 0.05;
 // const AIM_ARC_SIZE = Math.PI / 2.3;
 const AIM_ARC_SIZE = Math.PI * 2;
 
-export function createBallista(position: Point, tribe: Tribe | null, rotation: number): Entity {
-   const turret = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
-   turret.rotation = rotation;
+export function addBallistaHitboxes(entity: Entity): void {
+   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE, 0));
+}
 
-   turret.addHitbox(new RectangularHitbox(turret, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE, 0));
+export function createBallista(position: Point, tribe: Tribe | null, rotation: number): Entity {
+   const ballista = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   ballista.rotation = rotation;
+
+   addBallistaHitboxes(ballista);
    
-   HealthComponentArray.addComponent(turret, new HealthComponent(50));
-   StatusEffectComponentArray.addComponent(turret, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.bleeding));
-   TribeComponentArray.addComponent(turret, new TribeComponent(tribe));
-   TurretComponentArray.addComponent(turret, new TurretComponent(0));
-   AIHelperComponentArray.addComponent(turret, new AIHelperComponent(VISION_RANGE));
-   BallistaComponentArray.addComponent(turret, new BallistaComponent());
+   HealthComponentArray.addComponent(ballista, new HealthComponent(50));
+   StatusEffectComponentArray.addComponent(ballista, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.bleeding));
+   TribeComponentArray.addComponent(ballista, new TribeComponent(tribe));
+   TurretComponentArray.addComponent(ballista, new TurretComponent(0));
+   AIHelperComponentArray.addComponent(ballista, new AIHelperComponent(VISION_RANGE));
+   BallistaComponentArray.addComponent(ballista, new BallistaComponent());
 
    const inventoryComponent = new InventoryComponent();
-   InventoryComponentArray.addComponent(turret, inventoryComponent);
+   InventoryComponentArray.addComponent(ballista, inventoryComponent);
    createNewInventory(inventoryComponent, "ammoBoxInventory", 3, 1, false);
 
-   return turret;
+   return ballista;
 }
 
 const getAmmoType = (turret: Entity): BallistaAmmoType | null => {
