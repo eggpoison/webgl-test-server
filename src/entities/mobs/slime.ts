@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Mutable, PlayerCauseOfDeath, Point, SETTINGS, SlimeOrbData, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -27,7 +27,7 @@ const SLIME_DROP_AMOUNTS: ReadonlyArray<[minDropAmount: number, maxDropAmount: n
    [3, 5], // medium slime
    [6, 9] // large slime
 ];
-const MAX_MERGE_WANT: ReadonlyArray<number> = [15, 40, 75];
+const MAX_MERGE_WANT: ReadonlyArray<number> = [15 * SETTINGS.TPS, 40 * SETTINGS.TPS, 75 * SETTINGS.TPS];
 
 const VISION_RANGES = [200, 250, 300];
 
@@ -45,10 +45,6 @@ const HEALING_PROC_INTERVAL = 0.1;
 const SPIT_COOLDOWN_TICKS = 4 * SETTINGS.TPS;
 export const SPIT_CHARGE_TIME_TICKS = Math.floor(0.5 * SETTINGS.TPS);
 
-export interface MovingOrbData extends Mutable<SlimeOrbData> {
-   angularVelocity: number;
-}
-
 export interface SlimeEntityAnger {
    angerAmount: number;
    readonly target: Entity;
@@ -59,7 +55,7 @@ interface AngerPropagationInfo {
    readonly propagatedEntityIDs: Set<number>;
 }
 
-export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, startingOrbs: Array<MovingOrbData> = []): Entity {
+export function createSlime(position: Point, size: SlimeSize, orbSizes: Array<SlimeSize>): Entity {
    const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slime.rotation = 2 * Math.PI * Math.random();
    slime.collisionPushForceMultiplier = 0.5;
@@ -71,7 +67,7 @@ export function createSlime(position: Point, size: SlimeSize = SlimeSize.small, 
    PhysicsComponentArray.addComponent(slime, new PhysicsComponent(true));
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));
    StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent(StatusEffectConst.poisoned));
-   SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size], startingOrbs));
+   SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size], orbSizes));
    WanderAIComponentArray.addComponent(slime, new WanderAIComponent());
    AIHelperComponentArray.addComponent(slime, new AIHelperComponent(VISION_RANGES[size]));
 
@@ -122,7 +118,8 @@ const wantsToMerge = (slime1: Entity, slime2: Entity): boolean => {
    // Don't try to merge with larger slimes
    if (slimeComponent1.size > slimeComponent2.size) return false;
 
-   return slimeComponent1.mergeWant >= MAX_MERGE_WANT[slimeComponent1.size];
+   const mergeWant = Board.ticks - slimeComponent1.lastMergeTicks;
+   return mergeWant >= MAX_MERGE_WANT[slimeComponent1.size];
 }
 
 const spit = (slime: Entity, slimeComponent: SlimeComponent): void => {
@@ -141,29 +138,6 @@ export function tickSlime(slime: Entity): void {
    slime.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime || slime.tile.type === TileTypeConst.sludge;
 
    const slimeComponent = SlimeComponentArray.getComponent(slime);
-   const visionRange = VISION_RANGES[slimeComponent.size];
-   const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
-
-   slimeComponent.mergeWant += 1 / SETTINGS.TPS;
-   if (slimeComponent.mergeWant >= MAX_MERGE_WANT[slimeComponent.size]) {
-      slimeComponent.mergeWant = MAX_MERGE_WANT[slimeComponent.size];
-   }
-
-   for (let i = 0; i < slimeComponent.orbs.length; i++) {
-      const orb = slimeComponent.orbs[i];
-
-      // Randomly move around the orbs
-      if (Math.random() < 0.3 / SETTINGS.TPS) {
-         orb.angularVelocity = randFloat(-3, 3);
-      }
-
-      // Update orb angular velocity & rotation
-      orb.rotation += orb.angularVelocity / SETTINGS.TPS;
-      orb.angularVelocity -= 3 / SETTINGS.TPS;
-      if (orb.angularVelocity < 0) {
-         orb.angularVelocity = 0;
-      }
-   }
 
    // Heal when standing on slime blocks
    if (slime.tile.type === TileTypeConst.slime) {
@@ -194,10 +168,13 @@ export function tickSlime(slime: Entity): void {
       // @Cleanup: Why do we need this?
       slimeComponent.spitChargeProgress = 0;
 
+      const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
       slime.acceleration.x = ACCELERATION * speedMultiplier * Math.sin(slime.rotation);
       slime.acceleration.y = ACCELERATION * speedMultiplier * Math.cos(slime.rotation);
       return;
    }
+
+   // @Speed: is there some way to only do this in the anger target condition?
    slimeComponent.lastSpitTicks = Board.ticks;
    slimeComponent.spitChargeProgress = 0;
 
@@ -228,6 +205,8 @@ export function tickSlime(slime: Entity): void {
       if (closestEnemy !== null) {
          const targetDirection = slime.position.calculateAngleBetween(closestEnemy.position);
          slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
+
+         const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
          moveEntityToPosition(slime, closestEnemy.position.x, closestEnemy.position.y, ACCELERATION * speedMultiplier);
          return;
       }
@@ -253,6 +232,8 @@ export function tickSlime(slime: Entity): void {
       if (mergeTarget !== null) {
          const targetDirection = slime.position.calculateAngleBetween(mergeTarget.position);
          slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
+
+         const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
          moveEntityToPosition(slime, mergeTarget.position.x, mergeTarget.position.y, ACCELERATION * speedMultiplier);
          return;
       }
@@ -266,6 +247,8 @@ export function tickSlime(slime: Entity): void {
          stopEntity(slime);
       }
    } else if (shouldWander(slime, 0.5)) {
+      const visionRange = VISION_RANGES[slimeComponent.size];
+
       let attempts = 0;
       let targetTile: Tile;
       do {
@@ -274,19 +257,11 @@ export function tickSlime(slime: Entity): void {
 
       const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
       const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
       wander(slime, x, y, ACCELERATION * speedMultiplier);
    } else {
       stopEntity(slime);
    }
-}
-
-const createNewOrb = (orbs: Array<MovingOrbData>, size: SlimeSize): void => {
-   orbs.push({
-      size: size,
-      rotation: 2 * Math.PI * Math.random(),
-      offset: Math.random(),
-      angularVelocity: 0
-   });
 }
 
 const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
@@ -299,32 +274,37 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
    slimeComponent1.mergeTimer = SLIME_MERGE_TIME;
 
    if (slimeComponent1.size < SlimeSize.large && slimeComponent1.mergeWeight >= MERGE_WEIGHTS[slimeComponent1.size + 1]) {
-      const orbs = new Array<MovingOrbData>();
+      const orbSizes = new Array<SlimeSize>();
+      // const orbs = new Array<MovingOrbData>();
 
       // Add orbs from the 2 existing slimes
-      for (const orb of slimeComponent1.orbs) {
-         createNewOrb(orbs, orb.size);
+      for (const orbSize of slimeComponent1.orbSizes) {
+         orbSizes.push(orbSize);
       }
-      for (const orb of slimeComponent2.orbs) {
-         createNewOrb(orbs, orb.size);
+      for (const orbSize of slimeComponent2.orbSizes) {
+         orbSizes.push(orbSize);
       }
 
-      createNewOrb(orbs, slimeComponent1.size);
-      createNewOrb(orbs, slimeComponent2.size);
+      // Why do we do this for both?
+      // createNewOrb(orbs, slimeComponent1.size);
+      // createNewOrb(orbs, slimeComponent2.size);
+      orbSizes.push(slimeComponent1.size);
+      orbSizes.push(slimeComponent2.size);
       
       const slimeSpawnPosition = new Point((slime1.position.x + slime2.position.x) / 2, (slime1.position.y + slime2.position.y) / 2);
-      createSlime(slimeSpawnPosition, slimeComponent1.size + 1, orbs);
+      createSlime(slimeSpawnPosition, slimeComponent1.size + 1, orbSizes);
       
       slime1.remove();
    } else {
-      // @Incomplete: THis allows small slimes to eat larger slimes. Very bad.
+      // @Incomplete: This allows small slimes to eat larger slimes. Very bad.
       
       // Add the other slime's health
       healEntity(slime1, getEntityHealth(slime2), slime1.id)
 
-      createNewOrb(slimeComponent1.orbs, slimeComponent2.size);
+      slimeComponent1.orbSizes.push(slimeComponent2.size);
+      // createNewOrb(slimeComponent1.orbs, slimeComponent2.size);
 
-      slimeComponent1.mergeWant = 0;
+      slimeComponent1.lastMergeTicks = Board.ticks;
    }
    
    slime2.remove();

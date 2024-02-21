@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, SlimeSize, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -59,7 +59,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
             if (slimewispComponent.mergeTimer <= 0 && !mergingSlimewisp.isRemoved) {
                // Create a slime between the two wisps
                const slimeSpawnPosition = new Point((slimewisp.position.x + mergingSlimewisp.position.x) / 2, (slimewisp.position.y + mergingSlimewisp.position.y) / 2);
-               createSlime(slimeSpawnPosition);
+               createSlime(slimeSpawnPosition, SlimeSize.small, []);
             
                slimewisp.remove();
                mergingSlimewisp.remove();

@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, SlimeOrbData, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -380,16 +380,6 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       case IEntityType.slime: {
          const slimeComponent = SlimeComponentArray.getComponent(entity);
 
-         // Convert from moving orbs to regular orbs
-         const orbs = new Array<SlimeOrbData>();
-         for (const orb of slimeComponent.orbs) {
-            orbs.push({
-               offset: orb.offset,
-               rotation: orb.rotation,
-               size: orb.size
-            });
-         }
-
          let anger = -1;
          if (slimeComponent.angeredEntities.length > 0) {
             // Find maximum anger
@@ -405,7 +395,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          clientArgs = [
             slimeComponent.size,
             slimeComponent.eyeRotation,
-            orbs,
+            slimeComponent.orbSizes,
             anger,
             spitChargeProgress
          ];
