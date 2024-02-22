@@ -1,4 +1,4 @@
-import { Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
+import { I_TPS, Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -482,21 +482,20 @@ export function angleIsInRange(angle: number, minAngle: number, maxAngle: number
 }
 
 export function turnAngle(angle: number, targetAngle: number, turnSpeed: number): number {
-   let result = angle;
-   
-   const angleDiff = targetAngle - angle;
-   if (angleDiff < 0) {
-      result -= turnSpeed / SETTINGS.TPS;
-      // @Incomplete: Will this cause the turret to take the long way round?
-      if (result < targetAngle) {
-         result = targetAngle;
-      }
-   } else {
-      result += turnSpeed / SETTINGS.TPS;
+   const clockwiseDist = getClockwiseAngleDistance(angle, targetAngle);
+   if (clockwiseDist < Math.PI) {
+      // Turn clockwise
+      let result = angle + turnSpeed * I_TPS;
       if (result > targetAngle) {
          result = targetAngle;
       }
+      return result;
+   } else {
+      // Turn counterclockwise
+      let result = angle - turnSpeed * I_TPS;
+      if (result < targetAngle) {
+         result = targetAngle;
+      }
+      return result;
    }
-
-   return result;
 }

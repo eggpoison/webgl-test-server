@@ -42,8 +42,8 @@ const MAX_ENTITIES_IN_RANGE_FOR_MERGE = 7;
 const HEALING_ON_SLIME_PER_SECOND = 0.5;
 const HEALING_PROC_INTERVAL = 0.1;
 
-const SPIT_COOLDOWN_TICKS = 4 * SETTINGS.TPS;
-export const SPIT_CHARGE_TIME_TICKS = Math.floor(0.5 * SETTINGS.TPS);
+export const SPIT_COOLDOWN_TICKS = 4 * SETTINGS.TPS;
+export const SPIT_CHARGE_TIME_TICKS = SPIT_COOLDOWN_TICKS + Math.floor(0.8 * SETTINGS.TPS);
 
 export interface SlimeEntityAnger {
    angerAmount: number;
@@ -87,12 +87,15 @@ const updateAngerTarget = (slime: Entity): Entity | null => {
       if (angerInfo.target.isRemoved) {
          slimeComponent.angeredEntities.splice(i, 1);
          i--;
+         continue;
       }
 
       // Decrease anger
       angerInfo.angerAmount -= 1 / SETTINGS.TPS * ANGER_DIFFUSE_MULTIPLIER;
       if (angerInfo.angerAmount <= 0) {
          slimeComponent.angeredEntities.splice(i, 1);
+         i--;
+         continue;
       }
       
       if (angerInfo.angerAmount > maxAnger) {
@@ -122,15 +125,13 @@ const wantsToMerge = (slime1: Entity, slime2: Entity): boolean => {
    return mergeWant >= MAX_MERGE_WANT[slimeComponent1.size];
 }
 
-const spit = (slime: Entity, slimeComponent: SlimeComponent): void => {
+const createSpit = (slime: Entity, slimeComponent: SlimeComponent): void => {
    const x = slime.position.x + RADII[slimeComponent.size] * Math.sin(slime.rotation);
    const y = slime.position.y + RADII[slimeComponent.size] * Math.cos(slime.rotation);
    const spit = createSlimeSpit(new Point(x, y), slimeComponent.size === SlimeSize.medium ? 0 : 1);
 
    spit.velocity.x = 500 * Math.sin(slime.rotation);
    spit.velocity.y = 500 * Math.cos(slime.rotation);
-
-   slimeComponent.lastSpitTicks = Board.ticks;
 }
 
 export function tickSlime(slime: Entity): void {
@@ -147,6 +148,7 @@ export function tickSlime(slime: Entity): void {
    }
 
    // @Cleanup: Lot of copy and paste between the next 3 sections
+   // Idea: merge the search for land attack targets and merge targets
    
    // Chase entities the slime is angry at
    const angerTarget = updateAngerTarget(slime);
@@ -155,28 +157,31 @@ export function tickSlime(slime: Entity): void {
       slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
       slime.turn(targetDirection, 2 * Math.PI);
 
-      if (slimeComponent.size > SlimeSize.small && (Board.ticks - slimeComponent.lastSpitTicks) >= SPIT_COOLDOWN_TICKS) {
-         stopEntity(slime);
-         
-         // Spit attack
-         if (++slimeComponent.spitChargeProgress >= SPIT_CHARGE_TIME_TICKS) {
-            spit(slime, slimeComponent);
+      if (slimeComponent.size > SlimeSize.small) {
+         // If it has been more than one tick since the slime has been angry, reset the charge progress
+         if (slimeComponent.lastSpitTicks < Board.ticks - 1) {
+            slimeComponent.spitChargeTicks = 0;
          }
-         return;
+         slimeComponent.lastSpitTicks = Board.ticks;
+         
+         slimeComponent.spitChargeTicks++;
+         if (slimeComponent.spitChargeTicks >= SPIT_COOLDOWN_TICKS) {
+            stopEntity(slime);
+            
+            // Spit attack
+            if (slimeComponent.spitChargeTicks >= SPIT_CHARGE_TIME_TICKS) {
+               createSpit(slime, slimeComponent);
+               slimeComponent.spitChargeTicks = 0;
+            }
+            return;
+         }
       }
-      
-      // @Cleanup: Why do we need this?
-      slimeComponent.spitChargeProgress = 0;
 
       const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
       slime.acceleration.x = ACCELERATION * speedMultiplier * Math.sin(slime.rotation);
       slime.acceleration.y = ACCELERATION * speedMultiplier * Math.cos(slime.rotation);
       return;
    }
-
-   // @Speed: is there some way to only do this in the anger target condition?
-   slimeComponent.lastSpitTicks = Board.ticks;
-   slimeComponent.spitChargeProgress = 0;
 
    const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
 
@@ -213,7 +218,7 @@ export function tickSlime(slime: Entity): void {
    }
 
    // Merge with other slimes
-   if (aiHelperComponent.visibleEntities.length > MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
+   if (aiHelperComponent.visibleEntities.length <= MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
       let minDist = Number.MAX_SAFE_INTEGER;
       let mergeTarget: Entity | null = null;
       for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
@@ -285,7 +290,7 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
          orbSizes.push(orbSize);
       }
 
-      // Why do we do this for both?
+      // @Incomplete: Why do we do this for both?
       // createNewOrb(orbs, slimeComponent1.size);
       // createNewOrb(orbs, slimeComponent2.size);
       orbSizes.push(slimeComponent1.size);

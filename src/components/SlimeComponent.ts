@@ -5,8 +5,10 @@ import Board from "../Board";
 export class SlimeComponent {
    public readonly size: SlimeSize;
 
-   public lastSpitTicks: number;
-   public spitChargeProgress = 0;
+   /** The last tick that the slime spat at */
+   public lastSpitTicks = 0;
+   /** Progress in charging the spit attack in ticks */
+   public spitChargeTicks = 0;
    
    public eyeRotation = 2 * Math.PI * Math.random();
    public mergeTimer = SLIME_MERGE_TIME;
@@ -20,7 +22,6 @@ export class SlimeComponent {
       this.size = size;
       this.mergeWeight = mergeWeight;
       this.orbSizes = orbSizes;
-      this.lastSpitTicks = Board.ticks;
       this.lastMergeTicks = Board.ticks;
    }
 }

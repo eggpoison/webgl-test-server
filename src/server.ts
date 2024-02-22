@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData, SlimeSize } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -15,7 +15,7 @@ import { createPlayer, interactWithStructure, processItemPickupPacket, processIt
 import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { getTilesOfBiome } from "./census";
-import { SPIT_CHARGE_TIME_TICKS } from "./entities/mobs/slime";
+import { SPIT_CHARGE_TIME_TICKS, SPIT_COOLDOWN_TICKS, createSlime } from "./entities/mobs/slime";
 import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
 import { getBlueprintProgress } from "./components/BlueprintComponent";
@@ -390,7 +390,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
             }
          }
 
-         const spitChargeProgress = slimeComponent.spitChargeProgress > 0 ? slimeComponent.spitChargeProgress / SPIT_CHARGE_TIME_TICKS : -1;
+         const spitChargeProgress = slimeComponent.spitChargeTicks >= SPIT_COOLDOWN_TICKS ? (slimeComponent.spitChargeTicks - SPIT_COOLDOWN_TICKS) / (SPIT_CHARGE_TIME_TICKS - SPIT_COOLDOWN_TICKS) : -1;
 
          clientArgs = [
             slimeComponent.size,
@@ -815,7 +815,7 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            createCow(new Point(spawnPosition.x + 200, spawnPosition.y));
+            createSlime(new Point(spawnPosition.x + 200, spawnPosition.y), SlimeSize.medium, []);
             
             const tribe = new Tribe(TribeType.barbarians);
             Board.addTribe(tribe);

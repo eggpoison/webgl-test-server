@@ -11,7 +11,7 @@ import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHe
 import { BallistaComponent } from "../../components/BallistaComponent";
 import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow";
 import { InventoryComponent, consumeItemTypeFromInventory, createNewInventory, getFirstOccupiedItemSlotInInventory, getInventory, getItemFromInventory } from "../../components/InventoryComponent";
-import { angleIsInRange, getMaxAngleToCircularHitbox, getMaxAngleToRectangularHitbox, getMinAngleToCircularHitbox, getMinAngleToRectangularHitbox } from "../../ai-shared";
+import { angleIsInRange, getClockwiseAngleDistance, getMaxAngleToCircularHitbox, getMaxAngleToRectangularHitbox, getMinAngleToCircularHitbox, getMinAngleToRectangularHitbox } from "../../ai-shared";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import Board from "../../Board";
 
@@ -226,13 +226,15 @@ export function tickBallista(ballista: Entity): void {
          const turretAimDirection = turretComponent.aimDirection + ballista.rotation;
 
          // Turn to face the target
-         const angleDiff = targetDirection - turretAimDirection;
-         if (angleDiff < 0) {
+         const clockwiseDist = getClockwiseAngleDistance(turretAimDirection, targetDirection);
+         if (clockwiseDist >= Math.PI) {
+            // Turn counterclockwise
             turretComponent.aimDirection -= Math.PI / 3 / SETTINGS.TPS;
             if (turretComponent.aimDirection + ballista.rotation < targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
             }
          } else {
+            // Turn clockwise
             turretComponent.aimDirection += Math.PI / 3 / SETTINGS.TPS;
             if (turretComponent.aimDirection + ballista.rotation > targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
@@ -240,12 +242,18 @@ export function tickBallista(ballista: Entity): void {
          }
          if (turretComponent.fireCooldownTicks > 0) {
             turretComponent.fireCooldownTicks--;
-         } else if (Math.abs(angleDiff) < 0.01) {
-            fire(ballista, ballistaComponent.ammoType);
-
-            // Reset firing cooldown
-            const ammoInfo = AMMO_INFO_RECORD[ballistaComponent.ammoType];
-            turretComponent.fireCooldownTicks = ammoInfo.shotCooldownTicks + ammoInfo.reloadTimeTicks;
+         } else {
+            let angleDiff = targetDirection - (turretComponent.aimDirection + ballista.rotation);
+            while (angleDiff >= Math.PI) {
+               angleDiff -= 2 * Math.PI;
+            }
+            if (Math.abs(angleDiff) < 0.01) {
+               fire(ballista, ballistaComponent.ammoType);
+   
+               // Reset firing cooldown
+               const ammoInfo = AMMO_INFO_RECORD[ballistaComponent.ammoType];
+               turretComponent.fireCooldownTicks = ammoInfo.shotCooldownTicks + ammoInfo.reloadTimeTicks;
+            }
          }
          return;
       }
