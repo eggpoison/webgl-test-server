@@ -227,23 +227,27 @@ export function healEntity(entity: Entity, healAmount: number, healerID: number)
    
    const healthComponent = HealthComponentArray.getComponent(entity);
 
-   let amountHealed: number;
-
    healthComponent.health += healAmount;
-   if (healthComponent.health > healthComponent.maxHealth) {
-      amountHealed = healAmount - (healthComponent.health - healthComponent.maxHealth); // Calculate by removing excess healing from amount healed
-      healthComponent.health = healthComponent.maxHealth;
-   } else {
-      amountHealed = healAmount;
-   }
 
-   if (amountHealed > 0) {
+   // @Speed: Is there a smart way to remove this branch?
+   if (healthComponent.health > healthComponent.maxHealth) {
+      const amountHealed = healAmount - (healthComponent.health - healthComponent.maxHealth); // Calculate by removing excess healing from amount healed
       SERVER.registerEntityHeal({
          entityPositionX: entity.position.x,
          entityPositionY: entity.position.y,
          healedID: entity.id,
          healerID: healerID,
          healAmount: amountHealed
+      });
+
+      healthComponent.health = healthComponent.maxHealth;
+   } else {
+      SERVER.registerEntityHeal({
+         entityPositionX: entity.position.x,
+         entityPositionY: entity.position.y,
+         healedID: entity.id,
+         healerID: healerID,
+         healAmount: healAmount
       });
    }
 }

@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
-import Entity from "../../Entity";
+import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
@@ -114,8 +114,7 @@ const updateAngerTarget = (slime: Entity): Entity | null => {
 /**
  * Determines whether the slime wants to merge with the other slime.
  */
-const wantsToMerge = (slime1: Entity, slime2: Entity): boolean => {
-   const slimeComponent1 = SlimeComponentArray.getComponent(slime1);
+const wantsToMerge = (slimeComponent1: SlimeComponent, slime2: Entity): boolean => {
    const slimeComponent2 = SlimeComponentArray.getComponent(slime2);
    
    // Don't try to merge with larger slimes
@@ -134,8 +133,72 @@ const createSpit = (slime: Entity, slimeComponent: SlimeComponent): void => {
    spit.velocity.y = 500 * Math.cos(slime.rotation);
 }
 
+// @Incomplete @Speed: Figure out why this first faster function seemingly gets called way less than the second one
+
+const getEnemyChaseTargetID = (slime: Entity): number => {
+   const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
+
+   let minDist = Number.MAX_SAFE_INTEGER;
+   let closestEnemyID = ID_SENTINEL_VALUE;
+   for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+      const entity = aiHelperComponent.visibleEntities[i];
+
+      if (entity.type === IEntityType.slime || entity.type === IEntityType.slimewisp || entity.tile.biomeName !== "swamp" || !HealthComponentArray.hasComponent(entity)) {
+         continue;
+      }
+
+      const distanceSquared = slime.position.calculateDistanceSquaredBetween(entity.position);
+      if (distanceSquared < minDist) {
+         minDist = distanceSquared;
+         closestEnemyID = entity.id;
+      }
+   }
+
+   return closestEnemyID;
+}
+
+const getChaseTargetID = (slime: Entity, slimeComponent: SlimeComponent): number => {
+   const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
+
+   let minDist = Number.MAX_SAFE_INTEGER;
+   let closestEnemyID = ID_SENTINEL_VALUE;
+   let closestMergerID = ID_SENTINEL_VALUE;
+   for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
+      const entity = aiHelperComponent.visibleEntities[i];
+
+      if (entity.type === IEntityType.slime) {
+         // Don't try to merge with larger slimes
+         const otherSlimeComponent = SlimeComponentArray.getComponent(entity);
+         if (otherSlimeComponent.size > slimeComponent.size) {
+            continue;
+         }
+
+         const distanceSquared = slime.position.calculateDistanceSquaredBetween(entity.position);
+         if (distanceSquared < minDist) {
+            minDist = distanceSquared;
+            closestMergerID = entity.id;
+         }
+      } else {
+         if (entity.type === IEntityType.slimewisp || entity.tile.biomeName !== "swamp" || !HealthComponentArray.hasComponent(entity)) {
+            continue;
+         }
+
+         const distanceSquared = slime.position.calculateDistanceSquaredBetween(entity.position);
+         if (distanceSquared < minDist) {
+            minDist = distanceSquared;
+            closestEnemyID = entity.id;
+         }
+      }
+   }
+
+   if (closestEnemyID !== ID_SENTINEL_VALUE) {
+      return closestEnemyID;
+   }
+   return closestMergerID;
+}
+
 export function tickSlime(slime: Entity): void {
-   // Slimes move at normal speed on slime blocks
+   // Slimes move at normal speed on slime and sludge blocks
    slime.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime || slime.tile.type === TileTypeConst.sludge;
 
    const slimeComponent = SlimeComponentArray.getComponent(slime);
@@ -147,10 +210,7 @@ export function tickSlime(slime: Entity): void {
       }
    }
 
-   // @Cleanup: Lot of copy and paste between the next 3 sections
-   // Idea: merge the search for land attack targets and merge targets
-   
-   // Chase entities the slime is angry at
+   // Attack entities the slime is angry at
    const angerTarget = updateAngerTarget(slime);
    if (angerTarget !== null) {
       const targetDirection = slime.position.calculateAngleBetween(angerTarget.position);
@@ -183,65 +243,27 @@ export function tickSlime(slime: Entity): void {
       return;
    }
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(slime);
-
-   // Chase entities intruding on the slimes' land
-   {
-      let minDist = Number.MAX_SAFE_INTEGER;
-      let closestEnemy: Entity | null = null;
-      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
-         const entity = aiHelperComponent.visibleEntities[i];
-         if (entity.type === IEntityType.slime || entity.type === IEntityType.slimewisp || entity.tile.biomeName !== "swamp") {
-            continue;
-         }
-
-         // Don't attack entities which can't be damaged
-         if (!HealthComponentArray.hasComponent(entity)) {
-            continue;
-         }
-
-         const distance = slime.position.calculateDistanceBetween(entity.position);
-         if (distance < minDist) {
-            minDist = distance;
-            closestEnemy = entity;
-         }
-      }
-
-      if (closestEnemy !== null) {
-         const targetDirection = slime.position.calculateAngleBetween(closestEnemy.position);
-         slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
-
-         const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
-         moveEntityToPosition(slime, closestEnemy.position.x, closestEnemy.position.y, ACCELERATION * speedMultiplier);
-         return;
-      }
+   // If the slime wants to merge, do a search for both merge and enemy targets. Otherwise only look for enemy targets
+   const mergeWant = Board.ticks - slimeComponent.lastMergeTicks;
+   let chaseTargetID: number;
+   if (mergeWant >= MAX_MERGE_WANT[slimeComponent.size]) {
+      // Chase enemies and merge targets
+      chaseTargetID = getChaseTargetID(slime, slimeComponent);
+   } else {
+      // Chase enemies
+      chaseTargetID = getEnemyChaseTargetID(slime);
    }
+   if (chaseTargetID !== ID_SENTINEL_VALUE) {
+      const chaseTarget = Board.entityRecord[chaseTargetID];
+      
+      const targetDirection = slime.position.calculateAngleBetween(chaseTarget.position);
+      slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
+      slime.turn(targetDirection, 2 * Math.PI);
 
-   // Merge with other slimes
-   if (aiHelperComponent.visibleEntities.length <= MAX_ENTITIES_IN_RANGE_FOR_MERGE) {
-      let minDist = Number.MAX_SAFE_INTEGER;
-      let mergeTarget: Entity | null = null;
-      for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
-         const entity = aiHelperComponent.visibleEntities[i];
-         if (entity.type !== IEntityType.slime || !wantsToMerge(slime, entity)) {
-            continue;
-         }
-
-         const distance = slime.position.calculateDistanceBetween(entity.position);
-         if (distance < minDist) {
-            minDist = distance;
-            mergeTarget = entity;
-         }
-      }
-
-      if (mergeTarget !== null) {
-         const targetDirection = slime.position.calculateAngleBetween(mergeTarget.position);
-         slimeComponent.eyeRotation = turnAngle(slimeComponent.eyeRotation, targetDirection, 5 * Math.PI);
-
-         const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
-         moveEntityToPosition(slime, mergeTarget.position.x, mergeTarget.position.y, ACCELERATION * speedMultiplier);
-         return;
-      }
+      const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
+      slime.acceleration.x = ACCELERATION * speedMultiplier * Math.sin(slime.rotation);
+      slime.acceleration.y = ACCELERATION * speedMultiplier * Math.cos(slime.rotation);
+      return;
    }
 
    // Wander AI
@@ -280,7 +302,6 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
 
    if (slimeComponent1.size < SlimeSize.large && slimeComponent1.mergeWeight >= MERGE_WEIGHTS[slimeComponent1.size + 1]) {
       const orbSizes = new Array<SlimeSize>();
-      // const orbs = new Array<MovingOrbData>();
 
       // Add orbs from the 2 existing slimes
       for (const orbSize of slimeComponent1.orbSizes) {
@@ -291,8 +312,6 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
       }
 
       // @Incomplete: Why do we do this for both?
-      // createNewOrb(orbs, slimeComponent1.size);
-      // createNewOrb(orbs, slimeComponent2.size);
       orbSizes.push(slimeComponent1.size);
       orbSizes.push(slimeComponent2.size);
       
@@ -307,7 +326,6 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
       healEntity(slime1, getEntityHealth(slime2), slime1.id)
 
       slimeComponent1.orbSizes.push(slimeComponent2.size);
-      // createNewOrb(slimeComponent1.orbs, slimeComponent2.size);
 
       slimeComponent1.lastMergeTicks = Board.ticks;
    }
@@ -318,8 +336,8 @@ const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
 export function onSlimeCollision(slime: Entity, collidingEntity: Entity): void {
    // Merge with slimes
    if (collidingEntity.type === IEntityType.slime) {
-      if (wantsToMerge(slime, collidingEntity)) {
-         const slimeComponent = SlimeComponentArray.getComponent(slime);
+      const slimeComponent = SlimeComponentArray.getComponent(slime);
+      if (wantsToMerge(slimeComponent, collidingEntity)) {
          slimeComponent.mergeTimer -= 1 / SETTINGS.TPS;
          if (slimeComponent.mergeTimer <= 0) {
             mergeSlimes(slime, collidingEntity);

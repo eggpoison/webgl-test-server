@@ -1064,6 +1064,8 @@ const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): numbe
 }
 
 const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
+   // @Speed: So much logic! Does it need to be this complicated?
+   
    // @Incomplete: Only accounts for hotbar
    
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
@@ -1143,5 +1145,6 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
 
    useInfo.currentAction = TribeMemberAction.none;
    
+   // @Speed: Don't do this if the target is too far away to ever be hit
    doMeleeAttack(tribesman);
 }
