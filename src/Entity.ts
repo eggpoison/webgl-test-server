@@ -243,8 +243,7 @@ class Entity<T extends IEntityType = IEntityType> {
          hitbox.updateOffset();
          // @Speed: This check is slow
          if (!hitbox.hasOwnProperty("radius")) {
-            (hitbox as RectangularHitbox).updateVertexPositions();
-            (hitbox as RectangularHitbox).calculateSideAxes();
+            (hitbox as RectangularHitbox).updateVertexPositionsAndSideAxes();
          }
 
          const boundsMinX = hitbox.calculateHitboxBoundsMinX();

@@ -12,7 +12,9 @@ class RectangularHitbox extends Hitbox {
    /** The rotation of the hitbox relative to its game object */
    public rotation = 0;
 
+   // @Memory: Only need to calculate the top left and top right ones
    public vertexOffsets: HitboxVertexPositions = [new Point(0, 0), new Point(0, 0), new Point(0, 0), new Point(0, 0)];
+   // @Memory: Only need to store the first one of these
    public sideAxes = [new Point(0, 0), new Point(0, 0)] as const;
 
    constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, width: number, height: number, localID: number) {
@@ -21,21 +23,19 @@ class RectangularHitbox extends Hitbox {
       this.width = width;
       this.height = height;
       this.updateHalfDiagonalLength();
-      this.updateVertexPositions();
-      this.calculateSideAxes();
+      this.updateVertexPositionsAndSideAxes();
    }
 
    public updateHalfDiagonalLength(): void {
       this.halfDiagonalLength = Math.sqrt(this.width * this.width / 4 + this.height * this.height / 4);
    }
 
-   public updateVertexPositions(): void {
+   public updateVertexPositionsAndSideAxes(): void {
       const x1 = -this.width * 0.5;
       const x2 = this.width * 0.5;
       const y2 = this.height * 0.5;
 
       const rotation = this.rotation + this.object.rotation;
-
       const sinRotation = Math.sin(rotation);
       const cosRotation = Math.cos(rotation);
 
@@ -53,21 +53,15 @@ class RectangularHitbox extends Hitbox {
       // Bottom left vertex
       this.vertexOffsets[3].x = -this.vertexOffsets[1].x;
       this.vertexOffsets[3].y = -this.vertexOffsets[1].y;
-   }
-
-   public calculateSideAxes(): void {
-      const angle = this.rotation + this.object.rotation + Math.PI/2;
-      // @Speed: Might be able to use the trig results from updateVertexPositions to avoid doing these
-      const sinAngle = Math.sin(angle);
-      const cosAngle = Math.cos(angle);
 
       // Angle between vertex 0 (top left) and vertex 1 (top right)
-      this.sideAxes[0].x = sinAngle;
-      this.sideAxes[0].y = cosAngle;
+      // @Speed: If we do a different axis, can we get rid of the minus?
+      this.sideAxes[0].x = cosRotation;
+      this.sideAxes[0].y = -sinRotation;
       
       // Angle between vertex 1 (top right) and vertex 2 (bottom right)
-      this.sideAxes[1].x = cosAngle;
-      this.sideAxes[1].y = -sinAngle;
+      this.sideAxes[1].x = -sinRotation;
+      this.sideAxes[1].y = -cosRotation;
    }
 
    public calculateHitboxBoundsMinX(): number {
