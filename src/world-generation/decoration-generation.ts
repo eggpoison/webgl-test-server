@@ -1,4 +1,4 @@
-import { DecorationInfo, DecorationType, SETTINGS, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { DecorationInfo, DecorationType, SettingsConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 
 interface DecorationGenerationInfo {
    readonly decorationType: DecorationType;
@@ -125,8 +125,8 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
 
    // @Speed: Triple-nested loop, and a whole bunch of continues (unnecessary iterations)!!
    const decorations = new Array<DecorationInfo>();
-   for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
-      for (let j = 0; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; j++) {
+   for (let i = 0; i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2; i++) {
+      for (let j = 0; j < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2; j++) {
          const tileType = tileTypeArray[i][j];
          const temperature = temperatureMap[i][j];
          const generationInfoIndex = getDecorationGenerationInfoIndex(tileType, temperature);
@@ -134,8 +134,8 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
             const generationInfo = DECORATION_GENERATION_INFO[generationInfoIndex];
             // Spawn a group of that decoration
             
-            const x = (i - SETTINGS.EDGE_GENERATION_DISTANCE + Math.random()) * SETTINGS.TILE_SIZE;
-            const y = (j - SETTINGS.EDGE_GENERATION_DISTANCE + Math.random()) * SETTINGS.TILE_SIZE;
+            const x = (i - SettingsConst.EDGE_GENERATION_DISTANCE + Math.random()) * SettingsConst.TILE_SIZE;
+            const y = (j - SettingsConst.EDGE_GENERATION_DISTANCE + Math.random()) * SettingsConst.TILE_SIZE;
             decorations.push({
                positionX: x,
                positionY: y,
@@ -152,12 +152,12 @@ export function generateDecorations(tileTypeArray: ReadonlyArray<ReadonlyArray<T
                const spawnY = y + spawnOffsetMagnitude * Math.cos(spawnOffsetDirection);
 
                // Don't spawn outside the world
-               if (spawnX < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || spawnX >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || spawnY < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || spawnY >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE) {
+               if (spawnX < -SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || spawnX >= SettingsConst.BOARD_UNITS + SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || spawnY < -SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || spawnY >= SettingsConst.BOARD_UNITS + SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE) {
                   continue;
                }
 
                // Don't spawn in different tile types
-               const currentTileType = tileTypeArray[Math.floor(spawnX / SETTINGS.TILE_SIZE) + SETTINGS.EDGE_GENERATION_DISTANCE][Math.floor(spawnY / SETTINGS.TILE_SIZE) + SETTINGS.EDGE_GENERATION_DISTANCE];
+               const currentTileType = tileTypeArray[Math.floor(spawnX / SettingsConst.TILE_SIZE) + SettingsConst.EDGE_GENERATION_DISTANCE][Math.floor(spawnY / SettingsConst.TILE_SIZE) + SettingsConst.EDGE_GENERATION_DISTANCE];
                if (currentTileType !== tileType) {
                   continue;
                }

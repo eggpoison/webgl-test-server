@@ -1,4 +1,4 @@
-import { Point, SETTINGS, TileTypeConst, TribeType, randItem } from "webgl-test-shared";
+import { Point, SettingsConst, TileTypeConst, TribeType, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import Tribe from "./Tribe";
 import OPTIONS from "./options";
@@ -91,8 +91,8 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
          continue;
       }
 
-      const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (tile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
       const position = new Point(x, y);
 
       const minHutDistance = HUT_MIN_DISTANCES[tribe.type];
@@ -148,8 +148,8 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 
 const runSpawnAttempt = (): void => {
    // @Speed: Garbage collection
-   const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
-   const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
+   const x = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE * Math.random();
+   const y = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE * Math.random();
    const spawnPosition = new Point(x, y);
 
    if (isValidTribeSpawnPosition(spawnPosition)) {

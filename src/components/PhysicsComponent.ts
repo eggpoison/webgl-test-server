@@ -1,4 +1,4 @@
-import { I_TPS, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
+import { IEntityType, SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
 import Entity from "../Entity";
 import { PhysicsComponentArray } from "./ComponentArray";
 
@@ -18,10 +18,8 @@ export class PhysicsComponent {
    /** If set to false, the game object will not experience friction from moving over tiles. */
    public isAffectedByFriction;
 
-   // @Incomplete: Make the following flags false by default and make sure the hitboxes and other stuff is correct when spawning in
-
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
-   public positionIsDirty = true;
+   public positionIsDirty = false;
 
    constructor(isAffectedByFriction: boolean) {
       this.isAffectedByFriction = isAffectedByFriction;
@@ -29,6 +27,11 @@ export class PhysicsComponent {
 }
 
 const applyPhysics = (entity: Entity): void => {
+   // @Speed: There are a whole bunch of conditions in here which rely on physicsComponent.isAffectedByFriction,
+   // which is only set at the creation of an entity. To remove these conditions we could probably split the physics
+   // entities into two groups, and call two different applyPhysicsFriction and applyPhysicsNoFriction functions to
+   // the corresponding groups
+   
    const physicsComponent = PhysicsComponentArray.getComponent(entity);
 
    // @Temporary @Hack
@@ -37,7 +40,7 @@ const applyPhysics = (entity: Entity): void => {
       entity.velocity.x = 0;
       entity.velocity.y = 0;
    }
-   
+
    // Apply acceleration
    if (entity.acceleration.x !== 0 || entity.acceleration.y !== 0) {
       // @Speed: very complicated logic
@@ -53,38 +56,44 @@ const applyPhysics = (entity: Entity): void => {
       const friction = TILE_FRICTIONS[entity.tile.type];
       
       // @Speed: A lot of multiplies
-      entity.velocity.x += entity.acceleration.x * friction * moveSpeedMultiplier * I_TPS;
-      entity.velocity.y += entity.acceleration.y * friction * moveSpeedMultiplier * I_TPS;
+      entity.velocity.x += entity.acceleration.x * friction * moveSpeedMultiplier * SettingsConst.I_TPS;
+      entity.velocity.y += entity.acceleration.y * friction * moveSpeedMultiplier * SettingsConst.I_TPS;
    }
 
    // If the game object is in a river, push them in the flow direction of the river
    // The tileMoveSpeedMultiplier check is so that game objects on stepping stones aren't pushed
    if (entity.isInRiver && !entity.overrideMoveSpeedMultiplier && physicsComponent.isAffectedByFriction) {
       const flowDirection = entity.tile.riverFlowDirection;
-      entity.velocity.x += 240 * I_TPS * a[flowDirection];
-      entity.velocity.y += 240 * I_TPS * b[flowDirection];
+      entity.velocity.x += 240 * SettingsConst.I_TPS * a[flowDirection];
+      entity.velocity.y += 240 * SettingsConst.I_TPS * b[flowDirection];
    }
 
    // Apply velocity
    if (entity.velocity.x !== 0 || entity.velocity.y !== 0) {
-      const friction = TILE_FRICTIONS[entity.tile.type];
-
+      // Friction
       if (physicsComponent.isAffectedByFriction) {
-         // Apply a friction based on the tile type to air resistance (???)
-         entity.velocity.x *= 1 - friction * I_TPS * 2;
-         entity.velocity.y *= 1 - friction * I_TPS * 2;
+         // @Speed: pre-multiply the array
+         const tileFriction = TILE_FRICTIONS[entity.tile.type];
+
+         // Apply a friction based on the tile type for air resistance (???)
+         entity.velocity.x *= 1 - tileFriction * SettingsConst.I_TPS * 2;
+         entity.velocity.y *= 1 - tileFriction * SettingsConst.I_TPS * 2;
 
          // Apply a constant friction based on the tile type to simulate ground friction
+         // @Incomplete @Bug: Doesn't take into acount the TPS. Would also be fixed by pre-multiplying the array
          const velocityMagnitude = entity.velocity.length();
-         if (velocityMagnitude > 0) {
-            const groundFriction = Math.min(friction, velocityMagnitude);
-            entity.velocity.x -= groundFriction * entity.velocity.x / velocityMagnitude;
-            entity.velocity.y -= groundFriction * entity.velocity.y / velocityMagnitude;
+         if (tileFriction < velocityMagnitude) {
+            entity.velocity.x -= tileFriction * entity.velocity.x / velocityMagnitude;
+            entity.velocity.y -= tileFriction * entity.velocity.y / velocityMagnitude;
+         } else {
+            entity.velocity.x = 0;
+            entity.velocity.y = 0;
          }
       }
       
-      entity.position.x += entity.velocity.x * I_TPS;
-      entity.position.y += entity.velocity.y * I_TPS;
+      // @Incomplete(???): Multiply by move speed multiplier
+      entity.position.x += entity.velocity.x * SettingsConst.I_TPS;
+      entity.position.y += entity.velocity.y * SettingsConst.I_TPS;
 
       physicsComponent.positionIsDirty = true;
    }

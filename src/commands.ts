@@ -1,4 +1,4 @@
-import { BiomeName, EntityType, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, Vector, parseCommand, randItem } from "webgl-test-shared";
+import { BiomeName, EntityType, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, Vector, parseCommand, randItem } from "webgl-test-shared";
 import { SERVER } from "./server";
 import { getTilesOfBiome } from "./census";
 import Board from "./Board";
@@ -64,8 +64,8 @@ const tpBiome = (player: Entity, biomeName: BiomeName): void => {
       }
    } while (tile.isWall);
    
-   const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
-   const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+   const x = (tile.x + Math.random()) * SettingsConst.TILE_SIZE;
+   const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
 
    const newPosition = new Point(x, y);
    SERVER.sendForcePositionUpdatePacket(player, newPosition);

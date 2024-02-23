@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -20,7 +20,7 @@ export function createSpitPoison(position: Point): Entity {
 
 export function tickSpitPoison(spit: Entity): void {
    const hitbox = spit.hitboxes[0] as CircularHitbox;
-   hitbox.radius -= 5 / SETTINGS.TPS;
+   hitbox.radius -= 5 / SettingsConst.TPS;
    if (hitbox.radius <= 0) {
       spit.remove();
    }
@@ -53,6 +53,6 @@ export function onSpitPoisonCollision(spit: Entity, collidingEntity: Entity): vo
    addLocalInvulnerabilityHash(healthComponent, "spitPoison", 0.35);
 
    if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-      applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 3 * SETTINGS.TPS);
+      applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 3 * SettingsConst.TPS);
    }
 }

@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData, SlimeSize } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData, SlimeSize } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -27,6 +27,8 @@ import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { createWoodenWall } from "./entities/structures/wooden-wall";
 import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
 import { createYeti } from "./entities/mobs/yeti";
+
+const TIME_PASS_RATE = 300;
 
 /*
 
@@ -469,7 +471,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
       case IEntityType.rockSpikeProjectile: {
          const rockSpikeComponent = RockSpikeProjectileComponentArray.getComponent(entity);
-         clientArgs = [rockSpikeComponent.size, rockSpikeComponent.lifetimeTicks / SETTINGS.TPS];
+         clientArgs = [rockSpikeComponent.size, rockSpikeComponent.lifetimeTicks / SettingsConst.TPS];
          break;
       }
       case IEntityType.workbench: {
@@ -720,9 +722,9 @@ class GameServer {
       
       if (SERVER.io === null) {
          // Start the server
-         SERVER.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SETTINGS.SERVER_PORT);
+         SERVER.io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(SettingsConst.SERVER_PORT);
          SERVER.handlePlayerConnections();
-         console.log("Server started on port " + SETTINGS.SERVER_PORT);
+         console.log("Server started on port " + SettingsConst.SERVER_PORT);
       }
 
       SERVER.isRunning = true;
@@ -731,7 +733,7 @@ class GameServer {
          if (OPTIONS.warp) {
             SERVER.tickInterval = setInterval(() => SERVER.tick(), 2);
          } else {
-            SERVER.tickInterval = setInterval(() => SERVER.tick(), 1000 / SETTINGS.TPS);
+            SERVER.tickInterval = setInterval(() => SERVER.tick(), 1000 / SettingsConst.TPS);
          }
       }
    }
@@ -760,7 +762,6 @@ class GameServer {
       runTribeSpawnAttempt();
       
       Board.pushJoinBuffer();
-
       Board.removeFlaggedEntities();
 
       SERVER.sendGameDataPackets();
@@ -768,7 +769,7 @@ class GameServer {
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
       Board.ticks++;
-      Board.time += SETTINGS.TIME_PASS_RATE / SETTINGS.TPS / 3600;
+      Board.time += TIME_PASS_RATE / SettingsConst.TPS / 3600;
       if (Board.time >= 24) {
          Board.time -= 24;
       }
@@ -895,7 +896,7 @@ class GameServer {
             playerData.instanceID = player.id;
 
             const serverTileData = new Array<ServerTileData>();
-            for (let tileIndex = 0; tileIndex < SETTINGS.BOARD_DIMENSIONS * SETTINGS.BOARD_DIMENSIONS; tileIndex++) {
+            for (let tileIndex = 0; tileIndex < SettingsConst.BOARD_DIMENSIONS * SettingsConst.BOARD_DIMENSIONS; tileIndex++) {
                const tile = Board.tiles[tileIndex];
                serverTileData.push({
                   x: tile.x,
@@ -936,7 +937,7 @@ class GameServer {
                inventory: {
                   hotbar: {
                      itemSlots: {},
-                     width: SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE,
+                     width: SettingsConst.INITIAL_PLAYER_HOTBAR_SIZE,
                      height: 1,
                      inventoryName: "hotbar"
                   },
@@ -1200,9 +1201,9 @@ class GameServer {
          // @Speed @Memory
          const extendedVisibleChunkBounds: VisibleChunkBounds = [
             Math.max(playerData.visibleChunkBounds[0] - 1, 0),
-            Math.min(playerData.visibleChunkBounds[1] + 1, SETTINGS.BOARD_SIZE - 1),
+            Math.min(playerData.visibleChunkBounds[1] + 1, SettingsConst.BOARD_SIZE - 1),
             Math.max(playerData.visibleChunkBounds[2] - 1, 0),
-            Math.min(playerData.visibleChunkBounds[3] + 1, SETTINGS.BOARD_SIZE - 1)
+            Math.min(playerData.visibleChunkBounds[3] + 1, SettingsConst.BOARD_SIZE - 1)
          ];
 
          // @Incomplete
@@ -1241,8 +1242,8 @@ class GameServer {
    public registerEntityHit(hitData: HitData): void {
       // @Incomplete: Consider all chunks the entity is in instead of just the one at its position
       
-      const chunkX = Math.floor(hitData.entityPositionX / SETTINGS.CHUNK_UNITS);
-      const chunkY = Math.floor(hitData.entityPositionY / SETTINGS.CHUNK_UNITS);
+      const chunkX = Math.floor(hitData.entityPositionX / SettingsConst.CHUNK_UNITS);
+      const chunkY = Math.floor(hitData.entityPositionY / SettingsConst.CHUNK_UNITS);
       for (const playerData of Object.values(this.playerDataRecord)) {
          if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
             playerData.hits.push(hitData);
@@ -1253,8 +1254,8 @@ class GameServer {
    public registerEntityHeal(healData: HealData): void {
       // @Incomplete: Consider all chunks the entity is in instead of just the one at its position
       
-      const chunkX = Math.floor(healData.entityPositionX / SETTINGS.CHUNK_UNITS);
-      const chunkY = Math.floor(healData.entityPositionY / SETTINGS.CHUNK_UNITS);
+      const chunkX = Math.floor(healData.entityPositionX / SettingsConst.CHUNK_UNITS);
+      const chunkY = Math.floor(healData.entityPositionY / SettingsConst.CHUNK_UNITS);
       for (const playerData of Object.values(this.playerDataRecord)) {
          if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
             playerData.heals.push(healData);
@@ -1265,8 +1266,8 @@ class GameServer {
    public registerResearchOrbComplete(orbCompleteData: ResearchOrbCompleteData): void {
       // @Incomplete: Consider all chunks the entity is in instead of just the one at its position
       
-      const chunkX = Math.floor(orbCompleteData.x / SETTINGS.CHUNK_UNITS);
-      const chunkY = Math.floor(orbCompleteData.y / SETTINGS.CHUNK_UNITS);
+      const chunkX = Math.floor(orbCompleteData.x / SettingsConst.CHUNK_UNITS);
+      const chunkY = Math.floor(orbCompleteData.y / SettingsConst.CHUNK_UNITS);
       for (const playerData of Object.values(this.playerDataRecord)) {
          if (chunkX >= playerData.visibleChunkBounds[0] && chunkX <= playerData.visibleChunkBounds[1] && chunkY >= playerData.visibleChunkBounds[2] && chunkY <= playerData.visibleChunkBounds[3]) {
             playerData.orbCompletes.push(orbCompleteData);
@@ -1291,7 +1292,7 @@ class GameServer {
          return {
             hotbar: {
                itemSlots: {},
-               width: SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE,
+               width: SettingsConst.INITIAL_PLAYER_HOTBAR_SIZE,
                height: 1,
                inventoryName: "hotbar"
             },
@@ -1480,10 +1481,10 @@ class GameServer {
          const biomeName = randItem(tribeInfo.biomes);
          const tile = randItem(getTilesOfBiome(biomeName));
 
-         const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+         const x = (tile.x + Math.random()) * SettingsConst.TILE_SIZE;
+         const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
 
-         if (x < GameServer.PLAYER_SPAWN_POSITION_PADDING || x >= SETTINGS.BOARD_UNITS - GameServer.PLAYER_SPAWN_POSITION_PADDING || y < GameServer.PLAYER_SPAWN_POSITION_PADDING || y >= SETTINGS.BOARD_UNITS - GameServer.PLAYER_SPAWN_POSITION_PADDING) {
+         if (x < GameServer.PLAYER_SPAWN_POSITION_PADDING || x >= SettingsConst.BOARD_UNITS - GameServer.PLAYER_SPAWN_POSITION_PADDING || y < GameServer.PLAYER_SPAWN_POSITION_PADDING || y >= SettingsConst.BOARD_UNITS - GameServer.PLAYER_SPAWN_POSITION_PADDING) {
             continue;
          }
 
@@ -1491,8 +1492,8 @@ class GameServer {
       }
       
       // If all else fails, just pick a random position
-      const x = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
-      const y = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
+      const x = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
+      const y = randInt(GameServer.PLAYER_SPAWN_POSITION_PADDING, SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - GameServer.PLAYER_SPAWN_POSITION_PADDING);
       return new Point(x, y);
    }
 

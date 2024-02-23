@@ -1,4 +1,4 @@
-import { IEntityType, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
+import { IEntityType, PlayerCauseOfDeath, SettingsConst, clamp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { HealthComponentArray, PhysicsComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
@@ -40,7 +40,7 @@ export class HealthComponent {
 export function tickHealthComponent(healthComponent: HealthComponent): void {
    // Update local invulnerability hashes
    for (let i = 0; i < healthComponent.localIframeHashes.length; i++) {
-      healthComponent.localIframeDurations[i] -= 1 / SETTINGS.TPS;
+      healthComponent.localIframeDurations[i] -= SettingsConst.I_TPS;
       if (healthComponent.localIframeDurations[i] <= 0) {
          healthComponent.localIframeHashes.splice(i, 1);
          healthComponent.localIframeDurations.splice(i, 1);

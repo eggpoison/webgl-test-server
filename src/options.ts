@@ -9,9 +9,9 @@ interface Options {
 }
 
 const OPTIONS: Options = {
-   spawnEntities: true,
+   spawnEntities: false,
    spawnTribes: false,
-   generateRivers: false,
+   generateRivers: true,
    generateWalls: true,
    inBenchmarkMode: false,
    logging: false,

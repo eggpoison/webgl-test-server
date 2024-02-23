@@ -1,4 +1,4 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SETTINGS, randItem, ItemType, BowItemInfo, angle, distance, TribeType, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SettingsConst, randItem, ItemType, BowItemInfo, angle, distance, TribeType, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Tile from "../../Tile";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity, moveEntityToPosition } from "../../ai-shared";
@@ -784,8 +784,9 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // If nothing else to do, patrol tribe area
-   if (tribesmanComponent.targetPatrolPositionX === -1 && Math.random() < 0.3 / SETTINGS.TPS) {
-      const tileTargets = getPositionRadialTiles(tribesman.position, getVisionRange(tribesman));
+   if (tribesmanComponent.targetPatrolPositionX === -1 && Math.random() < 0.3 / SettingsConst.TPS) {
+      const visionRange = getVisionRange(tribesman);
+      const tileTargets = getPositionRadialTiles(tribesman.position, visionRange);
       if (tileTargets.length > 0) {
          // Filter tiles in tribe area
          const tilesInTribeArea = new Array<Tile>();
@@ -804,8 +805,8 @@ export function tickTribesman(tribesman: Entity): void {
             targetTile = randItem(tileTargets);
          }
 
-         tribesmanComponent.targetPatrolPositionX = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         tribesmanComponent.targetPatrolPositionY = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+         tribesmanComponent.targetPatrolPositionX = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+         tribesmanComponent.targetPatrolPositionY = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
          // @Speed
          tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
          tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
@@ -1016,6 +1017,9 @@ const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
    
    // @Speed: Shouldn't do always
    tribesman.hitboxesAreDirty = true;
+   
+   // @Speed: Don't do this if the target is too far away to ever be hit
+   doMeleeAttack(tribesman);
 }
 
 const doMeleeAttack = (tribesman: Entity): void => {
@@ -1041,8 +1045,8 @@ const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): numbe
    let mostDps = 0;
    for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
       if (!hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
-         if (mostDps < 1 / SETTINGS.DEFAULT_ATTACK_COOLDOWN) {
-            mostDps = 1 / SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+         if (mostDps < 1 / SettingsConst.DEFAULT_ATTACK_COOLDOWN) {
+            mostDps = 1 / SettingsConst.DEFAULT_ATTACK_COOLDOWN;
             bestItemSlot = itemSlot;
          }
          continue;
@@ -1109,7 +1113,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          }
          
          const ticksSinceLastAction = Board.ticks - useInfo.lastSpearChargeTicks;
-         if (ticksSinceLastAction >= 3 * SETTINGS.TPS) {
+         if (ticksSinceLastAction >= 3 * SettingsConst.TPS) {
             // Throw spear
             useItem(tribesman, selectedItem, "hotbar", useInfo.selectedItemSlot);
             useInfo.currentAction = TribeMemberAction.none;
@@ -1144,7 +1148,4 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    engageTargetMelee(tribesman, huntedEntity);
 
    useInfo.currentAction = TribeMemberAction.none;
-   
-   // @Speed: Don't do this if the target is too far away to ever be hit
-   doMeleeAttack(tribesman);
 }

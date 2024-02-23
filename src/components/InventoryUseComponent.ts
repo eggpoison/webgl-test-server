@@ -1,4 +1,4 @@
-import { SETTINGS, TribeMemberAction } from "webgl-test-shared";
+import { SettingsConst, TribeMemberAction } from "webgl-test-shared";
 import { Inventory } from "./InventoryComponent";
 
 export interface InventoryUseInfo {
@@ -52,7 +52,7 @@ export function tickInventoryUseComponent(inventoryUseComponent: InventoryUseCom
       // Update attack cooldowns
       for (let itemSlot = 1; itemSlot <= useInfo.inventory.width * useInfo.inventory.height; itemSlot++) {
          if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot)) {
-            useInfo.itemAttackCooldowns[itemSlot] -= 1 / SETTINGS.TPS;
+            useInfo.itemAttackCooldowns[itemSlot] -= SettingsConst.I_TPS;
             if (useInfo.itemAttackCooldowns[itemSlot] < 0) {
                delete useInfo.itemAttackCooldowns[itemSlot];
             }

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
@@ -24,7 +24,7 @@ export function createSnowball(position: Point, size: SnowballSize = SnowballSiz
    PhysicsComponentArray.addComponent(snowball, new PhysicsComponent(true));
    HealthComponentArray.addComponent(snowball, new HealthComponent(MAX_HEALTHS[size]));
    StatusEffectComponentArray.addComponent(snowball, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.freezing));
-   SnowballComponentArray.addComponent(snowball, new SnowballComponent(yetiID, size, Math.floor(randFloat(10, 15) * SETTINGS.TPS)));
+   SnowballComponentArray.addComponent(snowball, new SnowballComponent(yetiID, size, Math.floor(randFloat(10, 15) * SettingsConst.TPS)));
    
    return snowball;
 }
@@ -34,11 +34,11 @@ export function tickSnowball(snowball: Entity): void {
    
    // Angular velocity
    if (snowballComponent.angularVelocity !== 0) {
-      snowball.rotation += snowballComponent.angularVelocity / SETTINGS.TPS;
+      snowball.rotation += snowballComponent.angularVelocity / SettingsConst.TPS;
       snowball.hitboxesAreDirty = true;
       
       const beforeSign = Math.sign(snowballComponent.angularVelocity);
-      snowballComponent.angularVelocity -= Math.PI / SETTINGS.TPS * beforeSign;
+      snowballComponent.angularVelocity -= Math.PI / SettingsConst.TPS * beforeSign;
       if (beforeSign !== Math.sign(snowballComponent.angularVelocity)) {
          snowballComponent.angularVelocity = 0;
       }
@@ -62,7 +62,7 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
       }
    }
    
-   if (snowball.velocity.length() < DAMAGE_VELOCITY_THRESHOLD || snowball.ageTicks >= 2 * SETTINGS.TPS) {
+   if (snowball.velocity.length() < DAMAGE_VELOCITY_THRESHOLD || snowball.ageTicks >= 2 * SettingsConst.TPS) {
       return;
    }
 

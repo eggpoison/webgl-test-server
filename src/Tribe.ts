@@ -1,4 +1,4 @@
-import { IEntityType, ItemType, Point, SETTINGS, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
+import { IEntityType, ItemType, Point, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
@@ -9,7 +9,7 @@ import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from ".
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
 
-const RESPAWN_TIME_TICKS = 5 * SETTINGS.TPS;
+const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
 
 let idCounter = 0;
 
@@ -136,7 +136,7 @@ class Tribe {
          }
 
          // Remove old notices
-         info.secondsSinceNotice += 1 / SETTINGS.TPS;
+         info.secondsSinceNotice += SettingsConst.I_TPS;
          if (info.secondsSinceNotice >= Tribe.REINFORCEMENT_NOTICE_DURATION_SECONDS) {
             this.reinforcementInfoArray.splice(i, 1);
             i--;
@@ -290,10 +290,10 @@ class Tribe {
    }
 
    private createTribeAreaAroundBuilding(buildingPosition: Point, influence: number): void {
-      const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SETTINGS.TILE_SIZE));
-      const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SETTINGS.TILE_SIZE));
-      const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SETTINGS.TILE_SIZE));
-      const maxTileY = clampToBoardDimensions(Math.floor((buildingPosition.y + influence) / SETTINGS.TILE_SIZE));
+      const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SettingsConst.TILE_SIZE));
+      const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SettingsConst.TILE_SIZE));
+      const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SettingsConst.TILE_SIZE));
+      const maxTileY = clampToBoardDimensions(Math.floor((buildingPosition.y + influence) / SettingsConst.TILE_SIZE));
 
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
@@ -303,10 +303,10 @@ class Tribe {
    }
 
    private removeBuildingFromTiles(buildingPosition: Point, influence: number): void {
-      const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SETTINGS.TILE_SIZE));
-      const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SETTINGS.TILE_SIZE));
-      const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SETTINGS.TILE_SIZE));
-      const maxTileY = clampToBoardDimensions(Math.floor((buildingPosition.y + influence) / SETTINGS.TILE_SIZE));
+      const minTileX = clampToBoardDimensions(Math.floor((buildingPosition.x - influence) / SettingsConst.TILE_SIZE));
+      const maxTileX = clampToBoardDimensions(Math.floor((buildingPosition.x + influence) / SettingsConst.TILE_SIZE));
+      const minTileY = clampToBoardDimensions(Math.floor((buildingPosition.y - influence) / SettingsConst.TILE_SIZE));
+      const maxTileY = clampToBoardDimensions(Math.floor((buildingPosition.y + influence) / SettingsConst.TILE_SIZE));
 
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
          for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
@@ -316,7 +316,7 @@ class Tribe {
    }
 
    private removeTileFromArea(tileX: number, tileY: number): void {
-      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
       
       if (!this.area.hasOwnProperty(tileIndex)) {
          return;
@@ -327,9 +327,9 @@ class Tribe {
          }
       }
 
-      const chunkX = Math.floor(tileX / SETTINGS.CHUNK_SIZE);
-      const chunkY = Math.floor(tileY / SETTINGS.CHUNK_SIZE);
-      const chunkIndex = chunkY * SETTINGS.BOARD_SIZE + chunkX;
+      const chunkX = Math.floor(tileX / SettingsConst.CHUNK_SIZE);
+      const chunkY = Math.floor(tileY / SettingsConst.CHUNK_SIZE);
+      const chunkIndex = chunkY * SettingsConst.BOARD_SIZE + chunkX;
       if (!this.chunkArea.hasOwnProperty(chunkIndex)) {
          return;
       } else {
@@ -341,7 +341,7 @@ class Tribe {
    }
 
    private addTileToArea(tileX: number, tileY: number): void {
-      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
       
       if (!this.area.hasOwnProperty(tileIndex)) {
          // If the tile isn't in the area, create a new record
@@ -354,9 +354,9 @@ class Tribe {
          this.area[tileIndex].numInfluences++;
       }
 
-      const chunkX = Math.floor(tileX / SETTINGS.CHUNK_SIZE);
-      const chunkY = Math.floor(tileY / SETTINGS.CHUNK_SIZE);
-      const chunkIndex = chunkY * SETTINGS.BOARD_SIZE + chunkX;
+      const chunkX = Math.floor(tileX / SettingsConst.CHUNK_SIZE);
+      const chunkY = Math.floor(tileY / SettingsConst.CHUNK_SIZE);
+      const chunkIndex = chunkY * SettingsConst.BOARD_SIZE + chunkX;
       if (!this.chunkArea.hasOwnProperty(chunkIndex)) {
          const chunk = Board.getChunk(chunkX, chunkY);
          this.chunkArea[chunkIndex] = {
@@ -369,7 +369,7 @@ class Tribe {
    }
 
    public tileIsInArea(tileX: number, tileY: number): boolean {
-      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
       return this.area.hasOwnProperty(tileIndex);
    }
 

@@ -1,4 +1,4 @@
-import { SETTINGS } from "webgl-test-shared/lib/settings";
+import { SettingsConst } from "webgl-test-shared/lib/settings";
 import { generateOctavePerlinNoise, generatePerlinNoise, generatePointPerlinNoise } from "../perlin-noise";
 import BIOME_GENERATION_INFO, { BiomeGenerationInfo, BiomeSpawnRequirements, TileGenerationInfo } from "./terrain-generation-info";
 import Tile from "../Tile";
@@ -73,34 +73,34 @@ const getTileDist = (biomeNames: Array<Array<BiomeName>>, tileX: number, tileY: 
    /** The maximum distance that the algorithm will search for */
    const MAX_SEARCH_DIST = 10;
 
-   const tileBiome = biomeNames[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+   const tileBiome = biomeNames[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
 
    for (let dist = 1; dist <= MAX_SEARCH_DIST; dist++) {
       for (let i = 0; i <= dist; i++) {
          // Top right
-         if (tileX + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
-            const topRightBiome = biomeNames[tileX + i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+         if (tileX + i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileX + i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE && tileY - dist + i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileY - dist + i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE) {
+            const topRightBiome = biomeNames[tileX + i + SettingsConst.EDGE_GENERATION_DISTANCE][tileY - dist + i + SettingsConst.EDGE_GENERATION_DISTANCE];
             if (topRightBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Bottom right
-         if (tileX + dist - i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX + dist - i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
-            const bottomRightBiome = biomeNames[tileX + dist - i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+         if (tileX + dist - i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileX + dist - i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE && tileY + i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileY + i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE) {
+            const bottomRightBiome = biomeNames[tileX + dist - i + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + i + SettingsConst.EDGE_GENERATION_DISTANCE];
             if (bottomRightBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Bottom left
-         if (tileX - dist + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX - dist + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
-            const bottomLeftBiome = biomeNames[tileX - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+         if (tileX - dist + i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileX - dist + i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE && tileY + i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileY + i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE) {
+            const bottomLeftBiome = biomeNames[tileX - dist + i + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + i + SettingsConst.EDGE_GENERATION_DISTANCE];
             if (bottomLeftBiome !== tileBiome) {
                return dist - 1;
             }
          }
          // Top left
-         if (tileX - i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileX - i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i >= -SETTINGS.EDGE_GENERATION_DISTANCE && tileY - dist + i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
-            const topLeftBiome = biomeNames[tileX - i + SETTINGS.EDGE_GENERATION_DISTANCE][tileY - dist + i + SETTINGS.EDGE_GENERATION_DISTANCE];
+         if (tileX - i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileX - i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE && tileY - dist + i >= -SettingsConst.EDGE_GENERATION_DISTANCE && tileY - dist + i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE) {
+            const topLeftBiome = biomeNames[tileX - i + SettingsConst.EDGE_GENERATION_DISTANCE][tileY - dist + i + SettingsConst.EDGE_GENERATION_DISTANCE];
             if (topLeftBiome !== tileBiome) {
                return dist - 1;
             }
@@ -113,15 +113,15 @@ const getTileDist = (biomeNames: Array<Array<BiomeName>>, tileX: number, tileY: 
 
 /** Generate the tile array's tile types based on their biomes */
 export function generateTileInfo(biomeNames: Array<Array<BiomeName>>, tileTypeArray: Array<Array<TileTypeConst>>, tileIsWallArray: Array<Array<boolean>>): void {
-   for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
-      for (let tileY = -SETTINGS.EDGE_GENERATION_DISTANCE; tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileY++) {
+   for (let tileX = -SettingsConst.EDGE_GENERATION_DISTANCE; tileX < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE; tileX++) {
+      for (let tileY = -SettingsConst.EDGE_GENERATION_DISTANCE; tileY < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE; tileY++) {
          const dist = getTileDist(biomeNames, tileX, tileY);
 
-         const biomeName = biomeNames[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         const biomeName = biomeNames[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
          // @Speed: Garbage collection
          const tileInfo = getTileInfo(biomeName, dist, tileX, tileY);
-         tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = tileInfo.type;
-         tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = tileInfo.isWall;
+         tileTypeArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE] = tileInfo.type;
+         tileIsWallArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE] = tileInfo.isWall;
       }
    }
 }
@@ -151,34 +151,34 @@ function generateTerrain(): TerrainGenerationInfo {
    const tileIsWallArray = new Array<Array<boolean>>();
 
    const getBiomeName = (tileX: number, tileY: number): BiomeName => {
-      return biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+      return biomeNameArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
    }
 
    const setBiomeName = (tileX: number, tileY: number, biomeName: BiomeName): void => {
-      biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = biomeName;
+      biomeNameArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE] = biomeName;
    }
 
    const setTileType = (tileX: number, tileY: number, tileType: TileTypeConst): void => {
-      tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = tileType;
+      tileTypeArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE] = tileType;
    }
 
    const setIsWall = (tileX: number, tileY: number, isWall: boolean): void => {
-      tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE] = isWall;
+      tileIsWallArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE] = isWall;
    }
 
    const tileIsInBoard = (tileX: number, tileY: number): boolean => {
-      return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
+      return tileX >= 0 && tileX < SettingsConst.BOARD_DIMENSIONS && tileY >= 0 && tileY < SettingsConst.BOARD_DIMENSIONS;
    }
 
    // Generate the noise
-   const heightMap = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
-   const temperatureMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, TEMPERATURE_NOISE_SCALE);
-   const humidityMap = generatePerlinNoise(SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2, HUMIDITY_NOISE_SCALE);
+   const heightMap = generateOctavePerlinNoise(SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
+   const temperatureMap = generatePerlinNoise(SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, TEMPERATURE_NOISE_SCALE);
+   const humidityMap = generatePerlinNoise(SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, HUMIDITY_NOISE_SCALE);
    
    // Push humidity and temperature towards the extremes
-   for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
+   for (let i = 0; i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2; i++) {
       // Fill the tile array using the noise
-      for (let j = -SETTINGS.EDGE_GENERATION_DISTANCE; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; j++) {
+      for (let j = -SettingsConst.EDGE_GENERATION_DISTANCE; j < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE; j++) {
          const humidity = humidityMap[i][j];
          humidityMap[i][j] = smoothstep(humidity);
 
@@ -188,11 +188,11 @@ function generateTerrain(): TerrainGenerationInfo {
    }
    
    // Generate biome info using the noise
-   for (let i = 0; i < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; i++) {
+   for (let i = 0; i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2; i++) {
       biomeNameArray.push([]);
       tileTypeArray.push([]);
       tileIsWallArray.push([]);
-      for (let j = 0; j < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE * 2; j++) {
+      for (let j = 0; j < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2; j++) {
          const height = heightMap[i][j];
          const temperature = temperatureMap[i][j];
          const humidity = humidityMap[i][j];
@@ -249,9 +249,9 @@ function generateTerrain(): TerrainGenerationInfo {
    const tiles = new Array<Tile>();
    const edgeTiles = new Array<Tile>();
    const grassInfo: Record<number, Record<number, GrassTileInfo>> = {};
-   for (let tileY = -SETTINGS.EDGE_GENERATION_DISTANCE; tileY < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileY++) {
-      for (let tileX = -SETTINGS.EDGE_GENERATION_DISTANCE; tileX < SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE; tileX++) {
-         const tileType = tileTypeArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+   for (let tileY = -SettingsConst.EDGE_GENERATION_DISTANCE; tileY < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE; tileY++) {
+      for (let tileX = -SettingsConst.EDGE_GENERATION_DISTANCE; tileX < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE; tileX++) {
+         const tileType = tileTypeArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
 
          let riverFlowDirection: number; 
          // @Cleanup: This seems awful
@@ -279,8 +279,8 @@ function generateTerrain(): TerrainGenerationInfo {
          }
          
          // Create the tile
-         const biomeName = biomeNameArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-         const isWall = tileIsWallArray[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+         const biomeName = biomeNameArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
+         const isWall = tileIsWallArray[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
          const tile = new Tile(tileX, tileY, tileType, biomeName, isWall, riverFlowDirection);
          if (tileIsInBoard(tileX, tileY)) {
             tiles.push(tile);
@@ -294,8 +294,8 @@ function generateTerrain(): TerrainGenerationInfo {
             }
             
             // @Cleanup: Repeated code
-            const temperature = temperatureMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
-            const humidity = humidityMap[tileX + SETTINGS.EDGE_GENERATION_DISTANCE][tileY + SETTINGS.EDGE_GENERATION_DISTANCE];
+            const temperature = temperatureMap[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
+            const humidity = humidityMap[tileX + SettingsConst.EDGE_GENERATION_DISTANCE][tileY + SettingsConst.EDGE_GENERATION_DISTANCE];
             grassInfo[tileX][tileY] = {
                temperature: temperature,
                humidity: humidity

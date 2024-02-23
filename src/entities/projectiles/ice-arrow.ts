@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
 import { HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -25,7 +25,7 @@ export function createIceArrow(position: Point, rotation: number, tribe: Tribe |
 }
 
 export function tickIceArrow(iceArrow: Entity): void {
-   if (iceArrow.ageTicks >= 1.5 * SETTINGS.TPS) {
+   if (iceArrow.ageTicks >= 1.5 * SettingsConst.TPS) {
       iceArrow.remove();
       return;
    }
@@ -45,7 +45,7 @@ export function tickIceArrow(iceArrow: Entity): void {
    }
    
    // Destroy the arrow if it reaches the border
-   if (iceArrow.position.x <= ARROW_DESTROY_DISTANCE || iceArrow.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE || iceArrow.position.y <= ARROW_DESTROY_DISTANCE || iceArrow.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
+   if (iceArrow.position.x <= ARROW_DESTROY_DISTANCE || iceArrow.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE || iceArrow.position.y <= ARROW_DESTROY_DISTANCE || iceArrow.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
       iceArrow.remove();
       return;
    }
@@ -60,7 +60,7 @@ export function onIceArrowCollision(arrow: Entity, collidingEntity: Entity): voi
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SETTINGS.TPS);
+         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SettingsConst.TPS);
       }
       
       arrow.remove();

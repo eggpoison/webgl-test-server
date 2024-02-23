@@ -1,11 +1,11 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimeComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { SlimeComponent } from "../../components/SlimeComponent";
 import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { entityHasReachedPosition, getEntitiesInVisionRange, moveEntityToPosition, stopEntity, turnAngle } from "../../ai-shared";
+import { entityHasReachedPosition, getEntitiesInVisionRange, stopEntity, turnAngle } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -27,7 +27,7 @@ const SLIME_DROP_AMOUNTS: ReadonlyArray<[minDropAmount: number, maxDropAmount: n
    [3, 5], // medium slime
    [6, 9] // large slime
 ];
-const MAX_MERGE_WANT: ReadonlyArray<number> = [15 * SETTINGS.TPS, 40 * SETTINGS.TPS, 75 * SETTINGS.TPS];
+const MAX_MERGE_WANT: ReadonlyArray<number> = [15 * SettingsConst.TPS, 40 * SettingsConst.TPS, 75 * SettingsConst.TPS];
 
 const VISION_RANGES = [200, 250, 300];
 
@@ -42,8 +42,8 @@ const MAX_ENTITIES_IN_RANGE_FOR_MERGE = 7;
 const HEALING_ON_SLIME_PER_SECOND = 0.5;
 const HEALING_PROC_INTERVAL = 0.1;
 
-export const SPIT_COOLDOWN_TICKS = 4 * SETTINGS.TPS;
-export const SPIT_CHARGE_TIME_TICKS = SPIT_COOLDOWN_TICKS + Math.floor(0.8 * SETTINGS.TPS);
+export const SPIT_COOLDOWN_TICKS = 4 * SettingsConst.TPS;
+export const SPIT_CHARGE_TIME_TICKS = SPIT_COOLDOWN_TICKS + Math.floor(0.8 * SettingsConst.TPS);
 
 export interface SlimeEntityAnger {
    angerAmount: number;
@@ -91,7 +91,7 @@ const updateAngerTarget = (slime: Entity): Entity | null => {
       }
 
       // Decrease anger
-      angerInfo.angerAmount -= 1 / SETTINGS.TPS * ANGER_DIFFUSE_MULTIPLIER;
+      angerInfo.angerAmount -= SettingsConst.I_TPS * ANGER_DIFFUSE_MULTIPLIER;
       if (angerInfo.angerAmount <= 0) {
          slimeComponent.angeredEntities.splice(i, 1);
          i--;
@@ -282,8 +282,8 @@ export function tickSlime(slime: Entity): void {
          targetTile = getWanderTargetTile(slime, visionRange);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "swamp"));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       const speedMultiplier = SPEED_MULTIPLIERS[slimeComponent.size];
       wander(slime, x, y, ACCELERATION * speedMultiplier);
    } else {
@@ -338,7 +338,7 @@ export function onSlimeCollision(slime: Entity, collidingEntity: Entity): void {
    if (collidingEntity.type === IEntityType.slime) {
       const slimeComponent = SlimeComponentArray.getComponent(slime);
       if (wantsToMerge(slimeComponent, collidingEntity)) {
-         slimeComponent.mergeTimer -= 1 / SETTINGS.TPS;
+         slimeComponent.mergeTimer -= SettingsConst.I_TPS;
          if (slimeComponent.mergeTimer <= 0) {
             mergeSlimes(slime, collidingEntity);
          }

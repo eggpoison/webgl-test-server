@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, randFloat } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, RockSpikeProjectileComponentArray } from "../../components/ComponentArray";
@@ -16,7 +16,7 @@ export function createRockSpikeProjectile(spawnPosition: Point, size: number, fr
    const hitbox = new CircularHitbox(rockSpikeProjectile, ROCK_SPIKE_MASSES[size], 0, 0, ROCK_SPIKE_HITBOX_SIZES[size], 0);
    rockSpikeProjectile.addHitbox(hitbox);
 
-   const lifetimeTicks = Math.floor(randFloat(3.5, 4.5) * SETTINGS.TPS);
+   const lifetimeTicks = Math.floor(randFloat(3.5, 4.5) * SettingsConst.TPS);
    RockSpikeProjectileComponentArray.addComponent(rockSpikeProjectile, new RockSpikeProjectileComponent(size, lifetimeTicks, frozenYetiID));
 
    return rockSpikeProjectile;

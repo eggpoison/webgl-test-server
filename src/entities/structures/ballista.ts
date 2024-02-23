@@ -1,4 +1,4 @@
-import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, ItemType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
 import { BallistaComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
@@ -229,13 +229,13 @@ export function tickBallista(ballista: Entity): void {
          const clockwiseDist = getClockwiseAngleDistance(turretAimDirection, targetDirection);
          if (clockwiseDist >= Math.PI) {
             // Turn counterclockwise
-            turretComponent.aimDirection -= Math.PI / 3 / SETTINGS.TPS;
+            turretComponent.aimDirection -= Math.PI / 3 * SettingsConst.I_TPS;
             if (turretComponent.aimDirection + ballista.rotation < targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
             }
          } else {
             // Turn clockwise
-            turretComponent.aimDirection += Math.PI / 3 / SETTINGS.TPS;
+            turretComponent.aimDirection += Math.PI / 3 * SettingsConst.I_TPS;
             if (turretComponent.aimDirection + ballista.rotation > targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
             }

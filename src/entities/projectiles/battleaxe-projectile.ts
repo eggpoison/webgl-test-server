@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SETTINGS, lerp } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SettingsConst, lerp } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -10,7 +10,7 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
 
-const RETURN_TIME_TICKS = 1 * SETTINGS.TPS;
+const RETURN_TIME_TICKS = 1 * SettingsConst.TPS;
 
 export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -28,7 +28,7 @@ export function createBattleaxeProjectile(position: Point, tribeMemberID: number
 
 export function tickBattleaxeProjectile(battleaxe: Entity): void {
    if (battleaxe.ageTicks < RETURN_TIME_TICKS) {
-      battleaxe.rotation -= 6 * Math.PI / SETTINGS.TPS;
+      battleaxe.rotation -= 6 * Math.PI / SettingsConst.TPS;
    } else {
       const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe);
       if (!Board.entityRecord.hasOwnProperty(throwingProjectileComponent.tribeMemberID)) {
@@ -44,14 +44,14 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       }
 
       const ticksSinceReturn = battleaxe.ageTicks - RETURN_TIME_TICKS;
-      battleaxe.rotation -= lerp(6 * Math.PI / SETTINGS.TPS, 0, Math.min(ticksSinceReturn / SETTINGS.TPS * 1.25, 1));
+      battleaxe.rotation -= lerp(6 * Math.PI / SettingsConst.TPS, 0, Math.min(ticksSinceReturn / SettingsConst.TPS * 1.25, 1));
 
       const returnDirection = battleaxe.position.calculateAngleBetween(owner.position);
       battleaxe.velocity.x += 50 * Math.sin(returnDirection);
       battleaxe.velocity.y += 50 * Math.cos(returnDirection);
 
       // Turn to face the owner
-      battleaxe.turn(owner.rotation, ticksSinceReturn / SETTINGS.TPS * Math.PI);
+      battleaxe.turn(owner.rotation, ticksSinceReturn / SettingsConst.TPS * Math.PI);
    }
    
    battleaxe.hitboxesAreDirty = true;

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -21,13 +21,13 @@ import { PhysicsComponent } from "../../components/PhysicsComponent";
 const MAX_HEALTH = 10;
 const VISION_RANGE = 256;
 
-const MIN_GRAZE_COOLDOWN = 30 * SETTINGS.TPS;
-const MAX_GRAZE_COOLDOWN = 60 * SETTINGS.TPS;
+const MIN_GRAZE_COOLDOWN = 30 * SettingsConst.TPS;
+const MAX_GRAZE_COOLDOWN = 60 * SettingsConst.TPS;
 
-const MIN_FOLLOW_COOLDOWN = 15 * SETTINGS.TPS;
-const MAX_FOLLOW_COOLDOWN = 30 * SETTINGS.TPS;
+const MIN_FOLLOW_COOLDOWN = 15 * SettingsConst.TPS;
+const MAX_FOLLOW_COOLDOWN = 30 * SettingsConst.TPS;
 
-export const COW_GRAZE_TIME_TICKS = 5 * SETTINGS.TPS;
+export const COW_GRAZE_TIME_TICKS = 5 * SettingsConst.TPS;
 
 // Herd AI constants
 const TURN_RATE = 0.4;
@@ -103,7 +103,7 @@ export function tickCow(cow: Entity): void {
    
    // Escape AI
    const escapeAIComponent = EscapeAIComponentArray.getComponent(cow);
-   updateEscapeAIComponent(escapeAIComponent, 5 * SETTINGS.TPS);
+   updateEscapeAIComponent(escapeAIComponent, 5 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(cow, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
@@ -182,7 +182,7 @@ export function tickCow(cow: Entity): void {
             const testEntities = Board.getEntitiesAtPosition(testPositionX, testPositionY);
             if (testEntities.has(berryBush)) {
                cowComponent.bushShakeTimer++;
-               if (cowComponent.bushShakeTimer >= 1.5 * SETTINGS.TPS) {
+               if (cowComponent.bushShakeTimer >= 1.5 * SettingsConst.TPS) {
                   dropBerry(berryBush);
                   cowComponent.bushShakeTimer = 0;
                   cowComponent.targetBushID = ID_SENTINEL_VALUE;
@@ -241,8 +241,8 @@ export function tickCow(cow: Entity): void {
          targetTile = getWanderTargetTile(cow, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "grasslands"));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       wander(cow, x, y, 200)
    } else {
       stopEntity(cow);

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -53,7 +53,7 @@ export function onPunjiSticksCollision(punjiSticks: Entity, collidingEntity: Ent
    addLocalInvulnerabilityHash(healthComponent, "punjiSticks", 0.3);
 
    if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-      applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 2 * SETTINGS.TPS);
+      applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 2 * SettingsConst.TPS);
    }
 }
 

@@ -1,4 +1,4 @@
-import { SETTINGS, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
+import { SettingsConst, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import Entity from "../Entity";
 import Board from "../Board";
@@ -32,7 +32,6 @@ const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): b
       return circlesDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
    } else {
       // Rectangular hitbox
-      // @Speed
       return circleAndRectangleDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
    }
 }
@@ -73,10 +72,10 @@ const calculateVisibleEntities = (entity: Entity, aiHelperComponent: AIHelperCom
 export function tickAIHelperComponent(entity: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
    
-   const minChunkX = Math.max(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkX = Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
-   const minChunkY = Math.max(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkY = Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkX = Math.max(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
    
    // If the entity hasn't changed visible chunk bounds, then the potential visible entities will be the same
    // and only the visible entities need to updated

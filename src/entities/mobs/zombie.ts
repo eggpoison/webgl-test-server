@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE, NO_COLLISION } from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
@@ -25,7 +25,7 @@ const VISION_RANGE = 375;
 const ACCELERATION = 275;
 const ACCELERATION_SLOW = 150;
 
-const CHASE_PURSUE_TIME_TICKS = 5 * SETTINGS.TPS;
+const CHASE_PURSUE_TIME_TICKS = 5 * SettingsConst.TPS;
 
 /** Chance for a zombie to spontaneously combust every second */
 const SPONTANEOUS_COMBUSTION_CHANCE = 0.5;
@@ -41,9 +41,9 @@ const ALIGNMENT_INFLUENCE = 0.7;
 const COHESION_INFLUENCE = 0.3;
 
 /** The time in ticks after being hit that the zombie will move towards the source of damage */
-const DAMAGE_INVESTIGATE_TIME_TICKS = Math.floor(0.8 * SETTINGS.TPS);
+const DAMAGE_INVESTIGATE_TIME_TICKS = Math.floor(0.8 * SettingsConst.TPS);
 
-const HURT_ENTITY_INVESTIGATE_TICKS= Math.floor(0.5 * SETTINGS.TPS);
+const HURT_ENTITY_INVESTIGATE_TICKS= Math.floor(0.5 * SettingsConst.TPS);
 
 // @Cleanup: We don't need to pass the isGolden parameter, can deduce whether the tombstone is golden from the tombstoneID instead
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
@@ -117,7 +117,7 @@ const doMeleeAttack = (zombie: Entity, target: Entity): void => {
 
       // Reset attack cooldown
       const zombieComponent = ZombieComponentArray.getComponent(zombie);
-      zombieComponent.attackCooldownTicks = Math.floor(randFloat(1, 2) * SETTINGS.TPS);
+      zombieComponent.attackCooldownTicks = Math.floor(randFloat(1, 2) * SettingsConst.TPS);
    }
 }
 
@@ -131,7 +131,7 @@ const doBiteAttack = (zombie: Entity, target: Entity): void => {
 
    // Reset attack cooldown
    const zombieComponent = ZombieComponentArray.getComponent(zombie);
-   zombieComponent.attackCooldownTicks = Math.floor(randFloat(3, 4) * SETTINGS.TPS);
+   zombieComponent.attackCooldownTicks = Math.floor(randFloat(3, 4) * SettingsConst.TPS);
 
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(zombie);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
@@ -188,8 +188,8 @@ export function tickZombie(zombie: Entity): void {
    if (!Board.isNight()) {
       // Ignite randomly or stay on fire if already on fire
       const statusEffectComponent = StatusEffectComponentArray.getComponent(zombie);
-      if (hasStatusEffect(statusEffectComponent, StatusEffectConst.burning) || Math.random() < SPONTANEOUS_COMBUSTION_CHANCE / SETTINGS.TPS) {
-         applyStatusEffect(zombie, StatusEffectConst.burning, 5 * SETTINGS.TPS);
+      if (hasStatusEffect(statusEffectComponent, StatusEffectConst.burning) || Math.random() < SPONTANEOUS_COMBUSTION_CHANCE / SettingsConst.TPS) {
+         applyStatusEffect(zombie, StatusEffectConst.burning, 5 * SettingsConst.TPS);
       }
    }
 
@@ -207,7 +207,7 @@ export function tickZombie(zombie: Entity): void {
       moveEntityToPosition(zombie, attackTarget.position.x, attackTarget.position.y, ACCELERATION);
       return;
    } else {
-      zombieComponent.attackCooldownTicks = Math.floor(2.5 * SETTINGS.TPS);
+      zombieComponent.attackCooldownTicks = Math.floor(2.5 * SettingsConst.TPS);
    }
 
    // Eat raw beef and fish
@@ -274,8 +274,8 @@ export function tickZombie(zombie: Entity): void {
          targetTile = getWanderTargetTile(zombie, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "grasslands"));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       wander(zombie, x, y, ACCELERATION_SLOW);
    } else {
       stopEntity(zombie);

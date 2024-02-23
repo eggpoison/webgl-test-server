@@ -1,4 +1,4 @@
-import { ItemType, Item, ITEM_TYPE_RECORD, ITEM_INFO_RECORD, SETTINGS, ToolItemInfo } from "webgl-test-shared";
+import { ItemType, Item, ITEM_TYPE_RECORD, ITEM_INFO_RECORD, SettingsConst, ToolItemInfo } from "webgl-test-shared";
 
 let nextAvailableID = 0;
 const getUniqueID = (): number => {
@@ -19,6 +19,6 @@ export function getItemAttackCooldown(item: Item): number {
       const itemInfo = ITEM_INFO_RECORD[item.type] as ToolItemInfo;
       return itemInfo.attackCooldown;
    } else {
-      return SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+      return SettingsConst.DEFAULT_ATTACK_COOLDOWN;
    }
 }

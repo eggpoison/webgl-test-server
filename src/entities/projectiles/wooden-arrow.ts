@@ -1,4 +1,4 @@
-import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
+import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SettingsConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
 import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -44,7 +44,7 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
 }
 
 export function tickArrowProjectile(arrow: Entity): void {
-   if (arrow.ageTicks >= 1.5 * SETTINGS.TPS) {
+   if (arrow.ageTicks >= 1.5 * SettingsConst.TPS) {
       arrow.remove();
       return;
    }
@@ -64,7 +64,7 @@ export function tickArrowProjectile(arrow: Entity): void {
    }
    
    // Destroy the arrow if it reaches the border
-   if (arrow.position.x <= ARROW_DESTROY_DISTANCE || arrow.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE || arrow.position.y <= ARROW_DESTROY_DISTANCE || arrow.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
+   if (arrow.position.x <= ARROW_DESTROY_DISTANCE || arrow.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE || arrow.position.y <= ARROW_DESTROY_DISTANCE || arrow.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
       arrow.remove();
       return;
    }

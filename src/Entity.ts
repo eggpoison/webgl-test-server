@@ -1,4 +1,4 @@
-import { DoorToggleType, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { DoorToggleType, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -174,9 +174,9 @@ class Entity<T extends IEntityType = IEntityType> {
 
       // Clamp the game object's position to within the world
       if (this.position.x < 0) this.position.x = 0;
-      if (this.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) this.position.x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+      if (this.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE) this.position.x = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1;
       if (this.position.y < 0) this.position.y = 0;
-      if (this.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) this.position.y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+      if (this.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE) this.position.y = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1;
 
       this.updateTile();
       this.strictCheckIsInRiver();
@@ -207,10 +207,24 @@ class Entity<T extends IEntityType = IEntityType> {
          this.boundingArea[3] = boundsMaxY;
       }
 
-      hitbox.chunkBounds[0] = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
-      hitbox.chunkBounds[1] = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
-      hitbox.chunkBounds[2] = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
-      hitbox.chunkBounds[3] = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+      // Update entity bounding area
+      if (boundsMinX < this.boundingArea[0]) {
+         this.boundingArea[0] = boundsMinX;
+      }
+      if (boundsMaxX > this.boundingArea[1]) {
+         this.boundingArea[1] = boundsMaxX;
+      }
+      if (boundsMinY < this.boundingArea[2]) {
+         this.boundingArea[2] = boundsMinY;
+      }
+      if (boundsMaxY > this.boundingArea[3]) {
+         this.boundingArea[3] = boundsMaxY;
+      }
+
+      hitbox.chunkBounds[0] = Math.floor(boundsMinX / SettingsConst.CHUNK_UNITS);
+      hitbox.chunkBounds[1] = Math.floor(boundsMaxX / SettingsConst.CHUNK_UNITS);
+      hitbox.chunkBounds[2] = Math.floor(boundsMinY / SettingsConst.CHUNK_UNITS);
+      hitbox.chunkBounds[3] = Math.floor(boundsMaxY / SettingsConst.CHUNK_UNITS);
    }
 
    /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
@@ -257,10 +271,10 @@ class Entity<T extends IEntityType = IEntityType> {
          // @Speed
          // @Speed
          if (!hitboxChunkBoundsHaveChanged) {
-            const minChunkX = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
-            const maxChunkX = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
-            const minChunkY = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
-            const maxChunkY = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+            const minChunkX = Math.floor(boundsMinX / SettingsConst.CHUNK_UNITS);
+            const maxChunkX = Math.floor(boundsMaxX / SettingsConst.CHUNK_UNITS);
+            const minChunkY = Math.floor(boundsMinY / SettingsConst.CHUNK_UNITS);
+            const maxChunkY = Math.floor(boundsMaxY / SettingsConst.CHUNK_UNITS);
 
             if (minChunkX !== hitbox.chunkBounds[0] ||
                 maxChunkX !== hitbox.chunkBounds[1] ||
@@ -314,10 +328,10 @@ class Entity<T extends IEntityType = IEntityType> {
 
          // Check if the hitboxes' chunk bounds have changed
          if (!hitboxChunkBoundsHaveChanged) {
-            const minChunkX = Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS);
-            const maxChunkX = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
-            const minChunkY = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
-            const maxChunkY = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+            const minChunkX = Math.floor(boundsMinX / SettingsConst.CHUNK_UNITS);
+            const maxChunkX = Math.floor(boundsMaxX / SettingsConst.CHUNK_UNITS);
+            const minChunkY = Math.floor(boundsMinY / SettingsConst.CHUNK_UNITS);
+            const maxChunkY = Math.floor(boundsMaxY / SettingsConst.CHUNK_UNITS);
 
             if (minChunkX !== hitbox.chunkBounds[0] ||
                 maxChunkX !== hitbox.chunkBounds[1] ||
@@ -345,8 +359,8 @@ class Entity<T extends IEntityType = IEntityType> {
 
    /** Updates the tile the object is on. */
    public updateTile(): void {
-      const tileX = Math.floor(this.position.x / SETTINGS.TILE_SIZE);
-      const tileY = Math.floor(this.position.y / SETTINGS.TILE_SIZE);
+      const tileX = Math.floor(this.position.x / SettingsConst.TILE_SIZE);
+      const tileY = Math.floor(this.position.y / SettingsConst.TILE_SIZE);
       
       this.tile = Board.getTile(tileX, tileY);
    }
@@ -426,10 +440,10 @@ class Entity<T extends IEntityType = IEntityType> {
          const boundsMinY = hitbox.calculateHitboxBoundsMinY();
          const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
 
-         const minChunkX = Math.max(Math.min(Math.floor(boundsMinX / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkX = Math.max(Math.min(Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-         const minChunkY = Math.max(Math.min(Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkY = Math.max(Math.min(Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkX = Math.max(Math.min(Math.floor(boundsMinX / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor(boundsMaxX / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor(boundsMinY / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor(boundsMaxY / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
 
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
@@ -511,8 +525,8 @@ class Entity<T extends IEntityType = IEntityType> {
 
    private checkForCircularTileCollision(tile: Tile, hitbox: CircularHitbox): TileCollisionAxis {
       // Get the distance between the player's position and the center of the tile
-      const xDist = Math.abs(this.position.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE);
-      const yDist = Math.abs(this.position.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE);
+      const xDist = Math.abs(this.position.x - (tile.x + 0.5) * SettingsConst.TILE_SIZE);
+      const yDist = Math.abs(this.position.y - (tile.y + 0.5) * SettingsConst.TILE_SIZE);
 
       if (xDist <= hitbox.radius) {
          return TileCollisionAxis.y;
@@ -523,7 +537,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
       const cornerDistance = Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
 
-      if (cornerDistance <= Math.sqrt(Math.pow(SETTINGS.TILE_SIZE, 2) / 2) + hitbox.radius) {
+      if (cornerDistance <= Math.sqrt(Math.pow(SettingsConst.TILE_SIZE, 2) / 2) + hitbox.radius) {
          return TileCollisionAxis.diagonal;
       }
 
@@ -531,40 +545,40 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    private resolveXAxisCircularTileCollision(tile: Tile, hitbox: CircularHitbox): void {
-      const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
+      const xDist = this.position.x - tile.x * SettingsConst.TILE_SIZE;
       const xDir = xDist >= 0 ? 1 : -1;
       // The 0.0001 epsilon value is used so that the game object isn't put exactly on the border between tiles
       // We don't use Number.EPSILON because it doesn't work in some cases
-      this.position.x = tile.x * SETTINGS.TILE_SIZE + (0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * xDir;
+      this.position.x = tile.x * SettingsConst.TILE_SIZE + (0.5 + 0.5 * xDir) * SettingsConst.TILE_SIZE + (hitbox.radius + 0.0001) * xDir;
       this.velocity.x = 0;
    }
 
    private resolveYAxisCircularTileCollision(tile: Tile, hitbox: CircularHitbox): void {
-      const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
+      const yDist = this.position.y - tile.y * SettingsConst.TILE_SIZE;
       const yDir = yDist >= 0 ? 1 : -1;
       // The 0.0001 epsilon value is used so that the game object isn't put exactly on the border between tiles
       // We don't use Number.EPSILON because it doesn't work in some cases
-      this.position.y = tile.y * SETTINGS.TILE_SIZE + (0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * yDir;
+      this.position.y = tile.y * SettingsConst.TILE_SIZE + (0.5 + 0.5 * yDir) * SettingsConst.TILE_SIZE + (hitbox.radius + 0.0001) * yDir;
       this.velocity.y = 0;
    }
 
    private resolveDiagonalCircularTileCollision(tile: Tile, hitbox: CircularHitbox): void {
-      const xDist = this.position.x - tile.x * SETTINGS.TILE_SIZE;
-      const yDist = this.position.y - tile.y * SETTINGS.TILE_SIZE;
+      const xDist = this.position.x - tile.x * SettingsConst.TILE_SIZE;
+      const yDist = this.position.y - tile.y * SettingsConst.TILE_SIZE;
 
       const xDir = xDist >= 0 ? 1 : -1;
       const yDir = yDist >= 0 ? 1 : -1;
 
-      const xDistFromEdge = Math.abs(xDist - SETTINGS.TILE_SIZE/2);
-      const yDistFromEdge = Math.abs(yDist - SETTINGS.TILE_SIZE/2);
+      const xDistFromEdge = Math.abs(xDist - SettingsConst.TILE_SIZE/2);
+      const yDistFromEdge = Math.abs(yDist - SettingsConst.TILE_SIZE/2);
 
       // The 0.0001 epsilon value is used so that the game object isn't put exactly on the border between tiles
       // We don't use Number.EPSILON because it doesn't work in some cases
       if (yDistFromEdge < xDistFromEdge) {
-         this.position.x = (tile.x + 0.5 + 0.5 * xDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * xDir;
+         this.position.x = (tile.x + 0.5 + 0.5 * xDir) * SettingsConst.TILE_SIZE + (hitbox.radius + 0.0001) * xDir;
          this.velocity.x = 0;
       } else {
-         this.position.y = (tile.y + 0.5 + 0.5 * yDir) * SETTINGS.TILE_SIZE + (hitbox.radius + 0.0001) * yDir;
+         this.position.y = (tile.y + 0.5 + 0.5 * yDir) * SettingsConst.TILE_SIZE + (hitbox.radius + 0.0001) * yDir;
          this.velocity.y = 0;
       }
    }
@@ -574,16 +588,16 @@ class Entity<T extends IEntityType = IEntityType> {
       // Check if any of the hitboxes' vertices are inside the tile
       // 
 
-      const tileMinX = tile.x * SETTINGS.TILE_SIZE;
-      const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
-      const tileMinY = tile.y * SETTINGS.TILE_SIZE;
-      const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
+      const tileMinX = tile.x * SettingsConst.TILE_SIZE;
+      const tileMaxX = (tile.x + 1) * SettingsConst.TILE_SIZE;
+      const tileMinY = tile.y * SettingsConst.TILE_SIZE;
+      const tileMaxY = (tile.y + 1) * SettingsConst.TILE_SIZE;
 
       for (let i = 0; i < 4; i++) {
          const vertex = hitbox.vertexOffsets[i];
          if (vertex.x >= tileMinX && vertex.x <= tileMaxX && vertex.y >= tileMinY && vertex.y <= tileMaxY) {
-            const distX = Math.abs(this.position.x - (tile.x + 0.5) * SETTINGS.TILE_SIZE);
-            const distY = Math.abs(this.position.y - (tile.y + 0.5) * SETTINGS.TILE_SIZE);
+            const distX = Math.abs(this.position.x - (tile.x + 0.5) * SettingsConst.TILE_SIZE);
+            const distY = Math.abs(this.position.y - (tile.y + 0.5) * SettingsConst.TILE_SIZE);
 
             if (distX >= distY) {
                return TileCollisionAxis.x;
@@ -597,10 +611,10 @@ class Entity<T extends IEntityType = IEntityType> {
       // Check for diagonal collisions
       // 
       
-      Entity.rectangularTestHitbox.width = SETTINGS.TILE_SIZE;
-      Entity.rectangularTestHitbox.height = SETTINGS.TILE_SIZE;
-      Entity.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SETTINGS.TILE_SIZE;
-      Entity.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SETTINGS.TILE_SIZE;
+      Entity.rectangularTestHitbox.width = SettingsConst.TILE_SIZE;
+      Entity.rectangularTestHitbox.height = SettingsConst.TILE_SIZE;
+      Entity.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SettingsConst.TILE_SIZE;
+      Entity.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SettingsConst.TILE_SIZE;
 
       if (Entity.rectangularTestHitbox.isColliding(hitbox)) {
          return TileCollisionAxis.diagonal;
@@ -610,10 +624,10 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    private resolveXAxisRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
-      const tileMinX = tile.x * SETTINGS.TILE_SIZE;
-      const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
-      const tileMinY = tile.y * SETTINGS.TILE_SIZE;
-      const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
+      const tileMinX = tile.x * SettingsConst.TILE_SIZE;
+      const tileMaxX = (tile.x + 1) * SettingsConst.TILE_SIZE;
+      const tileMinY = tile.y * SettingsConst.TILE_SIZE;
+      const tileMaxY = (tile.y + 1) * SettingsConst.TILE_SIZE;
 
       let vertexPositionX = -99999;
       for (let i = 0; i < 4; i++) {
@@ -629,23 +643,23 @@ class Entity<T extends IEntityType = IEntityType> {
          throw new Error();
       }
 
-      const startXDist = vertexPositionX - tile.x * SETTINGS.TILE_SIZE;
-      const xDist = vertexPositionX - (tile.x + 0.5) * SETTINGS.TILE_SIZE;
+      const startXDist = vertexPositionX - tile.x * SettingsConst.TILE_SIZE;
+      const xDist = vertexPositionX - (tile.x + 0.5) * SettingsConst.TILE_SIZE;
 
       // Push left
       if (xDist < 0) {
          this.position.x -= startXDist;
       } else {
          // Push right
-         this.position.x += SETTINGS.TILE_SIZE - startXDist;
+         this.position.x += SettingsConst.TILE_SIZE - startXDist;
       }
    }
 
    private resolveYAxisRectangularTileCollision(tile: Tile, hitbox: RectangularHitbox): void {
-      const tileMinX = tile.x * SETTINGS.TILE_SIZE;
-      const tileMaxX = (tile.x + 1) * SETTINGS.TILE_SIZE;
-      const tileMinY = tile.y * SETTINGS.TILE_SIZE;
-      const tileMaxY = (tile.y + 1) * SETTINGS.TILE_SIZE;
+      const tileMinX = tile.x * SettingsConst.TILE_SIZE;
+      const tileMaxX = (tile.x + 1) * SettingsConst.TILE_SIZE;
+      const tileMinY = tile.y * SettingsConst.TILE_SIZE;
+      const tileMaxY = (tile.y + 1) * SettingsConst.TILE_SIZE;
 
       let vertexPositionY = -99999;
       for (let i = 0; i < 4; i++) {
@@ -661,15 +675,15 @@ class Entity<T extends IEntityType = IEntityType> {
          throw new Error();
       }
 
-      const startYDist = vertexPositionY - tile.y * SETTINGS.TILE_SIZE;
-      const yDist = vertexPositionY - (tile.y + 0.5) * SETTINGS.TILE_SIZE;
+      const startYDist = vertexPositionY - tile.y * SettingsConst.TILE_SIZE;
+      const yDist = vertexPositionY - (tile.y + 0.5) * SettingsConst.TILE_SIZE;
 
       // Push left
       if (yDist < 0) {
          this.position.y -= startYDist;
       } else {
          // Push right
-         this.position.y += SETTINGS.TILE_SIZE - startYDist;
+         this.position.y += SettingsConst.TILE_SIZE - startYDist;
       }
    }
 
@@ -681,10 +695,10 @@ class Entity<T extends IEntityType = IEntityType> {
          [hitbox.vertexOffsets[2], hitbox.vertexOffsets[0]]
       ];
 
-      const tileX1 = tile.x * SETTINGS.TILE_SIZE;
-      const tileX2 = (tile.x + 1) * SETTINGS.TILE_SIZE;
-      const tileY1 = tile.y * SETTINGS.TILE_SIZE;
-      const tileY2 = (tile.y + 1) * SETTINGS.TILE_SIZE;
+      const tileX1 = tile.x * SettingsConst.TILE_SIZE;
+      const tileX2 = (tile.x + 1) * SettingsConst.TILE_SIZE;
+      const tileY1 = tile.y * SettingsConst.TILE_SIZE;
+      const tileY2 = (tile.y + 1) * SettingsConst.TILE_SIZE;
 
       let collidingVertex1!: Point;
       let collidingVertex2!: Point;
@@ -815,10 +829,10 @@ class Entity<T extends IEntityType = IEntityType> {
          const boundsMinY = hitbox.calculateHitboxBoundsMinY();
          const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
 
-         const minTileX = clampToBoardDimensions(Math.floor(boundsMinX / SETTINGS.TILE_SIZE));
-         const maxTileX = clampToBoardDimensions(Math.floor(boundsMaxX / SETTINGS.TILE_SIZE));
-         const minTileY = clampToBoardDimensions(Math.floor(boundsMinY / SETTINGS.TILE_SIZE));
-         const maxTileY = clampToBoardDimensions(Math.floor(boundsMaxY / SETTINGS.TILE_SIZE));
+         const minTileX = clampToBoardDimensions(Math.floor(boundsMinX / SettingsConst.TILE_SIZE));
+         const maxTileX = clampToBoardDimensions(Math.floor(boundsMaxX / SettingsConst.TILE_SIZE));
+         const minTileY = clampToBoardDimensions(Math.floor(boundsMinY / SettingsConst.TILE_SIZE));
+         const maxTileY = clampToBoardDimensions(Math.floor(boundsMaxY / SettingsConst.TILE_SIZE));
 
          // @Cleanup: Combine the check and resolve functions into one
 
@@ -885,9 +899,9 @@ class Entity<T extends IEntityType = IEntityType> {
          this.velocity.x = 0;
          physicsComponent.positionIsDirty = true;
          // Right border
-      } else if (this.boundingArea[1] > SETTINGS.BOARD_UNITS) {
+      } else if (this.boundingArea[1] > SettingsConst.BOARD_UNITS) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
-         this.position.x -= this.boundingArea[1] - SETTINGS.BOARD_UNITS;
+         this.position.x -= this.boundingArea[1] - SettingsConst.BOARD_UNITS;
          this.velocity.x = 0;
          physicsComponent.positionIsDirty = true;
       }
@@ -899,15 +913,15 @@ class Entity<T extends IEntityType = IEntityType> {
          this.velocity.y = 0;
          physicsComponent.positionIsDirty = true;
          // Top border
-      } else if (this.boundingArea[3] > SETTINGS.BOARD_UNITS) {
+      } else if (this.boundingArea[3] > SettingsConst.BOARD_UNITS) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
-         this.position.y -= this.boundingArea[3] - SETTINGS.BOARD_UNITS;
+         this.position.y -= this.boundingArea[3] - SettingsConst.BOARD_UNITS;
          this.velocity.y = 0;
          physicsComponent.positionIsDirty = true;
       }
 
       // @Temporary
-      if (this.position.x < 0 || this.position.x >= SETTINGS.BOARD_UNITS || this.position.y < 0 || this.position.y >= SETTINGS.BOARD_UNITS) {
+      if (this.position.x < 0 || this.position.x >= SettingsConst.BOARD_UNITS || this.position.y < 0 || this.position.y >= SettingsConst.BOARD_UNITS) {
          console.log(this);
          throw new Error("Unable to properly resolve wall collisions.");
       }
@@ -1112,7 +1126,7 @@ class Entity<T extends IEntityType = IEntityType> {
       const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
       const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
       
-      const force = SETTINGS.ENTITY_PUSH_FORCE / SETTINGS.TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
+      const force = SettingsConst.ENTITY_PUSH_FORCE / SettingsConst.TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
       const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
       this.velocity.x += force * Math.sin(pushAngle);
       this.velocity.y += force * Math.cos(pushAngle);
@@ -1334,14 +1348,14 @@ class Entity<T extends IEntityType = IEntityType> {
 
    public turn(targetRotation: number, turnSpeed: number): void {
       if (this.shouldTurnClockwise(targetRotation)) {  
-         this.rotation += turnSpeed / SETTINGS.TPS;
+         this.rotation += turnSpeed / SettingsConst.TPS;
          if (!this.shouldTurnClockwise(targetRotation)) {
             this.rotation = targetRotation;
          } else if (this.rotation >= Math.PI * 2) {
             this.rotation -= Math.PI * 2;
          }
       } else {
-         this.rotation -= turnSpeed / SETTINGS.TPS
+         this.rotation -= turnSpeed / SettingsConst.TPS
          if (this.shouldTurnClockwise(targetRotation)) {
             this.rotation = targetRotation;
          } else if (this.rotation < 0) {

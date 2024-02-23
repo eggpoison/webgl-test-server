@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, SlimeSize, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimewispComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -55,7 +55,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
          // Continue merge
          if (slimewisp.isColliding(mergingSlimewisp) !== NO_COLLISION) {
             const slimewispComponent = SlimewispComponentArray.getComponent(slimewisp);
-            slimewispComponent.mergeTimer -= 1 / SETTINGS.TPS;
+            slimewispComponent.mergeTimer -= SettingsConst.I_TPS;
             if (slimewispComponent.mergeTimer <= 0 && !mergingSlimewisp.isRemoved) {
                // Create a slime between the two wisps
                const slimeSpawnPosition = new Point((slimewisp.position.x + mergingSlimewisp.position.x) / 2, (slimewisp.position.y + mergingSlimewisp.position.y) / 2);
@@ -83,8 +83,8 @@ export function tickSlimewisp(slimewisp: Entity): void {
          targetTile = getWanderTargetTile(slimewisp, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "swamp"));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       wander(slimewisp, x, y, ACCELERATION);
    } else {
       stopEntity(slimewisp);

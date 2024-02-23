@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, StatusEffectComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -14,8 +14,8 @@ import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow
 // @Cleanup: A lot of copy and paste from ballista.ts
 
 
-const COOLDOWN_TICKS = 1.5 * SETTINGS.TPS;
-const RELOAD_TIME_TICKS = Math.floor(0.4 * SETTINGS.TPS);
+const COOLDOWN_TICKS = 1.5 * SettingsConst.TPS;
+const RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS);
 const VISION_RANGE = 400;
 
 export function addSlingTurretHitboxes(entity: Entity): void {
@@ -104,9 +104,9 @@ export function tickSlingTurret(turret: Entity): void {
          // Turn to face the target
          const angleDiff = getAngleDiff(turretAimDirection, targetDirection);
          if (angleDiff < 0) {
-            slingTurretComponent.aimDirection -= Math.PI / SETTINGS.TPS;
+            slingTurretComponent.aimDirection -= Math.PI * SettingsConst.I_TPS;
          } else {
-            slingTurretComponent.aimDirection += Math.PI / SETTINGS.TPS;
+            slingTurretComponent.aimDirection += Math.PI * SettingsConst.I_TPS;
          }
 
          if (slingTurretComponent.fireCooldownTicks > 0) {

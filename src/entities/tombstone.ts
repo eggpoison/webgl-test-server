@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, StatusEffectConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { HealthComponentArray, StatusEffectComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
@@ -53,7 +53,7 @@ const generateZombieSpawnPosition = (tombstone: Entity): Point => {
       const y = tombstone.position.y + offsetMagnitude * Math.cos(angleFromTombstone);
    
       // Make sure the spawn position is valid
-      if (x < 0 || x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE || y < 0 || y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE) {
+      if (x < 0 || x >= SettingsConst.BOARD_UNITS || y < 0 || y >= SettingsConst.BOARD_UNITS) {
          seenIs.push(i);
          if (seenIs.length === 4) {
             return new Point(-1, -1);
@@ -81,7 +81,7 @@ export function tickTombstone(tombstone: Entity): void {
    if (Board.time > 6 && Board.time < 18) {
       const dayProgress = (Board.time - 6) / 12;
       const crumbleChance = Math.exp(dayProgress * 12 - 6);
-      if (Math.random() < crumbleChance / SETTINGS.TPS) {
+      if (Math.random() < crumbleChance * SettingsConst.I_TPS) {
          // Crumble
          tombstone.remove();
          return;
@@ -92,7 +92,7 @@ export function tickTombstone(tombstone: Entity): void {
 
    // Start zombie spawn
    if (tombstoneComponent.numZombies < MAX_SPAWNED_ZOMBIES && !tombstoneComponent.isSpawningZombie) {
-      if (Math.random() < ZOMBIE_SPAWN_RATE / SETTINGS.TPS) {
+      if (Math.random() < ZOMBIE_SPAWN_RATE * SettingsConst.I_TPS) {
          // Start spawning a zombie
          tombstoneComponent.isSpawningZombie = true;
          tombstoneComponent.zombieSpawnTimer = 0;
@@ -105,7 +105,7 @@ export function tickTombstone(tombstone: Entity): void {
 
    // Spawn zombies
    if (tombstoneComponent.isSpawningZombie) {
-      tombstoneComponent.zombieSpawnTimer += 1 / SETTINGS.TPS;
+      tombstoneComponent.zombieSpawnTimer += SettingsConst.I_TPS;
       if (tombstoneComponent.zombieSpawnTimer >= ZOMBIE_SPAWN_TIME) {
          spawnZombie(tombstone, tombstoneComponent);
       }

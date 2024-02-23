@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -57,10 +57,10 @@ export function createFish(position: Point): Entity {
 }
 
 const isValidWanderPosition = (x: number, y: number): boolean => {
-   const minTileX = Math.max(Math.floor((x - TILE_VALIDATION_PADDING) / SETTINGS.TILE_SIZE), 0);
-   const maxTileX = Math.min(Math.floor((x + TILE_VALIDATION_PADDING) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1);
-   const minTileY = Math.max(Math.floor((y - TILE_VALIDATION_PADDING) / SETTINGS.TILE_SIZE), 0);
-   const maxTileY = Math.min(Math.floor((y + TILE_VALIDATION_PADDING) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1);
+   const minTileX = Math.max(Math.floor((x - TILE_VALIDATION_PADDING) / SettingsConst.TILE_SIZE), 0);
+   const maxTileX = Math.min(Math.floor((x + TILE_VALIDATION_PADDING) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1);
+   const minTileY = Math.max(Math.floor((y - TILE_VALIDATION_PADDING) / SettingsConst.TILE_SIZE), 0);
+   const maxTileY = Math.min(Math.floor((y + TILE_VALIDATION_PADDING) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1);
 
    for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
       for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
@@ -91,7 +91,7 @@ const move = (fish: Entity, direction: number): void => {
       stopEntity(fish);
 
       const fishComponent = FishComponentArray.getComponent(fish);
-      if (customTickIntervalHasPassed(fishComponent.secondsOutOfWater * SETTINGS.TPS, LUNGE_INTERVAL)) {
+      if (customTickIntervalHasPassed(fishComponent.secondsOutOfWater * SettingsConst.TPS, LUNGE_INTERVAL)) {
          fish.velocity.x += LUNGE_FORCE * Math.sin(direction);
          fish.velocity.y += LUNGE_FORCE * Math.cos(direction);
          if (direction !== fish.rotation) {
@@ -121,8 +121,8 @@ export function tickFish(fish: Entity): void {
    const fishComponent = FishComponentArray.getComponent(fish);
 
    if (fish.tile.type !== TileTypeConst.water) {
-      fishComponent.secondsOutOfWater += 1 / SETTINGS.TPS;
-      if (fishComponent.secondsOutOfWater >= 5 && customTickIntervalHasPassed(fishComponent.secondsOutOfWater * SETTINGS.TPS, 1.5)) {
+      fishComponent.secondsOutOfWater += SettingsConst.I_TPS;
+      if (fishComponent.secondsOutOfWater >= 5 && customTickIntervalHasPassed(fishComponent.secondsOutOfWater * SettingsConst.TPS, 1.5)) {
          damageEntity(fish, 1, null, PlayerCauseOfDeath.lack_of_oxygen);
          SERVER.registerEntityHit({
             entityPositionX: fish.position.x,
@@ -201,7 +201,7 @@ export function tickFish(fish: Entity): void {
    
    // Flail on the ground when out of water
    if (fish.tile.type !== TileTypeConst.water) {
-      fishComponent.flailTimer += 1 / SETTINGS.TPS;
+      fishComponent.flailTimer += SettingsConst.I_TPS;
       if (fishComponent.flailTimer >= 0.75) {
          const flailDirection = 2 * Math.PI * Math.random();
    
@@ -220,7 +220,7 @@ export function tickFish(fish: Entity): void {
 
    // Escape AI
    const escapeAIComponent = EscapeAIComponentArray.getComponent(fish);
-   updateEscapeAIComponent(escapeAIComponent, 3 * SETTINGS.TPS);
+   updateEscapeAIComponent(escapeAIComponent, 3 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(fish, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
@@ -268,15 +268,15 @@ export function tickFish(fish: Entity): void {
       let x: number;
       let y: number;
       do {
-         x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+         x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+         y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       } while (!isValidWanderPosition(x, y));
 
       // Find a path which doesn't cross land
       attempts = 0;
       while (++attempts <= 10 && !tileRaytraceMatchesTileTypes(fish.position.x, fish.position.y, x, y, [TileTypeConst.water])) {
-         x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         y = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
+         x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+         y = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
       }
 
       if (attempts <= 10) {

@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintBuildingType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SETTINGS, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintBuildingType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
 import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -270,7 +270,7 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
    if (item !== null) {
       useInfo.itemAttackCooldowns[itemSlot] = getItemAttackCooldown(item);
    } else {
-      useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+      useInfo.itemAttackCooldowns[itemSlot] = SettingsConst.DEFAULT_ATTACK_COOLDOWN;
    }
 
    // @Incomplete: Should this instead be its own lastConstructTicks?
@@ -323,7 +323,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    if (item !== null) {
       useInfo.itemAttackCooldowns[itemSlot] = getItemAttackCooldown(item);
    } else {
-      useInfo.itemAttackCooldowns[itemSlot] = SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+      useInfo.itemAttackCooldowns[itemSlot] = SettingsConst.DEFAULT_ATTACK_COOLDOWN;
    }
 
    const attackDamage = calculateItemDamage(item, targetEntity);
@@ -346,7 +346,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
    });
 
    if (item !== null && item.type === ItemType.flesh_sword) {
-      applyStatusEffect(targetEntity, StatusEffectConst.poisoned, 3 * SETTINGS.TPS);
+      applyStatusEffect(targetEntity, StatusEffectConst.poisoned, 3 * SettingsConst.TPS);
    }
 
    useInfo.lastAttackTicks = Board.ticks;
@@ -460,8 +460,8 @@ export function calculateRadialAttackTargets(entity: Entity, attackOffset: numbe
 }
 
 const calculateRegularPlacePosition = (entity: Entity, placeInfo: PlaceableItemHitboxInfo): Point => {
-   const placePositionX = entity.position.x + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.sin(entity.rotation);
-   const placePositionY = entity.position.y + (SETTINGS.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.cos(entity.rotation);
+   const placePositionX = entity.position.x + (SettingsConst.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.sin(entity.rotation);
+   const placePositionY = entity.position.y + (SettingsConst.ITEM_PLACE_DISTANCE + placeInfo.placeOffset) * Math.cos(entity.rotation);
    return new Point(placePositionX, placePositionY);
 }
 
@@ -475,10 +475,10 @@ interface BuildingSnapInfo {
 export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitboxInfo): BuildingSnapInfo | null {
    const regularPlacePosition = calculateRegularPlacePosition(entity, placeInfo);
 
-   const minChunkX = Math.max(Math.floor((regularPlacePosition.x - SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkX = Math.min(Math.floor((regularPlacePosition.x + SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
-   const minChunkY = Math.max(Math.floor((regularPlacePosition.y - SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkY = Math.min(Math.floor((regularPlacePosition.y + SETTINGS.STRUCTURE_SNAP_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkX = Math.max(Math.floor((regularPlacePosition.x - SettingsConst.STRUCTURE_SNAP_RANGE) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((regularPlacePosition.x + SettingsConst.STRUCTURE_SNAP_RANGE) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((regularPlacePosition.y - SettingsConst.STRUCTURE_SNAP_RANGE) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((regularPlacePosition.y + SettingsConst.STRUCTURE_SNAP_RANGE) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
    
    const snappableEntities = new Array<Entity>();
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
@@ -486,7 +486,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
          const chunk = Board.getChunk(chunkX, chunkY);
          for (const currentEntity of chunk.entities) {
             const distance = regularPlacePosition.calculateDistanceBetween(currentEntity.position);
-            if (distance > SETTINGS.STRUCTURE_SNAP_RANGE) {
+            if (distance > SettingsConst.STRUCTURE_SNAP_RANGE) {
                continue;
             }
             
@@ -529,7 +529,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
          const x = snapOrigin.x + snapOffset * Math.sin(placeDirection);
          const y = snapOrigin.y + snapOffset * Math.cos(placeDirection);
          
-         if (distance(regularPlacePosition.x, regularPlacePosition.y, x, y) > SETTINGS.STRUCTURE_POSITION_SNAP) {
+         if (distance(regularPlacePosition.x, regularPlacePosition.y, x, y) > SettingsConst.STRUCTURE_POSITION_SNAP) {
             continue;
          }
 
@@ -541,7 +541,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
                const placeDirection = (snapEntity.rotation + direction + Math.PI) % (Math.PI * 2) - Math.PI;
                let angleDiff = placingEntityRotation - placeDirection;
                angleDiff = (angleDiff + Math.PI) % (Math.PI * 2) - Math.PI;
-               if (Math.abs(angleDiff) <= SETTINGS.STRUCTURE_ROTATION_SNAP) {
+               if (Math.abs(angleDiff) <= SettingsConst.STRUCTURE_ROTATION_SNAP) {
                   placeRotation = placeDirection;
                }
             }
@@ -606,10 +606,10 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
    const hitboxBoundsMinY = placeTestHitbox.calculateHitboxBoundsMinY();
    const hitboxBoundsMaxY = placeTestHitbox.calculateHitboxBoundsMaxY();
 
-   const minChunkX = Math.max(Math.min(Math.floor(hitboxBoundsMinX / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor(hitboxBoundsMaxX / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor(hitboxBoundsMinY / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor(hitboxBoundsMaxY / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.min(Math.floor(hitboxBoundsMinX / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor(hitboxBoundsMaxX / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor(hitboxBoundsMinY / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor(hitboxBoundsMaxY / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
    
    const previouslyCheckedEntityIDs = new Set<number>();
 
@@ -912,7 +912,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const spear = createSpearProjectile(new Point(x, y), tribeMember.id, item);
 
          const ticksSinceLastAction = Board.ticks - useInfo.lastSpearChargeTicks;
-         const secondsSinceLastAction = ticksSinceLastAction / SETTINGS.TPS;
+         const secondsSinceLastAction = ticksSinceLastAction / SettingsConst.TPS;
          const velocityMagnitude = lerp(1000, 1700, Math.min(secondsSinceLastAction / 3, 1));
 
          spear.velocity.x = velocityMagnitude * Math.sin(tribeMember.rotation);
@@ -939,7 +939,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const battleaxe = createBattleaxeProjectile(new Point(x, y), tribeMember.id, item);
 
          const ticksSinceLastAction = Board.ticks - useInfo.lastBattleaxeChargeTicks;
-         const secondsSinceLastAction = ticksSinceLastAction / SETTINGS.TPS;
+         const secondsSinceLastAction = ticksSinceLastAction / SettingsConst.TPS;
          const velocityMagnitude = lerp(600, 1100, Math.min(secondsSinceLastAction / 3, 1));
 
          battleaxe.velocity.x = velocityMagnitude * Math.sin(tribeMember.rotation);
@@ -1015,7 +1015,7 @@ export function pickupItemEntity(tribeMember: Entity, itemEntity: Entity): boole
 const tickInventoryUseInfo = (tribeMember: Entity, inventoryUseInfo: InventoryUseInfo): void => {
    switch (inventoryUseInfo.currentAction) {
       case TribeMemberAction.eat: {
-         inventoryUseInfo.foodEatingTimer -= 1 / SETTINGS.TPS;
+         inventoryUseInfo.foodEatingTimer -= SettingsConst.I_TPS;
    
          if (inventoryUseInfo.foodEatingTimer <= 0 && inventoryHasItemInSlot(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot)) {
             const selectedItem = getItemFromInventory(inventoryUseInfo.inventory, inventoryUseInfo.selectedItemSlot);
@@ -1033,9 +1033,9 @@ const tickInventoryUseInfo = (tribeMember: Entity, inventoryUseInfo: InventoryUs
       }
       case TribeMemberAction.loadCrossbow: {
          if (!inventoryUseInfo.crossbowLoadProgressRecord.hasOwnProperty(inventoryUseInfo.selectedItemSlot)) {
-            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] = 1 / SETTINGS.TPS;
+            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] = SettingsConst.I_TPS;
          } else {
-            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] += 1 / SETTINGS.TPS;
+            inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] += SettingsConst.I_TPS;
          }
          
          if (inventoryUseInfo.crossbowLoadProgressRecord[inventoryUseInfo.selectedItemSlot] >= 1) {

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { ItemComponentArray, PhysicsComponentArray } from "../components/ComponentArray";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
@@ -6,13 +6,13 @@ import { ItemComponent } from "../components/ItemComponent";
 import { PhysicsComponent } from "../components/PhysicsComponent";
 import { addFleshSword, removeFleshSword } from "../flesh-sword-ai";
 
-const TICKS_TO_DESPAWN = 300 * SETTINGS.TPS;
+const TICKS_TO_DESPAWN = 300 * SettingsConst.TPS;
 
 export function createItemEntity(position: Point, itemType: ItemType, amount: number, throwingEntityID: number = ID_SENTINEL_VALUE): Entity {
    const itemEntity = new Entity(position, IEntityType.itemEntity, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    itemEntity.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(itemEntity, 0.1, 0, 0, SETTINGS.ITEM_SIZE, SETTINGS.ITEM_SIZE, 0);
+   const hitbox = new RectangularHitbox(itemEntity, 0.1, 0, 0, SettingsConst.ITEM_SIZE, SettingsConst.ITEM_SIZE, 0);
    itemEntity.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(itemEntity, new PhysicsComponent(true));

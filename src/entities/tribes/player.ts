@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SETTINGS, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, pickupItemEntity, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
@@ -54,7 +54,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(player, inventoryComponent);
 
-   const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", SETTINGS.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
+   const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", SettingsConst.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
    inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
    createNewInventory(inventoryComponent, "craftingOutputSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "heldItemSlot", 1, 1, false);
@@ -82,10 +82,10 @@ export function tickPlayer(player: Entity): void {
    
    // Vacuum nearby items to the player
    // @Incomplete: Don't vacuum items which the player doesn't have the inventory space for
-   const minChunkX = Math.max(Math.floor((player.position.x - VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkX = Math.min(Math.floor((player.position.x + VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
-   const minChunkY = Math.max(Math.floor((player.position.y - VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkY = Math.min(Math.floor((player.position.y + VACUUM_RANGE) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkX = Math.max(Math.floor((player.position.x - VACUUM_RANGE) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((player.position.x + VACUUM_RANGE) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((player.position.y - VACUUM_RANGE) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((player.position.y + VACUUM_RANGE) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);

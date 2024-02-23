@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -46,7 +46,7 @@ export function tickKrumblid(krumblid: Entity): void {
    
    // Escape AI
    const escapeAIComponent = EscapeAIComponentArray.getComponent(krumblid);
-   updateEscapeAIComponent(escapeAIComponent, 5 * SETTINGS.TPS);
+   updateEscapeAIComponent(escapeAIComponent, 5 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(krumblid, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
@@ -88,8 +88,8 @@ export function tickKrumblid(krumblid: Entity): void {
          targetTile = getWanderTargetTile(krumblid, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "desert"));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       wander(krumblid, x, y, 200);
    } else {
       stopEntity(krumblid);

@@ -1,8 +1,8 @@
-import { DoorToggleType, SETTINGS, angle, lerp } from "webgl-test-shared";
+import { DoorToggleType, SettingsConst, angle, lerp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { DoorComponentArray } from "./ComponentArray";
 
-const DOOR_SWING_SPEED = 5 / SETTINGS.TPS;
+const DOOR_SWING_SPEED = 5 / SettingsConst.TPS;
 
 export class DoorComponent {
    public readonly originX: number;

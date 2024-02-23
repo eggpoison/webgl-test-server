@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { GolemComponentArray, HealthComponentArray, PebblumComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -22,11 +22,11 @@ const ROCK_MASSIVE_MASS = 2.25;
 
 const TARGET_ENTITY_FORGET_TIME = 20;
 
-export const GOLEM_WAKE_TIME_TICKS = Math.floor(2.5 * SETTINGS.TPS);
+export const GOLEM_WAKE_TIME_TICKS = Math.floor(2.5 * SettingsConst.TPS);
 
-const PEBBLUM_SUMMON_COOLDOWN_TICKS = 10 * SETTINGS.TPS;
+const PEBBLUM_SUMMON_COOLDOWN_TICKS = 10 * SettingsConst.TPS;
 
-const ROCK_SHIFT_INTERVAL = Math.floor(0.225 * SETTINGS.TPS);
+const ROCK_SHIFT_INTERVAL = Math.floor(0.225 * SettingsConst.TPS);
 
 const hitboxIsTooClose = (golem: Entity, hitboxX: number, hitboxY: number): boolean => {
    for (let j = 0; j < golem.hitboxes.length; j++) {
@@ -198,7 +198,7 @@ export function tickGolem(golem: Entity): void {
          continue;
       }
 
-      golemComponent.attackingEntities[targetID].timeSinceLastAggro += I_TPS;
+      golemComponent.attackingEntities[targetID].timeSinceLastAggro += SettingsConst.I_TPS;
       if (golemComponent.attackingEntities[targetID].timeSinceLastAggro >= TARGET_ENTITY_FORGET_TIME) {
          delete golemComponent.attackingEntities[targetID];
       }

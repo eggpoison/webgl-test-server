@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, SnowballSize, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SnowballSize, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { FrozenYetiComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -327,11 +327,11 @@ const duringRoar = (frozenYeti: Entity, targets: ReadonlyArray<Entity>): void =>
       const angle = frozenYeti.position.calculateAngleBetween(entity.position);
       const angleDifference = getAngleDifference(frozenYeti.rotation, angle);
       if (Math.abs(angleDifference) <= ROAR_ARC / 2) {
-         entity.velocity.x += 1500 / SETTINGS.TPS * Math.sin(angle);
-         entity.velocity.y += 1500 / SETTINGS.TPS * Math.cos(angle);
+         entity.velocity.x += 1500 / SettingsConst.TPS * Math.sin(angle);
+         entity.velocity.y += 1500 / SettingsConst.TPS * Math.cos(angle);
 
          if (StatusEffectComponentArray.hasComponent(entity)) {
-            applyStatusEffect(entity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+            applyStatusEffect(entity, StatusEffectConst.freezing, 5 * SettingsConst.TPS);
          }
       }
    }
@@ -361,7 +361,7 @@ const doBiteAttack = (frozenYeti: Entity, angleToTarget: number): void => {
             });
 
             if (StatusEffectComponentArray.hasComponent(hitEntity)) {
-               applyStatusEffect(hitEntity, StatusEffectConst.bleeding, 5 * SETTINGS.TPS);
+               applyStatusEffect(hitEntity, StatusEffectConst.bleeding, 5 * SettingsConst.TPS);
             }
          }
       }
@@ -381,7 +381,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
          continue;
       }
 
-      frozenYetiComponent.attackingEntities[targetID].timeSinceLastAggro += I_TPS;
+      frozenYetiComponent.attackingEntities[targetID].timeSinceLastAggro += SettingsConst.I_TPS;
       if (frozenYetiComponent.attackingEntities[targetID].timeSinceLastAggro >= TARGET_ENTITY_FORGET_TIME) {
          delete frozenYetiComponent.attackingEntities[targetID];
       }
@@ -417,8 +417,8 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
             targetTile = getWanderTargetTile(frozenYeti, VISION_RANGE);
          } while (++attempts <= 50 && (targetTile.isWall || targetTile.type !== TileTypeConst.fimbultur));
 
-         const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+         const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+         const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
          wander(frozenYeti, x, y, SLOW_ACCELERATION)
       } else {
          stopEntity(frozenYeti);
@@ -427,23 +427,23 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
       return;
    }
 
-   frozenYetiComponent.globalAttackCooldownTimer -= 1 / SETTINGS.TPS;
+   frozenYetiComponent.globalAttackCooldownTimer -= SettingsConst.I_TPS;
    if (frozenYetiComponent.globalAttackCooldownTimer < 0) {
       frozenYetiComponent.globalAttackCooldownTimer = 0;
    }
-   frozenYetiComponent.snowballThrowCooldownTimer -= 1 / SETTINGS.TPS;
+   frozenYetiComponent.snowballThrowCooldownTimer -= SettingsConst.I_TPS;
    if (frozenYetiComponent.snowballThrowCooldownTimer < 0) {
       frozenYetiComponent.snowballThrowCooldownTimer = 0;
    }
-   frozenYetiComponent.roarCooldownTimer -= 1 / SETTINGS.TPS;
+   frozenYetiComponent.roarCooldownTimer -= SettingsConst.I_TPS;
    if (frozenYetiComponent.roarCooldownTimer < 0) {
       frozenYetiComponent.roarCooldownTimer = 0;
    }
-   frozenYetiComponent.biteCooldownTimer -= 1 / SETTINGS.TPS;
+   frozenYetiComponent.biteCooldownTimer -= SettingsConst.I_TPS;
    if (frozenYetiComponent.biteCooldownTimer < 0) {
       frozenYetiComponent.biteCooldownTimer = 0;
    }
-   frozenYetiComponent.stompCooldownTimer -= 1 / SETTINGS.TPS;
+   frozenYetiComponent.stompCooldownTimer -= SettingsConst.I_TPS;
    if (frozenYetiComponent.stompCooldownTimer < 0) {
       frozenYetiComponent.stompCooldownTimer = 0;
    }
@@ -503,7 +503,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
                   frozenYetiComponent.rockSpikeInfoArray = generateRockSpikeAttackInfo(frozenYeti, targets);
                }
                
-               frozenYetiComponent.stageProgress += 0.75 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 0.75 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                if (frozenYetiComponent.stageProgress === 0) {
                   createRockSpikes(frozenYeti.id, frozenYetiComponent);
@@ -512,12 +512,12 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
             }
             // Stomp
             case 1: {
-               frozenYetiComponent.stageProgress += 2 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 2 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
             }
             // Daze
             case 2: {
-               frozenYetiComponent.stageProgress += 2 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 2 / SettingsConst.TPS;
                clearAttack(frozenYetiComponent);
                if (frozenYetiComponent.stageProgress === 0) {
                   frozenYetiComponent.stompCooldownTimer = FROZEN_YETI_STOMP_COOLDOWN;
@@ -537,13 +537,13 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
             case 0: {
                frozenYeti.turn(angleToTarget, 0.9);
                
-               frozenYetiComponent.stageProgress += 0.55 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 0.55 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                break;
             }
             // Throw
             case 1: {
-               frozenYetiComponent.stageProgress += 3 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 3 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                if (frozenYetiComponent.stageProgress === 0) {
                   throwSnow(frozenYeti);
@@ -552,7 +552,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
             }
             // Wind down
             case 2: {
-               frozenYetiComponent.stageProgress += 2 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 2 / SettingsConst.TPS;
                clearAttack(frozenYetiComponent);
                if (frozenYetiComponent.stageProgress === 0) {
                   frozenYetiComponent.snowballThrowCooldownTimer = FROZEN_YETI_SNOWBALL_THROW_COOLDOWN
@@ -574,7 +574,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
                // Track target
                frozenYeti.turn(angleToTarget, 0.9);
 
-               frozenYetiComponent.stageProgress += 0.5 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 0.5 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                break;
             }
@@ -585,7 +585,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
 
                duringRoar(frozenYeti, targets);
                
-               frozenYetiComponent.stageProgress += 0.5 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 0.5 / SettingsConst.TPS;
                clearAttack(frozenYetiComponent);
                if (frozenYetiComponent.stageProgress === 0) {
                   frozenYetiComponent.roarCooldownTimer = FROZEN_YETI_ROAR_COOLDOWN;
@@ -606,7 +606,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
                frozenYeti.acceleration.y = 0;
                frozenYeti.turn(angleToTarget, 0.9);
 
-               frozenYetiComponent.stageProgress += 1.15 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 1.15 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                break;
             }
@@ -621,7 +621,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
                   frozenYeti.velocity.y += 450 * Math.cos(frozenYeti.rotation);
                }
 
-               frozenYetiComponent.stageProgress += 2 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 2 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                if (frozenYetiComponent.stageProgress === 0) {
                   frozenYetiComponent.biteCooldownTimer = FROZEN_YETI_BITE_COOLDOWN;
@@ -636,7 +636,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
                frozenYeti.acceleration.y = ACCELERATION * Math.cos(angleToTarget);
                frozenYeti.turn(angleToTarget, 1.3);
 
-               frozenYetiComponent.stageProgress += 2.5 / SETTINGS.TPS;
+               frozenYetiComponent.stageProgress += 2.5 / SettingsConst.TPS;
                clearAttack(frozenYetiComponent);
             }
          }

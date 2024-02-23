@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, IceShardComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -25,7 +25,7 @@ export function createIceShard(position: Point, moveDirection: number): Entity {
 
 export function tickIceShard(iceShard: Entity): void {
    const iceShardComponent = IceShardComponentArray.getComponent(iceShard);
-   if (iceShard.ageTicks / SETTINGS.TPS >= iceShardComponent.lifetime) {
+   if (iceShard.ageTicks / SettingsConst.TPS >= iceShardComponent.lifetime) {
       iceShard.remove();
    }
 }
@@ -64,7 +64,7 @@ export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): 
       addLocalInvulnerabilityHash(healthComponent, "ice_shards", 0.3);
 
       if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SETTINGS.TPS);
+         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SettingsConst.TPS);
       }
    }
 }

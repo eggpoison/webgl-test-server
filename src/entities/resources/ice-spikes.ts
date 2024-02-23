@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, IceSpikesComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -12,7 +12,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 
 const ICE_SPIKE_RADIUS = 40;
 
-const TICKS_TO_GROW = 1/5 * SETTINGS.TPS;
+const TICKS_TO_GROW = 1/5 * SettingsConst.TPS;
 const GROWTH_TICK_CHANCE = 0.5;
 const GROWTH_OFFSET = 60;
 
@@ -72,7 +72,7 @@ const grow = (iceSpikes: Entity): void => {
 export function tickIceSpikes(iceSpikes: Entity): void {
    const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
 
-   if (canGrow(iceSpikesComponent) && Math.random() < GROWTH_TICK_CHANCE / SETTINGS.TPS) {
+   if (canGrow(iceSpikesComponent) && Math.random() < GROWTH_TICK_CHANCE / SettingsConst.TPS) {
       iceSpikesComponent.iceSpikeGrowProgressTicks++;
       if (iceSpikesComponent.iceSpikeGrowProgressTicks >= TICKS_TO_GROW) {
          grow(iceSpikes);
@@ -105,7 +105,7 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
          addLocalInvulnerabilityHash(healthComponent, "ice_spikes", 0.3);
    
          if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-            applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+            applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 5 * SettingsConst.TPS);
          }
       }
    }

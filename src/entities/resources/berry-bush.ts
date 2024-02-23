@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BerryBushComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -35,7 +35,7 @@ export function tickBerryBush(berryBush: Entity): void {
       return;
    }
 
-   berryBushComponent.berryGrowTimer += 1 / SETTINGS.TPS;
+   berryBushComponent.berryGrowTimer += SettingsConst.I_TPS;
    if (berryBushComponent.berryGrowTimer >= BERRY_GROW_TIME) {
       // Grow a new berry
       berryBushComponent.berryGrowTimer = 0;

@@ -1,4 +1,4 @@
-import { Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SETTINGS, WaterRockData, clampToBoardDimensions, lerp } from "webgl-test-shared";
+import { Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, RiverSteppingStoneSize, SettingsConst, WaterRockData, clampToBoardDimensions, lerp } from "webgl-test-shared";
 import { TileCoordinates } from "../Tile";
 import { generateOctavePerlinNoise } from "../perlin-noise";
 import Board from "../Board";
@@ -25,7 +25,7 @@ const NEIGHBOUR_TILE_OFFSETS: ReadonlyArray<[xOffset: number, yOffset: number]> 
 ];
 
 /** Amount of tiles of padding around the edge of the border */
-const BORDER_PADDING = SETTINGS.EDGE_GENERATION_DISTANCE + 5;
+const BORDER_PADDING = SettingsConst.EDGE_GENERATION_DISTANCE + 5;
 
 export interface WaterTileGenerationInfo {
    readonly tileX: number;
@@ -37,12 +37,12 @@ export function generateRiverTiles(): ReadonlyArray<WaterTileGenerationInfo> {
    const rootTiles = new Array<WaterTileGenerationInfo>();
 
    for (let i = 0; i < NUM_RIVERS; i++) {
-      const riverNoise = generateOctavePerlinNoise(SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING * 2, SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING * 2, 200, 5, 2, 0.5);
+      const riverNoise = generateOctavePerlinNoise(SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING * 2, SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING * 2, 200, 5, 2, 0.5);
 
       let maxWeight = -1;
       let currentTileCoordinates!: TileCoordinates;
-      for (let x = 0; x < SETTINGS.BOARD_DIMENSIONS; x++) {
-         for (let y = 0; y < SETTINGS.BOARD_DIMENSIONS; y++) {
+      for (let x = 0; x < SettingsConst.BOARD_DIMENSIONS; x++) {
+         for (let y = 0; y < SettingsConst.BOARD_DIMENSIONS; y++) {
             const weight = riverNoise[x + BORDER_PADDING][y + BORDER_PADDING];
             if (weight > maxWeight) {
                maxWeight = weight;
@@ -62,7 +62,7 @@ export function generateRiverTiles(): ReadonlyArray<WaterTileGenerationInfo> {
          for (const offset of NEIGHBOUR_TILE_OFFSETS) {
             const tileX = currentTileCoordinates.x + offset[0];
             const tileY = currentTileCoordinates.y + offset[1];
-            if (tileX < -BORDER_PADDING || tileX >= SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING || tileY < -BORDER_PADDING || tileY >= SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING) {
+            if (tileX < -BORDER_PADDING || tileX >= SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING || tileY < -BORDER_PADDING || tileY >= SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING) {
                continue;
             }
             const weight = riverNoise[tileX + BORDER_PADDING][tileY + BORDER_PADDING];
@@ -113,20 +113,20 @@ export function generateRiverTiles(): ReadonlyArray<WaterTileGenerationInfo> {
          minTileX = -BORDER_PADDING;
       }
       let maxTileX = rootTile.tileX + 1;
-      if (maxTileX >= SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING) {
-         maxTileX = SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING - 1;
+      if (maxTileX >= SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING) {
+         maxTileX = SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING - 1;
       }
       let minTileY = rootTile.tileY - 1;
       if (minTileY < -BORDER_PADDING) {
          minTileY = -BORDER_PADDING;
       }
       let maxTileY = rootTile.tileY + 1;
-      if (maxTileY >= SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING) {
-         maxTileY = SETTINGS.BOARD_DIMENSIONS + BORDER_PADDING - 1;
+      if (maxTileY >= SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING) {
+         maxTileY = SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING - 1;
       }
       for (let x = minTileX; x <= maxTileX; x++) {
          outerLoop: for (let y = minTileY; y <= maxTileY; y++) {
-            if (x < -SETTINGS.EDGE_GENERATION_DISTANCE || x >= SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE || y < -SETTINGS.EDGE_GENERATION_DISTANCE || y >= SETTINGS.BOARD_DIMENSIONS + SETTINGS.EDGE_GENERATION_DISTANCE) {
+            if (x < -SettingsConst.EDGE_GENERATION_DISTANCE || x >= SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE || y < -SettingsConst.EDGE_GENERATION_DISTANCE || y >= SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE) {
                continue;
             }
             
@@ -265,8 +265,8 @@ export function generateRiverFeatures(riverTiles: ReadonlyArray<WaterTileGenerat
    // Generate random water rocks throughout all river tiles
    for (const tile of riverTiles) {
       if (SRandom.next() < 0.075) {
-         const x = (tile.tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
-         const y = (tile.tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
+         const x = (tile.tileX + SRandom.next()) * SettingsConst.TILE_SIZE;
+         const y = (tile.tileY + SRandom.next()) * SettingsConst.TILE_SIZE;
          waterRocks.push({
             position: [x, y],
             rotation: 2 * Math.PI * SRandom.next(),
@@ -289,7 +289,7 @@ export function generateRiverFeatures(riverTiles: ReadonlyArray<WaterTileGenerat
       // Make sure the crossing isn't too close to another crossing
       for (const otherCrossing of riverCrossings) {
          const dist = Math.sqrt(Math.pow(crossingInfo.startTileX - otherCrossing.startTileX, 2) + Math.pow(crossingInfo.startTileY - otherCrossing.startTileY, 2));
-         if (dist < MIN_CROSSING_DISTANCE / SETTINGS.TILE_SIZE) {
+         if (dist < MIN_CROSSING_DISTANCE / SettingsConst.TILE_SIZE) {
             continue mainLoop;
          }
       }
@@ -300,10 +300,10 @@ export function generateRiverFeatures(riverTiles: ReadonlyArray<WaterTileGenerat
    // Generate features for the crossings
    let currentCrossingGroupID = 0;
    for (const crossing of riverCrossings) {
-      const minX = (crossing.startTileX + 0.5) * SETTINGS.TILE_SIZE;
-      const maxX = (crossing.endTileX + 0.5) * SETTINGS.TILE_SIZE;
-      const minY = (crossing.startTileY + 0.5) * SETTINGS.TILE_SIZE;
-      const maxY = (crossing.endTileY + 0.5) * SETTINGS.TILE_SIZE;
+      const minX = (crossing.startTileX + 0.5) * SettingsConst.TILE_SIZE;
+      const maxX = (crossing.endTileX + 0.5) * SettingsConst.TILE_SIZE;
+      const minY = (crossing.startTileY + 0.5) * SettingsConst.TILE_SIZE;
+      const maxY = (crossing.endTileY + 0.5) * SettingsConst.TILE_SIZE;
 
       const localCrossingStones = new Array<RiverSteppingStoneData>();
 
@@ -320,13 +320,13 @@ export function generateRiverFeatures(riverTiles: ReadonlyArray<WaterTileGenerat
          y += RIVER_CROSSING_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
          // Don't create stepping stones which would be outside the world
-         if (x < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || x >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE) {
+         if (x < -SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || x >= SettingsConst.BOARD_UNITS + SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || y < -SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || y >= SettingsConst.BOARD_UNITS + SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE) {
             continue;
          }
 
          // Only spawn stepping stones on water
-         const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
-         const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
+         const tileX = Math.floor(x / SettingsConst.TILE_SIZE);
+         const tileY = Math.floor(y / SettingsConst.TILE_SIZE);
          if (!tileIsWater(tileX, tileY, riverTiles)) {
             continue;
          }
@@ -372,13 +372,13 @@ export function generateRiverFeatures(riverTiles: ReadonlyArray<WaterTileGenerat
          y += RIVER_CROSSING_WATER_ROCK_WIDTH/2 * Math.cos(crossing.direction + Math.PI/2) * offsetMultiplier;
 
          // Don't create water rocks outside the world
-         if (x < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || x >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y < -SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE || y >= SETTINGS.BOARD_UNITS + SETTINGS.EDGE_GENERATION_DISTANCE * SETTINGS.TILE_SIZE) {
+         if (x < -SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || x >= SettingsConst.BOARD_UNITS + SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || y < -SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE || y >= SettingsConst.BOARD_UNITS + SettingsConst.EDGE_GENERATION_DISTANCE * SettingsConst.TILE_SIZE) {
             continue;
          }
 
          // Only generate water rocks in water
-         const tileX = Math.floor(x / SETTINGS.TILE_SIZE);
-         const tileY = Math.floor(y / SETTINGS.TILE_SIZE);
+         const tileX = Math.floor(x / SettingsConst.TILE_SIZE);
+         const tileY = Math.floor(y / SettingsConst.TILE_SIZE);
          if (!tileIsWater(tileX, tileY, riverTiles)) {
             continue;
          }

@@ -1,4 +1,4 @@
-import { SETTINGS } from "webgl-test-shared";
+import { SettingsConst } from "webgl-test-shared";
 import Board from "../Board";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { moveEntityToPosition } from "../ai-shared";
@@ -31,7 +31,7 @@ export function updateFollowAIComponent(entity: Entity, visibleEntities: Readonl
          return;
       }
       
-      followAIComponent.interestTimer += 1 / SETTINGS.TPS;
+      followAIComponent.interestTimer += SettingsConst.I_TPS;
       if (followAIComponent.interestTimer >= interestDuration) {
          followAIComponent.followTargetID = ID_SENTINEL_VALUE;
       }

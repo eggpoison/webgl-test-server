@@ -1,10 +1,10 @@
-import { RESEARCH_ORB_AMOUNTS, RESEARCH_ORB_COMPLETE_TIME, SETTINGS, getRandomResearchOrbSize } from "webgl-test-shared";
+import { RESEARCH_ORB_AMOUNTS, RESEARCH_ORB_COMPLETE_TIME, SettingsConst, getRandomResearchOrbSize } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { InventoryUseComponentArray, ResearchBenchComponentArray, TribeComponentArray, TribesmanComponentArray } from "./ComponentArray";
 import Board from "../Board";
 import { getInventoryUseInfo } from "./InventoryUseComponent";
 
-const ORB_COMPLETE_TICKS = Math.floor(RESEARCH_ORB_COMPLETE_TIME * SETTINGS.TPS);
+const ORB_COMPLETE_TICKS = Math.floor(RESEARCH_ORB_COMPLETE_TIME * SettingsConst.TPS);
 
 export class ResearchBenchComponent {
    public isOccupied = false;

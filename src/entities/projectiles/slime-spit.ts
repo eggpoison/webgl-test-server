@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityInfo, IEntityType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityInfo, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -56,7 +56,7 @@ export function onSlimeSpitCollision(spit: Entity, collidingEntity: Entity): voi
    });
    
    if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-      applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 2 * SETTINGS.TPS);
+      applyStatusEffect(collidingEntity, StatusEffectConst.poisoned, 2 * SettingsConst.TPS);
    }
 
    spit.remove();

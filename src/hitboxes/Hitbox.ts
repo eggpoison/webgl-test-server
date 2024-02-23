@@ -16,6 +16,7 @@ abstract class Hitbox {
    public rotatedOffsetX!: number;
    public rotatedOffsetY!: number;
 
+   // @Memory: Would be great to remove this
    public chunkBounds: HitboxBounds = [-1, -1, -1, -1];
 
    constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, localID: number) {
