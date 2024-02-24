@@ -302,7 +302,7 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
  * @param targetEntity The entity to attack
  * @param itemSlot The item slot being used to attack the entity
  */
-// @Cleanup: Pass in the item to use directly instead of passing in the item slot and inventory name
+// @Cleanup: (?) Pass in the item to use directly instead of passing in the item slot and inventory name
 // @Cleanup: Not just for tribe members, move to different file
 export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
    const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
@@ -593,6 +593,7 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
       // Rectangular
       testRectangularHitbox.width = testHitboxInfo.width;
       testRectangularHitbox.height = testHitboxInfo.height;
+      // @Incomplete(?): Do we need to update vertices and axes?
       placeTestHitbox = testRectangularHitbox;
    }
 

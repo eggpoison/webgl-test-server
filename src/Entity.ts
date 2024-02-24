@@ -72,7 +72,7 @@ const entityHasHardCollision = (entity: Entity): boolean => {
    return entity.type === IEntityType.woodenWall || entity.type === IEntityType.woodenEmbrasure;
 }
 
-// @Cleanup
+// @Cleanup: Copy and pasted from shared repo
 
 const findMinWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offsetY: number, axis: Point): number => {
    const firstVertex = vertices[0];
@@ -618,6 +618,7 @@ class Entity<T extends IEntityType = IEntityType> {
       
       Entity.rectangularTestHitbox.width = SettingsConst.TILE_SIZE;
       Entity.rectangularTestHitbox.height = SettingsConst.TILE_SIZE;
+      // @Incomplete(?): Do we need to update vertices and axes?
       Entity.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SettingsConst.TILE_SIZE;
       Entity.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SettingsConst.TILE_SIZE;
 
@@ -1158,6 +1159,7 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       // @Cleanup @Speed: Figure out something better than this hardcoded bullshit
+      // Root of the problem: This relationship between arrows and friendly buildings (POSSIBLY) isn't able to be expressed in the collision mask system
       if (entity.type === IEntityType.woodenArrowProjectile && getTribeMemberRelationship(TribeComponentArray.getComponent(entity), this) === EntityRelationship.friendlyBuilding) {
          const arrowComponent = ArrowComponentArray.getComponent(entity);
          if (arrowComponent.ignoreFriendlyBuildings) {
@@ -1248,7 +1250,8 @@ class Entity<T extends IEntityType = IEntityType> {
             maxDist += (hitbox as CircularHitbox).radius;
          } else {
             // Rectangular hitbox
-            maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
+            // @Speed
+            maxDist += Math.sqrt((hitbox as RectangularHitbox).width * (hitbox as RectangularHitbox).width / 4 + (hitbox as RectangularHitbox).height * (hitbox as RectangularHitbox).height / 4);
          }
       }
 
@@ -1259,7 +1262,8 @@ class Entity<T extends IEntityType = IEntityType> {
             maxDist += (hitbox as CircularHitbox).radius;
          } else {
             // Rectangular hitbox
-            maxDist += (hitbox as RectangularHitbox).halfDiagonalLength;
+            // @Speed
+            maxDist += Math.sqrt((hitbox as RectangularHitbox).width * (hitbox as RectangularHitbox).width / 4 + (hitbox as RectangularHitbox).height * (hitbox as RectangularHitbox).height / 4);
          }
       }
 

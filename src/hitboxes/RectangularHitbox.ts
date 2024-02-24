@@ -1,4 +1,4 @@
-import { circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { circleAndRectangleDoIntersect, HitboxVertexPositions, Point, rectanglePointsDoIntersect } from "webgl-test-shared";
 import Hitbox, { HitboxObject } from "./Hitbox";
 import CircularHitbox from "./CircularHitbox";
 
@@ -6,9 +6,6 @@ class RectangularHitbox extends Hitbox {
    public width: number;
    public height: number;
    
-   /** Length of half of the diagonal of the rectangle */
-   public halfDiagonalLength!: number;
-
    /** The rotation of the hitbox relative to its game object */
    public rotation = 0;
 
@@ -23,12 +20,7 @@ class RectangularHitbox extends Hitbox {
 
       this.width = width;
       this.height = height;
-      this.updateHalfDiagonalLength();
       this.updateVertexPositionsAndSideAxes();
-   }
-
-   public updateHalfDiagonalLength(): void {
-      this.halfDiagonalLength = Math.sqrt(this.width * this.width / 4 + this.height * this.height / 4);
    }
 
    public updateVertexPositionsAndSideAxes(): void {
@@ -81,9 +73,17 @@ class RectangularHitbox extends Hitbox {
          return circleAndRectangleDoIntersect(otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, (otherHitbox as CircularHitbox).radius, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, this.width, this.height, this.rotation + this.object.rotation);
       } else {
          // Rectangular hitbox
-         // If the distance between the entities is greater than the sum of their half diagonals then they're not colliding
-         const distanceSquared = Math.pow(this.object.position.x + this.rotatedOffsetX - otherHitbox.object.position.x - otherHitbox.rotatedOffsetX, 2) + Math.pow(this.object.position.y + this.rotatedOffsetY - otherHitbox.object.position.y - otherHitbox.rotatedOffsetY, 2);
-         if (distanceSquared > Math.pow(this.halfDiagonalLength + (otherHitbox as RectangularHitbox).halfDiagonalLength, 2)) {
+
+         const diffX = this.object.position.x + this.rotatedOffsetX - otherHitbox.object.position.x - otherHitbox.rotatedOffsetX;
+         const diffY = this.object.position.y + this.rotatedOffsetY - otherHitbox.object.position.y - otherHitbox.rotatedOffsetY;
+         
+         const width1Squared = this.width * this.width;
+         const height1Squared = this.height * this.height;
+         const width2Squared = (otherHitbox as RectangularHitbox).width * (otherHitbox as RectangularHitbox).width;
+         const height2Squared = (otherHitbox as RectangularHitbox).height * (otherHitbox as RectangularHitbox).height;
+
+         // If the distance between the entities is greater than the sum of their half diagonals then they can never collide
+         if (diffX * diffX + diffY * diffY > (width1Squared + height1Squared + width2Squared + height2Squared + 2 * Math.sqrt((width1Squared + height1Squared) * (width2Squared + height2Squared))) * 0.25) {
             return false;
          }
          

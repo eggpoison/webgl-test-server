@@ -257,11 +257,8 @@ class Tribe {
          hutComponent.lastDoorSwingTicks = Board.ticks;
       }
       
-      // @Speed: garbage
       // Offset the spawn position so the tribesman comes out of the correct side of the hut
-      const position = hut.position.copy();
-      const offset = Point.fromVectorForm(10, hut.rotation);
-      position.add(offset);
+      const position = new Point(hut.position.x + 10 * Math.sin(hut.rotation), hut.position.y + 10 * Math.cos(hut.rotation));
       
       let tribesman: Entity;
       if (hut.type === IEntityType.workerHut) {
@@ -269,6 +266,7 @@ class Tribe {
       } else {
          tribesman = createTribeWarrior(position, this, hut.id);
       }
+      // @Incomplete: Will make hitboxes dirty!!
       tribesman.rotation = hut.rotation;
 
       this.members.push(tribesman);
