@@ -1,9 +1,9 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FrozenYetiAttackType, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SnowballSize, StatusEffectConst, TileTypeConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { FrozenYetiComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
-import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
+import { FrozenYetiComponentArray, HealthComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { StatusEffectComponent, StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { FrozenYetiComponent } from "../../components/FrozenYetiComponent";
@@ -15,7 +15,7 @@ import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { ROCK_SPIKE_HITBOX_SIZES, createRockSpikeProjectile } from "../projectiles/rock-spike";
 import { createSnowball } from "../snowball";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { wasTribeMemberKill } from "../tribes/tribe-member";
 
 const FROZEN_YETI_SIZE = 144;
@@ -348,7 +348,7 @@ const doBiteAttack = (frozenYeti: Entity, angleToTarget: number): void => {
          if (HealthComponentArray.hasComponent(hitEntity)) {
             damageEntity(hitEntity, 3, frozenYeti, PlayerCauseOfDeath.frozen_yeti);
             // @Incomplete
-            applyHitKnockback(hitEntity, 200, angleToTarget);
+            applyKnockback(hitEntity, 200, angleToTarget);
             SERVER.registerEntityHit({
                entityPositionX: hitEntity.position.x,
                entityPositionY: hitEntity.position.y,
@@ -676,7 +676,7 @@ export function onFrozenYetiCollision(frozenYeti: Entity, collidingEntity: Entit
       const hitDirection = frozenYeti.position.calculateAngleBetween(collidingEntity.position);
 
       damageEntity(collidingEntity, 5, frozenYeti, PlayerCauseOfDeath.yeti, "frozen_yeti");
-      applyHitKnockback(collidingEntity, 250, hitDirection);
+      applyKnockback(collidingEntity, 250, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,

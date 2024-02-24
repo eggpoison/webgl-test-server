@@ -1,6 +1,6 @@
-import { IEntityType, SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
+import { SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
 import Entity from "../Entity";
-import { PhysicsComponentArray } from "./ComponentArray";
+import { ComponentArray } from "./ComponentArray";
 
 // @Cleanup: Variable names
 const a = new Array<number>();
@@ -25,6 +25,8 @@ export class PhysicsComponent {
       this.isAffectedByFriction = isAffectedByFriction;
    }
 }
+
+export const PhysicsComponentArray = new ComponentArray<PhysicsComponent>();
 
 const applyPhysics = (entity: Entity): void => {
    // @Speed: There are a whole bunch of conditions in here which rely on physicsComponent.isAffectedByFriction,
@@ -136,4 +138,14 @@ const updatePosition = (entity: Entity): void => {
 export function tickPhysicsComponent(entity: Entity): void {
    applyPhysics(entity);
    updatePosition(entity);
+}
+
+export function applyKnockback(entity: Entity, knockback: number, knockbackDirection: number): void {
+   if (!PhysicsComponentArray.hasComponent(entity)) {
+      return;
+   }
+   
+   const knockbackForce = knockback / entity.totalMass;
+   entity.velocity.x += knockbackForce * Math.sin(knockbackDirection);
+   entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
 }

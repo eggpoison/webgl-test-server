@@ -1,12 +1,13 @@
 import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { CactusComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { CactusComponentArray, HealthComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { CactusComponent } from "../../components/CactusComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
+import { applyKnockback } from "../../components/PhysicsComponent";
 
 const RADIUS = 40;
 /** Amount the hitbox is brought in. */
@@ -110,7 +111,7 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
    const hitDirection = cactus.position.calculateAngleBetween(collidingEntity.position);
 
    damageEntity(collidingEntity, 1, cactus, PlayerCauseOfDeath.cactus, "cactus");
-   applyHitKnockback(collidingEntity, 200, hitDirection);
+   applyKnockback(collidingEntity, 200, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,

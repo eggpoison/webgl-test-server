@@ -3,8 +3,9 @@ import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, RockSpikeProjectileComponentArray } from "../../components/ComponentArray";
 import { RockSpikeProjectileComponent } from "../../components/RockSpikeProjectileComponent";
-import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { SERVER } from "../../server";
+import { applyKnockback } from "../../components/PhysicsComponent";
 
 export const ROCK_SPIKE_HITBOX_SIZES = [12 * 2, 16 * 2, 20 * 2];
 export const ROCK_SPIKE_MASSES = [1, 1.75, 2.5];
@@ -48,7 +49,7 @@ export function onRockSpikeProjectileCollision(rockSpikeProjectile: Entity, coll
       const hitDirection = rockSpikeProjectile.position.calculateAngleBetween(collidingEntity.position);
       
       damageEntity(collidingEntity, 5, null, PlayerCauseOfDeath.rock_spike, "rock_spike");
-      applyHitKnockback(collidingEntity, 200, hitDirection);
+      applyKnockback(collidingEntity, 200, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,

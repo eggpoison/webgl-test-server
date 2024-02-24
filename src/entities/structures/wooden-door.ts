@@ -1,8 +1,8 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { DoorComponentArray, HealthComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { DoorComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import Tribe from "../../Tribe";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { DoorComponent } from "../../components/DoorComponent";

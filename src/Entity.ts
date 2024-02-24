@@ -18,7 +18,7 @@ import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
 import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
 import { onFishDeath } from "./entities/mobs/fish";
-import { ArrowComponentArray, DoorComponentArray, PhysicsComponentArray, TribeComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, DoorComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
@@ -36,6 +36,7 @@ import { onWoodenSpikesCollision } from "./entities/structures/wooden-floor-spik
 import { onPunjiSticksCollision } from "./entities/structures/floor-punji-sticks";
 import { AIHelperComponentArray } from "./components/AIHelperComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "./components/TribeComponent";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 export const ID_SENTINEL_VALUE = 99999999;
 

@@ -1,16 +1,16 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { GolemComponentArray, HealthComponentArray, PebblumComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { GolemComponentArray, HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { GolemComponent } from "../../components/GolemComponent";
 import Board from "../../Board";
 import { stopEntity } from "../../ai-shared";
 import { createPebblum } from "./pebblum";
 import { SERVER } from "../../server";
 import { createItemsOverEntity } from "../../entity-shared";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 export const BODY_GENERATION_RADIUS = 55;
 
@@ -301,7 +301,7 @@ export function onGolemCollision(golem: Entity, collidingEntity: Entity): void {
    const hitDirection = golem.position.calculateAngleBetween(collidingEntity.position);
    // @Incomplete: Cause of death
    damageEntity(collidingEntity, 3, golem, PlayerCauseOfDeath.yeti, "golem");
-   applyHitKnockback(collidingEntity, 300, hitDirection);
+   applyKnockback(collidingEntity, 300, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,

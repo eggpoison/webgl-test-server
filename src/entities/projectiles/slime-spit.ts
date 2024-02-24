@@ -1,13 +1,13 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { HealthComponentArray, PhysicsComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, SlimeSpitComponentArray } from "../../components/ComponentArray";
 import { SlimeSpitComponent } from "../../components/SlimeSpitComponent";
 import { createSpitPoison } from "./spit-poison";
-import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { damageEntity } from "../../components/HealthComponent";
+import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 const BREAK_VELOCITY = 100;
 
@@ -42,7 +42,7 @@ export function onSlimeSpitCollision(spit: Entity, collidingEntity: Entity): voi
    const hitDirection = spit.position.calculateAngleBetween(collidingEntity.position);
 
    damageEntity(collidingEntity, damage, spit, PlayerCauseOfDeath.poison);
-   applyHitKnockback(collidingEntity, 150, hitDirection);
+   applyKnockback(collidingEntity, 150, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,

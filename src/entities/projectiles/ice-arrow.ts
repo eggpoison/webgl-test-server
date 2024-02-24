@@ -1,9 +1,9 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
+import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
 import Tribe from "../../Tribe";
 

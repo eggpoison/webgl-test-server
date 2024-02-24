@@ -1,13 +1,12 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
-import { HealthComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray } from "../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../components/HealthComponent";
-import { StatusEffectComponent } from "../components/StatusEffectComponent";
+import { HealthComponentArray, SnowballComponentArray } from "../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../components/HealthComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../components/StatusEffectComponent";
 import { SnowballComponent } from "../components/SnowballComponent";
 import { SERVER } from "../server";
-import { PhysicsComponent } from "../components/PhysicsComponent";
-import Board from "../Board";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../components/PhysicsComponent";
    
 const MAX_HEALTHS: ReadonlyArray<number> = [5, 10];
 
@@ -72,7 +71,7 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
          const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
 
          damageEntity(collidingEntity, 4, null, PlayerCauseOfDeath.snowball, "snowball");
-         applyHitKnockback(collidingEntity, 100, hitDirection);
+         applyKnockback(collidingEntity, 100, hitDirection);
          SERVER.registerEntityHit({
             entityPositionX: collidingEntity.position.x,
             entityPositionY: collidingEntity.position.y,

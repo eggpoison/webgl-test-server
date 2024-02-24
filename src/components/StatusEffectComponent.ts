@@ -1,8 +1,9 @@
 import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffectConst, customTickIntervalHasPassed } from "webgl-test-shared";
-import { PhysicsComponentArray, StatusEffectComponentArray } from "./ComponentArray";
+import { ComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
 import { SERVER } from "../server";
+import { PhysicsComponentArray } from "./PhysicsComponent";
 
 export class StatusEffectComponent {
    public readonly activeStatusEffectTypes = new Array<StatusEffectConst>();
@@ -15,6 +16,8 @@ export class StatusEffectComponent {
       this.statusEffectImmunityBitset = statusEffectImmunityBitset;
    }
 }
+
+export const StatusEffectComponentArray = new ComponentArray<StatusEffectComponent>();
 
 const entityIsImmuneToStatusEffect = (statusEffectComponent: StatusEffectComponent, statusEffect: StatusEffectConst): boolean => {
    return (statusEffectComponent.statusEffectImmunityBitset & statusEffect) > 0;

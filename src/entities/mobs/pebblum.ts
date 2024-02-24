@@ -1,13 +1,13 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
-import { HealthComponentArray, PebblumComponentArray, PhysicsComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { PebblumComponent } from "../../components/PebblumComponent";
 import { stopEntity } from "../../ai-shared";
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 export function createPebblum(position: Point, targetID: number): Entity {
    const pebblum = new Entity(position, IEntityType.pebblum, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -58,7 +58,7 @@ export function onPebblumCollision(pebblum: Entity, collidingEntity: Entity): vo
    const hitDirection = pebblum.position.calculateAngleBetween(collidingEntity.position);
    // @Incomplete: Cause of death
    damageEntity(collidingEntity, 1, pebblum, PlayerCauseOfDeath.yeti, "pebblum");
-   applyHitKnockback(collidingEntity, 100, hitDirection);
+   applyKnockback(collidingEntity, 100, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,

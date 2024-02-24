@@ -1,10 +1,10 @@
 import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintBuildingType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, SNAP_OFFSETS, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureType, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp } from "webgl-test-shared";
-import Entity, { RESOURCE_ENTITY_TYPES } from "../../Entity";
+import Entity from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
-import { addDefence, applyHitKnockback, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
+import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
 import { TRIBE_TOTEM_SIZE, createTribeTotem } from "./tribe-totem";
 import { WORKER_HUT_SIZE, createWorkerHut } from "./worker-hut";
@@ -35,6 +35,7 @@ import { createWallPunjiSticks } from "../structures/wall-punji-sticks";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
 import { getItemAttackCooldown } from "../../items";
+import { applyKnockback } from "../../components/PhysicsComponent";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -332,7 +333,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
 
    // Register the hit
    damageEntity(targetEntity, attackDamage, tribeMember, PlayerCauseOfDeath.tribe_member);
-   applyHitKnockback(targetEntity, 250, hitDirection);
+   applyKnockback(targetEntity, 250, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: targetEntity.position.x,
       entityPositionY: targetEntity.position.y,

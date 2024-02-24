@@ -1,14 +1,14 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
-import { HealthComponentArray, StatusEffectComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
+import { HealthComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
 import { createItemsOverEntity } from "../entity-shared";
 import Board from "../Board";
 import { TombstoneComponent } from "../components/TombstoneComponent";
 import { createZombie } from "./mobs/zombie";
 import TombstoneDeathManager from "../tombstone-deaths";
-import { StatusEffectComponent } from "../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../components/StatusEffectComponent";
 
 const WIDTH = 48;
 const HEIGHT = 88;

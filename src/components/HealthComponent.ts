@@ -1,6 +1,6 @@
 import { IEntityType, PlayerCauseOfDeath, SettingsConst, clamp } from "webgl-test-shared";
 import Entity from "../Entity";
-import { HealthComponentArray, PhysicsComponentArray } from "./ComponentArray";
+import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { onBerryBushHurt } from "../entities/resources/berry-bush";
 import { onCowHurt } from "../entities/mobs/cow";
@@ -19,6 +19,7 @@ import { onGolemHurt } from "../entities/mobs/golem";
 import { onWoodenWallDeath } from "../entities/structures/wooden-wall";
 import { AIHelperComponentArray } from "./AIHelperComponent";
 import { SERVER } from "../server";
+import { PhysicsComponentArray } from "./PhysicsComponent";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -207,17 +208,6 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
    }
 
    return true;
-}
-
-// @Cleanup: Should this be here?
-export function applyHitKnockback(entity: Entity, knockback: number, knockbackDirection: number): void {
-   if (!PhysicsComponentArray.hasComponent(entity)) {
-      return;
-   }
-   
-   const knockbackForce = knockback / entity.totalMass;
-   entity.velocity.x += knockbackForce * Math.sin(knockbackDirection);
-   entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
 }
 
 export function healEntity(entity: Entity, healAmount: number, healerID: number): void {

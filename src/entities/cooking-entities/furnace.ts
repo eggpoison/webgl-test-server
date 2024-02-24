@@ -1,11 +1,11 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { HealthComponentArray, StatusEffectComponentArray, InventoryComponentArray, CookingEntityComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, CookingEntityComponentArray } from "../../components/ComponentArray";
 import { CookingComponent } from "../../components/CookingEntityComponent";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, createNewInventory } from "../../components/InventoryComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { tickCookingEntity } from "./cooking-entity";
 
 export const FURNACE_SIZE = 80;

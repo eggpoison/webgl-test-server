@@ -1,14 +1,14 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SettingsConst, lerp } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
-import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
+import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
 import { findInventoryContainingItem } from "../../components/InventoryComponent";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 const RETURN_TIME_TICKS = 1 * SettingsConst.TPS;
 
@@ -81,7 +81,7 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
 
       // @Incomplete cause of death
       damageEntity(collidingEntity, 4, tribeMember, PlayerCauseOfDeath.spear, attackHash);
-      applyHitKnockback(collidingEntity, 150, direction);
+      applyKnockback(collidingEntity, 150, direction);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,

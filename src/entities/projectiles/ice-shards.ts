@@ -1,12 +1,11 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { HealthComponentArray, IceShardComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { HealthComponentArray, IceShardComponentArray } from "../../components/ComponentArray";
+import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
-import Board from "../../Board";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 export function createIceShard(position: Point, moveDirection: number): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -50,7 +49,7 @@ export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): 
       const hitDirection = iceShard.position.calculateAngleBetween(collidingEntity.position);
 
       damageEntity(collidingEntity, 2, null, PlayerCauseOfDeath.ice_shards, "ice_shards");
-      applyHitKnockback(collidingEntity, 150, hitDirection);
+      applyKnockback(collidingEntity, 150, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,

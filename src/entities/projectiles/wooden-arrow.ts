@@ -1,14 +1,14 @@
 import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SettingsConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
+import { ArrowComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { damageEntity } from "../../components/HealthComponent";
 import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 
 // @Cleanup: Rename file to something more generic
 
@@ -104,7 +104,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
       const hitDirection = arrow.position.calculateAngleBetween(collidingEntity.position);
       
       damageEntity(collidingEntity, arrowComponent.damage, thrower, PlayerCauseOfDeath.arrow);
-      applyHitKnockback(collidingEntity, arrowComponent.knockback, hitDirection);
+      applyKnockback(collidingEntity, arrowComponent.knockback, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,

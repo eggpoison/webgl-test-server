@@ -1,14 +1,15 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, IceSpikesComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
-import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
+import { HealthComponentArray, IceSpikesComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { StatusEffectComponent, StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { createIceShard } from "../projectiles/ice-shards";
 import { SERVER } from "../../server";
 import { IceSpikesComponent } from "../../components/IceSpikesComponent";
 import Board from "../../Board";
 import { createItemsOverEntity } from "../../entity-shared";
+import { applyKnockback } from "../../components/PhysicsComponent";
 
 const ICE_SPIKE_RADIUS = 40;
 
@@ -91,7 +92,7 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
          const hitDirection = iceSpikes.position.calculateAngleBetween(collidingEntity.position);
          
          damageEntity(collidingEntity, 1, iceSpikes, PlayerCauseOfDeath.ice_spikes, "ice_spikes");
-         applyHitKnockback(collidingEntity, 180, hitDirection);
+         applyKnockback(collidingEntity, 180, hitDirection);
          SERVER.registerEntityHit({
             entityPositionX: collidingEntity.position.x,
             entityPositionY: collidingEntity.position.y,

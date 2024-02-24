@@ -1,9 +1,9 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
-import { ItemComponentArray, PhysicsComponentArray } from "../components/ComponentArray";
+import { ItemComponentArray } from "../components/ComponentArray";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { ItemComponent } from "../components/ItemComponent";
-import { PhysicsComponent } from "../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray } from "../components/PhysicsComponent";
 import { addFleshSword, removeFleshSword } from "../flesh-sword-ai";
 
 const TICKS_TO_DESPAWN = 300 * SettingsConst.TPS;

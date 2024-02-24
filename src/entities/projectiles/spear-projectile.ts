@@ -2,12 +2,12 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, ItemType, Pl
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { createItemEntity } from "../item-entity";
-import { HealthComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
+import { HealthComponentArray, ThrowingProjectileComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 
 const DROP_VELOCITY = 400;
@@ -55,7 +55,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
    // Damage the entity
    const hitDirection = spear.position.calculateAngleBetween(collidingEntity.position);
    damageEntity(collidingEntity, damage, tribeMember, PlayerCauseOfDeath.spear);
-   applyHitKnockback(collidingEntity, 350, hitDirection);
+   applyKnockback(collidingEntity, 350, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,

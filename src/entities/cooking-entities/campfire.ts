@@ -1,9 +1,9 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { CookingEntityComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
+import { CookingEntityComponentArray, HealthComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { InventoryComponent, createNewInventory } from "../../components/InventoryComponent";
 import { tickCookingEntity } from "./cooking-entity";
 import { CookingComponent } from "../../components/CookingEntityComponent";
