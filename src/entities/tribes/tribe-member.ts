@@ -32,10 +32,9 @@ import { createFloorPunjiSticks } from "../structures/floor-punji-sticks";
 import { doBlueprintWork } from "../../components/BlueprintComponent";
 import { createWoodenWallSpikes } from "../structures/wooden-wall-spikes";
 import { createWallPunjiSticks } from "../structures/wall-punji-sticks";
-import { createSlingTurret } from "../structures/sling-turret";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
-import { getItemAttackCooldown, itemIsTool } from "../../items";
+import { getItemAttackCooldown } from "../../items";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
@@ -44,8 +43,8 @@ const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.bou
 const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.woodenWall, IEntityType.woodenDoor, IEntityType.woodenEmbrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.woodenFloorSpikes, IEntityType.woodenWallSpikes, IEntityType.floorPunjiSticks, IEntityType.wallPunjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut];
 export const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime, IEntityType.golem]; // @Incomplete: Golems should only hostile when awake
 
-const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1, 0);
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0);
+const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1);
 
 // @Cleanup: Copy and paste. This placeable entity stuff is shared between server and client
 

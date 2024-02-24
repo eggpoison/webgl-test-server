@@ -56,12 +56,11 @@ const getMinSeparationFromOtherHitboxes = (golem: Entity, hitboxX: number, hitbo
 }
 
 const updateGolemHitboxPositions = (golem: Entity, golemComponent: GolemComponent, wakeProgress: number): void => {
-   for (let i = 0; i < golem.hitboxes.length; i++) {
-      const hitbox = golem.hitboxes[i];
+   for (let i = 0; i < golemComponent.rockInfoArray.length; i++) {
+      const rockInfo = golemComponent.rockInfoArray[i];
 
-      const rockInfo = golemComponent.rockInfoRecord[hitbox.localID];
-      hitbox.offsetX = lerp(rockInfo.sleepOffsetX, rockInfo.awakeOffsetX, wakeProgress);
-      hitbox.offsetY = lerp(rockInfo.sleepOffsetY, rockInfo.awakeOffsetY, wakeProgress);
+      rockInfo.hitbox.offsetX = lerp(rockInfo.sleepOffsetX, rockInfo.awakeOffsetX, wakeProgress);
+      rockInfo.hitbox.offsetY = lerp(rockInfo.sleepOffsetY, rockInfo.awakeOffsetY, wakeProgress);
    }
 
    golem.hitboxesAreDirty = true;
@@ -72,11 +71,11 @@ export function createGolem(position: Point): Entity {
    golem.rotation = 2 * Math.PI * Math.random();
 
    // Create core hitbox
-   const hitbox = new CircularHitbox(golem, ROCK_MASSIVE_MASS, 0, 0, 36, 0);
+   const hitbox = new CircularHitbox(golem, ROCK_MASSIVE_MASS, 0, 0, 36);
    golem.addHitbox(hitbox);
 
    // Create head hitbox
-   golem.addHitbox(new CircularHitbox(golem, ROCK_LARGE_MASS, 0, 45, 32, 1));
+   golem.addHitbox(new CircularHitbox(golem, ROCK_LARGE_MASS, 0, 45, 32));
    
    // Create body hitboxes
    let i = 0;
@@ -104,7 +103,7 @@ export function createGolem(position: Point): Entity {
       }
 
       const mass = size === 0 ? ROCK_SMALL_MASS : ROCK_MEDIUM_MASS;
-      const hitbox = new CircularHitbox(golem, mass, offsetX, offsetY, radius, 2 + i);
+      const hitbox = new CircularHitbox(golem, mass, offsetX, offsetY, radius);
       golem.addHitbox(hitbox);
 
       i++;
@@ -113,12 +112,12 @@ export function createGolem(position: Point): Entity {
    // Create hand hitboxes
    for (let j = 0; j < 2; j++) {
       const offsetX = 60 * (j === 0 ? -1 : 1);
-      const hitbox = new CircularHitbox(golem, ROCK_MEDIUM_MASS, offsetX, 50, 20, 2 + i + j * 2);
+      const hitbox = new CircularHitbox(golem, ROCK_MEDIUM_MASS, offsetX, 50, 20);
       golem.addHitbox(hitbox);
 
       // Wrist
       const inFactor = 0.75;
-      golem.addHitbox(new CircularHitbox(golem, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, 12, 3 + i + j * 2));
+      golem.addHitbox(new CircularHitbox(golem, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, 12));
    }
 
    PhysicsComponentArray.addComponent(golem, new PhysicsComponent(true));
@@ -148,9 +147,8 @@ const getTarget = (golemComponent: GolemComponent): Entity => {
 }
 
 const shiftRocks = (golem: Entity, golemComponent: GolemComponent): void => {
-   for (let i = 0; i < golem.hitboxes.length; i++) {
-      const hitbox = golem.hitboxes[i];
-      const rockInfo = golemComponent.rockInfoRecord[hitbox.localID];
+   for (let i = 0; i < golemComponent.rockInfoArray.length; i++) {
+      const rockInfo = golemComponent.rockInfoArray[i];
 
       rockInfo.currentShiftTimerTicks++;
       if (rockInfo.currentShiftTimerTicks >= ROCK_SHIFT_INTERVAL) {
@@ -164,8 +162,8 @@ const shiftRocks = (golem: Entity, golemComponent: GolemComponent): void => {
       }
 
       const shiftProgress = rockInfo.currentShiftTimerTicks / ROCK_SHIFT_INTERVAL;
-      hitbox.offsetX = lerp(rockInfo.lastOffsetX, rockInfo.targetOffsetX, shiftProgress);
-      hitbox.offsetY = lerp(rockInfo.lastOffsetY, rockInfo.targetOffsetY, shiftProgress);
+      rockInfo.hitbox.offsetX = lerp(rockInfo.lastOffsetX, rockInfo.targetOffsetX, shiftProgress);
+      rockInfo.hitbox.offsetY = lerp(rockInfo.lastOffsetY, rockInfo.targetOffsetY, shiftProgress);
    }
 
    golem.hitboxesAreDirty = true;

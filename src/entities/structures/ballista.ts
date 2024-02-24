@@ -22,7 +22,7 @@ const HITBOX_SIZE = 100 - 0.05;
 const AIM_ARC_SIZE = Math.PI * 2;
 
 export function addBallistaHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE, 0));
+   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE));
 }
 
 export function createBallista(position: Point, tribe: Tribe | null, rotation: number): Entity {

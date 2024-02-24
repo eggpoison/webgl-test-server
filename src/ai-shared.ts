@@ -8,7 +8,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 const TURN_CONSTANT = Math.PI / SettingsConst.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, 0);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1);
 
 export function getClosestEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
    if (entities.length === 0) {

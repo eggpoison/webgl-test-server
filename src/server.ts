@@ -43,7 +43,6 @@ const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitb
       mass: hitbox.mass,
       offsetX: hitbox.offsetX,
       offsetY: hitbox.offsetY,
-      localID: hitbox.localID,
       width: hitbox.width,
       height: hitbox.height,
       rotation: hitbox.rotation
@@ -55,7 +54,6 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
       mass: hitbox.mass,
       offsetX: hitbox.offsetX,
       offsetY: hitbox.offsetY,
-      localID: hitbox.localID,
       radius: hitbox.radius
    };
 }

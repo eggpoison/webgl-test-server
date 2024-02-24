@@ -147,7 +147,7 @@ export function createYeti(position: Point): Entity {
    const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    yeti.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2, 0);
+   const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2);
    yeti.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true));

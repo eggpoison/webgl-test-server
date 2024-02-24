@@ -61,7 +61,7 @@ export function createSlime(position: Point, size: SlimeSize, orbSizes: Array<Sl
    slime.collisionPushForceMultiplier = 0.5;
 
    const mass = 1 + size * 0.5;
-   const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size], 0);
+   const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size]);
    slime.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(slime, new PhysicsComponent(true));

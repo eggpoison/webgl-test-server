@@ -12,7 +12,7 @@ export function createItemEntity(position: Point, itemType: ItemType, amount: nu
    const itemEntity = new Entity(position, IEntityType.itemEntity, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    itemEntity.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(itemEntity, 0.1, 0, 0, SettingsConst.ITEM_SIZE, SettingsConst.ITEM_SIZE, 0);
+   const hitbox = new RectangularHitbox(itemEntity, 0.1, 0, 0, SettingsConst.ITEM_SIZE, SettingsConst.ITEM_SIZE);
    itemEntity.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(itemEntity, new PhysicsComponent(true));

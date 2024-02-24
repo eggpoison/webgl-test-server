@@ -18,8 +18,8 @@ class RectangularHitbox extends Hitbox {
    public axisX = 0;
    public axisY = 0;
 
-   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, width: number, height: number, localID: number) {
-      super(object, mass, offsetX, offsetY, localID);
+   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, width: number, height: number) {
+      super(object, mass, offsetX, offsetY);
 
       this.width = width;
       this.height = height;

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, EntityInfo, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, PhysicsComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
@@ -8,7 +8,6 @@ import { applyHitKnockback, damageEntity } from "../../components/HealthComponen
 import { applyStatusEffect } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent } from "../../components/PhysicsComponent";
-import Board from "../../Board";
 
 const BREAK_VELOCITY = 100;
 
@@ -18,7 +17,7 @@ export function createSlimeSpit(position: Point, size: number): Entity {
    const spit = new Entity(position, IEntityType.slimeSpit, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitboxSize = SIZES[size];
-   const hitbox = new RectangularHitbox(spit, 0.2, 0, 0, hitboxSize, hitboxSize, 0);
+   const hitbox = new RectangularHitbox(spit, 0.2, 0, 0, hitboxSize, hitboxSize);
    spit.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(spit, new PhysicsComponent(true));

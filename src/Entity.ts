@@ -107,7 +107,7 @@ const findMaxWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offs
 /** A generic class for any object in the world */
 class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
-   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1, 0);
+   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1);
    
    /** Unique identifier for each entity */
    public readonly id: number;
@@ -145,6 +145,7 @@ class Entity<T extends IEntityType = IEntityType> {
    /** All hitboxes attached to the entity */
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
+   // @Cleanup: Rotating the entity is part of physics; should this be in PhysicsComponent?
    /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
    public hitboxesAreDirty = false;
 
@@ -1141,7 +1142,7 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    /**
-    * @returns A number where the first 8 bits hold the local ID of the entity's colliding hitbox, and the next 8 bits hold the local ID of the other entity's colliding hitbox
+    * @returns A number where the first 8 bits hold the index of the entity's colliding hitbox, and the next 8 bits hold the index of the other entity's colliding hitbox
    */
    public isColliding(entity: Entity): number {
       if ((entity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & entity.collisionBit) === 0) {
@@ -1180,7 +1181,7 @@ class Entity<T extends IEntityType = IEntityType> {
             const otherHitbox = entity.hitboxes[j];
             // If the objects are colliding, add the colliding object and this object
             if (hitbox.isColliding(otherHitbox)) {
-               return hitbox.localID + (otherHitbox.localID << 8);
+               return i + (j << 8);
             }
          }
       }
@@ -1189,23 +1190,12 @@ class Entity<T extends IEntityType = IEntityType> {
       return NO_COLLISION;
    }
 
-   public getHitboxByLocalID(localID: number): Hitbox {
-      for (let i = 0; i < this.hitboxes.length; i++) {
-         const hitbox = this.hitboxes[i];
-         if (hitbox.localID === localID) {
-            return hitbox;
-         }
-      }
-
-      throw new Error("Can't find hitbox for local ID " + localID);
-   }
-
-   public collide(collidingEntity: Entity, hitboxLocalID: number, collidingHitboxLocalID: number): void {
+   public collide(collidingEntity: Entity, hitboxIdx: number, collidingHitboxIdx: number): void {
       if (PhysicsComponentArray.hasComponent(this)) {
-         const collidingHitbox = collidingEntity.getHitboxByLocalID(collidingHitboxLocalID);
+         const collidingHitbox = collidingEntity.hitboxes[collidingHitboxIdx];
 
          if (entityHasHardCollision(collidingEntity)) {
-            const hitbox = this.getHitboxByLocalID(hitboxLocalID);
+            const hitbox = this.hitboxes[hitboxIdx];
             this.resolveCollisionHard(hitbox, collidingHitbox);
          } else {
             this.resolveCollisionSoft(collidingEntity, collidingHitbox);

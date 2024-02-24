@@ -31,7 +31,7 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
    const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    arrow.rotation = thrower.rotation;
    
-   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight, 0);
+   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight);
    arrow.addHitbox(hitbox);
 
    const throwerTribeComponent = TribeComponentArray.getComponent(thrower);

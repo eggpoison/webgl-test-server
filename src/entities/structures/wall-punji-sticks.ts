@@ -14,7 +14,7 @@ export function createWallPunjiSticks(position: Point, tribe: Tribe | null): Ent
    const punjiSticks = new Entity(position, IEntityType.wallPunjiSticks, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // @Hack: mass
-   punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT, 0));
+   punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
 
    HealthComponentArray.addComponent(punjiSticks, new HealthComponent(10));
    StatusEffectComponentArray.addComponent(punjiSticks, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));

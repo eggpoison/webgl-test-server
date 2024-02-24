@@ -13,8 +13,8 @@ export function createWoodenEmbrasure(position: Point, tribe: Tribe | null, rota
    const embrasure = new Entity(position, IEntityType.woodenEmbrasure, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    embrasure.rotation = rotation;
 
-   embrasure.addHitbox(new RectangularHitbox(embrasure, 0.4, -(64 - HITBOX_WIDTH) / 2 + 0.025, 0, HITBOX_WIDTH, HITBOX_HEIGHT, 0));
-   embrasure.addHitbox(new RectangularHitbox(embrasure, 0.4, (64 - HITBOX_WIDTH) / 2 - 0.025, 0, HITBOX_WIDTH, HITBOX_HEIGHT, 1));
+   embrasure.addHitbox(new RectangularHitbox(embrasure, 0.4, -(64 - HITBOX_WIDTH) / 2 + 0.025, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
+   embrasure.addHitbox(new RectangularHitbox(embrasure, 0.4, (64 - HITBOX_WIDTH) / 2 - 0.025, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
    
    HealthComponentArray.addComponent(embrasure, new HealthComponent(20));
    TribeComponentArray.addComponent(embrasure, new TribeComponent(tribe));

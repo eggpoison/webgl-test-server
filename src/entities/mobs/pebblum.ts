@@ -13,9 +13,9 @@ export function createPebblum(position: Point, targetID: number): Entity {
    const pebblum = new Entity(position, IEntityType.pebblum, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // Body
-   pebblum.addHitbox(new CircularHitbox(pebblum, 0.4, 0, -4, 10 * 2, 0));
+   pebblum.addHitbox(new CircularHitbox(pebblum, 0.4, 0, -4, 10 * 2));
    // Nose
-   pebblum.addHitbox(new CircularHitbox(pebblum, 0.3, 0, 6, 8 * 2, 1));
+   pebblum.addHitbox(new CircularHitbox(pebblum, 0.3, 0, 6, 8 * 2));
    
    PhysicsComponentArray.addComponent(pebblum, new PhysicsComponent(true));
    HealthComponentArray.addComponent(pebblum, new HealthComponent(20));

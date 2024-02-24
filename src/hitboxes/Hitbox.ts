@@ -11,8 +11,6 @@ abstract class Hitbox {
    public readonly mass: number;
    public offsetX: number;
    public offsetY: number;
-   // @Memory @Cleanup: Maybe infer from array index???
-   public localID: number;
 
    public rotatedOffsetX!: number;
    public rotatedOffsetY!: number;
@@ -20,14 +18,11 @@ abstract class Hitbox {
    // @Memory: Would be great to remove this
    public chunkBounds: HitboxBounds = [-1, -1, -1, -1];
 
-   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, localID: number) {
-      // @Cleanup: Perhaps localID can be inferred from the length of the object's hitboxes
-      
+   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number) {
       this.object = object;
       this.mass = mass;
       this.offsetX = offsetX;
       this.offsetY = offsetY;
-      this.localID = localID;
 
       this.updateOffset();
    }

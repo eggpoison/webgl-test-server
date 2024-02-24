@@ -12,7 +12,7 @@ export function createIceShard(position: Point, moveDirection: number): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    iceShard.rotation = moveDirection;
 
-   const hitbox = new RectangularHitbox(iceShard, 0.4, 0, 0, 24, 24, 0);
+   const hitbox = new RectangularHitbox(iceShard, 0.4, 0, 0, 24, 24);
    iceShard.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(iceShard, new PhysicsComponent(true));

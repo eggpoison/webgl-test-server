@@ -49,7 +49,7 @@ const HURT_ENTITY_INVESTIGATE_TICKS= Math.floor(0.5 * SettingsConst.TPS);
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
    const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32, 0);
+   const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32);
    zombie.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(zombie, new PhysicsComponent(true));

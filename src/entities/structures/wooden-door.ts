@@ -15,7 +15,7 @@ export function createWoodenDoor(position: Point, tribe: Tribe | null, rotation:
    const door = new Entity(position, IEntityType.woodenDoor, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    door.rotation = rotation;
 
-   const hitbox = new RectangularHitbox(door, 0.5, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT, 0);
+   const hitbox = new RectangularHitbox(door, 0.5, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT);
    door.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(door, new HealthComponent(15));

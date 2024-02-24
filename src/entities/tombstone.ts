@@ -28,7 +28,7 @@ export function createTombstone(position: Point): Entity {
    const tombstone = new Entity(position, IEntityType.tombstone, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    tombstone.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(tombstone, 1.25, 0, 0, WIDTH, HEIGHT, 0);
+   const hitbox = new RectangularHitbox(tombstone, 1.25, 0, 0, WIDTH, HEIGHT);
    tombstone.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tombstone, new HealthComponent(MAX_HEALTH));

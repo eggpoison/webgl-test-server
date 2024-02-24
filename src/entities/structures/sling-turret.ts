@@ -19,7 +19,7 @@ const RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS);
 const VISION_RANGE = 400;
 
 export function addSlingTurretHitboxes(entity: Entity): void {
-   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05, 0));
+   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05));
 }
 
 export function createSlingTurret(position: Point, tribe: Tribe | null, rotation: number): Entity {

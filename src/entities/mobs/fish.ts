@@ -42,7 +42,7 @@ export function createFish(position: Point): Entity {
    const fish = new Entity(position, IEntityType.fish, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    fish.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, FISH_WIDTH, FISH_HEIGHT, 0);
+   const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, FISH_WIDTH, FISH_HEIGHT);
    fish.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(fish, new PhysicsComponent(true));

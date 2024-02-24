@@ -14,7 +14,7 @@ export function createWoodenWallSpikes(position: Point, tribe: Tribe | null): En
    const spikes = new Entity(position, IEntityType.woodenWallSpikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // @Hack: mass
-   spikes.addHitbox(new RectangularHitbox(spikes, Number.EPSILON, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT, 0));
+   spikes.addHitbox(new RectangularHitbox(spikes, Number.EPSILON, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
 
    HealthComponentArray.addComponent(spikes, new HealthComponent(15));
    StatusEffectComponentArray.addComponent(spikes, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));

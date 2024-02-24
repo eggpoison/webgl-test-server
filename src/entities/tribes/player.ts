@@ -35,8 +35,8 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // @Temporary
-   const hitbox = new CircularHitbox(player, 1, 0, 0, 32, 0);
-   // const hitbox = new RectangularHitbox(player, 1, 0, 0, 64, 64, 0);
+   const hitbox = new CircularHitbox(player, 1, 0, 0, 32);
+   // const hitbox = new RectangularHitbox(player, 1, 0, 0, 64, 64);
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];

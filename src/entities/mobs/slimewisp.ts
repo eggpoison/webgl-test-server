@@ -27,7 +27,7 @@ export function createSlimewisp(position: Point): Entity {
    slimewisp.rotation = 2 * Math.PI * Math.random();
    slimewisp.collisionPushForceMultiplier = 0.3;
 
-   const hitbox = new CircularHitbox(slimewisp, 0.5, 0, 0, RADIUS, 0);
+   const hitbox = new CircularHitbox(slimewisp, 0.5, 0, 0, RADIUS);
    slimewisp.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(slimewisp, new PhysicsComponent(true));

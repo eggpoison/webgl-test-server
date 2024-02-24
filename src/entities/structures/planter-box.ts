@@ -8,10 +8,10 @@ import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 export function createPlanterBox(position: Point): Entity {
    const planterBox = new Entity(position, IEntityType.planterBox, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   planterBox.addHitbox(new RectangularHitbox(planterBox, 1.5, 0, 0, 80, 80, 0));
+   planterBox.addHitbox(new RectangularHitbox(planterBox, 1.5, 0, 0, 80, 80));
 
    HealthComponentArray.addComponent(planterBox, new HealthComponent(15));
-   StatusEffectComponentArray.addComponent(planterBox, new StatusEffectComponent(StatusEffectConst.poisoned));
+   StatusEffectComponentArray.addComponent(planterBox, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.bleeding));
    
    return planterBox;
 }

@@ -460,11 +460,11 @@ abstract class Board {
             continue;
          }
                   
-         const entity1HitboxLocalID = test.collisionNum & 0xFF;
-         const entity2HitboxLocalID = (test.collisionNum & 0xFF00) >> 8;
+         const entity1HitboxIndex = test.collisionNum & 0xFF;
+         const entity2HitboxIndex = (test.collisionNum & 0xFF00) >> 8;
          
-         test.entity1.collide(test.entity2, entity1HitboxLocalID, entity2HitboxLocalID);
-         test.entity2.collide(test.entity1, entity2HitboxLocalID, entity1HitboxLocalID);
+         test.entity1.collide(test.entity2, entity1HitboxIndex, entity2HitboxIndex);
+         test.entity2.collide(test.entity1, entity2HitboxIndex, entity1HitboxIndex);
       }
    }
 

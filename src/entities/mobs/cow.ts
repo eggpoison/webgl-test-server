@@ -41,7 +41,7 @@ export function createCow(position: Point): Entity {
    
    const cow = new Entity(position, IEntityType.cow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100, 0);
+   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100);
    cow.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true));
