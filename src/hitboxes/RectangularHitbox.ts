@@ -14,8 +14,9 @@ class RectangularHitbox extends Hitbox {
 
    // @Memory: Only need to calculate the top left and top right ones
    public vertexOffsets: HitboxVertexPositions = [new Point(0, 0), new Point(0, 0), new Point(0, 0), new Point(0, 0)];
-   // @Memory: Only need to store the first one of these
-   public sideAxes = [new Point(0, 0), new Point(0, 0)] as const;
+
+   public axisX = 0;
+   public axisY = 0;
 
    constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, width: number, height: number, localID: number) {
       super(object, mass, offsetX, offsetY, localID);
@@ -56,12 +57,8 @@ class RectangularHitbox extends Hitbox {
 
       // Angle between vertex 0 (top left) and vertex 1 (top right)
       // @Speed: If we do a different axis, can we get rid of the minus?
-      this.sideAxes[0].x = cosRotation;
-      this.sideAxes[0].y = -sinRotation;
-      
-      // Angle between vertex 1 (top right) and vertex 2 (bottom right)
-      this.sideAxes[1].x = -sinRotation;
-      this.sideAxes[1].y = -cosRotation;
+      this.axisX = cosRotation;
+      this.axisY = -sinRotation;
    }
 
    public calculateHitboxBoundsMinX(): number {
@@ -90,7 +87,7 @@ class RectangularHitbox extends Hitbox {
             return false;
          }
          
-         return rectanglePointsDoIntersect(this.vertexOffsets, (otherHitbox as RectangularHitbox).vertexOffsets, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, this.sideAxes, (otherHitbox as RectangularHitbox).sideAxes);
+         return rectanglePointsDoIntersect(this.vertexOffsets, (otherHitbox as RectangularHitbox).vertexOffsets, this.object.position.x + this.rotatedOffsetX, this.object.position.y + this.rotatedOffsetY, otherHitbox.object.position.x + otherHitbox.rotatedOffsetX, otherHitbox.object.position.y + otherHitbox.rotatedOffsetY, this.axisX, this.axisY, (otherHitbox as RectangularHitbox).axisX, (otherHitbox as RectangularHitbox).axisY);
       }
    }
 }

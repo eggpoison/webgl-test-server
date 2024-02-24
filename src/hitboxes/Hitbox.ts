@@ -11,6 +11,7 @@ abstract class Hitbox {
    public readonly mass: number;
    public offsetX: number;
    public offsetY: number;
+   // @Memory @Cleanup: Maybe infer from array index???
    public localID: number;
 
    public rotatedOffsetX!: number;

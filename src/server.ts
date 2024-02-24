@@ -27,6 +27,7 @@ import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { createWoodenWall } from "./entities/structures/wooden-wall";
 import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
 import { createYeti } from "./entities/mobs/yeti";
+import { createItemEntity } from "./entities/item-entity";
 
 const TIME_PASS_RATE = 300;
 

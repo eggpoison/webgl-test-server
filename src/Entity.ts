@@ -225,6 +225,11 @@ class Entity<T extends IEntityType = IEntityType> {
       hitbox.chunkBounds[1] = Math.floor(boundsMaxX / SettingsConst.CHUNK_UNITS);
       hitbox.chunkBounds[2] = Math.floor(boundsMinY / SettingsConst.CHUNK_UNITS);
       hitbox.chunkBounds[3] = Math.floor(boundsMaxY / SettingsConst.CHUNK_UNITS);
+
+      // If the hitbox is clipping into a border, clean the entities' position so that it doesn't clip
+      if (boundsMinX < 0 || boundsMaxX >= SettingsConst.BOARD_UNITS || boundsMinY < 0 || boundsMaxY >= SettingsConst.BOARD_UNITS) {
+         this.cleanHitboxes();
+      }
    }
 
    /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
@@ -922,7 +927,7 @@ class Entity<T extends IEntityType = IEntityType> {
       // @Temporary
       if (this.position.x < 0 || this.position.x >= SettingsConst.BOARD_UNITS || this.position.y < 0 || this.position.y >= SettingsConst.BOARD_UNITS) {
          console.log(this);
-         throw new Error("Unable to properly resolve wall collisions.");
+         throw new Error("Unable to properly resolve border collisions.");
       }
    }
 
@@ -1034,7 +1039,9 @@ class Entity<T extends IEntityType = IEntityType> {
       
       // main: hitbox1
       for (let i = 0; i < 2; i++) {
-         const axis = hitbox.sideAxes[i];
+         // const axis = hitbox.sideAxes[i];
+         // @Incomplete: THE SAME FOR 2!
+         const axis = new Point(hitbox.axisX, hitbox.axisY);
 
          const min1 = findMinWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
          const max1 = findMaxWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
@@ -1060,7 +1067,9 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       for (let i = 0; i < 2; i++) {
-         const axis = collidingHitbox.sideAxes[i];
+         // const axis = hitbox.sideAxes[i];
+         // @Incomplete: THE SAME FOR 2!
+         const axis = new Point(hitbox.axisX, hitbox.axisY);
 
          const min1 = findMinWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
          const max1 = findMaxWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
