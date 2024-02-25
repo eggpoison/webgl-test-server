@@ -249,8 +249,8 @@ const calculateItemKnockback = (item: Item | null): number => {
 
 // @Cleanup: Maybe split this up into repair and work functions
 export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
@@ -278,16 +278,16 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
 
    if (targetEntity.type === IEntityType.blueprintEntity) {
       // If holding a hammer and attacking a friendly blueprint, work on the blueprint instead of damaging it
-      const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-      const blueprintTribeComponent = TribeComponentArray.getComponent(targetEntity);
+      const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
+      const blueprintTribeComponent = TribeComponentArray.getComponent(targetEntity.id);
       if (blueprintTribeComponent.tribe === tribeComponent.tribe) {
          doBlueprintWork(targetEntity, item);
          return true;
       }
    } else if (STRUCTURE_TYPES_CONST.includes(targetEntity.type as StructureTypeConst)) {
       // Heal friendly structures
-      const tribeComponent = TribeComponentArray.getComponent(tribeMember);
-      const buildingTribeComponent = TribeComponentArray.getComponent(targetEntity);
+      const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
+      const buildingTribeComponent = TribeComponentArray.getComponent(targetEntity.id);
       if (buildingTribeComponent.tribe === tribeComponent.tribe) {
          const itemInfo = ITEM_INFO_RECORD[item.type] as HammerItemInfo;
          healEntity(targetEntity, itemInfo.repairAmount, tribeMember.id);
@@ -306,8 +306,8 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
 // @Cleanup: (?) Pass in the item to use directly instead of passing in the item slot and inventory name
 // @Cleanup: Not just for tribe members, move to different file
 export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
@@ -356,7 +356,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
 
 // @Cleanup: Not just for tribe members, move to different file
 export function calculateAttackTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>, attackableEntityRelationshipMask: number): Entity | null {
-   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
    
    let closestEntity: Entity | null = null;
    let minDistance = Number.MAX_SAFE_INTEGER;
@@ -385,7 +385,7 @@ export function calculateAttackTarget(tribeMember: Entity, targetEntities: Reado
 
 
 export function calculateRepairTarget(tribeMember: Entity, targetEntities: ReadonlyArray<Entity>): Entity | null {
-   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
    
    let closestEntity: Entity | null = null;
    let minDistance = Number.MAX_SAFE_INTEGER;
@@ -396,7 +396,7 @@ export function calculateRepairTarget(tribeMember: Entity, targetEntities: Reado
       }
 
       // Only repair damaged buildings
-      const healthComponent = HealthComponentArray.getComponent(targetEntity);
+      const healthComponent = HealthComponentArray.getComponent(targetEntity.id);
       if (healthComponent.health === healthComponent.maxHealth) {
          continue;
       }
@@ -637,7 +637,7 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
 export function useItem(tribeMember: Entity, item: Item, inventoryName: string, itemSlot: number): void {
    const itemCategory = ITEM_TYPE_RECORD[item.type];
 
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
 
    // @Cleanup: Extract each one of these cases into their own function
 
@@ -675,7 +675,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          break;
       }
       case "food": {
-         const healthComponent = HealthComponentArray.getComponent(tribeMember);
+         const healthComponent = HealthComponentArray.getComponent(tribeMember.id);
 
          // Don't use food if already at maximum health
          if (healthComponent.health >= healthComponent.maxHealth) return;
@@ -685,7 +685,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          healEntity(tribeMember, itemInfo.healAmount, tribeMember.id);
          consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
 
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName)
          useInfo.lastEatTicks = Board.ticks;
          break;
@@ -711,7 +711,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.tribeTotem: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                // Don't place a tribe totem if they aren't in a tribe
                if (tribeComponent.tribe === null) {
                   return;
@@ -721,7 +721,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.workerHut: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                if (tribeComponent.tribe === null) {
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
                }
@@ -732,7 +732,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.warriorHut: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                if (tribeComponent.tribe === null) {
                   throw new Error("Tribe member didn't belong to a tribe when placing a hut");
                }
@@ -743,7 +743,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.barrel: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
 
                placedEntity = createBarrel(placePosition, tribeComponent.tribe);
                if (tribeComponent.tribe !== null) {
@@ -760,12 +760,12 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.researchBench: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createResearchBench(placePosition, tribeComponent.tribe!);
                break;
             }
             case IEntityType.woodenWall: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createWoodenWall(placePosition, tribeComponent.tribe);
                break;
             }
@@ -774,32 +774,32 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case IEntityType.woodenFloorSpikes: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createWoodenFloorSpikes(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.woodenWallSpikes: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createWoodenWallSpikes(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.floorPunjiSticks: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createFloorPunjiSticks(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.wallPunjiSticks: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createWallPunjiSticks(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.ballista: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.ballista, tribeComponent.tribe, placeRotation);
                break;
             }
             case IEntityType.slingTurret: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.slingTurret, tribeComponent.tribe, placeRotation);
                break;
             }
@@ -817,7 +817,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          break;
       }
       case "bow": {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
          if (useInfo.bowCooldownTicks !== 0) {
             return;
@@ -851,7 +851,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                break;
             }
             case ItemType.ice_bow: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
                arrow = createIceArrow(spawnPosition, tribeMember.rotation, tribeComponent.tribe);
                break;
             }
@@ -867,7 +867,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
       }
       case "crossbow": {
          // Don't fire if not loaded
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
          if (!useInfo.crossbowLoadProgressRecord.hasOwnProperty(itemSlot) || useInfo.crossbowLoadProgressRecord[itemSlot] < 1) {
             return;
@@ -904,7 +904,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          // Throw the spear
          // 
 
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
          const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
@@ -931,7 +931,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          // Throw the battleaxe
          // 
 
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
          const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
@@ -960,7 +960,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
 }
 
 export function tribeMemberCanPickUpItem(tribeMember: Entity, itemType: ItemType): boolean {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
    const inventory = getInventory(inventoryComponent, "hotbar");
    
    for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
@@ -986,8 +986,8 @@ export function pickupItemEntity(tribeMember: Entity, itemEntity: Entity): boole
    // Don't pick up dropped items which are on pickup cooldown
    if (!itemEntityCanBePickedUp(itemEntity, tribeMember.id)) return false;
 
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
-   const itemComponent = ItemComponentArray.getComponent(itemEntity);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
+   const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
 
    for (const [inventoryName, _inventory] of inventoryComponent.inventoryArray) {
       if (!_inventory.acceptsPickedUpItems) {
@@ -1050,13 +1050,13 @@ const tickInventoryUseInfo = (tribeMember: Entity, inventoryUseInfo: InventoryUs
 }
 
 export function tickTribeMember(tribeMember: Entity): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    tickInventoryUseInfo(tribeMember, useInfo);
 
-   const tribeComponent = TribeComponentArray.getComponent(tribeMember);
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
    if (tribeComponent.tribe!.type === TribeType.barbarians && tribeMember.type !== IEntityType.tribeWorker) {
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
       tickInventoryUseInfo(tribeMember, useInfo);
@@ -1076,7 +1076,7 @@ export function tickTribeMember(tribeMember: Entity): void {
    // @Speed: Shouldn't be done every tick, only do when the armour changes
    // Armour defence
    const armourSlotInventory = getInventory(inventoryComponent, "armourSlot");
-   const healthComponent = HealthComponentArray.getComponent(tribeMember);
+   const healthComponent = HealthComponentArray.getComponent(tribeMember.id);
    if (armourSlotInventory.itemSlots.hasOwnProperty(1)) {
       const itemInfo = ITEM_INFO_RECORD[armourSlotInventory.itemSlots[1].type] as ArmourItemInfo;
       addDefence(healthComponent, itemInfo.defence, "armour");
@@ -1086,7 +1086,7 @@ export function tickTribeMember(tribeMember: Entity): void {
 }
 
 export function onTribeMemberHurt(tribeMember: Entity, attackingEntity: Entity): void {
-   const tribeMemberComponent = TribeMemberComponentArray.getComponent(tribeMember);
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(tribeMember.id);
    for (let i = 0; i < tribeMemberComponent.fishFollowerIDs.length; i++) {
       const fishID = tribeMemberComponent.fishFollowerIDs[i];
       const fish = Board.entityRecord[fishID];

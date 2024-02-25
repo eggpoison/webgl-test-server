@@ -32,7 +32,7 @@ export function onWoodenSpikesCollision(spikes: Entity, collidingEntity: Entity)
       return;
    }
 
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "woodenSpikes")) {
       return;
    }

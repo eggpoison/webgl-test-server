@@ -64,7 +64,7 @@ export const NO_COLLISION = 0xFFFF;
 const entityHasHardCollision = (entity: Entity): boolean => {
    // Doors have hard collision when closing/closed
    if (entity.type === IEntityType.woodenDoor) {
-      const doorComponent = DoorComponentArray.getComponent(entity);
+      const doorComponent = DoorComponentArray.getComponent(entity.id);
       return doorComponent.toggleType === DoorToggleType.close || doorComponent.doorOpenProgress === 0;
    }
    
@@ -378,7 +378,7 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       if (PhysicsComponentArray.hasComponent(this)) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
          if (!physicsComponent.isAffectedByFriction) {
             this.isInRiver = false;
             return;
@@ -412,7 +412,7 @@ class Entity<T extends IEntityType = IEntityType> {
          return;
       }
 
-      const physicsComponent = PhysicsComponentArray.getComponent(this);
+      const physicsComponent = PhysicsComponentArray.getComponent(this.id);
       if (!physicsComponent.isAffectedByFriction) {
          this.isInRiver = false;
          return;
@@ -487,7 +487,7 @@ class Entity<T extends IEntityType = IEntityType> {
       const numViewingMobs = chunk.viewingEntities.length;
       for (let i = 0; i < numViewingMobs; i++) {
          const viewingEntity = chunk.viewingEntities[i];
-         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity.id);
 
          const idx = aiHelperComponent.potentialVisibleEntities.indexOf(this);
          if (idx === -1) {
@@ -510,7 +510,7 @@ class Entity<T extends IEntityType = IEntityType> {
       const numViewingMobs = chunk.viewingEntities.length;
       for (let i = 0; i < numViewingMobs; i++) {
          const viewingEntity = chunk.viewingEntities[i];
-         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity.id);
 
          const idx = aiHelperComponent.potentialVisibleEntities.indexOf(this);
          if (idx === -1) {
@@ -849,7 +849,7 @@ class Entity<T extends IEntityType = IEntityType> {
                for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
                   const tile = Board.getTile(tileX, tileY);
                   if (tile.isWall) {
-                     const physicsComponent = PhysicsComponentArray.getComponent(this);
+                     const physicsComponent = PhysicsComponentArray.getComponent(this.id);
                      const collisionAxis = this.checkForCircularTileCollision(tile, hitbox as CircularHitbox);
                      switch (collisionAxis) {
                         case TileCollisionAxis.x: {
@@ -874,7 +874,7 @@ class Entity<T extends IEntityType = IEntityType> {
                for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
                   const tile = Board.getTile(tileX, tileY);
                   if (tile.isWall) {
-                     const physicsComponent = PhysicsComponentArray.getComponent(this);
+                     const physicsComponent = PhysicsComponentArray.getComponent(this.id);
                      const collisionAxis = this.checkForRectangularTileCollision(tile, hitbox as RectangularHitbox);
                      switch (collisionAxis) {
                         case TileCollisionAxis.x: {
@@ -901,13 +901,13 @@ class Entity<T extends IEntityType = IEntityType> {
    public resolveBorderCollisions(): void {
       // Left border
       if (this.boundingAreaMinX < 0) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
          this.position.x -= this.boundingAreaMinX;
          this.velocity.x = 0;
          physicsComponent.positionIsDirty = true;
          // Right border
       } else if (this.boundingAreaMaxX > SettingsConst.BOARD_UNITS) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
          this.position.x -= this.boundingAreaMaxX - SettingsConst.BOARD_UNITS;
          this.velocity.x = 0;
          physicsComponent.positionIsDirty = true;
@@ -915,13 +915,13 @@ class Entity<T extends IEntityType = IEntityType> {
 
       // Bottom border
       if (this.boundingAreaMinY < 0) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
          this.position.y -= this.boundingAreaMinY;
          this.velocity.y = 0;
          physicsComponent.positionIsDirty = true;
          // Top border
       } else if (this.boundingAreaMaxY > SettingsConst.BOARD_UNITS) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
          this.position.y -= this.boundingAreaMaxY - SettingsConst.BOARD_UNITS;
          this.velocity.y = 0;
          physicsComponent.positionIsDirty = true;
@@ -1182,7 +1182,7 @@ class Entity<T extends IEntityType = IEntityType> {
 
    public collide(collidingEntity: Entity, hitboxIdx: number, collidingHitboxIdx: number): void {
       if (PhysicsComponentArray.hasComponent(this)) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
          if (!physicsComponent.ignoreCollisions) {
             const collidingHitbox = collidingEntity.hitboxes[collidingHitboxIdx];
    

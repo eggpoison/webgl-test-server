@@ -25,7 +25,7 @@ export function createPebblum(position: Point, targetID: number): Entity {
 }
 
 export function tickPebblum(pebblum: Entity): void {
-   const pebblumComponent = PebblumComponentArray.getComponent(pebblum);
+   const pebblumComponent = PebblumComponentArray.getComponent(pebblum.id);
 
    if (pebblumComponent.targetEntityID === ID_SENTINEL_VALUE || !Board.entityRecord.hasOwnProperty(pebblumComponent.targetEntityID)) {
       // @Incomplete
@@ -45,12 +45,12 @@ export function tickPebblum(pebblum: Entity): void {
 }
 
 export function onPebblumCollision(pebblum: Entity, collidingEntity: Entity): void {
-   const pebblumComponent = PebblumComponentArray.getComponent(pebblum);
+   const pebblumComponent = PebblumComponentArray.getComponent(pebblum.id);
    if (collidingEntity.id !== pebblumComponent.targetEntityID) {
       return;
    }
    
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "pebblum")) {
       return;
    }

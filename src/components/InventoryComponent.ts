@@ -120,8 +120,8 @@ export function pickupItemEntity(entity: Entity, itemEntity: Entity): boolean {
    // Don't pick up dropped items which are on pickup cooldown
    if (!itemEntityCanBePickedUp(itemEntity, entity.id)) return false;
    
-   const inventoryComponent = InventoryComponentArray.getComponent(entity);
-   const itemComponent = ItemComponentArray.getComponent(itemEntity);
+   const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+   const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
 
    for (const [inventoryName, inventory] of inventoryComponent.inventoryArray) {
       if (!inventory.acceptsPickedUpItems) {

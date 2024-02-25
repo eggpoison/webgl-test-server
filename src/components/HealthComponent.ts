@@ -65,7 +65,7 @@ export function canDamageEntity(healthComponent: HealthComponent, attackHash: st
  * @returns Whether the damage was received
  */
 export function damageEntity(entity: Entity, damage: number, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, attackHash?: string): boolean {
-   const healthComponent = HealthComponentArray.getComponent(entity);
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
 
    const absorbedDamage = damage * clamp(healthComponent.defence, 0, 1);
    const actualDamage = damage - absorbedDamage;
@@ -191,7 +191,7 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
             continue;
          }
 
-         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity.id);
          if (aiHelperComponent.visibleEntities.includes(entity)) {
             switch (viewingEntity.type) {
                case IEntityType.zombie: {
@@ -215,7 +215,7 @@ export function healEntity(entity: Entity, healAmount: number, healerID: number)
       return;
    }
    
-   const healthComponent = HealthComponentArray.getComponent(entity);
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
 
    healthComponent.health += healAmount;
 
@@ -252,7 +252,7 @@ export function addLocalInvulnerabilityHash(healthComponent: HealthComponent, ha
 }
 
 export function getEntityHealth(entity: Entity): number {
-   const healthComponent = HealthComponentArray.getComponent(entity);
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
    return healthComponent.health;
 }
 

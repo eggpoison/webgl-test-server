@@ -30,7 +30,7 @@ export function createBerryBush(position: Point): Entity {
 }
 
 export function tickBerryBush(berryBush: Entity): void {
-   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush.id);
    if (berryBushComponent.numBerries >= 5) {
       return;
    }
@@ -44,7 +44,7 @@ export function tickBerryBush(berryBush: Entity): void {
 }
 
 export function dropBerry(berryBush: Entity): void {
-   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush.id);
    if (berryBushComponent.numBerries === 0) {
       return;
    }

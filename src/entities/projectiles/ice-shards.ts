@@ -23,7 +23,7 @@ export function createIceShard(position: Point, moveDirection: number): Entity {
 }
 
 export function tickIceShard(iceShard: Entity): void {
-   const iceShardComponent = IceShardComponentArray.getComponent(iceShard);
+   const iceShardComponent = IceShardComponentArray.getComponent(iceShard.id);
    if (iceShard.ageTicks / SettingsConst.TPS >= iceShardComponent.lifetime) {
       iceShard.remove();
    }
@@ -41,7 +41,7 @@ export function onIceShardCollision(iceShard: Entity, collidingEntity: Entity): 
       // Instantly destroy ice spikes
       damageEntity(collidingEntity, 99999, null, PlayerCauseOfDeath.ice_spikes);
    } else {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (!canDamageEntity(healthComponent, "ice_shards")) {
          return;
       }

@@ -103,7 +103,7 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
       return;
    }
 
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "cactus")) {
       return;
    }

@@ -43,18 +43,18 @@ export function tickItemEntity(itemEntity: Entity): void {
 }
 
 export function addItemEntityPlayerPickupCooldown(itemEntity: Entity, entityID: number, cooldownDuration: number): void {
-   const itemComponent = ItemComponentArray.getComponent(itemEntity);
+   const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
    itemComponent.entityPickupCooldowns[entityID] = cooldownDuration;
 }
 
 export function itemEntityCanBePickedUp(itemEntity: Entity, entityID: number): boolean {
-   const itemComponent = ItemComponentArray.getComponent(itemEntity);
+   const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
    return !itemComponent.entityPickupCooldowns.hasOwnProperty(entityID);
 }
 
 export function onItemEntityRemove(itemEntity: Entity): void {
    // Remove flesh sword item entities
-   const itemComponent = ItemComponentArray.getComponent(itemEntity);
+   const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
    if (itemComponent.itemType === ItemType.flesh_sword) {
       removeFleshSword(itemEntity);
    }

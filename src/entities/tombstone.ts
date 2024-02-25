@@ -88,7 +88,7 @@ export function tickTombstone(tombstone: Entity): void {
       }
    }
 
-   const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone);
+   const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone.id);
 
    // Start zombie spawn
    if (tombstoneComponent.numZombies < MAX_SPAWNED_ZOMBIES && !tombstoneComponent.isSpawningZombie) {

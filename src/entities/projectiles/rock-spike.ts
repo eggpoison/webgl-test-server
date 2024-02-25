@@ -25,14 +25,14 @@ export function createRockSpikeProjectile(spawnPosition: Point, size: number, fr
 
 export function tickRockSpikeProjectile(rockSpikeProjectile: Entity): void {
    // Remove if past lifetime
-   const rockSpikeProjectileComponent = RockSpikeProjectileComponentArray.getComponent(rockSpikeProjectile);
+   const rockSpikeProjectileComponent = RockSpikeProjectileComponentArray.getComponent(rockSpikeProjectile.id);
    if (rockSpikeProjectile.ageTicks >= rockSpikeProjectileComponent.lifetimeTicks) {
       rockSpikeProjectile.remove();
    }
 }
 
 export function onRockSpikeProjectileCollision(rockSpikeProjectile: Entity, collidingEntity: Entity): void {
-   const rockSpikeProjectileComponent = RockSpikeProjectileComponentArray.getComponent(rockSpikeProjectile);
+   const rockSpikeProjectileComponent = RockSpikeProjectileComponentArray.getComponent(rockSpikeProjectile.id);
 
    // Don't hurt the yeti which created the spike
    if (collidingEntity.id === rockSpikeProjectileComponent.frozenYetiID) {
@@ -41,7 +41,7 @@ export function onRockSpikeProjectileCollision(rockSpikeProjectile: Entity, coll
    
    // Damage the entity
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (!canDamageEntity(healthComponent, "rock_spike")) {
          return;
       }

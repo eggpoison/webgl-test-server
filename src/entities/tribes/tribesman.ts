@@ -65,7 +65,7 @@ const getRadius = (tribesman: Entity): number => {
 const getSlowAcceleration = (tribesman: Entity): number => {
    let acceleration = SLOW_ACCELERATION;
 
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    acceleration *= TRIBE_INFO_RECORD[tribeComponent.tribe!.type].moveSpeedMultiplier;
 
    return acceleration;
@@ -74,14 +74,14 @@ const getSlowAcceleration = (tribesman: Entity): number => {
 const getAcceleration = (tribesman: Entity): number => {
    let acceleration = ACCELERATION;
 
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    acceleration *= TRIBE_INFO_RECORD[tribeComponent.tribe!.type].moveSpeedMultiplier;
 
    return acceleration;
 }
 
 const getFoodItemSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
    // @Speed
    for (const [_itemSlot, item] of Object.entries(hotbarInventory.itemSlots)) {
@@ -98,7 +98,7 @@ const shouldEscape = (healthComponent: HealthComponent): boolean => {
 }
 
 const positionIsSafe = (tribesman: Entity, x: number, y: number): boolean => {
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    
    const visibleEntitiesFromItem = getEntitiesInVisionRange(x, y, getVisionRange(tribesman));
    for (const entity of visibleEntitiesFromItem) {
@@ -111,7 +111,7 @@ const positionIsSafe = (tribesman: Entity, x: number, y: number): boolean => {
 }
 
 const findNearestBarrel = (tribesman: Entity): Entity | null => {
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    if (tribeComponent.tribe === null) return null;
    
    let minDistance = Number.MAX_SAFE_INTEGER;
@@ -129,8 +129,8 @@ const findNearestBarrel = (tribesman: Entity): Entity | null => {
 
 /** Deposit all resources from the tribesman's inventory into a barrel */
 const depositResources = (tribesman: Entity, barrel: Entity): void => {
-   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman);
-   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel);
+   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
+   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel.id);
    const tribesmanInventory = getInventory(tribesmanInventoryComponent, "hotbar");
 
    // 
@@ -222,7 +222,7 @@ const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
 }
 
 const hasFood = (tribesman: Entity): boolean => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    for (let slotNum = 1; slotNum <= hotbarInventory.width * hotbarInventory.height; slotNum++) {
@@ -243,7 +243,7 @@ const grabBarrelFood = (tribesman: Entity, barrel: Entity): void => {
    // Grab the food stack with the highest total heal amount
    // 
 
-   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel);
+   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel.id);
    const barrelInventory = getInventory(barrelInventoryComponent, "inventory");
 
    let foodItemSlot = -1;
@@ -270,7 +270,7 @@ const grabBarrelFood = (tribesman: Entity, barrel: Entity): void => {
       throw new Error("Couldn't find a food item to grab.");
    }
 
-   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    addItemToInventory(tribesmanInventoryComponent, "hotbar", food.type, food.count);
    consumeItem(barrelInventoryComponent, "inventory", foodItemSlot, 999);
 }
@@ -286,7 +286,7 @@ const hasAvailableHotbarSlot = (hotbarInventory: Inventory): boolean => {
 }
 
 const barrelHasFood = (barrel: Entity): boolean => {
-   const inventoryComponent = InventoryComponentArray.getComponent(barrel);
+   const inventoryComponent = InventoryComponentArray.getComponent(barrel.id);
    const inventory = getInventory(inventoryComponent, "inventory");
 
    for (let slotNum = 1; slotNum <= inventory.width * inventory.height; slotNum++) {
@@ -372,7 +372,7 @@ export function tickTribesman(tribesman: Entity): void {
    
    tickTribeMember(tribesman);
    
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
 
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
    const armourInventory = getInventory(inventoryComponent, "armourSlot");
@@ -391,8 +391,8 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman);
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman.id);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
 
    // @Cleanup: A nicer way to do this might be to sort the visible entities array based on the 'threat level' of each entity
 
@@ -431,15 +431,15 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
    tribesmanComponent.targetResearchBenchID = ID_SENTINEL_VALUE;
 
    // Escape from enemies when low on health
-   const healthComponent = HealthComponentArray.getComponent(tribesman);
+   const healthComponent = HealthComponentArray.getComponent(tribesman.id);
    if (shouldEscape(healthComponent) && visibleEnemies.length > 0) {
       escape(tribesman, visibleEnemies);
 
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       
       tribesmanComponent.lastAIType = TribesmanAIType.escaping;
@@ -453,7 +453,7 @@ export function tickTribesman(tribesman: Entity): void {
          continue;
       }
 
-      const playerComponent = PlayerComponentArray.getComponent(entity);
+      const playerComponent = PlayerComponentArray.getComponent(entity.id);
       if (playerComponent.interactingEntityID === tribesman.id) {
          tribesman.hitboxesAreDirty = true;
 
@@ -467,7 +467,7 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
          }
 
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          tribesmanComponent.lastAIType = TribesmanAIType.idle;
@@ -516,7 +516,7 @@ export function tickTribesman(tribesman: Entity): void {
    if (healthComponent.health < healthComponent.maxHealth) {
       const foodItemSlot = getFoodItemSlot(tribesman);
       if (foodItemSlot !== null) {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          useInfo.selectedItemSlot = foodItemSlot;
 
@@ -597,7 +597,7 @@ export function tickTribesman(tribesman: Entity): void {
          }
 
          // Select the hammer item slot
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          useInfo.selectedItemSlot = hammerItemSlot;
 
@@ -623,7 +623,7 @@ export function tickTribesman(tribesman: Entity): void {
          }
 
          const distance = tribesman.position.calculateDistanceBetween(itemEntity.position);
-         const itemComponent = ItemComponentArray.getComponent(itemEntity);
+         const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
          if (distance < minDistance && tribeMemberCanPickUpItem(tribesman, itemComponent.itemType)) {
             closestDroppedItem = itemEntity;
             minDistance = distance;
@@ -631,7 +631,7 @@ export function tickTribesman(tribesman: Entity): void {
       }
 
       if (typeof closestDroppedItem !== "undefined") {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          tribesman.rotation = tribesman.position.calculateAngleBetween(closestDroppedItem.position);
@@ -650,7 +650,7 @@ export function tickTribesman(tribesman: Entity): void {
    if (inventoryIsFull(inventoryComponent, "hotbar")) {
       const closestBarrel = findNearestBarrel(tribesman);
       if (closestBarrel !== null) {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          haulToBarrel(tribesman, closestBarrel);
@@ -743,7 +743,7 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    useInfo.currentAction = TribeMemberAction.none;
 
@@ -880,7 +880,7 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
 // @Cleanup: Copy and paste
 
 const getBestWeaponSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    let bestWeaponLevel = -1;
@@ -909,7 +909,7 @@ const getBestWeaponSlot = (tribesman: Entity): number | null => {
 }
 
 const getBestPickaxeSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    let bestPickaxeLevel = -1;
@@ -938,7 +938,7 @@ const getBestPickaxeSlot = (tribesman: Entity): number | null => {
 }
 
 const getBestAxeSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    let bestAxeLevel = -1;
@@ -1029,14 +1029,14 @@ const doMeleeAttack = (tribesman: Entity): void => {
 
    // Register the hit
    if (target !== null) {
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       attackEntity(tribesman, target, useInfo.selectedItemSlot, "hotbar");
    }
 }
 
 const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): number => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    // @Incomplete: Account for status effects
@@ -1072,16 +1072,16 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    
    // @Incomplete: Only accounts for hotbar
    
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
    tribesmanComponent.lastAIType = TribesmanAIType.attacking;
    
    const mostDamagingItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
 
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    
    // Select the item slot
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    useInfo.selectedItemSlot = mostDamagingItemSlot;
    
    const inventory = getInventory(inventoryComponent, "hotbar");

@@ -32,7 +32,7 @@ export function onPunjiSticksCollision(punjiSticks: Entity, collidingEntity: Ent
       return;
    }
 
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "punjiSticks")) {
       return;
    }

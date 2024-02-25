@@ -183,7 +183,7 @@ const summonPebblums = (golem: Entity, golemComponent: GolemComponent, target: E
 }
 
 export function tickGolem(golem: Entity): void {
-   const golemComponent = GolemComponentArray.getComponent(golem);
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
    
    // Remove targets which are dead or have been out of aggro long enough
    // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
@@ -230,7 +230,7 @@ export function tickGolem(golem: Entity): void {
       }
 
       const pebblum = Board.entityRecord[pebblumID];
-      const pebblumComponent = PebblumComponentArray.getComponent(pebblum);
+      const pebblumComponent = PebblumComponentArray.getComponent(pebblum.id);
       pebblumComponent.targetEntityID = target.id;
    }
 
@@ -268,7 +268,7 @@ export function onGolemHurt(golem: Entity, attackingEntity: Entity, damage: numb
       return;
    }
    
-   const golemComponent = GolemComponentArray.getComponent(golem);
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
 
    // Update/create the entity's targetInfo record
    if (golemComponent.attackingEntities.hasOwnProperty(attackingEntity.id)) {
@@ -288,12 +288,12 @@ export function onGolemCollision(golem: Entity, collidingEntity: Entity): void {
    }
    
    // Don't hurt entities which aren't attacking the golem
-   const golemComponent = GolemComponentArray.getComponent(golem);
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
    if (!golemComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
       return;
    }
    
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "golem")) {
       return;
    }

@@ -34,7 +34,7 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
    const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight);
    arrow.addHitbox(hitbox);
 
-   const throwerTribeComponent = TribeComponentArray.getComponent(thrower);
+   const throwerTribeComponent = TribeComponentArray.getComponent(thrower.id);
    
    PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false, true));
    TribeComponentArray.addComponent(arrow, new TribeComponent(throwerTribeComponent.tribe));
@@ -71,8 +71,8 @@ export function tickArrowProjectile(arrow: Entity): void {
 }
 
 export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): void {
-   const arrowComponent = ArrowComponentArray.getComponent(arrow);
-   const tribeComponent = TribeComponentArray.getComponent(arrow);
+   const arrowComponent = ArrowComponentArray.getComponent(arrow.id);
+   const tribeComponent = TribeComponentArray.getComponent(arrow.id);
 
    // Ignore friendlies, and friendly buildings if the ignoreFriendlyBuildings flag is set
    const relationship = getTribeMemberRelationship(tribeComponent, collidingEntity);
@@ -82,7 +82,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
 
    // Break without damaging friendly embrasures
    if (collidingEntity.type === IEntityType.woodenEmbrasure) {
-      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity);
+      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          arrow.remove();
          return;
@@ -91,14 +91,14 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
 
    // Pass over friendly spikes
    if (collidingEntity.type === IEntityType.woodenFloorSpikes || collidingEntity.type === IEntityType.woodenWallSpikes || collidingEntity.type === IEntityType.floorPunjiSticks || collidingEntity.type === IEntityType.wallPunjiSticks) {
-      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity);
+      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe !== null && tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          return;
       }
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const arrowComponent = ArrowComponentArray.getComponent(arrow);
+      const arrowComponent = ArrowComponentArray.getComponent(arrow.id);
 
       const thrower = Board.entityRecord.hasOwnProperty(arrowComponent.throwerID) ? Board.entityRecord[arrowComponent.throwerID] : null;
       const hitDirection = arrow.position.calculateAngleBetween(collidingEntity.position);

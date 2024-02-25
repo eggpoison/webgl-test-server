@@ -76,8 +76,8 @@ export class ComponentArray<T extends {} = {}> {
       this.componentBufferIDs.splice(0, 1);
    }
 
-   public getComponent(entity: Entity): T {
-      return this.components[this.entityToIndexMap[entity.id]];
+   public getComponent(entityID: number): T {
+      return this.components[this.entityToIndexMap[entityID]];
    }
 
    // Much slower than the regular getComponent array, and only able to be done when the entity hasn't been added to the board yet

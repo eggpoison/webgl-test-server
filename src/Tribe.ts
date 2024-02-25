@@ -176,7 +176,7 @@ class Tribe {
       // @Hack
       let bannerComponent: TotemBannerComponent;
       if (TotemBannerComponentArray.hasComponent(this.totem)) {
-         bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+         bannerComponent = TotemBannerComponentArray.getComponent(this.totem.id);
       } else {
          bannerComponent = TotemBannerComponentArray.getComponentFromBuffer(this.totem);
       }
@@ -200,7 +200,7 @@ class Tribe {
       // @Hack
       let bannerComponent: TotemBannerComponent;
       if (TotemBannerComponentArray.hasComponent(this.totem)) {
-         bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+         bannerComponent = TotemBannerComponentArray.getComponent(this.totem.id);
       } else {
          bannerComponent = TotemBannerComponentArray.getComponentFromBuffer(this.totem);
       }
@@ -215,7 +215,7 @@ class Tribe {
       }
 
       if (this.totem !== null) {
-         const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+         const bannerComponent = TotemBannerComponentArray.getComponent(this.totem.id);
          removeBannerFromTotem(bannerComponent, idx);
       }
 
@@ -229,7 +229,7 @@ class Tribe {
       }
 
       if (this.totem !== null) {
-         const bannerComponent = TotemBannerComponentArray.getComponent(this.totem);
+         const bannerComponent = TotemBannerComponentArray.getComponent(this.totem.id);
          removeBannerFromTotem(bannerComponent, idx);
       }
 
@@ -253,7 +253,7 @@ class Tribe {
       // Reset door swing ticks
       // @Cleanup @Hack: This check is necessary as this function is called as soon as a hut is created, when the components haven't been added yet
       if (HutComponentArray.hasComponent(hut)) {
-         const hutComponent = HutComponentArray.getComponent(hut);
+         const hutComponent = HutComponentArray.getComponent(hut.id);
          hutComponent.lastDoorSwingTicks = Board.ticks;
       }
       

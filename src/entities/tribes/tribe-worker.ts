@@ -78,14 +78,14 @@ export function onTribeWorkerHurt(worker: Entity, attackingEntity: Entity): void
 export function onTribeWorkerDeath(worker: Entity): void {
    // Attempt to respawn the tribesman when it is killed
    // Only respawn the tribesman if their hut is alive
-   const tribesmanComponent = TribesmanComponentArray.getComponent(worker);
+   const tribesmanComponent = TribesmanComponentArray.getComponent(worker.id);
    if (!Board.entityRecord.hasOwnProperty(tribesmanComponent.hutID)) {
       return;
    }
    
    const hut = Board.entityRecord[tribesmanComponent.hutID];
    if (!hut.isRemoved) {
-      const tribeComponent = TribeComponentArray.getComponent(worker);
+      const tribeComponent = TribeComponentArray.getComponent(worker.id);
       tribeComponent.tribe!.respawnTribesman(hut);
    }
 }

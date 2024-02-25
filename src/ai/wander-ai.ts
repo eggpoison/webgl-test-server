@@ -34,7 +34,7 @@ export function getWanderTargetTile(entity: Entity, visionRange: number): Tile {
 }
 
 export function wander(entity: Entity, x: number, y: number, acceleration: number): void {
-   const wanderAIComponent = WanderAIComponentArray.getComponent(entity);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(entity.id);
    wanderAIComponent.targetPositionX = x;
    wanderAIComponent.targetPositionY = y;
    moveEntityToPosition(entity, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY, acceleration);

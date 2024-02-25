@@ -53,7 +53,7 @@ export function tickIceArrow(iceArrow: Entity): void {
 
 export function onIceArrowCollision(arrow: Entity, collidingEntity: Entity): void {
    // Don't damage any friendly entities
-   const tribeComponent = TribeComponentArray.getComponent(arrow);
+   const tribeComponent = TribeComponentArray.getComponent(arrow.id);
    if (getTribeMemberRelationship(tribeComponent, collidingEntity) === EntityRelationship.friendly) {
       return;
    }

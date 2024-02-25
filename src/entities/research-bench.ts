@@ -22,12 +22,12 @@ export function createResearchBench(position: Point, tribe: Tribe): Entity {
    return bench;
 }
 
-export function onResearchBenchRemove(bench: Entity): void {
-   const tribeComponent = TribeComponentArray.getComponent(bench);
-   tribeComponent.tribe!.removeResearchBench(bench);
+export function onResearchBenchRemove(researchBench: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(researchBench.id);
+   tribeComponent.tribe!.removeResearchBench(researchBench);
    
-   HealthComponentArray.removeComponent(bench);
-   StatusEffectComponentArray.removeComponent(bench);
-   TribeComponentArray.removeComponent(bench);
-   ResearchBenchComponentArray.removeComponent(bench);
+   HealthComponentArray.removeComponent(researchBench);
+   StatusEffectComponentArray.removeComponent(researchBench);
+   TribeComponentArray.removeComponent(researchBench);
+   ResearchBenchComponentArray.removeComponent(researchBench);
 }

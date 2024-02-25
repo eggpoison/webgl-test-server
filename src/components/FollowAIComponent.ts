@@ -17,7 +17,7 @@ export class FollowAIComponent {
 }
 
 export function updateFollowAIComponent(entity: Entity, visibleEntities: ReadonlyArray<Entity>, interestDuration: number): void {
-   const followAIComponent = FollowAIComponentArray.getComponent(entity);
+   const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       if (followAIComponent.followCooldownTicks > 0) {
          followAIComponent.followCooldownTicks--;
@@ -39,7 +39,7 @@ export function updateFollowAIComponent(entity: Entity, visibleEntities: Readonl
 }
 
 export function followEntity(entity: Entity, followedEntity: Entity, acceleration: number, newFollowCooldownTicks: number): void {
-   const followAIComponent = FollowAIComponentArray.getComponent(entity);
+   const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
    followAIComponent.followTargetID = followedEntity.id;
    followAIComponent.followCooldownTicks = newFollowCooldownTicks;
    followAIComponent.interestTimer = 0;

@@ -37,7 +37,7 @@ const updateDoorOpenProgress = (door: Entity, doorComponent: DoorComponent): voi
 }
 
 export function tickDoorComponent(door: Entity): void {
-   const doorComponent = DoorComponentArray.getComponent(door);
+   const doorComponent = DoorComponentArray.getComponent(door.id);
    
    switch (doorComponent.toggleType) {
       case DoorToggleType.open: {
@@ -62,7 +62,7 @@ export function tickDoorComponent(door: Entity): void {
 }
 
 export function toggleDoor(door: Entity): void {
-   const doorComponent = DoorComponentArray.getComponent(door);
+   const doorComponent = DoorComponentArray.getComponent(door.id);
 
    // Don't toggle if already in the middle of opening/closing
    if (doorComponent.toggleType !== DoorToggleType.none) {

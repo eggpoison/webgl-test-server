@@ -60,7 +60,7 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
 }
 
 const getFoodEatingType = (tribeMember: Entity, activeItemData: ItemData | null): ItemType | -1 => {
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
    if (activeItemData !== null && useInfo.currentAction === TribeMemberAction.eat) {
@@ -70,7 +70,7 @@ const getFoodEatingType = (tribeMember: Entity, activeItemData: ItemData | null)
 }
 
 const getLastActionTicks = (tribeMember: Entity, inventoryName: string): number => {
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
    switch (useInfo.currentAction) {
@@ -117,8 +117,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
    let clientArgs: EntityData<EntityType>["clientArgs"];
    switch (entity.type) {
       case IEntityType.barrel: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
             serializeInventoryData(getInventory(inventoryComponent, "inventory"))
@@ -126,23 +126,23 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.berryBush: {
-         const berryBushComponent = BerryBushComponentArray.getComponent(entity);
+         const berryBushComponent = BerryBushComponentArray.getComponent(entity.id);
          clientArgs = [berryBushComponent.numBerries];
          break;
       }
       case IEntityType.boulder: {
-         const boulderComponent = BoulderComponentArray.getComponent(entity);
+         const boulderComponent = BoulderComponentArray.getComponent(entity.id);
          clientArgs = [boulderComponent.boulderType];
          break;
       }
       case IEntityType.cactus: {
-         const cactusComponent = CactusComponentArray.getComponent(entity);
+         const cactusComponent = CactusComponentArray.getComponent(entity.id);
          clientArgs = [cactusComponent.flowers, cactusComponent.limbs];
          break;
       }
       case IEntityType.campfire: {
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity.id);
 
          clientArgs = [
             serializeInventoryData(getInventory(inventoryComponent, "fuelInventory")),
@@ -154,17 +154,17 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.cow: {
-         const cowComponent = CowComponentArray.getComponent(entity);
+         const cowComponent = CowComponentArray.getComponent(entity.id);
          clientArgs = [cowComponent.species, cowComponent.grazeProgressTicks > 0 ? cowComponent.grazeProgressTicks / COW_GRAZE_TIME_TICKS : -1];
          break;
       }
       case IEntityType.fish: {
-         const fishComponent = FishComponentArray.getComponent(entity);
+         const fishComponent = FishComponentArray.getComponent(entity.id);
          clientArgs = [fishComponent.colour];
          break;
       }
       case IEntityType.frozenYeti: {
-         const frozenYetiComponent = FrozenYetiComponentArray.getComponent(entity);
+         const frozenYetiComponent = FrozenYetiComponentArray.getComponent(entity.id);
          clientArgs = [
             frozenYetiComponent.attackType,
             frozenYetiComponent.attackStage,
@@ -174,8 +174,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.furnace: {
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity.id);
 
          clientArgs = [
             serializeInventoryData(getInventory(inventoryComponent, "fuelInventory")),
@@ -191,7 +191,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.itemEntity: {
-         const itemComponent = ItemComponentArray.getComponent(entity);
+         const itemComponent = ItemComponentArray.getComponent(entity.id);
          clientArgs = [itemComponent.itemType];
          break;
       }
@@ -201,10 +201,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
       // @Cleanup: Copy and paste between tribesman and player
       case IEntityType.player: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
-         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
+         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
 
          const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
@@ -263,10 +263,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.tribeWorker: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
-         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
+         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
 
          const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
@@ -322,10 +322,10 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.tribeWarrior: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
-         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
+         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
 
          const hotbarInventory = getInventory(inventoryComponent, "hotbar");
          const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
@@ -380,7 +380,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.slime: {
-         const slimeComponent = SlimeComponentArray.getComponent(entity);
+         const slimeComponent = SlimeComponentArray.getComponent(entity.id);
 
          let anger = -1;
          if (slimeComponent.angeredEntities.length > 0) {
@@ -408,12 +408,12 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.snowball: {
-         const snowballComponent = SnowballComponentArray.getComponent(entity);
+         const snowballComponent = SnowballComponentArray.getComponent(entity.id);
          clientArgs = [snowballComponent.size];
          break;
       }
       case IEntityType.tombstone: {
-         const tombstoneComponent = TombstoneComponentArray.getComponent(entity);
+         const tombstoneComponent = TombstoneComponentArray.getComponent(entity.id);
          clientArgs = [
             tombstoneComponent.tombstoneType,
             getZombieSpawnProgress(tombstoneComponent),
@@ -424,13 +424,13 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.tree: {
-         const treeComponent = TreeComponentArray.getComponent(entity);
+         const treeComponent = TreeComponentArray.getComponent(entity.id);
          clientArgs = [treeComponent.treeSize];
          break;
       }
       case IEntityType.workerHut: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const hutComponent = HutComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const hutComponent = HutComponentArray.getComponent(entity.id);
 
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
@@ -439,8 +439,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.warriorHut: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const hutComponent = HutComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const hutComponent = HutComponentArray.getComponent(entity.id);
 
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
@@ -449,8 +449,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.tribeTotem: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const totemBannerComponent = TotemBannerComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const totemBannerComponent = TotemBannerComponentArray.getComponent(entity.id);
 
          clientArgs = [
             tribeComponent.tribe!.id, // Totems always have a tribe
@@ -461,7 +461,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.woodenArrowProjectile: {
-         const arrowComponent = ArrowComponentArray.getComponent(entity);
+         const arrowComponent = ArrowComponentArray.getComponent(entity.id);
          clientArgs = [arrowComponent.type];
          break;
       }
@@ -470,7 +470,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.rockSpikeProjectile: {
-         const rockSpikeComponent = RockSpikeProjectileComponentArray.getComponent(entity);
+         const rockSpikeComponent = RockSpikeProjectileComponentArray.getComponent(entity.id);
          clientArgs = [rockSpikeComponent.size, rockSpikeComponent.lifetimeTicks / SettingsConst.TPS];
          break;
       }
@@ -479,14 +479,14 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.yeti: {
-         const yetiComponent = YetiComponentArray.getComponent(entity);
+         const yetiComponent = YetiComponentArray.getComponent(entity.id);
          clientArgs = [yetiComponent.snowThrowAttackProgress];
          break;
       }
       case IEntityType.zombie: {
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity);
-         const zombieComponent = ZombieComponentArray.getComponent(entity);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
+         const zombieComponent = ZombieComponentArray.getComponent(entity.id);
 
          const inventory = getInventory(inventoryComponent, "handSlot");
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
@@ -510,17 +510,17 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.researchBench: {
-         const researchBenchComponent = ResearchBenchComponentArray.getComponent(entity);
+         const researchBenchComponent = ResearchBenchComponentArray.getComponent(entity.id);
          clientArgs = [researchBenchComponent.isOccupied];
          break;
       }
       case IEntityType.woodenWall: {
-         const healthComponent = HealthComponentArray.getComponent(entity);
+         const healthComponent = HealthComponentArray.getComponent(entity.id);
          clientArgs = [healthComponent.health];
          break;
       }
       case IEntityType.slimeSpit: {
-         const slimeSpitComponent = SlimeSpitComponentArray.getComponent(entity);
+         const slimeSpitComponent = SlimeSpitComponentArray.getComponent(entity.id);
          clientArgs = [slimeSpitComponent.size];
          break;
       }
@@ -529,7 +529,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.woodenDoor: {
-         const doorComponent = DoorComponentArray.getComponent(entity);
+         const doorComponent = DoorComponentArray.getComponent(entity.id);
          clientArgs = [doorComponent.toggleType, doorComponent.doorOpenProgress];
          break;
       }
@@ -538,7 +538,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.golem: {
-         const golemComponent = GolemComponentArray.getComponent(entity);
+         const golemComponent = GolemComponentArray.getComponent(entity.id);
          clientArgs = [golemComponent.wakeTimerTicks / GOLEM_WAKE_TIME_TICKS];
          break;
       }
@@ -566,15 +566,15 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.blueprintEntity: {
-         const blueprintComponent = BlueprintComponentArray.getComponent(entity);
+         const blueprintComponent = BlueprintComponentArray.getComponent(entity.id);
          clientArgs = [blueprintComponent.buildingType, getBlueprintProgress(blueprintComponent)];
          break;
       }
       case IEntityType.ballista: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const turretComponent = TurretComponentArray.getComponent(entity);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity);
-         const ballistaComponent = BallistaComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const turretComponent = TurretComponentArray.getComponent(entity.id);
+         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+         const ballistaComponent = BallistaComponentArray.getComponent(entity.id);
          
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
@@ -588,8 +588,8 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
          break;
       }
       case IEntityType.slingTurret: {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
-         const turretComponent = TurretComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
+         const turretComponent = TurretComponentArray.getComponent(entity.id);
 
          clientArgs = [
             tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
@@ -603,7 +603,7 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
 
    const statusEffectData = new Array<StatusEffectData>();
    if (StatusEffectComponentArray.hasComponent(entity)) {
-      const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
+      const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
       for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
          statusEffectData.push({
             type: statusEffectComponent.activeStatusEffectTypes[i] as unknown as StatusEffect,
@@ -830,7 +830,7 @@ class GameServer {
             // createYeti(new Point(spawnPosition.x, spawnPosition.y + 600));
 
             const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
-            const tribeComp = TribeComponentArray.getComponent(player);
+            const tribeComp = TribeComponentArray.getComponent(player.id);
             // const n = 6;
             // for (let i = 0; i < n; i++) {
             //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 100), tribeComp.tribe);
@@ -846,7 +846,7 @@ class GameServer {
             for (let i = 0; i < n3; i++) {
                const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
                setTimeout(() => {
-                  addItemToInventory(InventoryComponentArray.getComponent(b), "ammoBoxInventory", ItemType.wood, 1);
+                  addItemToInventory(InventoryComponentArray.getComponent(b.id), "ammoBoxInventory", ItemType.wood, 1);
                }, 100);
             }
             // for (let i = 0; i < n; i++) {
@@ -1169,7 +1169,7 @@ class GameServer {
          return {};
       }
       
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(player.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
       return useInfo.crossbowLoadProgressRecord;
@@ -1207,7 +1207,7 @@ class GameServer {
          ];
 
          // @Incomplete
-         // const playerArmour = player !== null ? getItem(InventoryComponentArray.getComponent(player), "armourSlot", 1) : null;
+         // const playerArmour = player !== null ? getItem(InventoryComponentArray.getComponent(player.id), "armourSlot", 1) : null;
 
          // Initialise the game data packet
          const gameDataPacket: GameDataPacket = {
@@ -1219,7 +1219,7 @@ class GameServer {
             tileUpdates: tileUpdates,
             serverTicks: Board.ticks,
             serverTime: Board.time,
-            playerHealth: player !== null ? HealthComponentArray.getComponent(player).health : 0,
+            playerHealth: player !== null ? HealthComponentArray.getComponent(player.id).health : 0,
             gameObjectDebugData: gameObjectDebugData,
             tribeData: bundleTribeData(playerData),
             // @Incomplete
@@ -1340,7 +1340,7 @@ class GameServer {
             }
          };
       } else {
-         const tribeComponent = TribeComponentArray.getComponent(player);
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
          
          return {
             hotbar: SERVER.bundleInventory(player, "hotbar"),
@@ -1361,7 +1361,7 @@ class GameServer {
    }
 
    private bundleInventory(player: Entity, inventoryName: string): InventoryData {
-      const inventoryComponent = InventoryComponentArray.getComponent(player);
+      const inventoryComponent = InventoryComponentArray.getComponent(player.id);
       const inventory = getInventory(inventoryComponent, inventoryName);
 
       const inventoryData: InventoryData = {
@@ -1414,7 +1414,7 @@ class GameServer {
             velocity: player.velocity.package(),
             acceleration: player.acceleration.package(),
             rotation: player.rotation,
-            health: HealthComponentArray.getComponent(player).health,
+            health: HealthComponentArray.getComponent(player.id).health,
             inventory: SERVER.bundlePlayerInventoryData(player)
          };
 
@@ -1429,7 +1429,7 @@ class GameServer {
          return;
       }
 
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(player.id);
       const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
 
       player.position.x = playerDataPacket.position[0];
@@ -1442,7 +1442,7 @@ class GameServer {
       
       hotbarUseInfo.selectedItemSlot = playerDataPacket.selectedItemSlot;
 
-      const playerComponent = PlayerComponentArray.getComponent(player);
+      const playerComponent = PlayerComponentArray.getComponent(player.id);
       playerComponent.interactingEntityID = playerDataPacket.interactingEntityID !== null ? playerDataPacket.interactingEntityID : ID_SENTINEL_VALUE;
 
       if (playerDataPacket.mainAction === TribeMemberAction.eat && hotbarUseInfo.currentAction !== TribeMemberAction.eat) {
@@ -1457,7 +1457,7 @@ class GameServer {
          hotbarUseInfo.currentAction = playerDataPacket.mainAction;
       }
 
-      const tribeComponent = TribeComponentArray.getComponent(player);
+      const tribeComponent = TribeComponentArray.getComponent(player.id);
       if (tribeComponent.tribe!.type === TribeType.barbarians) {
          const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
 

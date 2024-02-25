@@ -25,7 +25,7 @@ export function createWarriorHut(position: Point, tribe: Tribe): Entity {
 }
 
 export function onWarriorHutRemove(hut: Entity): void {
-   const tribeComponent = TribeComponentArray.getComponent(hut);
+   const tribeComponent = TribeComponentArray.getComponent(hut.id);
    tribeComponent.tribe!.removeWarriorHut(hut);
 
    HealthComponentArray.removeComponent(hut);

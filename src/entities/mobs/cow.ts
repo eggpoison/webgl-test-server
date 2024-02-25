@@ -86,7 +86,7 @@ const findHerdMembers = (cowComponent: CowComponent, visibleEntities: ReadonlyAr
    for (let i = 0; i < visibleEntities.length; i++) {
       const entity = visibleEntities[i];
       if (entity.type === IEntityType.cow) {
-         const otherCowComponent = CowComponentArray.getComponent(entity);
+         const otherCowComponent = CowComponentArray.getComponent(entity.id);
          if (otherCowComponent.species === cowComponent.species) {
             herdMembers.push(entity);
          }
@@ -96,13 +96,13 @@ const findHerdMembers = (cowComponent: CowComponent, visibleEntities: ReadonlyAr
 }
 
 export function tickCow(cow: Entity): void {
-   const cowComponent = CowComponentArray.getComponent(cow);
+   const cowComponent = CowComponentArray.getComponent(cow.id);
    updateCowComponent(cowComponent);
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(cow.id);
    
    // Escape AI
-   const escapeAIComponent = EscapeAIComponentArray.getComponent(cow);
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(cow.id);
    updateEscapeAIComponent(escapeAIComponent, 5 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(cow, aiHelperComponent.visibleEntities);
@@ -124,7 +124,7 @@ export function tickCow(cow: Entity): void {
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
       const itemEntity = aiHelperComponent.visibleEntities[i];
       if (itemEntity.type === IEntityType.itemEntity) {
-         const itemComponent = ItemComponentArray.getComponent(itemEntity);
+         const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
          if (itemComponent.itemType === ItemType.berry) {
             const wasEaten = chaseAndEatItemEntity(cow, itemEntity, 200);
             if (wasEaten) {
@@ -154,7 +154,7 @@ export function tickCow(cow: Entity): void {
             }
    
             // Don't shake bushes without berries
-            const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+            const berryBushComponent = BerryBushComponentArray.getComponent(berryBush.id);
             if (berryBushComponent.numBerries === 0) {
                continue;
             }
@@ -199,7 +199,7 @@ export function tickCow(cow: Entity): void {
    }
 
    // Follow AI
-   const followAIComponent = FollowAIComponentArray.getComponent(cow);
+   const followAIComponent = FollowAIComponentArray.getComponent(cow.id);
    updateFollowAIComponent(cow, aiHelperComponent.visibleEntities, 7)
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
@@ -228,7 +228,7 @@ export function tickCow(cow: Entity): void {
    }
 
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(cow);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(cow.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(cow, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;

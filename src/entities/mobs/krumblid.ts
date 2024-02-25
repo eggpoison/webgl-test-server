@@ -42,10 +42,10 @@ export function createKrumblid(position: Point): Entity {
 }
 
 export function tickKrumblid(krumblid: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(krumblid);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(krumblid.id);
    
    // Escape AI
-   const escapeAIComponent = EscapeAIComponentArray.getComponent(krumblid);
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(krumblid.id);
    updateEscapeAIComponent(escapeAIComponent, 5 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(krumblid, aiHelperComponent.visibleEntities);
@@ -56,7 +56,7 @@ export function tickKrumblid(krumblid: Entity): void {
    }
    
    // Follow AI: Make the krumblid like to hide in cacti
-   const followAIComponent = FollowAIComponentArray.getComponent(krumblid);
+   const followAIComponent = FollowAIComponentArray.getComponent(krumblid.id);
    updateFollowAIComponent(krumblid, aiHelperComponent.visibleEntities, 5);
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
@@ -75,7 +75,7 @@ export function tickKrumblid(krumblid: Entity): void {
    }
 
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(krumblid);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(krumblid.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(krumblid, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;

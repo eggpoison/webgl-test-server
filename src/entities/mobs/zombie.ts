@@ -90,7 +90,7 @@ const getTarget = (zombie: Entity, aiHelperComponent: AIHelperComponent): Entity
       return target;
    }
 
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
 
    // Investigate recent hits
    let mostRecentHitTicks = CHASE_PURSUE_TIME_TICKS - DAMAGE_INVESTIGATE_TIME_TICKS - 1;
@@ -116,7 +116,7 @@ const doMeleeAttack = (zombie: Entity, target: Entity): void => {
       attackEntity(zombie, target, 1, "handSlot");
 
       // Reset attack cooldown
-      const zombieComponent = ZombieComponentArray.getComponent(zombie);
+      const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
       zombieComponent.attackCooldownTicks = Math.floor(randFloat(1, 2) * SettingsConst.TPS);
    }
 }
@@ -130,16 +130,16 @@ const doBiteAttack = (zombie: Entity, target: Entity): void => {
    zombie.velocity.y += 130 * Math.cos(lungeDirection);
 
    // Reset attack cooldown
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
    zombieComponent.attackCooldownTicks = Math.floor(randFloat(3, 4) * SettingsConst.TPS);
 
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(zombie);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(zombie.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
    useInfo.lastAttackTicks = Board.ticks;
 }
 
 const doAttack = (zombie: Entity, target: Entity): void => {
-   const inventoryComponent = InventoryComponentArray.getComponent(zombie);
+   const inventoryComponent = InventoryComponentArray.getComponent(zombie.id);
 
    // If holding an item, do a melee attack
    const handInventory = getInventory(inventoryComponent, "handSlot");
@@ -166,7 +166,7 @@ export function tickZombie(zombie: Entity): void {
    if (zombie.type !== IEntityType.zombie) {
       throw new Error("not zombie??");
    }
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
    zombieComponent.visibleHurtEntityTicks++;
       // @Temporary
    if (typeof zombieComponent === "undefined") {
@@ -187,13 +187,13 @@ export function tickZombie(zombie: Entity): void {
    // If day time, ignite
    if (!Board.isNight()) {
       // Ignite randomly or stay on fire if already on fire
-      const statusEffectComponent = StatusEffectComponentArray.getComponent(zombie);
+      const statusEffectComponent = StatusEffectComponentArray.getComponent(zombie.id);
       if (hasStatusEffect(statusEffectComponent, StatusEffectConst.burning) || Math.random() < SPONTANEOUS_COMBUSTION_CHANCE / SettingsConst.TPS) {
          applyStatusEffect(zombie, StatusEffectConst.burning, 5 * SettingsConst.TPS);
       }
    }
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(zombie);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(zombie.id);
 
    const attackTarget = getTarget(zombie, aiHelperComponent);
    if (attackTarget !== null) {
@@ -220,7 +220,7 @@ export function tickZombie(zombie: Entity): void {
             continue;
          }
 
-         const itemComponent = ItemComponentArray.getComponent(entity);
+         const itemComponent = ItemComponentArray.getComponent(entity.id);
          if (itemComponent.itemType === ItemType.raw_beef || itemComponent.itemType === ItemType.raw_fish) {
             const distance = zombie.position.calculateDistanceBetween(entity.position);
             if (distance < minDist) {
@@ -261,7 +261,7 @@ export function tickZombie(zombie: Entity): void {
    }
 
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(zombie);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(zombie.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(zombie, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;
@@ -288,14 +288,14 @@ const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
    }
    
    // If the entity is attacking the zombie, attack back
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
    if (zombieComponent.attackingEntityIDs.hasOwnProperty(entity.id)) {
       return true;
    }
 
    // Attack tribe members, but only if they aren't wearing a meat suit
    if (entity.type === IEntityType.player || entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior) {
-      const inventoryComponent = InventoryComponentArray.getComponent(entity);
+      const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
       const armourInventory = getInventory(inventoryComponent, "armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          if (armourInventory.itemSlots[1].type === ItemType.meat_suit) {
@@ -321,14 +321,14 @@ const shouldHurtEntity = (zombie: Entity, entity: Entity): boolean => {
    }
 
    // If the entity is attacking the zombie, attack back
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
    if (zombieComponent.attackingEntityIDs.hasOwnProperty(entity.id)) {
       return true;
    }
 
    // Attack tribe members, but only if they aren't wearing a meat suit
    if (entity.type === IEntityType.player || entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior) {
-      const inventoryComponent = InventoryComponentArray.getComponent(entity);
+      const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
       const armourInventory = getInventory(inventoryComponent, "armourSlot");
       if (armourInventory.itemSlots.hasOwnProperty(1)) {
          if (armourInventory.itemSlots[1].type === ItemType.meat_suit) {
@@ -354,7 +354,7 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
    
    // Hurt enemies on collision
    if (shouldHurtEntity(zombie, collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (!canDamageEntity(healthComponent, "zombie")) {
          return;
       }
@@ -385,19 +385,19 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
 
 export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
    if (HealthComponentArray.hasComponent(attackingEntity) && attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenWallSpikes && attackingEntity.type !== IEntityType.woodenFloorSpikes && attackingEntity.type !== IEntityType.floorPunjiSticks && attackingEntity.type !== IEntityType.wallPunjiSticks) {
-      const zombieComponent = ZombieComponentArray.getComponent(zombie);
+      const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
       zombieComponent.attackingEntityIDs[attackingEntity.id] = CHASE_PURSUE_TIME_TICKS;
    }
 }
 
 export function onZombieDeath(zombie: Entity): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(zombie);
+   const inventoryComponent = InventoryComponentArray.getComponent(zombie.id);
    dropInventory(zombie, inventoryComponent, "handSlot", 38);
 
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
    if (zombieComponent.tombstoneID !== ID_SENTINEL_VALUE && Board.entityRecord.hasOwnProperty(zombieComponent.tombstoneID)) {
       const tombstone = Board.entityRecord[zombieComponent.tombstoneID];
-      const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone);
+      const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone.id);
       tombstoneComponent.numZombies--;
    }
 
@@ -407,7 +407,7 @@ export function onZombieDeath(zombie: Entity): void {
 }
 
 export function onZombieVisibleEntityHurt(zombie: Entity, hurtEntity: Entity): void {
-   const zombieComponent = ZombieComponentArray.getComponent(zombie);
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
 
    zombieComponent.visibleHurtEntityID = hurtEntity.id;
    zombieComponent.visibleHurtEntityTicks = 0;

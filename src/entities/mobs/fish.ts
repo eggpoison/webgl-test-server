@@ -90,7 +90,7 @@ const move = (fish: Entity, direction: number): void => {
 
       stopEntity(fish);
 
-      const fishComponent = FishComponentArray.getComponent(fish);
+      const fishComponent = FishComponentArray.getComponent(fish.id);
       if (customTickIntervalHasPassed(fishComponent.secondsOutOfWater * SettingsConst.TPS, LUNGE_INTERVAL)) {
          fish.velocity.x += LUNGE_FORCE * Math.sin(direction);
          fish.velocity.y += LUNGE_FORCE * Math.cos(direction);
@@ -103,12 +103,12 @@ const move = (fish: Entity, direction: number): void => {
 }
 
 const followLeader = (fish: Entity, leader: Entity): void => {
-   const tribeMemberComponent = TribeMemberComponentArray.getComponent(leader);
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(leader.id);
    tribeMemberComponent.fishFollowerIDs.push(fish.id);
 }
 
 const unfollowLeader = (fish: Entity, leader: Entity): void => {
-   const tribeMemberComponent = TribeMemberComponentArray.getComponent(leader);
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(leader.id);
    const idx = tribeMemberComponent.fishFollowerIDs.indexOf(fish.id);
    if (idx !== -1) {
       tribeMemberComponent.fishFollowerIDs.splice(idx, 1);
@@ -118,7 +118,7 @@ const unfollowLeader = (fish: Entity, leader: Entity): void => {
 export function tickFish(fish: Entity): void {
    fish.overrideMoveSpeedMultiplier = fish.tile.type === TileTypeConst.water;
 
-   const fishComponent = FishComponentArray.getComponent(fish);
+   const fishComponent = FishComponentArray.getComponent(fish.id);
 
    if (fish.tile.type !== TileTypeConst.water) {
       fishComponent.secondsOutOfWater += SettingsConst.I_TPS;
@@ -139,7 +139,7 @@ export function tickFish(fish: Entity): void {
       fishComponent.secondsOutOfWater = 0;
    }
    
-   const aiHelperComponent = AIHelperComponentArray.getComponent(fish);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(fish.id);
 
    // If the leader dies or is out of vision range, stop following them
    if (fishComponent.leader !== null && (fishComponent.leader.isRemoved || !aiHelperComponent.visibleEntities.includes(fishComponent.leader))) {
@@ -152,7 +152,7 @@ export function tickFish(fish: Entity): void {
       for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
          const entity = aiHelperComponent.visibleEntities[i];
          if (entity.type === IEntityType.player || entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior) {
-            const inventoryComponent = InventoryComponentArray.getComponent(entity);
+            const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
             const armourSlotInventory = getInventory(inventoryComponent, "armourSlot");
             if (armourSlotInventory.itemSlots.hasOwnProperty(1) && armourSlotInventory.itemSlots[1].type === ItemType.fishlord_suit) {
                // New leader
@@ -174,7 +174,7 @@ export function tickFish(fish: Entity): void {
          move(fish, fish.position.calculateAngleBetween(fishComponent.attackTarget.position));
 
          if (fish.isColliding(fishComponent.attackTarget) !== NO_COLLISION) {
-            const healthComponent = HealthComponentArray.getComponent(fishComponent.attackTarget);
+            const healthComponent = HealthComponentArray.getComponent(fishComponent.attackTarget.id);
             if (!canDamageEntity(healthComponent, "fish")) {
                return;
             }
@@ -219,7 +219,7 @@ export function tickFish(fish: Entity): void {
    }
 
    // Escape AI
-   const escapeAIComponent = EscapeAIComponentArray.getComponent(fish);
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(fish.id);
    updateEscapeAIComponent(escapeAIComponent, 3 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(fish, aiHelperComponent.visibleEntities);
@@ -246,7 +246,7 @@ export function tickFish(fish: Entity): void {
    }
 
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(fish);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(fish.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(fish, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;
@@ -291,7 +291,7 @@ export function tickFish(fish: Entity): void {
 
 export function onFishLeaderHurt(fish: Entity, leaderAttacker: Entity): void {
    if (HealthComponentArray.hasComponent(leaderAttacker)) {
-      const fishComponent = FishComponentArray.getComponent(fish);
+      const fishComponent = FishComponentArray.getComponent(fish.id);
       fishComponent.attackTarget = leaderAttacker;
    }
 }
@@ -306,7 +306,7 @@ export function onFishDeath(fish: Entity): void {
 
 export function onFishRemove(fish: Entity): void {
    // Remove the fish from its leaders' follower array
-   const fishComponent = FishComponentArray.getComponent(fish);
+   const fishComponent = FishComponentArray.getComponent(fish.id);
    if (fishComponent.leader !== null) {
       unfollowLeader(fish, fishComponent.leader);
    }

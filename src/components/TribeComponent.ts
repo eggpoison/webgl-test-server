@@ -44,7 +44,7 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
          return EntityRelationship.friendly;
       }
       case IEntityType.barrel: {
-         const entityTribeComponent = TribeComponentArray.getComponent(entity);
+         const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
          if (tribeComponent.tribe === null || entityTribeComponent === null) {
             return EntityRelationship.neutral;
          }
@@ -64,7 +64,7 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
       case IEntityType.ballista:
       case IEntityType.slingTurret:
       case IEntityType.blueprintEntity: {
-         const entityTribeComponent = TribeComponentArray.getComponent(entity);
+         const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
          if (tribeComponent.tribe !== null && entityTribeComponent.tribe === tribeComponent.tribe) {
             return EntityRelationship.friendlyBuilding;
          }
@@ -76,7 +76,7 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
       case IEntityType.tribeWarrior:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow: {
-         const entityTribeComponent = TribeComponentArray.getComponent(entity);
+         const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
          if (tribeComponent.tribe !== null && entityTribeComponent.tribe === tribeComponent.tribe) {
             return EntityRelationship.friendly;
          }

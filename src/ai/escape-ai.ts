@@ -3,7 +3,7 @@ import Entity from "../Entity";
 import { EscapeAIComponentArray } from "../components/ComponentArray";
 
 export function registerAttackingEntity(entity: Entity, attackingEntity: Entity): void {
-   const escapeAIComponent = EscapeAIComponentArray.getComponent(entity);
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(entity.id);
 
    const idx = escapeAIComponent.attackingEntityIDs.indexOf(attackingEntity.id);
    if (idx === -1) {
@@ -25,7 +25,7 @@ export function runFromAttackingEntity(entity: Entity, attackingEntity: Entity, 
 }
 
 export function chooseEscapeEntity(entity: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null {
-   const escapeAIComponent = EscapeAIComponentArray.getComponent(entity);
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(entity.id);
    
    let minDistance = Number.MAX_SAFE_INTEGER;
    let escapeEntity: Entity | null = null;

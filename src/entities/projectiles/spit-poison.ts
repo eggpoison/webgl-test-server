@@ -34,7 +34,7 @@ export function onSpitPoisonCollision(spit: Entity, collidingEntity: Entity): vo
       return;
    }
 
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "spitPoison")) {
       return;
    }

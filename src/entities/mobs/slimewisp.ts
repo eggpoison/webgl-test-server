@@ -44,7 +44,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
    // Slimewisps move at normal speed on slime blocks
    slimewisp.overrideMoveSpeedMultiplier = slimewisp.tile.type === TileTypeConst.slime || slimewisp.tile.type === TileTypeConst.sludge;
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(slimewisp);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(slimewisp.id);
    
    // Merge with other slimewisps
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
@@ -54,7 +54,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
    
          // Continue merge
          if (slimewisp.isColliding(mergingSlimewisp) !== NO_COLLISION) {
-            const slimewispComponent = SlimewispComponentArray.getComponent(slimewisp);
+            const slimewispComponent = SlimewispComponentArray.getComponent(slimewisp.id);
             slimewispComponent.mergeTimer -= SettingsConst.I_TPS;
             if (slimewispComponent.mergeTimer <= 0 && !mergingSlimewisp.isRemoved) {
                // Create a slime between the two wisps
@@ -70,7 +70,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
    }
    
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(slimewisp);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(slimewisp.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(slimewisp, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;

@@ -249,7 +249,7 @@ abstract class Board {
          }
 
          if (AIHelperComponentArray.hasComponent(entity)) {
-            const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
+            const aiHelperComponent = AIHelperComponentArray.getComponent(entity.id);
             for (let i = 0; i < aiHelperComponent.visibleChunks.length; i++) {
                const chunk = aiHelperComponent.visibleChunks[i];
                chunk.viewingEntities.splice(chunk.viewingEntities.indexOf(entity), 1);
@@ -578,7 +578,7 @@ abstract class Board {
 
          // @Speed @Cleanup: Should be in its associated file!
          if (entity.type === IEntityType.researchBench) {
-            const tribeComponent = TribeComponentArray.getComponent(entity);
+            const tribeComponent = TribeComponentArray.getComponent(entity.id);
             tribeComponent.tribe!.addResearchBench(entity);
          }
       }

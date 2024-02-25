@@ -70,7 +70,7 @@ const calculateVisibleEntities = (entity: Entity, aiHelperComponent: AIHelperCom
 }
 
 export function tickAIHelperComponent(entity: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(entity.id);
    
    const minChunkX = Math.max(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), 0);
    const maxChunkX = Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);

@@ -38,7 +38,7 @@ const applyPhysics = (entity: Entity): void => {
    // entities into two groups, and call two different applyPhysicsFriction and applyPhysicsNoFriction functions to
    // the corresponding groups
    
-   const physicsComponent = PhysicsComponentArray.getComponent(entity);
+   const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
 
    // @Temporary @Hack
    if (isNaN(entity.velocity.x) || isNaN(entity.velocity.x)) {
@@ -107,7 +107,7 @@ const applyPhysics = (entity: Entity): void => {
 
 const updatePosition = (entity: Entity): void => {
    // @Speed: we run this function in both applyPhysics and updatePosition
-   const physicsComponent = PhysicsComponentArray.getComponent(entity);
+   const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
    
    if (entity.hitboxesAreDirty) {
       entity.cleanHitboxes();

@@ -23,7 +23,7 @@ export class BlueprintComponent {
 }
 
 const constructBlueprint = (blueprintEntity: Entity, blueprintComponent: BlueprintComponent): void => {
-   const tribeComponent = TribeComponentArray.getComponent(blueprintEntity);
+   const tribeComponent = TribeComponentArray.getComponent(blueprintEntity.id);
    
    blueprintEntity.remove();
    
@@ -48,7 +48,7 @@ const constructBlueprint = (blueprintEntity: Entity, blueprintComponent: Bluepri
 }
 
 export function doBlueprintWork(blueprintEntity: Entity, hammerItem: Item): void {
-   const blueprintComponent = BlueprintComponentArray.getComponent(blueprintEntity);
+   const blueprintComponent = BlueprintComponentArray.getComponent(blueprintEntity.id);
    
    const hammerItemInfo = ITEM_INFO_RECORD[hammerItem.type] as HammerItemInfo;
    // @Temporary

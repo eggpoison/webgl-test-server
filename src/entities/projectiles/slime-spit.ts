@@ -37,7 +37,7 @@ export function onSlimeSpitCollision(spit: Entity, collidingEntity: Entity): voi
       return;
    }
 
-   const spitComponent = SlimeSpitComponentArray.getComponent(spit);
+   const spitComponent = SlimeSpitComponentArray.getComponent(spit.id);
    const damage = spitComponent.size === 0 ? 2 : 3;
    const hitDirection = spit.position.calculateAngleBetween(collidingEntity.position);
 
@@ -62,7 +62,7 @@ export function onSlimeSpitCollision(spit: Entity, collidingEntity: Entity): voi
 }
 
 export function onSlimeSpitDeath(spit: Entity): void {
-   const spitComponent = SlimeSpitComponentArray.getComponent(spit);
+   const spitComponent = SlimeSpitComponentArray.getComponent(spit.id);
    if (spitComponent.size === 1) {
       createSpitPoison(spit.position.copy());
    }

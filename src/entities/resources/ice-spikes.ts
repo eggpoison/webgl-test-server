@@ -36,7 +36,7 @@ const canGrow = (iceSpikesComponent: IceSpikesComponent): boolean => {
       return false;
    }
    
-   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike);
+   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike.id);
    return rootIceSpikesComponent.numChildrenIceSpikes < rootIceSpikesComponent.maxChildren;
 }
 
@@ -62,16 +62,16 @@ const grow = (iceSpikes: Entity): void => {
 
    const minDistanceToEntity = Board.distanceToClosestEntity(position);
    if (minDistanceToEntity >= 40) {
-      const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+      const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes.id);
       createIceSpikes(position, iceSpikesComponent.rootIceSpike);
       
-      const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike);
+      const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike.id);
       rootIceSpikesComponent.numChildrenIceSpikes++;
    }
 }
 
 export function tickIceSpikes(iceSpikes: Entity): void {
-   const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+   const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes.id);
 
    if (canGrow(iceSpikesComponent) && Math.random() < GROWTH_TICK_CHANCE / SettingsConst.TPS) {
       iceSpikesComponent.iceSpikeGrowProgressTicks++;
@@ -87,7 +87,7 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (canDamageEntity(healthComponent, "ice_spikes")) {
          const hitDirection = iceSpikes.position.calculateAngleBetween(collidingEntity.position);
          
@@ -145,7 +145,7 @@ export function onIceSpikesRemove(iceSpikes: Entity): void {
 
 /** Forces an ice spike to immediately grow its maximum number of children */
 const forceMaxGrowIceSpike = (iceSpikes: Entity): void => {
-   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes.id);
    
    const connectedIceSpikes = [iceSpikes];
 

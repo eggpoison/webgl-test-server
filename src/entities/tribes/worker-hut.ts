@@ -25,7 +25,7 @@ export function createWorkerHut(position: Point, tribe: Tribe): Entity {
 }
 
 export function onWorkerHutRemove(hut: Entity): void {
-   const tribeComponent = TribeComponentArray.getComponent(hut);
+   const tribeComponent = TribeComponentArray.getComponent(hut.id);
    tribeComponent.tribe!.removeWorkerHut(hut);
    
    HealthComponentArray.removeComponent(hut);

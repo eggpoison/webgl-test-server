@@ -29,7 +29,7 @@ export function createSnowball(position: Point, size: SnowballSize = SnowballSiz
 }
 
 export function tickSnowball(snowball: Entity): void {
-   const snowballComponent = SnowballComponentArray.getComponent(snowball);
+   const snowballComponent = SnowballComponentArray.getComponent(snowball.id);
    
    // Angular velocity
    if (snowballComponent.angularVelocity !== 0) {
@@ -55,7 +55,7 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
 
    // Don't let the snowball damage the yeti which threw it
    if (collidingEntity.type === IEntityType.yeti) {
-      const snowballComponent = SnowballComponentArray.getComponent(snowball);
+      const snowballComponent = SnowballComponentArray.getComponent(snowball.id);
       if (collidingEntity.id === snowballComponent.yetiID) {
          return;
       }
@@ -66,7 +66,7 @@ export function onSnowballCollision(snowball: Entity, collidingEntity: Entity): 
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (canDamageEntity(healthComponent, "snowball")) {
          const hitDirection = snowball.position.calculateAngleBetween(collidingEntity.position);
 

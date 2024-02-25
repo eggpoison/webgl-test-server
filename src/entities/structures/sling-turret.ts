@@ -47,7 +47,7 @@ const entityIsTargetted = (entity: Entity, tribeComponent: TribeComponent): bool
 }
 
 const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
-   const tribeComponent = TribeComponentArray.getComponent(turret);
+   const tribeComponent = TribeComponentArray.getComponent(turret.id);
    
    let closestValidTarget: Entity;
    let minDist = 9999999.9;
@@ -91,8 +91,8 @@ const fire = (turret: Entity, slingTurretComponent: TurretComponent): void => {
 }
 
 export function tickSlingTurret(turret: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(turret);
-   const slingTurretComponent = TurretComponentArray.getComponent(turret);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(turret.id);
+   const slingTurretComponent = TurretComponentArray.getComponent(turret.id);
 
    if (aiHelperComponent.visibleEntities.length > 0) {
       const target = getTarget(turret, aiHelperComponent.visibleEntities);

@@ -40,7 +40,7 @@ const giveItem = (player: Entity, itemType: ItemType, amount: number): void => {
    }
 
    const item = createItem(itemType, amount);
-   addItem(InventoryComponentArray.getComponent(player), item);
+   addItem(InventoryComponentArray.getComponent(player.id), item);
 }
 
 const tp = (player: Entity, x: number, y: number): void => {
@@ -193,7 +193,7 @@ export function registerCommand(command: string, player: Entity): void {
       }
 
       case "unlockall": {
-         const tribeComponent = TribeComponentArray.getComponent(player);
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
          tribeComponent.tribe!.unlockAllTechs();
          
          break;

@@ -30,7 +30,7 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
    if (battleaxe.ageTicks < RETURN_TIME_TICKS) {
       battleaxe.rotation -= 6 * Math.PI / SettingsConst.TPS;
    } else {
-      const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe);
+      const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe.id);
       if (!Board.entityRecord.hasOwnProperty(throwingProjectileComponent.tribeMemberID)) {
          battleaxe.remove();
          return;
@@ -59,13 +59,13 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
 
 export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntity: Entity): void {
    // Don't hurt the entity who threw the spear
-   const spearComponent = ThrowingProjectileComponentArray.getComponent(battleaxe);
+   const spearComponent = ThrowingProjectileComponentArray.getComponent(battleaxe.id);
    if (collidingEntity.id === spearComponent.tribeMemberID) {
       return;
    }
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       const attackHash = "battleaxe-" + battleaxe.id;
       if (!canDamageEntity(healthComponent, attackHash)) {
          return;
@@ -92,25 +92,24 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
          attackerID: tribeMember !== null ? tribeMember.id : -1,
          flags: 0
       });
-      addLocalInvulnerabilityHash(HealthComponentArray.getComponent(collidingEntity), attackHash, 0.3);
+      addLocalInvulnerabilityHash(HealthComponentArray.getComponent(collidingEntity.id), attackHash, 0.3);
    }
 }
 
 export function onBattleaxeProjectileDeath(battleaxe: Entity): void {
-   const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe);
+   const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe.id);
    if (!Board.entityRecord.hasOwnProperty(throwingProjectileComponent.tribeMemberID)) {
       return;
    }
    
    // Find the inventory the battleaxe item is in
-   const owner = Board.entityRecord[throwingProjectileComponent.tribeMemberID];
-   const ownerInventoryComponent = InventoryComponentArray.getComponent(owner);
+   const ownerInventoryComponent = InventoryComponentArray.getComponent(throwingProjectileComponent.tribeMemberID);
    const inventory = findInventoryContainingItem(ownerInventoryComponent, throwingProjectileComponent.item);
    if (inventory === null) {
       return;
    }
    
-   const ownerInventoryUseComponent = InventoryUseComponentArray.getComponent(owner);
+   const ownerInventoryUseComponent = InventoryUseComponentArray.getComponent(throwingProjectileComponent.tribeMemberID);
    const useInfo = getInventoryUseInfo(ownerInventoryUseComponent, inventory.name);
    useInfo.thrownBattleaxeItemID = -1;
 }

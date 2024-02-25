@@ -33,10 +33,9 @@ export function tickSpearProjectile(spear: Entity): void {
 
 export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entity): void {
    // Don't hurt the entity who threw the spear
-   const spearComponent = ThrowingProjectileComponentArray.getComponent(spear);
+   const spearComponent = ThrowingProjectileComponentArray.getComponent(spear.id);
    if (Board.entityRecord.hasOwnProperty(spearComponent.tribeMemberID)) {
-      const throwingEntity = Board.entityRecord[spearComponent.tribeMemberID];
-      if (getTribeMemberRelationship(TribeComponentArray.getComponent(throwingEntity), collidingEntity) === EntityRelationship.friendly) {
+      if (getTribeMemberRelationship(TribeComponentArray.getComponent(spearComponent.tribeMemberID), collidingEntity) === EntityRelationship.friendly) {
          return;
       }
    }

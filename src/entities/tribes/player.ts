@@ -94,7 +94,7 @@ export function tickPlayer(player: Entity): void {
                continue;
             }
 
-            const itemComponent = ItemComponentArray.getComponent(itemEntity);
+            const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
             if (!tribeMemberCanPickUpItem(player, itemComponent.itemType)) {
                continue;
             }
@@ -124,7 +124,7 @@ export function onPlayerHurt(player: Entity, collidingEntity: Entity): void {
 }
 
 export function onPlayerDeath(player: Entity): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
    
    dropInventory(player, inventoryComponent, "hotbar", 38);
    dropInventory(player, inventoryComponent, "armourSlot", 38);
@@ -146,7 +146,7 @@ export function processPlayerCraftingPacket(player: Entity, recipeIndex: number)
       return;
    }
    
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
    const craftingRecipe = CRAFTING_RECIPES[recipeIndex];
    
    // Don't craft past items' stack size
@@ -183,14 +183,14 @@ export function processItemPickupPacket(player: Entity, entityID: number, invent
       return;
    }
 
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
    
    // Don't pick up the item if there is already a held item
    if (getInventory(inventoryComponent, "heldItemSlot").itemSlots.hasOwnProperty(1)) {
       return;
    }
 
-   const targetInventoryComponent = InventoryComponentArray.getComponent(Board.entityRecord[entityID]);
+   const targetInventoryComponent = InventoryComponentArray.getComponent(entityID);
 
    const pickedUpItem = getItem(targetInventoryComponent, inventoryName, itemSlot);
    if (pickedUpItem === null) return;
@@ -207,13 +207,13 @@ export function processItemReleasePacket(player: Entity, entityID: number, inven
       return;
    }
 
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
 
    // Don't release an item if there is no held item
    const heldItemInventory = getInventory(inventoryComponent, "heldItemSlot");
    if (!heldItemInventory.itemSlots.hasOwnProperty(1)) return;
 
-   const targetInventoryComponent = InventoryComponentArray.getComponent(Board.entityRecord[entityID]);
+   const targetInventoryComponent = InventoryComponentArray.getComponent(entityID);
 
    const heldItem = heldItemInventory.itemSlots[1];
    
@@ -225,7 +225,7 @@ export function processItemReleasePacket(player: Entity, entityID: number, inven
 }
 
 export function processItemUsePacket(player: Entity, itemSlot: number): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
 
    const item = getItem(inventoryComponent, "hotbar", itemSlot);
    if (item !== null)  {
@@ -235,7 +235,7 @@ export function processItemUsePacket(player: Entity, itemSlot: number): void {
 
 /** Returns whether the swing was successfully swang or not */
 const attemptSwing = (player: Entity, attackTargets: ReadonlyArray<Entity>, itemSlot: number, inventoryName: string): boolean => {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
    const item = getItem(inventoryComponent, inventoryName, itemSlot);
    if (item !== null && ITEM_TYPE_RECORD[item.type] === "hammer") {
       // First look for friendly buildings to repair
@@ -278,14 +278,14 @@ export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPa
    }
 
    // If a barbarian, attack with offhand
-   const tribeComponent = TribeComponentArray.getComponent(player);
+   const tribeComponent = TribeComponentArray.getComponent(player.id);
    if (tribeComponent.tribe!.type === TribeType.barbarians) {
       attemptSwing(player, targets, 1, "offhand");
    }
 }
 
 export function throwItem(player: Entity, inventoryName: string, itemSlot: number, dropAmount: number, throwDirection: number): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
    const inventory = getInventory(inventoryComponent, inventoryName);
    if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
       return;
@@ -307,8 +307,8 @@ export function throwItem(player: Entity, inventoryName: string, itemSlot: numbe
 }
 
 export function startEating(player: Entity, inventoryName: string): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
    
@@ -323,8 +323,8 @@ export function startEating(player: Entity, inventoryName: string): void {
 }
 
 export function startChargingBow(player: Entity, inventoryName: string): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
@@ -340,8 +340,8 @@ export function startChargingBow(player: Entity, inventoryName: string): void {
 }
 
 export function startChargingSpear(player: Entity, inventoryName: string): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
@@ -355,8 +355,8 @@ export function startChargingSpear(player: Entity, inventoryName: string): void 
 }
 
 export function startChargingBattleaxe(player: Entity, inventoryName: string): void {
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(player.id);
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
@@ -410,12 +410,12 @@ const hasMetTechStudyRequirements = (tech: TechInfo, tribe: Tribe): boolean => {
 export function processTechUnlock(player: Entity, techID: TechID): void {
    const tech = getTechByID(techID);
    
-   const tribeComponent = TribeComponentArray.getComponent(player);
+   const tribeComponent = TribeComponentArray.getComponent(player.id);
    if (tribeComponent.tribe === null) {
       console.warn("Cannot research a tech without a tribe.");
       return;
    }
-   const inventoryComponent = InventoryComponentArray.getComponent(player);
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
 
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
    
@@ -496,7 +496,7 @@ export function shapeStructure(player: Entity, structureID: number, buildingType
 
    previousStructure.remove();
 
-   const tribeComponent = TribeComponentArray.getComponent(player);
+   const tribeComponent = TribeComponentArray.getComponent(player.id);
    createBlueprintEntity(position, buildingType, tribeComponent.tribe, rotation);
 }
 

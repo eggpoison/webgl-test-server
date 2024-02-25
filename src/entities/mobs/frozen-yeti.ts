@@ -97,7 +97,7 @@ const findTargets = (frozenYeti: Entity, visibleEntities: ReadonlyArray<Entity>)
    }
 
    // Add attacking entities to targets
-   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti);
+   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti.id);
    // @Speed
    for (const _targetID of Object.keys(frozenYetiComponent.attackingEntities)) {
       const entity = Board.entityRecord[Number(_targetID)];
@@ -110,7 +110,7 @@ const findTargets = (frozenYeti: Entity, visibleEntities: ReadonlyArray<Entity>)
 }
 
 const getAttackType = (frozenYeti: Entity, target: Entity, angleToTarget: number, numTargets: number): FrozenYetiAttackType => {
-   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti);
+   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti.id);
    
    if (frozenYetiComponent.globalAttackCooldownTimer > 0) {
       return FrozenYetiAttackType.none;
@@ -369,7 +369,7 @@ const doBiteAttack = (frozenYeti: Entity, angleToTarget: number): void => {
 }
 
 export function tickFrozenYeti(frozenYeti: Entity): void {
-   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti);
+   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti.id);
    
    // Remove targets which are dead or have been out of aggro long enough
    // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
@@ -389,7 +389,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
 
    // @Cleanup: Too long, should be separated into many individual functions
    
-   const aiHelperComponent = AIHelperComponentArray.getComponent(frozenYeti);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(frozenYeti.id);
    const targets = findTargets(frozenYeti, aiHelperComponent.visibleEntities);
    
    if (targets.length === 0 && frozenYetiComponent.attackType === FrozenYetiAttackType.none) {
@@ -404,7 +404,7 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
       frozenYetiComponent.stompCooldownTimer = FROZEN_YETI_STOMP_COOLDOWN;
 
       // Wander AI
-      const wanderAIComponent = WanderAIComponentArray.getComponent(frozenYeti);
+      const wanderAIComponent = WanderAIComponentArray.getComponent(frozenYeti.id);
       if (wanderAIComponent.targetPositionX !== -1) {
          if (entityHasReachedPosition(frozenYeti, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
             wanderAIComponent.targetPositionX = -1;
@@ -661,14 +661,14 @@ export function onFrozenYetiCollision(frozenYeti: Entity, collidingEntity: Entit
 
    // Don't deal collision damage to frozen yetis which aren't attacking them
    if (collidingEntity.type === IEntityType.frozenYeti) {
-      const yetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti);
+      const yetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti.id);
       if (!yetiComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
          return;
       }
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (!canDamageEntity(healthComponent, "frozen_yeti")) {
          return;
       }
@@ -692,7 +692,7 @@ export function onFrozenYetiCollision(frozenYeti: Entity, collidingEntity: Entit
 }
 
 export function onFrozenYetiHurt(frozenYeti: Entity, attackingEntity: Entity, damage: number): void {
-   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti);
+   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti.id);
 
    // Update/create the entity's targetInfo record
    if (frozenYetiComponent.attackingEntities.hasOwnProperty(attackingEntity.id)) {

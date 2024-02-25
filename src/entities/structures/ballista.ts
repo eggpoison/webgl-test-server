@@ -46,7 +46,7 @@ export function createBallista(position: Point, tribe: Tribe | null, rotation: n
 }
 
 const getAmmoType = (turret: Entity): BallistaAmmoType | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(turret);
+   const inventoryComponent = InventoryComponentArray.getComponent(turret.id);
    const ammoBoxInventory = getInventory(inventoryComponent, "ammoBoxInventory");
 
    const firstOccupiedSlot = getFirstOccupiedItemSlotInInventory(ammoBoxInventory);
@@ -113,7 +113,7 @@ const entityIsTargetted = (turret: Entity, entity: Entity, tribeComponent: Tribe
 }
 
 const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
-   const tribeComponent = TribeComponentArray.getComponent(turret);
+   const tribeComponent = TribeComponentArray.getComponent(turret.id);
    
    let closestValidTarget: Entity;
    let minDist = 9999999.9;
@@ -137,7 +137,7 @@ const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Enti
 }
 
 const attemptAmmoLoad = (ballista: Entity): void => {
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const ballistaComponent = BallistaComponentArray.getComponent(ballista.id);
    
    const ammoType = getAmmoType(ballista);
    if (ammoType !== null) {
@@ -145,13 +145,13 @@ const attemptAmmoLoad = (ballista: Entity): void => {
       ballistaComponent.ammoType = ammoType;
       ballistaComponent.ammoRemaining = AMMO_INFO_RECORD[ammoType].ammoMultiplier;
 
-      const inventoryComponent = InventoryComponentArray.getComponent(ballista);
+      const inventoryComponent = InventoryComponentArray.getComponent(ballista.id);
       consumeItemTypeFromInventory(inventoryComponent, "ammoBoxInventory", ammoType, 1);
    }
 }
 
 const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
-   const turretComponent = TurretComponentArray.getComponent(ballista);
+   const turretComponent = TurretComponentArray.getComponent(ballista.id);
 
    const ammoInfo = AMMO_INFO_RECORD[ammoType];
    
@@ -192,7 +192,7 @@ const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
    }
 
    // Consume ammo
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const ballistaComponent = BallistaComponentArray.getComponent(ballista.id);
    ballistaComponent.ammoRemaining--;
 
    if (ballistaComponent.ammoRemaining === 0) {
@@ -201,9 +201,9 @@ const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
 }
 
 export function tickBallista(ballista: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(ballista);
-   const turretComponent = TurretComponentArray.getComponent(ballista);
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(ballista.id);
+   const turretComponent = TurretComponentArray.getComponent(ballista.id);
+   const ballistaComponent = BallistaComponentArray.getComponent(ballista.id);
 
    // Attempt to load ammo if there is none loaded
    // @Speed: ideally shouldn't be done every tick, just when the inventory is changed (ammo is added to the inventory)
@@ -285,13 +285,13 @@ export function onBallistaRemove(ballista: Entity): void {
 // @Copynpaste: Following 2 functions copied from sling-turret.ts. Perhaps unify into 1 component?
 
 export function getBallistaChargeProgress(ballista: Entity): number {
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const ballistaComponent = BallistaComponentArray.getComponent(ballista.id);
    if (ballistaComponent.ammoRemaining === 0) {
       return 0;
    }
 
    const shotCooldownTicks = AMMO_INFO_RECORD[ballistaComponent.ammoType].shotCooldownTicks;
-   const turretComponent = TurretComponentArray.getComponent(ballista);
+   const turretComponent = TurretComponentArray.getComponent(ballista.id);
    
    if (turretComponent.fireCooldownTicks > shotCooldownTicks) {
       return 0;
@@ -301,13 +301,13 @@ export function getBallistaChargeProgress(ballista: Entity): number {
 }
 
 export function getBallistaReloadProgress(ballista: Entity): number {
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const ballistaComponent = BallistaComponentArray.getComponent(ballista.id);
    if (ballistaComponent.ammoRemaining === 0) {
       return 0;
    }
 
    const shotCooldownTicks = AMMO_INFO_RECORD[ballistaComponent.ammoType].shotCooldownTicks;
-   const turretComponent = TurretComponentArray.getComponent(ballista);
+   const turretComponent = TurretComponentArray.getComponent(ballista.id);
 
    if (turretComponent.fireCooldownTicks < shotCooldownTicks) {
       return 0;

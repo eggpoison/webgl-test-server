@@ -64,8 +64,8 @@ const getHeatingRecipeByIngredientType = (heatingEntityType: IEntityType, ingred
 }
 
 export function tickCookingEntity(entity: Entity): void {
-   const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
-   const inventoryComponent = InventoryComponentArray.getComponent(entity);
+   const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity.id);
+   const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
 
    const fuelInventory = getInventory(inventoryComponent, "fuelInventory");
    const ingredientInventory = getInventory(inventoryComponent, "ingredientInventory");
