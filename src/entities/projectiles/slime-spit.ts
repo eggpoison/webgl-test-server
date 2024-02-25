@@ -20,7 +20,7 @@ export function createSlimeSpit(position: Point, size: number): Entity {
    const hitbox = new RectangularHitbox(spit, 0.2, 0, 0, hitboxSize, hitboxSize);
    spit.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(spit, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(spit, new PhysicsComponent(true, false));
    SlimeSpitComponentArray.addComponent(spit, new SlimeSpitComponent(size));
 
    return spit;

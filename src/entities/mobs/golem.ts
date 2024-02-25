@@ -120,7 +120,7 @@ export function createGolem(position: Point): Entity {
       golem.addHitbox(new CircularHitbox(golem, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, 12));
    }
 
-   PhysicsComponentArray.addComponent(golem, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(golem, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(golem, new HealthComponent(150));
    StatusEffectComponentArray.addComponent(golem, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.burning | StatusEffectConst.poisoned));
    const golemComponent = new GolemComponent(golem.hitboxes, PEBBLUM_SUMMON_COOLDOWN_TICKS);

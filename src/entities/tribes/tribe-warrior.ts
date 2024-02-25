@@ -27,7 +27,7 @@ export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number)
    warrior.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
-   PhysicsComponentArray.addComponent(warrior, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(warrior, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent(0));
    TribeComponentArray.addComponent(warrior, new TribeComponent(tribe));

@@ -18,7 +18,7 @@ export function createSpearProjectile(position: Point, tribeMemberID: number, it
    const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, 12, 60);
    spear.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(spear, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(spear, new PhysicsComponent(true, false));
    ThrowingProjectileComponentArray.addComponent(spear, new ThrowingProjectileComponent(tribeMemberID, item));
 
    return spear;

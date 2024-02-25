@@ -150,7 +150,7 @@ export function createYeti(position: Point): Entity {
    const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2);
    yeti.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent(StatusEffectConst.freezing));
    WanderAIComponentArray.addComponent(yeti, new WanderAIComponent());

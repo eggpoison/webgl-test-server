@@ -52,7 +52,7 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32);
    zombie.addHitbox(hitbox);
    
-   PhysicsComponentArray.addComponent(zombie, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(zombie, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(zombie, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(zombie, new StatusEffectComponent(0));
    ZombieComponentArray.addComponent(zombie, new ZombieComponent(isGolden ? 3 : randInt(0, 2), tombstoneID));

@@ -36,7 +36,7 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
 
    const throwerTribeComponent = TribeComponentArray.getComponent(thrower);
    
-   PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false));
+   PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false, true));
    TribeComponentArray.addComponent(arrow, new TribeComponent(throwerTribeComponent.tribe));
    ArrowComponentArray.addComponent(arrow, new ArrowComponent(thrower.id, arrowInfo.type, arrowInfo.damage, arrowInfo.knockback, arrowInfo.ignoreFriendlyBuildings, arrowInfo.statusEffect));
    

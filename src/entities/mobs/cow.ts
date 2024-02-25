@@ -44,7 +44,7 @@ export function createCow(position: Point): Entity {
    const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100);
    cow.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent(0));
    AIHelperComponentArray.addComponent(cow, new AIHelperComponent(VISION_RANGE));

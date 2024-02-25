@@ -17,7 +17,7 @@ export function createPebblum(position: Point, targetID: number): Entity {
    // Nose
    pebblum.addHitbox(new CircularHitbox(pebblum, 0.3, 0, 6, 8 * 2));
    
-   PhysicsComponentArray.addComponent(pebblum, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(pebblum, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(pebblum, new HealthComponent(20));
    PebblumComponentArray.addComponent(pebblum, new PebblumComponent(targetID));
    

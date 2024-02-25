@@ -18,7 +18,7 @@ export function createBattleaxeProjectile(position: Point, tribeMemberID: number
    const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, 32);
    battleaxe.addHitbox(hitbox);
    
-   PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true, false));
    ThrowingProjectileComponentArray.addComponent(battleaxe, new ThrowingProjectileComponent(tribeMemberID, item));
 
    // @Incomplete: Make the battleaxe not be pushed by collisions 

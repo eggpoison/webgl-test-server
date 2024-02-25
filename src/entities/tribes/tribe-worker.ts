@@ -27,7 +27,7 @@ export function createTribeWorker(position: Point, tribe: Tribe, hutID: number):
    worker.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
-   PhysicsComponentArray.addComponent(worker, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(worker, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(worker, new HealthComponent(tribeInfo.maxHealthWorker));
    StatusEffectComponentArray.addComponent(worker, new StatusEffectComponent(0));
    TribeComponentArray.addComponent(worker, new TribeComponent(tribe));

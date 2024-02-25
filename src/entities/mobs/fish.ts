@@ -45,7 +45,7 @@ export function createFish(position: Point): Entity {
    const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, FISH_WIDTH, FISH_HEIGHT);
    fish.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(fish, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(fish, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(fish, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(fish, new StatusEffectComponent(0));
    WanderAIComponentArray.addComponent(fish, new WanderAIComponent());

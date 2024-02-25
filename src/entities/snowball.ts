@@ -20,7 +20,7 @@ export function createSnowball(position: Point, size: SnowballSize = SnowballSiz
    const hitbox = new CircularHitbox(snowball, mass, 0, 0, SNOWBALL_SIZES[size] / 2);
    snowball.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(snowball, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(snowball, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(snowball, new HealthComponent(MAX_HEALTHS[size]));
    StatusEffectComponentArray.addComponent(snowball, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.freezing));
    SnowballComponentArray.addComponent(snowball, new SnowballComponent(yetiID, size, Math.floor(randFloat(10, 15) * SettingsConst.TPS)));

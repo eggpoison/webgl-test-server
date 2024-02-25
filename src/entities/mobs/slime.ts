@@ -64,7 +64,7 @@ export function createSlime(position: Point, size: SlimeSize, orbSizes: Array<Sl
    const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size]);
    slime.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(slime, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(slime, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(slime, new HealthComponent(MAX_HEALTH[size]));
    StatusEffectComponentArray.addComponent(slime, new StatusEffectComponent(StatusEffectConst.poisoned));
    SlimeComponentArray.addComponent(slime, new SlimeComponent(size, MERGE_WEIGHTS[size], orbSizes));

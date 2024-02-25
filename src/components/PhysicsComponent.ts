@@ -21,8 +21,12 @@ export class PhysicsComponent {
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = false;
 
-   constructor(isAffectedByFriction: boolean) {
+   /** If true, the entity will not be pushed around by collisions, but will still call any relevant events. */
+   public readonly ignoreCollisions: boolean;
+   
+   constructor(isAffectedByFriction: boolean, ignoreCollisions: boolean) {
       this.isAffectedByFriction = isAffectedByFriction;
+      this.ignoreCollisions = ignoreCollisions;
    }
 }
 
@@ -55,11 +59,11 @@ const applyPhysics = (entity: Entity): void => {
          moveSpeedMultiplier = TILE_MOVE_SPEED_MULTIPLIERS[entity.tile.type] * physicsComponent.moveSpeedMultiplier;
       }
 
-      const friction = TILE_FRICTIONS[entity.tile.type];
+      const tileFriction = TILE_FRICTIONS[entity.tile.type];
       
       // @Speed: A lot of multiplies
-      entity.velocity.x += entity.acceleration.x * friction * moveSpeedMultiplier * SettingsConst.I_TPS;
-      entity.velocity.y += entity.acceleration.y * friction * moveSpeedMultiplier * SettingsConst.I_TPS;
+      entity.velocity.x += entity.acceleration.x * tileFriction * moveSpeedMultiplier * SettingsConst.I_TPS;
+      entity.velocity.y += entity.acceleration.y * tileFriction * moveSpeedMultiplier * SettingsConst.I_TPS;
    }
 
    // If the game object is in a river, push them in the flow direction of the river

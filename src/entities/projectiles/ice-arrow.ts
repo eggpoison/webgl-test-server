@@ -18,7 +18,7 @@ export function createIceArrow(position: Point, rotation: number, tribe: Tribe |
    const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, ARROW_WIDTH, ARROW_HEIGHT);
    iceArrow.addHitbox(hitbox);
    
-   PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false));
+   PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false, true));
    TribeComponentArray.addComponent(iceArrow, new TribeComponent(tribe));
 
    return iceArrow;

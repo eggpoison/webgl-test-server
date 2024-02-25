@@ -30,7 +30,7 @@ export function createSlimewisp(position: Point): Entity {
    const hitbox = new CircularHitbox(slimewisp, 0.5, 0, 0, RADIUS);
    slimewisp.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(slimewisp, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(slimewisp, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(slimewisp, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(slimewisp, new StatusEffectComponent(StatusEffectConst.poisoned));
    SlimewispComponentArray.addComponent(slimewisp, new SlimewispComponent());

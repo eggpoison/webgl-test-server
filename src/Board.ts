@@ -324,10 +324,6 @@ abstract class Board {
       for (let i = 0; i < this.entities.length; i++) {
          const entity = this.entities[i];
 
-         // Remove old collisions
-         // @Speed: yeah no.
-         entity.collidingEntityIDs = [];
-
          switch (entity.type) {
             case IEntityType.player: tickPlayer(entity); break;
             case IEntityType.tribeWorker: tickTribeWorker(entity); break;
@@ -402,12 +398,8 @@ abstract class Board {
    }
 
    public static resolveEntityCollisions(): void {
-      // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
-      // Ideal implementation:
-      // Ensure that any two game objects only get checked together ONCE
-      // As few checks as possible (e.g. check for if they have already collided this tick)
-      // BSP?
-
+      // @Speed: Multithreading
+      
       const a = new Array<Testt>();
       
       const numChunks = SettingsConst.BOARD_SIZE * SettingsConst.BOARD_SIZE;
@@ -418,27 +410,13 @@ abstract class Board {
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const entity2 = chunk.entities[k];
 
-               // If the entities have already collided this tick, don't try again
-               // @Speed: slow slow slow slow
-               // if (entity1.collidingEntityIDs.indexOf(entity2.id) !== -1) {
-               //    // note: happens about 2% of the time
-               //    continue;
-               // }
-
                const collisionNum = entity1.isColliding(entity2);
                if (collisionNum !== NO_COLLISION) {
-                  // perhaps just add to list
                   a.push({
                      entity1: entity1,
                      entity2: entity2,
                      collisionNum: collisionNum
                   });
-                  
-                  // const entity1HitboxLocalID = collisionNum & 0xFF;
-                  // const entity2HitboxLocalID = (collisionNum & 0xFF00) >> 8;
-                  
-                  // entity1.collide(entity2, entity1HitboxLocalID, entity2HitboxLocalID);
-                  // entity2.collide(entity1, entity2HitboxLocalID, entity1HitboxLocalID);
                }
             }
          }
@@ -448,6 +426,7 @@ abstract class Board {
          const test = a[i];
 
          // Check for duplicates
+         // @Speed O(n^2)
          let isDupe = false;
          for (let j = 0; j < i; j++) {
             const test2 = a[j];

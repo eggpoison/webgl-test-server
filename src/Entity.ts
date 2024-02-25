@@ -55,8 +55,6 @@ enum TileCollisionAxis {
    diagonal = 3
 }
 
-export type BoundingArea = [minX: number, maxX: number, minY: number, maxY: number];
-
 export const RESOURCE_ENTITY_TYPES: ReadonlyArray<IEntityType> = [IEntityType.krumblid, IEntityType.fish, IEntityType.cow, IEntityType.tree, IEntityType.boulder, IEntityType.cactus, IEntityType.iceSpikes, IEntityType.berryBush];
 
 export const NUM_ENTITY_TYPES = 37;
@@ -129,6 +127,7 @@ class Entity<T extends IEntityType = IEntityType> {
    /** Acceleration of the entity */
    public acceleration = new Point(0, 0);
 
+   // @Cleanup @Memory: Do we really need this??
    /** Last position when the entities' hitboxes were clean */
    private lastCleanedPosition: Point;
 
@@ -150,8 +149,6 @@ class Entity<T extends IEntityType = IEntityType> {
    /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
    public hitboxesAreDirty = false;
 
-   public collidingEntityIDs = new Array<number>();
-   
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
    public isRemoved = false;
    
@@ -160,7 +157,10 @@ class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Might be able to be put on the physics component
    public overrideMoveSpeedMultiplier = false;
    
-   public boundingArea: BoundingArea = [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER];
+   public boundingAreaMinX = Number.MAX_SAFE_INTEGER;
+   public boundingAreaMaxX = Number.MIN_SAFE_INTEGER;
+   public boundingAreaMinY = Number.MAX_SAFE_INTEGER;
+   public boundingAreaMaxY = Number.MIN_SAFE_INTEGER;
 
    public readonly collisionBit: number;
    public readonly collisionMask: number;
@@ -196,31 +196,31 @@ class Entity<T extends IEntityType = IEntityType> {
       const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
 
       // Update bounding area
-      if (boundsMinX < this.boundingArea[0]) {
-         this.boundingArea[0] = boundsMinX;
+      if (boundsMinX < this.boundingAreaMinX) {
+         this.boundingAreaMinX = boundsMinX;
       }
-      if (boundsMaxX > this.boundingArea[1]) {
-         this.boundingArea[1] = boundsMaxX;
+      if (boundsMaxX > this.boundingAreaMaxX) {
+         this.boundingAreaMaxX = boundsMaxX;
       }
-      if (boundsMinY < this.boundingArea[2]) {
-         this.boundingArea[2] = boundsMinY;
+      if (boundsMinY < this.boundingAreaMinY) {
+         this.boundingAreaMinY = boundsMinY;
       }
-      if (boundsMaxY > this.boundingArea[3]) {
-         this.boundingArea[3] = boundsMaxY;
+      if (boundsMaxY > this.boundingAreaMaxY) {
+         this.boundingAreaMaxY = boundsMaxY;
       }
 
       // Update entity bounding area
-      if (boundsMinX < this.boundingArea[0]) {
-         this.boundingArea[0] = boundsMinX;
+      if (boundsMinX < this.boundingAreaMinX) {
+         this.boundingAreaMinX = boundsMinX;
       }
-      if (boundsMaxX > this.boundingArea[1]) {
-         this.boundingArea[1] = boundsMaxX;
+      if (boundsMaxX > this.boundingAreaMaxX) {
+         this.boundingAreaMaxX = boundsMaxX;
       }
-      if (boundsMinY < this.boundingArea[2]) {
-         this.boundingArea[2] = boundsMinY;
+      if (boundsMinY < this.boundingAreaMinY) {
+         this.boundingAreaMinY = boundsMinY;
       }
-      if (boundsMaxY > this.boundingArea[3]) {
-         this.boundingArea[3] = boundsMaxY;
+      if (boundsMaxY > this.boundingAreaMaxY) {
+         this.boundingAreaMaxY = boundsMaxY;
       }
 
       hitbox.chunkBounds[0] = Math.floor(boundsMinX / SettingsConst.CHUNK_UNITS);
@@ -236,10 +236,10 @@ class Entity<T extends IEntityType = IEntityType> {
 
    /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
    public cleanHitboxes(): void {
-      this.boundingArea[0] = Number.MAX_SAFE_INTEGER;
-      this.boundingArea[1] = Number.MIN_SAFE_INTEGER;
-      this.boundingArea[2] = Number.MAX_SAFE_INTEGER;
-      this.boundingArea[3] = Number.MIN_SAFE_INTEGER;
+      this.boundingAreaMinX = Number.MAX_SAFE_INTEGER;
+      this.boundingAreaMaxX = Number.MIN_SAFE_INTEGER;
+      this.boundingAreaMinY = Number.MAX_SAFE_INTEGER;
+      this.boundingAreaMaxY = Number.MIN_SAFE_INTEGER;
 
       // An object only changes their chunks if a hitboxes' bounds change chunks.
       let hitboxChunkBoundsHaveChanged = false;
@@ -259,17 +259,17 @@ class Entity<T extends IEntityType = IEntityType> {
          const boundsMaxY = hitbox.calculateHitboxBoundsMaxY();
 
          // Update bounding area
-         if (boundsMinX < this.boundingArea[0]) {
-            this.boundingArea[0] = boundsMinX;
+         if (boundsMinX < this.boundingAreaMinX) {
+            this.boundingAreaMinX = boundsMinX;
          }
-         if (boundsMaxX > this.boundingArea[1]) {
-            this.boundingArea[1] = boundsMaxX;
+         if (boundsMaxX > this.boundingAreaMaxX) {
+            this.boundingAreaMaxX = boundsMaxX;
          }
-         if (boundsMinY < this.boundingArea[2]) {
-            this.boundingArea[2] = boundsMinY;
+         if (boundsMinY < this.boundingAreaMinY) {
+            this.boundingAreaMinY = boundsMinY;
          }
-         if (boundsMaxY > this.boundingArea[3]) {
-            this.boundingArea[3] = boundsMaxY;
+         if (boundsMaxY > this.boundingAreaMaxY) {
+            this.boundingAreaMaxY = boundsMaxY;
          }
 
          // Check if the hitboxes' chunk bounds have changed
@@ -310,10 +310,10 @@ class Entity<T extends IEntityType = IEntityType> {
       const shiftX = this.position.x - this.lastCleanedPosition.x;
       const shiftY = this.position.y - this.lastCleanedPosition.y;
       
-      this.boundingArea[0] += shiftX;
-      this.boundingArea[1] += shiftX;
-      this.boundingArea[2] += shiftY;
-      this.boundingArea[3] += shiftY;
+      this.boundingAreaMinX += shiftX;
+      this.boundingAreaMaxX += shiftX;
+      this.boundingAreaMinY += shiftY;
+      this.boundingAreaMaxY += shiftY;
 
       this.lastCleanedPosition.x = this.position.x;
       this.lastCleanedPosition.y = this.position.y;
@@ -900,29 +900,29 @@ class Entity<T extends IEntityType = IEntityType> {
    
    public resolveBorderCollisions(): void {
       // Left border
-      if (this.boundingArea[0] < 0) {
+      if (this.boundingAreaMinX < 0) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
-         this.position.x -= this.boundingArea[0];
+         this.position.x -= this.boundingAreaMinX;
          this.velocity.x = 0;
          physicsComponent.positionIsDirty = true;
          // Right border
-      } else if (this.boundingArea[1] > SettingsConst.BOARD_UNITS) {
+      } else if (this.boundingAreaMaxX > SettingsConst.BOARD_UNITS) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
-         this.position.x -= this.boundingArea[1] - SettingsConst.BOARD_UNITS;
+         this.position.x -= this.boundingAreaMaxX - SettingsConst.BOARD_UNITS;
          this.velocity.x = 0;
          physicsComponent.positionIsDirty = true;
       }
 
       // Bottom border
-      if (this.boundingArea[2] < 0) {
+      if (this.boundingAreaMinY < 0) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
-         this.position.y -= this.boundingArea[2];
+         this.position.y -= this.boundingAreaMinY;
          this.velocity.y = 0;
          physicsComponent.positionIsDirty = true;
          // Top border
-      } else if (this.boundingArea[3] > SettingsConst.BOARD_UNITS) {
+      } else if (this.boundingAreaMaxY > SettingsConst.BOARD_UNITS) {
          const physicsComponent = PhysicsComponentArray.getComponent(this);
-         this.position.y -= this.boundingArea[3] - SettingsConst.BOARD_UNITS;
+         this.position.y -= this.boundingAreaMaxY - SettingsConst.BOARD_UNITS;
          this.velocity.y = 0;
          physicsComponent.positionIsDirty = true;
       }
@@ -1137,7 +1137,8 @@ class Entity<T extends IEntityType = IEntityType> {
       const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
       const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
       
-      const force = SettingsConst.ENTITY_PUSH_FORCE / SettingsConst.TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
+      // @Incomplete: Experiment with having a constant push force. Might be good
+      const force = SettingsConst.ENTITY_PUSH_FORCE * SettingsConst.I_TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
       const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
       this.velocity.x += force * Math.sin(pushAngle);
       this.velocity.y += force * Math.cos(pushAngle);
@@ -1152,36 +1153,22 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       // AABB bounding area check
-      if (this.boundingArea[0] > entity.boundingArea[1] || // minX(1) > maxX(2)
-          this.boundingArea[1] < entity.boundingArea[0] || // maxX(1) < minX(2)
-          this.boundingArea[2] > entity.boundingArea[3] || // minY(1) > maxY(2)
-          this.boundingArea[3] < entity.boundingArea[2]) { // maxY(1) < minY(2)
+      if (this.boundingAreaMinX > entity.boundingAreaMaxX || // minX(1) > maxX(2)
+          this.boundingAreaMaxX < entity.boundingAreaMinX || // maxX(1) < minX(2)
+          this.boundingAreaMinY > entity.boundingAreaMaxY || // minY(1) > maxY(2)
+          this.boundingAreaMaxY < entity.boundingAreaMinY) { // maxY(1) < minY(2)
          return NO_COLLISION;
-      }
-
-      // @Cleanup @Speed: Figure out something better than this hardcoded bullshit
-      // Root of the problem: This relationship between arrows and friendly buildings (POSSIBLY) isn't able to be expressed in the collision mask system
-      if (entity.type === IEntityType.woodenArrowProjectile && getTribeMemberRelationship(TribeComponentArray.getComponent(entity), this) === EntityRelationship.friendlyBuilding) {
-         const arrowComponent = ArrowComponentArray.getComponent(entity);
-         if (arrowComponent.ignoreFriendlyBuildings) {
-            return NO_COLLISION;
-         }
-      }
-      if (this.type === IEntityType.woodenArrowProjectile && getTribeMemberRelationship(TribeComponentArray.getComponent(this), entity) === EntityRelationship.friendlyBuilding) {
-         const arrowComponent = ArrowComponentArray.getComponent(this);
-         if (arrowComponent.ignoreFriendlyBuildings) {
-            return NO_COLLISION;
-         }
       }
       
       // More expensive hitbox check
       const numHitboxes = this.hitboxes.length;
+      const numOtherHitboxes = entity.hitboxes.length;
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
-         const numOtherHitboxes = entity.hitboxes.length;
          for (let j = 0; j < numOtherHitboxes; j++) {
             const otherHitbox = entity.hitboxes[j];
+
             // If the objects are colliding, add the colliding object and this object
             if (hitbox.isColliding(otherHitbox)) {
                return i + (j << 8);
@@ -1189,27 +1176,23 @@ class Entity<T extends IEntityType = IEntityType> {
          }
       }
 
-      // If no hitboxes match, then they must be colliding
+      // If no hitboxes match, then they aren't colliding
       return NO_COLLISION;
    }
 
    public collide(collidingEntity: Entity, hitboxIdx: number, collidingHitboxIdx: number): void {
       if (PhysicsComponentArray.hasComponent(this)) {
-         const collidingHitbox = collidingEntity.hitboxes[collidingHitboxIdx];
-
-         if (entityHasHardCollision(collidingEntity)) {
-            const hitbox = this.hitboxes[hitboxIdx];
-            this.resolveCollisionHard(hitbox, collidingHitbox);
-         } else {
-            this.resolveCollisionSoft(collidingEntity, collidingHitbox);
+         const physicsComponent = PhysicsComponentArray.getComponent(this);
+         if (!physicsComponent.ignoreCollisions) {
+            const collidingHitbox = collidingEntity.hitboxes[collidingHitboxIdx];
+   
+            if (entityHasHardCollision(collidingEntity)) {
+               const hitbox = this.hitboxes[hitboxIdx];
+               this.resolveCollisionHard(hitbox, collidingHitbox);
+            } else {
+               this.resolveCollisionSoft(collidingEntity, collidingHitbox);
+            }
          }
-      }
-
-      const idx = this.collidingEntityIDs.indexOf(collidingEntity.id);
-      // @Speed: Do we need this check?
-      if (idx === -1) {
-         // New colliding game object
-         this.collidingEntityIDs.push(collidingEntity.id);
       }
 
       switch (this.type) {

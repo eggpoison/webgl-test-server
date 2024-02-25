@@ -844,7 +844,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                   knockback: itemInfo.projectileKnockback,
                   hitboxWidth: 12,
                   hitboxHeight: 64,
-                  ignoreFriendlyBuildings: false,
+                  ignoreFriendlyBuildings: true,
                   statusEffect: null
                }
                arrow = createWoodenArrow(spawnPosition, tribeMember, arrowInfo);

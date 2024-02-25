@@ -30,7 +30,7 @@ export function createKrumblid(position: Point): Entity {
    const hitbox = new CircularHitbox(krumblid, 0.75, 0, 0, KRUMBLID_SIZE / 2);
    krumblid.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(krumblid, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(krumblid, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(krumblid, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(krumblid, new StatusEffectComponent(0));
    WanderAIComponentArray.addComponent(krumblid, new WanderAIComponent());

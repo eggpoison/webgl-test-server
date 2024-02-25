@@ -76,7 +76,7 @@ export function createFrozenYeti(position: Point): Entity {
       frozenYeti.addHitbox(hitbox);
    }
 
-   PhysicsComponentArray.addComponent(frozenYeti, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(frozenYeti, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(frozenYeti, new HealthComponent(250));
    StatusEffectComponentArray.addComponent(frozenYeti, new StatusEffectComponent(StatusEffectConst.freezing));
    AIHelperComponentArray.addComponent(frozenYeti, new AIHelperComponent(VISION_RANGE));

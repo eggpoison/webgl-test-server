@@ -40,7 +40,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
-   PhysicsComponentArray.addComponent(player, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(player, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(player, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(player, new StatusEffectComponent(0));
 

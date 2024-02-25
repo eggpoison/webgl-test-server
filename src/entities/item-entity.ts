@@ -15,7 +15,7 @@ export function createItemEntity(position: Point, itemType: ItemType, amount: nu
    const hitbox = new RectangularHitbox(itemEntity, 0.1, 0, 0, SettingsConst.ITEM_SIZE, SettingsConst.ITEM_SIZE);
    itemEntity.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(itemEntity, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(itemEntity, new PhysicsComponent(true, false));
    const itemComponent: ItemComponent = {
       itemType: itemType,
       amount: amount,
