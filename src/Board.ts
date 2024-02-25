@@ -233,6 +233,10 @@ abstract class Board {
       return this.tribes;
    }
 
+   public static entityIsFlaggedForRemoval(entity: Entity): boolean {
+      return this.entityRemoveBuffer.indexOf(entity) !== -1;
+   }
+
    /** Removes game objects flagged for deletion */
    public static removeFlaggedEntities(): void {
       for (const entity of this.entityRemoveBuffer) {

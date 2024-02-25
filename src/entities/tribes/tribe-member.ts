@@ -809,6 +809,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
          }
 
+         // @Incomplete @Bug: This will mess up the hitboxes of the entity as we don't clean the hitboxes!
          // Rotate it to match the entity's rotation
          placedEntity.rotation = placeRotation;
 

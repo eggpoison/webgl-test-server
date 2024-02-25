@@ -63,7 +63,8 @@ const updateGolemHitboxPositions = (golem: Entity, golemComponent: GolemComponen
       rockInfo.hitbox.offsetY = lerp(rockInfo.sleepOffsetY, rockInfo.awakeOffsetY, wakeProgress);
    }
 
-   golem.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(golem.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 export function createGolem(position: Point): Entity {
@@ -126,7 +127,12 @@ export function createGolem(position: Point): Entity {
    const golemComponent = new GolemComponent(golem.hitboxes, PEBBLUM_SUMMON_COOLDOWN_TICKS);
    GolemComponentArray.addComponent(golem, golemComponent);
 
-   updateGolemHitboxPositions(golem, golemComponent, 0);
+   // Set initial hitbox positions (sleeping)
+   for (let i = 0; i < golemComponent.rockInfoArray.length; i++) {
+      const rockInfo = golemComponent.rockInfoArray[i];
+      rockInfo.hitbox.offsetX = rockInfo.sleepOffsetX;
+      rockInfo.hitbox.offsetY = rockInfo.sleepOffsetY;
+   }
 
    return golem;
 }
@@ -166,7 +172,8 @@ const shiftRocks = (golem: Entity, golemComponent: GolemComponent): void => {
       rockInfo.hitbox.offsetY = lerp(rockInfo.lastOffsetY, rockInfo.targetOffsetY, shiftProgress);
    }
 
-   golem.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(golem.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 const summonPebblums = (golem: Entity, golemComponent: GolemComponent, target: Entity): void => {

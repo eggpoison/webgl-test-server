@@ -274,7 +274,9 @@ export function tickYeti(yeti: Entity): void {
                   const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
                   if (direction !== yeti.rotation) {
                      yeti.rotation = direction;
-                     yeti.hitboxesAreDirty = true;
+
+                     const physicsComponent = PhysicsComponentArray.getComponent(yeti.id);
+                     physicsComponent.hitboxesAreDirty = true;
                   }
                   stopEntity(yeti);
                   return;
@@ -288,7 +290,9 @@ export function tickYeti(yeti: Entity): void {
                   const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
                   if (direction !== yeti.rotation) {
                      yeti.rotation = direction;
-                     yeti.hitboxesAreDirty = true;
+
+                     const physicsComponent = PhysicsComponentArray.getComponent(yeti.id);
+                     physicsComponent.hitboxesAreDirty = true;
                   }
                   stopEntity(yeti);
                   return;

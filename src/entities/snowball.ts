@@ -34,7 +34,9 @@ export function tickSnowball(snowball: Entity): void {
    // Angular velocity
    if (snowballComponent.angularVelocity !== 0) {
       snowball.rotation += snowballComponent.angularVelocity / SettingsConst.TPS;
-      snowball.hitboxesAreDirty = true;
+
+      const physicsComponent = PhysicsComponentArray.getComponent(snowball.id);
+      physicsComponent.hitboxesAreDirty = true;
       
       const beforeSign = Math.sign(snowballComponent.angularVelocity);
       snowballComponent.angularVelocity -= Math.PI / SettingsConst.TPS * beforeSign;

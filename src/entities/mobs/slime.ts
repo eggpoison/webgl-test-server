@@ -84,7 +84,7 @@ const updateAngerTarget = (slime: Entity): Entity | null => {
       const angerInfo = slimeComponent.angeredEntities[i];
 
       // Remove anger at an entity if the entity is dead
-      if (angerInfo.target.isRemoved) {
+      if (!Board.entityRecord.hasOwnProperty(angerInfo.target.id)) {
          slimeComponent.angeredEntities.splice(i, 1);
          i--;
          continue;
@@ -292,7 +292,7 @@ export function tickSlime(slime: Entity): void {
 }
 
 const mergeSlimes = (slime1: Entity, slime2: Entity): void => {
-   if (slime2.isRemoved) return;
+   if (Board.entityIsFlaggedForRemoval(slime2)) return;
 
    const slimeComponent1 = SlimeComponentArray.getComponent(slime1.id);
    const slimeComponent2 = SlimeComponentArray.getComponent(slime2.id);

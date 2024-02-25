@@ -4,6 +4,7 @@ import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity, { NO_COLLISION } from "./Entity";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 const TURN_CONSTANT = Math.PI / SettingsConst.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
@@ -62,7 +63,8 @@ export function moveEntityToPosition(entity: Entity, positionX: number, position
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
    if (direction !== entity.rotation) {
-      entity.hitboxesAreDirty = true;
+      const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
    entity.rotation = direction;
 }
@@ -265,7 +267,9 @@ export function runHerdAI(entity: Entity, herdMembers: ReadonlyArray<Entity>, vi
    }
 
    entity.rotation += angularVelocity;
-   entity.hitboxesAreDirty = true;
+   
+   const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 /** Gets all tiles within a given distance from a position */

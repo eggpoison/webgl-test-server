@@ -2,6 +2,7 @@ import { IEntityType, Point, SettingsConst, angle, lerp, randItem } from "webgl-
 import Board from "./Board";
 import Tile from "./Tile";
 import Entity from "./Entity";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 const FLESH_SWORD_VISION_RANGE = 250;
 
@@ -186,7 +187,8 @@ export function runFleshSwordAI(itemEntity: Entity) {
       itemEntity.velocity.x = moveSpeed! * Math.sin(moveAngle);
       itemEntity.velocity.y = moveSpeed! * Math.cos(moveAngle);
 
-      itemEntity.hitboxesAreDirty = true;
+      const physicsComponent = PhysicsComponentArray.getComponent(itemEntity.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
 }
 

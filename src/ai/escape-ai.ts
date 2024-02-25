@@ -1,6 +1,7 @@
 import Board from "../Board";
 import Entity from "../Entity";
 import { EscapeAIComponentArray } from "../components/ComponentArray";
+import { PhysicsComponentArray } from "../components/PhysicsComponent";
 
 export function registerAttackingEntity(entity: Entity, attackingEntity: Entity): void {
    const escapeAIComponent = EscapeAIComponentArray.getComponent(entity.id);
@@ -19,9 +20,11 @@ export function runFromAttackingEntity(entity: Entity, attackingEntity: Entity, 
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
    if (direction !== entity.rotation) {
-      entity.hitboxesAreDirty = true;
+      entity.rotation = direction;
+      
+      const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
-   entity.rotation = direction;
 }
 
 export function chooseEscapeEntity(entity: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null {

@@ -38,7 +38,9 @@ export function tickPebblum(pebblum: Entity): void {
    const direction = pebblum.position.calculateAngleBetween(target.position);
    if (direction !== pebblum.rotation) {
       pebblum.rotation = direction;
-      pebblum.hitboxesAreDirty = true;
+
+      const physicsComponent = PhysicsComponentArray.getComponent(pebblum.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
    pebblum.acceleration.x = 850 * Math.sin(pebblum.rotation);
    pebblum.acceleration.y = 850 * Math.cos(pebblum.rotation);

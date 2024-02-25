@@ -21,6 +21,9 @@ export class PhysicsComponent {
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = false;
 
+   /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
+   public hitboxesAreDirty = false;
+
    /** If true, the entity will not be pushed around by collisions, but will still call any relevant events. */
    public readonly ignoreCollisions: boolean;
    
@@ -109,9 +112,10 @@ const updatePosition = (entity: Entity): void => {
    // @Speed: we run this function in both applyPhysics and updatePosition
    const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
    
-   if (entity.hitboxesAreDirty) {
+   if (physicsComponent.hitboxesAreDirty) {
       entity.cleanHitboxes();
       entity.updateContainingChunks();
+      physicsComponent.hitboxesAreDirty = false;
    } else if (physicsComponent.positionIsDirty) {
       entity.updateHitboxes();
       entity.updateContainingChunks();
@@ -124,14 +128,14 @@ const updatePosition = (entity: Entity): void => {
    
       // If the object moved due to resolving wall tile collisions, recalculate
       if (physicsComponent.positionIsDirty) {
-         entity.cleanHitboxes();
+         entity.updateHitboxes();
       }
 
       entity.resolveBorderCollisions();
    
       // If the object moved due to resolving border collisions, recalculate
       if (physicsComponent.positionIsDirty) {
-         entity.cleanHitboxes();
+         entity.updateHitboxes();
       }
 
       entity.updateTile();

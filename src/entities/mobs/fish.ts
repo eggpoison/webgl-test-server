@@ -75,14 +75,15 @@ const isValidWanderPosition = (x: number, y: number): boolean => {
 }
 
 const move = (fish: Entity, direction: number): void => {
-   
    if (fish.tile.type === TileTypeConst.water) {
       // Swim on water
       
       fish.acceleration.x = 40 * Math.sin(direction);
       fish.acceleration.y = 40 * Math.cos(direction);
       fish.rotation = direction;
-      fish.hitboxesAreDirty = true;
+
+      const physicsComponent = PhysicsComponentArray.getComponent(fish.id);
+      physicsComponent.hitboxesAreDirty = true;
    } else {
       // 
       // Lunge on land
@@ -96,7 +97,9 @@ const move = (fish: Entity, direction: number): void => {
          fish.velocity.y += LUNGE_FORCE * Math.cos(direction);
          if (direction !== fish.rotation) {
             fish.rotation = direction;
-            fish.hitboxesAreDirty = true;
+
+            const physicsComponent = PhysicsComponentArray.getComponent(fish.id);
+            physicsComponent.hitboxesAreDirty = true;
          }
       }
    }
@@ -142,7 +145,7 @@ export function tickFish(fish: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(fish.id);
 
    // If the leader dies or is out of vision range, stop following them
-   if (fishComponent.leader !== null && (fishComponent.leader.isRemoved || !aiHelperComponent.visibleEntities.includes(fishComponent.leader))) {
+   if (fishComponent.leader !== null && (!Board.entityRecord.hasOwnProperty(fishComponent.leader.id) || !aiHelperComponent.visibleEntities.includes(fishComponent.leader))) {
       unfollowLeader(fish, fishComponent.leader);
       fishComponent.leader = null;
    }
@@ -209,7 +212,9 @@ export function tickFish(fish: Entity): void {
          fish.velocity.y += 200 * Math.cos(flailDirection);
    
          fish.rotation = flailDirection + randFloat(-0.5, 0.5);
-         fish.hitboxesAreDirty = true;
+
+         const physicsComponent = PhysicsComponentArray.getComponent(fish.id);
+         physicsComponent.hitboxesAreDirty = true;
    
          fishComponent.flailTimer = 0;
       }

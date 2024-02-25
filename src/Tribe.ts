@@ -128,8 +128,8 @@ class Tribe {
       for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
          const info = this.reinforcementInfoArray[i];
 
-         // Remove notices for removed entities
-         if (info.targetEntity.isRemoved) {
+         // Remove notices for entities which no longer exist
+         if (!Board.entityRecord.hasOwnProperty(info.targetEntity.id)) {
             this.reinforcementInfoArray.splice(i, 1);
             i--;
             continue;

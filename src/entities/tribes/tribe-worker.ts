@@ -84,10 +84,8 @@ export function onTribeWorkerDeath(worker: Entity): void {
    }
    
    const hut = Board.entityRecord[tribesmanComponent.hutID];
-   if (!hut.isRemoved) {
-      const tribeComponent = TribeComponentArray.getComponent(worker.id);
-      tribeComponent.tribe!.respawnTribesman(hut);
-   }
+   const tribeComponent = TribeComponentArray.getComponent(worker.id);
+   tribeComponent.tribe!.respawnTribesman(hut);
 }
 
 export function onTribeWorkerRemove(worker: Entity): void {

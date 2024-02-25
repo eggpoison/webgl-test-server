@@ -145,13 +145,6 @@ class Entity<T extends IEntityType = IEntityType> {
    /** All hitboxes attached to the entity */
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
-   // @Cleanup: Rotating the entity is part of physics; should this be in PhysicsComponent?
-   /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
-   public hitboxesAreDirty = false;
-
-   /** If true, the game object is flagged for deletion at the beginning of the next tick */
-   public isRemoved = false;
-   
    public isInRiver!: boolean;
 
    // @Cleanup: Might be able to be put on the physics component
@@ -295,8 +288,6 @@ class Entity<T extends IEntityType = IEntityType> {
             }
          }
       }
-
-      this.hitboxesAreDirty = false;
 
       this.lastCleanedPosition.x = this.position.x;
       this.lastCleanedPosition.y = this.position.y;
@@ -1255,71 +1246,73 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public remove(): void {
+      // @Temporary
       if (!Board.entityRecord.hasOwnProperty(this.id)) {
          throw new Error("Tried to remove an entity before it was added to the board.");
       }
       
-      if (!this.isRemoved) {
-         Board.addEntityToRemoveBuffer(this);
-         Board.removeEntityFromJoinBuffer(this);
-
-         switch (this.type) {
-            case IEntityType.cow: {
-               onCowDeath(this);
-               break;
-            }
-            case IEntityType.tree: {
-               onTreeDeath(this);
-               break;
-            }
-            case IEntityType.krumblid: {
-               onKrumblidDeath(this);
-               break;
-            }
-            case IEntityType.iceSpikes: {
-               onIceSpikesDeath(this);
-               break;
-            }
-            case IEntityType.cactus: {
-               onCactusDeath(this);
-               break;
-            }
-            case IEntityType.tribeWorker: {
-               onTribeWorkerDeath(this);
-               break;
-            }
-            case IEntityType.tribeWarrior: {
-               onTribeWarriorDeath(this);
-               break;
-            }
-            case IEntityType.yeti: {
-               onYetiDeath(this);
-               break;
-            }
-            case IEntityType.fish: {
-               onFishDeath(this);
-               break;
-            }
-            case IEntityType.player: {
-               onPlayerDeath(this);
-               break;
-            }
-            case IEntityType.tribeTotem: {
-               onTribeTotemDeath(this);
-               break;
-            }
-            case IEntityType.slimeSpit: {
-               onSlimeSpitDeath(this);
-               break;
-            }
-            case IEntityType.battleaxeProjectile: {
-               onBattleaxeProjectileDeath(this);
-               break;
-            }
-         }
+      // Don't try to remove if already being removed
+      if (Board.entityIsFlaggedForRemoval(this)) {
+         return;
       }
 
-      this.isRemoved = true;
+      Board.addEntityToRemoveBuffer(this);
+      Board.removeEntityFromJoinBuffer(this);
+
+      switch (this.type) {
+         case IEntityType.cow: {
+            onCowDeath(this);
+            break;
+         }
+         case IEntityType.tree: {
+            onTreeDeath(this);
+            break;
+         }
+         case IEntityType.krumblid: {
+            onKrumblidDeath(this);
+            break;
+         }
+         case IEntityType.iceSpikes: {
+            onIceSpikesDeath(this);
+            break;
+         }
+         case IEntityType.cactus: {
+            onCactusDeath(this);
+            break;
+         }
+         case IEntityType.tribeWorker: {
+            onTribeWorkerDeath(this);
+            break;
+         }
+         case IEntityType.tribeWarrior: {
+            onTribeWarriorDeath(this);
+            break;
+         }
+         case IEntityType.yeti: {
+            onYetiDeath(this);
+            break;
+         }
+         case IEntityType.fish: {
+            onFishDeath(this);
+            break;
+         }
+         case IEntityType.player: {
+            onPlayerDeath(this);
+            break;
+         }
+         case IEntityType.tribeTotem: {
+            onTribeTotemDeath(this);
+            break;
+         }
+         case IEntityType.slimeSpit: {
+            onSlimeSpitDeath(this);
+            break;
+         }
+         case IEntityType.battleaxeProjectile: {
+            onBattleaxeProjectileDeath(this);
+            break;
+         }
+      }
    }
 
    public getDebugData(): GameObjectDebugData {
@@ -1349,7 +1342,8 @@ class Entity<T extends IEntityType = IEntityType> {
          }
       }
 
-      this.hitboxesAreDirty = true;
+      const physicsComponent = PhysicsComponentArray.getComponent(this.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
 
    protected shouldTurnClockwise(targetRotation: number): boolean {
@@ -1372,8 +1366,10 @@ class Entity<T extends IEntityType = IEntityType> {
    protected cleanRotation(): void {
       const rotation = cleanAngle(this.rotation);
       if (rotation !== this.rotation) {
-         this.hitboxesAreDirty = true;
          this.rotation = rotation;
+         
+         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
+         physicsComponent.hitboxesAreDirty = true;
       }
    }
 }

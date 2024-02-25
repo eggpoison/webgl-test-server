@@ -162,19 +162,8 @@ const findHerdMembers = (visibleEntities: ReadonlyArray<Entity>): ReadonlyArray<
 }
 
 export function tickZombie(zombie: Entity): void {
-   // @Temporary
-   if (zombie.type !== IEntityType.zombie) {
-      throw new Error("not zombie??");
-   }
    const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
    zombieComponent.visibleHurtEntityTicks++;
-      // @Temporary
-   if (typeof zombieComponent === "undefined") {
-      console.log("bad");
-      console.log(zombie.type === IEntityType.zombie);
-      console.log(zombie.isRemoved);
-      console.log(ZombieComponentArray.hasComponent(zombie));
-   }
 
    // Update attacking entities
    // @Speed

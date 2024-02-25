@@ -1,6 +1,7 @@
 import { DoorToggleType, SettingsConst, angle, lerp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { DoorComponentArray } from "./ComponentArray";
+import { PhysicsComponentArray } from "./PhysicsComponent";
 
 const DOOR_SWING_SPEED = 5 / SettingsConst.TPS;
 
@@ -33,7 +34,9 @@ const updateDoorOpenProgress = (door: Entity, doorComponent: DoorComponent): voi
    door.position.x = doorComponent.originX + xOffset;
    door.position.y = doorComponent.originY + yOffset;
    door.rotation = rotation;
-   door.hitboxesAreDirty = true;
+
+   const physicsComponent = PhysicsComponentArray.getComponent(door.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 export function tickDoorComponent(door: Entity): void {

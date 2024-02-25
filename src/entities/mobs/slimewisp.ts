@@ -12,6 +12,7 @@ import { createSlime } from "./slime";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
+import Board from "../../Board";
 
 const MAX_HEALTH = 3;
 const RADIUS = 16;
@@ -56,7 +57,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
          if (slimewisp.isColliding(mergingSlimewisp) !== NO_COLLISION) {
             const slimewispComponent = SlimewispComponentArray.getComponent(slimewisp.id);
             slimewispComponent.mergeTimer -= SettingsConst.I_TPS;
-            if (slimewispComponent.mergeTimer <= 0 && !mergingSlimewisp.isRemoved) {
+            if (slimewispComponent.mergeTimer <= 0 && !Board.entityIsFlaggedForRemoval(mergingSlimewisp)) {
                // Create a slime between the two wisps
                const slimeSpawnPosition = new Point((slimewisp.position.x + mergingSlimewisp.position.x) / 2, (slimewisp.position.y + mergingSlimewisp.position.y) / 2);
                createSlime(slimeSpawnPosition, SlimeSize.small, []);

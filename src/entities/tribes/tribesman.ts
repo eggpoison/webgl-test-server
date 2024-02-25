@@ -17,6 +17,7 @@ import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "
 import { getItemAttackCooldown } from "../../items";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { attemptToOccupyResearchBench, canResearchAtBench, continueResearching, markPreemptiveMoveToBench, shouldMoveToResearchBench } from "../../components/ResearchBenchComponent";
+import { PhysicsComponentArray } from "../../components/PhysicsComponent";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -211,7 +212,9 @@ const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
    const direction = tribesman.position.calculateAngleBetween(barrel.position);
    if (direction !== tribesman.rotation) {
       tribesman.rotation = direction;
-      tribesman.hitboxesAreDirty = true;
+
+      const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
    tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
    tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
@@ -455,7 +458,8 @@ export function tickTribesman(tribesman: Entity): void {
 
       const playerComponent = PlayerComponentArray.getComponent(entity.id);
       if (playerComponent.interactingEntityID === tribesman.id) {
-         tribesman.hitboxesAreDirty = true;
+         const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+         physicsComponent.hitboxesAreDirty = true;
 
          tribesman.rotation = tribesman.position.calculateAngleBetween(entity.position);
          const distance = tribesman.position.calculateDistanceBetween(entity.position);
@@ -577,7 +581,9 @@ export function tickTribesman(tribesman: Entity): void {
          const direction = tribesman.position.calculateAngleBetween(closestBlueprint.position);
          if (direction !== tribesman.rotation) {
             tribesman.rotation = direction;
-            tribesman.hitboxesAreDirty = true;
+
+            const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+            physicsComponent.hitboxesAreDirty = true;
          }
 
          // @Cleanup: Copy and pasted from huntEntity. Should be combined into its own function
@@ -640,7 +646,8 @@ export function tickTribesman(tribesman: Entity): void {
          tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
          useInfo.currentAction = TribeMemberAction.none;
          
-         tribesman.hitboxesAreDirty = true;
+         const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+         physicsComponent.hitboxesAreDirty = true;
 
          return;
       }
@@ -767,7 +774,9 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(direction);
             tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(direction);
             tribesman.rotation = direction;
-            tribesman.hitboxesAreDirty = true;
+
+            const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+            physicsComponent.hitboxesAreDirty = true;
          } else {
             grabBarrelFood(tribesman, closestBarrelWithFood);
             tribesman.acceleration.x = 0;
@@ -811,7 +820,9 @@ export function tickTribesman(tribesman: Entity): void {
          tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
          tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
-         tribesman.hitboxesAreDirty = true;
+
+         const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+         physicsComponent.hitboxesAreDirty = true;
 
          tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
          return;
@@ -830,7 +841,9 @@ export function tickTribesman(tribesman: Entity): void {
       tribesman.rotation = tribesman.position.calculateAngleBetween(new Point(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY));
       tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
-      tribesman.hitboxesAreDirty = true;
+
+      const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+      physicsComponent.hitboxesAreDirty = true;
 
       tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
       return;
@@ -874,7 +887,8 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
    tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(runDirection);
    tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(runDirection);
 
-   tribesman.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 // @Cleanup: Copy and paste
@@ -1001,7 +1015,8 @@ const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
    }
 
    // @Speed: Shouldn't do always
-   tribesman.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
@@ -1016,7 +1031,8 @@ const engageTargetMelee = (tribesman: Entity, target: Entity): void => {
    }
    
    // @Speed: Shouldn't do always
-   tribesman.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+   physicsComponent.hitboxesAreDirty = true;
    
    // @Speed: Don't do this if the target is too far away to ever be hit
    doMeleeAttack(tribesman);
@@ -1095,7 +1111,9 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          const direction = tribesman.position.calculateAngleBetween(huntedEntity.position);
          if (direction !== tribesman.rotation) {
             tribesman.rotation = direction;
-            tribesman.hitboxesAreDirty = true;
+
+            const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+            physicsComponent.hitboxesAreDirty = true;
          }
 
          const distance = calculateDistanceFromEntity(tribesman, huntedEntity);

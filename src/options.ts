@@ -15,7 +15,7 @@ const OPTIONS: Options = {
    generateWalls: true,
    inBenchmarkMode: true,
    logging: false,
-   warp: true
+   warp: false
 };
 
 

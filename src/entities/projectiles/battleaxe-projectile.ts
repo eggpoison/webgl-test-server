@@ -54,7 +54,8 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       battleaxe.turn(owner.rotation, ticksSinceReturn / SettingsConst.TPS * Math.PI);
    }
    
-   battleaxe.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(battleaxe.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntity: Entity): void {

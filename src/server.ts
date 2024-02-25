@@ -29,6 +29,7 @@ import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spik
 import { createYeti } from "./entities/mobs/yeti";
 import { createItemEntity } from "./entities/item-entity";
 import { StatusEffectComponentArray } from "./components/StatusEffectComponent";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 const TIME_PASS_RATE = 300;
 
@@ -1437,8 +1438,10 @@ class GameServer {
       player.velocity = Point.unpackage(playerDataPacket.velocity);
       player.acceleration = Point.unpackage(playerDataPacket.acceleration);
       player.rotation = playerDataPacket.rotation;
-      player.hitboxesAreDirty = true;
       playerData.visibleChunkBounds = playerDataPacket.visibleChunkBounds;
+      
+      const physicsComponent = PhysicsComponentArray.getComponent(player.id);
+      physicsComponent.hitboxesAreDirty = true;
       
       hotbarUseInfo.selectedItemSlot = playerDataPacket.selectedItemSlot;
 
