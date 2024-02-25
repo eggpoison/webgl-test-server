@@ -31,7 +31,7 @@ export function createBallista(position: Point, tribe: Tribe | null, rotation: n
 
    addBallistaHitboxes(ballista);
    
-   HealthComponentArray.addComponent(ballista, new HealthComponent(50));
+   HealthComponentArray.addComponent(ballista, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(ballista, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.bleeding));
    TribeComponentArray.addComponent(ballista, new TribeComponent(tribe));
    TurretComponentArray.addComponent(ballista, new TurretComponent(0));
@@ -230,6 +230,7 @@ export function tickBallista(ballista: Entity): void {
          if (clockwiseDist >= Math.PI) {
             // Turn counterclockwise
             turretComponent.aimDirection -= Math.PI / 3 / SETTINGS.TPS;
+            // @Incomplete: Will this sometimes cause snapping?
             if (turretComponent.aimDirection + ballista.rotation < targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
             }

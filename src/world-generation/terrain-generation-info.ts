@@ -106,7 +106,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
             isWall: true,
             noiseRequirements: {
                scale: 7,
-               minWeight: 0.6
+               minWeight: 0.7
             },
             minDist: 2
          },

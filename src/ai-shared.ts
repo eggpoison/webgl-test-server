@@ -482,10 +482,12 @@ export function angleIsInRange(angle: number, minAngle: number, maxAngle: number
 }
 
 export function turnAngle(angle: number, targetAngle: number, turnSpeed: number): number {
+   
    const clockwiseDist = getClockwiseAngleDistance(angle, targetAngle);
    if (clockwiseDist < Math.PI) {
       // Turn clockwise
       let result = angle + turnSpeed * I_TPS;
+      // @Incomplete: Will this sometimes cause snapping?
       if (result > targetAngle) {
          result = targetAngle;
       }

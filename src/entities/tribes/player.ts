@@ -68,11 +68,11 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    }
 
    // @Temporary
-   addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   addItem(inventoryComponent, createItem(ItemType.barrel, 2));
-   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
-   addItem(inventoryComponent, createItem(ItemType.ballista, 3));
-   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
+   // addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
+   // addItem(inventoryComponent, createItem(ItemType.barrel, 2));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
+   addItem(inventoryComponent, createItem(ItemType.ballista, 1));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
 
    return player;
 }
