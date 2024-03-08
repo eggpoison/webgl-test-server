@@ -1,4 +1,6 @@
-import { TribeTotemBanner, randInt } from "webgl-test-shared";
+import { TotemBannerComponentData, TribeTotemBanner, randInt } from "webgl-test-shared";
+import Entity from "../Entity";
+import { TotemBannerComponentArray } from "./ComponentArray";
 
 export interface TotemBannerPosition {
    readonly layer: number;
@@ -30,4 +32,12 @@ export function addBannerToTotem(bannerComponent: TotemBannerComponent, hutNum: 
 
 export function removeBannerFromTotem(bannerComponent: TotemBannerComponent, hutNum: number): void {
    delete bannerComponent.banners[hutNum];
+}
+
+export function serialiseTotemBannerComponent(entity: Entity): TotemBannerComponentData {
+   const totemBannerComponent = TotemBannerComponentArray.getComponent(entity.id);
+   return {
+      // @Speed
+      banners: Object.values(totemBannerComponent.banners)
+   };
 }

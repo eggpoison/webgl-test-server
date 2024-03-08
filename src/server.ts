@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData, SlimeSize } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, GameObjectDebugData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, Inventory, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, HealData, ResearchOrbCompleteData, SlimeSize, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, BuildingShapeType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -9,29 +9,71 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
-import { ArrowComponentArray, BallistaComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, ResearchBenchComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
-import { addItemToInventory, getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PlayerComponentArray, TribeComponentArray } from "./components/ComponentArray";
+import { addItemToInventory, getInventory, serialiseInventoryComponent } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem, uninteractWithStructure } from "./entities/tribes/player";
-import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
-import { getZombieSpawnProgress } from "./entities/tombstone";
-import { getTilesOfBiome } from "./census";
-import { SPIT_CHARGE_TIME_TICKS, SPIT_COOLDOWN_TICKS, createSlime } from "./entities/mobs/slime";
-import { getInventoryUseInfo } from "./components/InventoryUseComponent";
-import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
-import { getBlueprintProgress } from "./components/BlueprintComponent";
-import { getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
-import { forceMaxGrowAllIceSpikes } from "./entities/resources/ice-spikes";
-import { createBallista, getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
-import { createTribeTotem } from "./entities/tribes/tribe-totem";
-import { createWorkerHut } from "./entities/tribes/worker-hut";
-import { createWoodenWall } from "./entities/structures/wooden-wall";
-import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
-import { createYeti } from "./entities/mobs/yeti";
-import { createItemEntity } from "./entities/item-entity";
-import { StatusEffectComponentArray } from "./components/StatusEffectComponent";
-import { PhysicsComponentArray } from "./components/PhysicsComponent";
+import { serialiseCowComponent } from "./entities/mobs/cow";
+import { getTilesOfBiome, resetCensus } from "./census";
+import { createSlime } from "./entities/mobs/slime";
+import { getInventoryUseInfo, serialiseInventoryUseComponent } from "./components/InventoryUseComponent";
+import { serialiseGolemComponent } from "./entities/mobs/golem";
+import { forceMaxGrowAllIceSpikes, serialiseIceSpikesComponent } from "./entities/resources/ice-spikes";
+import { createBallista } from "./entities/structures/ballista";
+import { serialiseStatusEffectComponent } from "./components/StatusEffectComponent";
+import { PhysicsComponentArray, serialisePhysicsComponent } from "./components/PhysicsComponent";
+import { serialiseAIHelperComponent } from "./components/AIHelperComponent";
+import { serialiseArrowComponent } from "./components/ArrowComponent";
+import { serialiseBerryBushComponent } from "./entities/resources/berry-bush";
+import { serialiseBlueprintComponent } from "./entities/blueprint-entity";
+import { serialiseBoulderComponent } from "./entities/resources/boulder";
+import { serialiseCactusComponent } from "./entities/resources/cactus";
+import { serialiseCookingComponent } from "./components/CookingComponent";
+import { serialiseDoorComponent } from "./components/DoorComponent";
+import { serialiseEscapeAIComponent } from "./components/EscapeAIComponent";
+import { serialiseFishComponent } from "./entities/mobs/fish";
+import { serialiseFollowAIComponent } from "./components/FollowAIComponent";
+import { serialiseFrozenYetiComponent } from "./components/FrozenYetiComponent";
+import { serialiseHealthComponent } from "./components/HealthComponent";
+import { serialiseHutComponent } from "./components/HutComponent";
+import { serialiseIceShardComponent } from "./components/IceShardComponent";
+import { serialiseItemComponent } from "./components/ItemComponent";
+import { serialisePebblumComponent } from "./components/PebblumComponent";
+import { serialisePlayerComponent } from "./components/PlayerComponent";
+import { serialiseResearchBenchComponent } from "./entities/research-bench";
+import { serialiseRockSpikeComponent } from "./components/RockSpikeProjectileComponent";
+import { serialiseSlimeSpitComponent } from "./components/SlimeSpitComponent";
+import { serialiseSlimewispComponent } from "./components/SlimewispComponent";
+import { serialiseSnowballComponent } from "./components/SnowballComponent";
+import { serialiseThrowingProjectileComponent } from "./components/ThrowingProjectileComponent";
+import { serialiseTombstoneComponent } from "./components/TombstoneComponent";
+import { serialiseTotemBannerComponent } from "./components/TotemBannerComponent";
+import { serialiseTreeComponent } from "./entities/resources/tree";
+import { serialiseTribeComponent } from "./components/TribeComponent";
+import { serialiseTribeMemberComponent } from "./components/TribeMemberComponent";
+import { serialiseTribesmanComponent } from "./components/TribesmanComponent";
+import { serialiseTurretComponent } from "./components/TurretComponent";
+import { serialiseWanderAIComponent } from "./components/WanderAIComponent";
+import { serialiseYetiComponent } from "./components/YetiComponent";
+import { serialiseZombieComponent } from "./components/ZombieComponent";
+import SRandom from "./SRandom";
+import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
+import { resetComponents } from "./components/components";
+import { resetPerlinNoiseCache } from "./perlin-noise";
+import { serialiseAmmoBoxComponent } from "./components/AmmoBoxComponent";
+import { serialiseSlimeComponent } from "./components/SlimeComponent";
 
+// @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
+
+const isTimed = process.argv[2] === "timed";
+const averageTickTimes = new Array<number>();
+
+if (isTimed) {
+   process.on("SIGINT", () => {
+      console.log(averageTickTimes);
+      process.exit();
+   });
+}
 
 /*
 
@@ -60,47 +102,57 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
    };
 }
 
-const getFoodEatingType = (tribeMember: Entity, activeItemData: ItemData | null): ItemType | -1 => {
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
-   const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-
-   if (activeItemData !== null && useInfo.currentAction === TribeMemberAction.eat) {
-      return activeItemData.type;
+const serialiseComponent = <T extends ServerComponentType>(entity: Entity, componentType: T): ComponentData => {
+   switch (componentType) {
+      case ServerComponentType.aiHelper: return serialiseAIHelperComponent(entity);
+      case ServerComponentType.arrow: return serialiseArrowComponent(entity);
+      case ServerComponentType.ammoBox: return serialiseAmmoBoxComponent(entity);
+      case ServerComponentType.berryBush: return serialiseBerryBushComponent(entity);
+      case ServerComponentType.blueprint: return serialiseBlueprintComponent(entity);
+      case ServerComponentType.boulder: return serialiseBoulderComponent(entity);
+      case ServerComponentType.cactus: return serialiseCactusComponent(entity);
+      case ServerComponentType.cooking: return serialiseCookingComponent(entity);
+      case ServerComponentType.cow: return serialiseCowComponent(entity);
+      case ServerComponentType.door: return serialiseDoorComponent(entity);
+      case ServerComponentType.escapeAI: return serialiseEscapeAIComponent(entity);
+      case ServerComponentType.fish: return serialiseFishComponent(entity);
+      case ServerComponentType.followAI: return serialiseFollowAIComponent(entity);
+      case ServerComponentType.frozenYeti: return serialiseFrozenYetiComponent(entity);
+      case ServerComponentType.golem: return serialiseGolemComponent(entity);
+      case ServerComponentType.health: return serialiseHealthComponent(entity);
+      case ServerComponentType.hut: return serialiseHutComponent(entity);
+      case ServerComponentType.iceShard: return serialiseIceShardComponent(entity);
+      case ServerComponentType.iceSpikes: return serialiseIceSpikesComponent(entity);
+      case ServerComponentType.inventory: return serialiseInventoryComponent(entity);
+      case ServerComponentType.inventoryUse: return serialiseInventoryUseComponent(entity);
+      case ServerComponentType.item: return serialiseItemComponent(entity);
+      case ServerComponentType.pebblum: return serialisePebblumComponent(entity);
+      case ServerComponentType.physics: return serialisePhysicsComponent(entity);
+      case ServerComponentType.player: return serialisePlayerComponent(entity);
+      case ServerComponentType.researchBench: return serialiseResearchBenchComponent(entity);
+      case ServerComponentType.rockSpike: return serialiseRockSpikeComponent(entity);
+      case ServerComponentType.slime: return serialiseSlimeComponent(entity);
+      case ServerComponentType.slimeSpit: return serialiseSlimeSpitComponent(entity);
+      case ServerComponentType.slimewisp: return serialiseSlimewispComponent(entity);
+      case ServerComponentType.snowball: return serialiseSnowballComponent(entity);
+      case ServerComponentType.statusEffect: return serialiseStatusEffectComponent(entity);
+      case ServerComponentType.throwingProjectile: return serialiseThrowingProjectileComponent(entity);
+      case ServerComponentType.tombstone: return serialiseTombstoneComponent(entity);
+      case ServerComponentType.totemBanner: return serialiseTotemBannerComponent(entity);
+      case ServerComponentType.tree: return serialiseTreeComponent(entity);
+      case ServerComponentType.tribe: return serialiseTribeComponent(entity);
+      case ServerComponentType.tribeMember: return serialiseTribeMemberComponent(entity);
+      case ServerComponentType.tribesman: return serialiseTribesmanComponent(entity);
+      case ServerComponentType.turret: return serialiseTurretComponent(entity);
+      case ServerComponentType.wanderAI: return serialiseWanderAIComponent(entity);
+      case ServerComponentType.yeti: return serialiseYetiComponent(entity);
+      case ServerComponentType.zombie: return serialiseZombieComponent(entity);
    }
-   return -1;
+
+   throw new Error("Unserialised component of type " + componentType);
 }
 
-const getLastActionTicks = (tribeMember: Entity, inventoryName: string): number => {
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
-   const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
-
-   switch (useInfo.currentAction) {
-      case TribeMemberAction.chargeBow: {
-         return useInfo.lastBowChargeTicks;
-      }
-      case TribeMemberAction.chargeSpear: {
-         return useInfo.lastSpearChargeTicks;
-      }
-      case TribeMemberAction.chargeBattleaxe: {
-         return useInfo.lastBattleaxeChargeTicks;
-      }
-      case TribeMemberAction.loadCrossbow: {
-         return useInfo.lastCrossbowLoadTicks;
-      }
-      case TribeMemberAction.eat: {
-         return useInfo.lastEatTicks;
-      }
-      case TribeMemberAction.none: {
-         return useInfo.lastAttackTicks;
-      }
-      case TribeMemberAction.researching: {
-         // @Incomplete
-         return Board.ticks;
-      }
-   }
-}
-
-const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
+const serialiseEntityData = (entity: Entity): EntityData<EntityType> => {
    const circularHitboxes = new Array<CircularHitboxData>();
    const rectangularHitboxes = new Array<RectangularHitboxData>();
 
@@ -113,504 +165,12 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       }
    }
 
-   // @Cleanup @Robustness: Somehow make this automatically require the correct type for each entity type
-   // Extract each one of these to the appropriate entity file, and make it return that specific entity's client args
-   let clientArgs: EntityData<EntityType>["clientArgs"];
-   switch (entity.type) {
-      case IEntityType.barrel: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            serializeInventoryData(getInventory(inventoryComponent, "inventory"))
-         ];
-         break;
-      }
-      case IEntityType.berryBush: {
-         const berryBushComponent = BerryBushComponentArray.getComponent(entity.id);
-         clientArgs = [berryBushComponent.numBerries];
-         break;
-      }
-      case IEntityType.boulder: {
-         const boulderComponent = BoulderComponentArray.getComponent(entity.id);
-         clientArgs = [boulderComponent.boulderType];
-         break;
-      }
-      case IEntityType.cactus: {
-         const cactusComponent = CactusComponentArray.getComponent(entity.id);
-         clientArgs = [cactusComponent.flowers, cactusComponent.limbs];
-         break;
-      }
-      case IEntityType.campfire: {
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity.id);
+   const components = new Array<ComponentData>();
 
-         clientArgs = [
-            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory")),
-            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory")),
-            serializeInventoryData(getInventory(inventoryComponent, "outputInventory")),
-            cookingEntityComponent.currentRecipe !== null ? cookingEntityComponent.heatingTimer / cookingEntityComponent.currentRecipe.cookTime : -1,
-            cookingEntityComponent.remainingHeatSeconds > 0
-         ];
-         break;
-      }
-      case IEntityType.cow: {
-         const cowComponent = CowComponentArray.getComponent(entity.id);
-         clientArgs = [cowComponent.species, cowComponent.grazeProgressTicks > 0 ? cowComponent.grazeProgressTicks / COW_GRAZE_TIME_TICKS : -1];
-         break;
-      }
-      case IEntityType.fish: {
-         const fishComponent = FishComponentArray.getComponent(entity.id);
-         clientArgs = [fishComponent.colour];
-         break;
-      }
-      case IEntityType.frozenYeti: {
-         const frozenYetiComponent = FrozenYetiComponentArray.getComponent(entity.id);
-         clientArgs = [
-            frozenYetiComponent.attackType,
-            frozenYetiComponent.attackStage,
-            frozenYetiComponent.stageProgress,
-            frozenYetiComponent.rockSpikeInfoArray.map(info => [info.positionX, info.positionY])
-         ];
-         break;
-      }
-      case IEntityType.furnace: {
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity.id);
-
-         clientArgs = [
-            serializeInventoryData(getInventory(inventoryComponent, "fuelInventory")),
-            serializeInventoryData(getInventory(inventoryComponent, "ingredientInventory")),
-            serializeInventoryData(getInventory(inventoryComponent, "outputInventory")),
-            cookingEntityComponent.currentRecipe !== null ? cookingEntityComponent.heatingTimer / cookingEntityComponent.currentRecipe.cookTime : -1,
-            cookingEntityComponent.remainingHeatSeconds > 0
-         ];
-         break;
-      }
-      case IEntityType.iceSpikes: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.itemEntity: {
-         const itemComponent = ItemComponentArray.getComponent(entity.id);
-         clientArgs = [itemComponent.itemType];
-         break;
-      }
-      case IEntityType.krumblid: {
-         clientArgs = [];
-         break;
-      }
-      // @Cleanup: Copy and paste between tribesman and player
-      case IEntityType.player: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
-         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
-
-         const hotbarInventory = getInventory(inventoryComponent, "hotbar");
-
-         const playerData = SERVER.getPlayerDataFromInstance(entity);
-         if (playerData === null) {
-            throw new Error("Can't find player data");
-         }
-
-         const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-
-         let hotbarActiveItemData: ItemData | null = null;
-         if (hotbarInventory.itemSlots.hasOwnProperty(hotbarUseInfo.selectedItemSlot)) {
-            const item = hotbarInventory.itemSlots[hotbarUseInfo.selectedItemSlot];
-            hotbarActiveItemData = serialiseItem(item);
-         }
-
-         let offhandActiveItemData: ItemData | null = null;
-         let offhandAction = TribeMemberAction.none;
-         let offhandLastActionTicks = 0;
-         let offhandThrownBattleaxeItemID = -1;
-         if (tribeComponent.tribe!.type === TribeType.barbarians) {
-            const offhandInventory = getInventory(inventoryComponent, "offhand");
-            const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
-            
-            if (offhandInventory.itemSlots.hasOwnProperty(1)) {
-               const item = offhandInventory.itemSlots[1];
-               offhandActiveItemData = serialiseItem(item);
-            }
-
-            offhandAction = offhandUseInfo.currentAction;
-            offhandLastActionTicks = getLastActionTicks(entity, "offhand");
-            offhandThrownBattleaxeItemID = offhandUseInfo.thrownBattleaxeItemID;
-         }
-         
-         // @Incomplete
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            tribeComponent.tribe!.type,
-            serializeInventoryData(getInventory(inventoryComponent, "armourSlot")),
-            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot")),
-            serializeInventoryData(getInventory(inventoryComponent, "backpack")),
-            hotbarActiveItemData,
-            hotbarUseInfo.currentAction,
-            getFoodEatingType(entity, hotbarActiveItemData),
-            getLastActionTicks(entity, "hotbar"),
-            hotbarUseInfo.thrownBattleaxeItemID,
-            offhandActiveItemData,
-            offhandAction,
-            getFoodEatingType(entity, offhandActiveItemData),
-            offhandLastActionTicks,
-            offhandThrownBattleaxeItemID,
-            false,
-            tribeMemberComponent.warPaintType,
-            playerData.username
-         ];
-         break;
-      }
-      case IEntityType.tribeWorker: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
-         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
-
-         const hotbarInventory = getInventory(inventoryComponent, "hotbar");
-
-         const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-
-         let hotbarActiveItem: ItemData | null = null;
-         if (hotbarInventory.itemSlots.hasOwnProperty(hotbarUseInfo.selectedItemSlot)) {
-            const item = hotbarInventory.itemSlots[hotbarUseInfo.selectedItemSlot];
-            hotbarActiveItem = serialiseItem(item);
-         }
-
-         let offhandActiveItem: ItemData | null = null;
-         let offhandAction = TribeMemberAction.none;
-         let offhandLastActionTicks = 0;
-         let offhandThrownBattleaxeItemID = -1;
-         if (tribeComponent.tribe!.type === TribeType.barbarians) {
-            const offhandInventory = getInventory(inventoryComponent, "offhand");
-            const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
-            
-            if (offhandInventory.itemSlots.hasOwnProperty(1)) {
-               const item = offhandInventory.itemSlots[1];
-               offhandActiveItem = serialiseItem(item);
-            }
-
-            offhandAction = offhandUseInfo.currentAction;
-            offhandLastActionTicks = getLastActionTicks(entity, "offhand");
-            offhandThrownBattleaxeItemID = offhandUseInfo.thrownBattleaxeItemID;
-         }
-         
-         // @Incomplete
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            tribeComponent.tribe!.type,
-            serializeInventoryData(getInventory(inventoryComponent, "armourSlot")),
-            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot")),
-            serializeInventoryData(getInventory(inventoryComponent, "backpack")),
-            hotbarActiveItem,
-            hotbarUseInfo.currentAction,
-            getFoodEatingType(entity, hotbarActiveItem),
-            getLastActionTicks(entity, "hotbar"),
-            hotbarUseInfo.thrownBattleaxeItemID,
-            offhandActiveItem,
-            offhandAction,
-            getFoodEatingType(entity, offhandActiveItem),
-            offhandLastActionTicks,
-            offhandThrownBattleaxeItemID,
-            false,
-            tribeMemberComponent.warPaintType,
-            serializeInventoryData(hotbarInventory),
-            hotbarUseInfo.selectedItemSlot,
-            0
-         ];
-         break;
-      }
-      case IEntityType.tribeWarrior: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
-         const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
-
-         const hotbarInventory = getInventory(inventoryComponent, "hotbar");
-         const hotbarUseInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-
-         let hotbarActiveItem: ItemData | null = null;
-         if (hotbarInventory.itemSlots.hasOwnProperty(hotbarUseInfo.selectedItemSlot)) {
-            const item = hotbarInventory.itemSlots[hotbarUseInfo.selectedItemSlot];
-            hotbarActiveItem = serialiseItem(item);
-         }
-
-         let offhandActiveItem: ItemData | null = null;
-         let offhandAction = TribeMemberAction.none;
-         let offhandLastActionTicks = 0;
-         let offhandThrownBattleaxeItemID = -1;
-         if (tribeComponent.tribe!.type === TribeType.barbarians) {
-            const offhandInventory = getInventory(inventoryComponent, "offhand");
-            const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand")
-            
-            if (offhandInventory.itemSlots.hasOwnProperty(1)) {
-               const item = offhandInventory.itemSlots[1];
-               offhandActiveItem = serialiseItem(item);
-            }
-
-            offhandAction = offhandUseInfo.currentAction;
-            offhandLastActionTicks = getLastActionTicks(entity, "offhand");
-            offhandThrownBattleaxeItemID = offhandUseInfo.thrownBattleaxeItemID;
-         }
-         
-         // @Incomplete
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            tribeComponent.tribe!.type,
-            serializeInventoryData(getInventory(inventoryComponent, "armourSlot")),
-            serializeInventoryData(getInventory(inventoryComponent, "backpackSlot")),
-            serializeInventoryData(getInventory(inventoryComponent, "backpack")),
-            hotbarActiveItem,
-            hotbarUseInfo.currentAction,
-            getFoodEatingType(entity, hotbarActiveItem),
-            getLastActionTicks(entity, "hotbar"),
-            hotbarUseInfo.thrownBattleaxeItemID,
-            offhandActiveItem,
-            offhandAction,
-            getFoodEatingType(entity, offhandActiveItem),
-            offhandLastActionTicks,
-            offhandThrownBattleaxeItemID,
-            false,
-            tribeMemberComponent.warPaintType,
-            serializeInventoryData(hotbarInventory),
-            hotbarUseInfo.selectedItemSlot,
-            0
-         ];
-         break;
-      }
-      case IEntityType.slime: {
-         const slimeComponent = SlimeComponentArray.getComponent(entity.id);
-
-         let anger = -1;
-         if (slimeComponent.angeredEntities.length > 0) {
-            // Find maximum anger
-            for (const angerInfo of slimeComponent.angeredEntities) {
-               if (angerInfo.angerAmount > anger) {
-                  anger = angerInfo.angerAmount;
-               }
-            }
-         }
-
-         const spitChargeProgress = slimeComponent.spitChargeTicks >= SPIT_COOLDOWN_TICKS ? (slimeComponent.spitChargeTicks - SPIT_COOLDOWN_TICKS) / (SPIT_CHARGE_TIME_TICKS - SPIT_COOLDOWN_TICKS) : -1;
-
-         clientArgs = [
-            slimeComponent.size,
-            slimeComponent.eyeRotation,
-            slimeComponent.orbSizes,
-            anger,
-            spitChargeProgress
-         ];
-         break;
-      }
-      case IEntityType.slimewisp: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.snowball: {
-         const snowballComponent = SnowballComponentArray.getComponent(entity.id);
-         clientArgs = [snowballComponent.size];
-         break;
-      }
-      case IEntityType.tombstone: {
-         const tombstoneComponent = TombstoneComponentArray.getComponent(entity.id);
-         clientArgs = [
-            tombstoneComponent.tombstoneType,
-            getZombieSpawnProgress(tombstoneComponent),
-            tombstoneComponent.zombieSpawnPositionX,
-            tombstoneComponent.zombieSpawnPositionY,
-            tombstoneComponent.deathInfo
-         ];
-         break;
-      }
-      case IEntityType.tree: {
-         const treeComponent = TreeComponentArray.getComponent(entity.id);
-         clientArgs = [treeComponent.treeSize];
-         break;
-      }
-      case IEntityType.workerHut: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const hutComponent = HutComponentArray.getComponent(entity.id);
-
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            hutComponent.lastDoorSwingTicks
-         ];
-         break;
-      }
-      case IEntityType.warriorHut: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const hutComponent = HutComponentArray.getComponent(entity.id);
-
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            hutComponent.lastDoorSwingTicks
-         ];
-         break;
-      }
-      case IEntityType.tribeTotem: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const totemBannerComponent = TotemBannerComponentArray.getComponent(entity.id);
-
-         clientArgs = [
-            tribeComponent.tribe!.id, // Totems always have a tribe
-            tribeComponent.tribe!.type,
-            // @Speed
-            Object.values(totemBannerComponent.banners)
-         ];
-         break;
-      }
-      case IEntityType.woodenArrowProjectile: {
-         const arrowComponent = ArrowComponentArray.getComponent(entity.id);
-         clientArgs = [arrowComponent.type];
-         break;
-      }
-      case IEntityType.iceShardProjectile: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.rockSpikeProjectile: {
-         const rockSpikeComponent = RockSpikeProjectileComponentArray.getComponent(entity.id);
-         clientArgs = [rockSpikeComponent.size, rockSpikeComponent.lifetimeTicks / SettingsConst.TPS];
-         break;
-      }
-      case IEntityType.workbench: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.yeti: {
-         const yetiComponent = YetiComponentArray.getComponent(entity.id);
-         clientArgs = [yetiComponent.snowThrowAttackProgress];
-         break;
-      }
-      case IEntityType.zombie: {
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
-         const zombieComponent = ZombieComponentArray.getComponent(entity.id);
-
-         const inventory = getInventory(inventoryComponent, "handSlot");
-         const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
-         
-         let activeItem: ItemType | null = null;
-         if (inventory.itemSlots.hasOwnProperty(useInfo.selectedItemSlot)) {
-            const item = inventory.itemSlots[useInfo.selectedItemSlot];
-            activeItem = item.type;
-         }
-
-         clientArgs = [
-            zombieComponent.zombieType,
-            activeItem,
-            getLastActionTicks(entity, "handSlot"),
-            useInfo.currentAction
-         ];
-         break;
-      }
-      case IEntityType.spearProjectile: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.researchBench: {
-         const researchBenchComponent = ResearchBenchComponentArray.getComponent(entity.id);
-         clientArgs = [researchBenchComponent.isOccupied];
-         break;
-      }
-      case IEntityType.woodenWall: {
-         const healthComponent = HealthComponentArray.getComponent(entity.id);
-         clientArgs = [healthComponent.health];
-         break;
-      }
-      case IEntityType.slimeSpit: {
-         const slimeSpitComponent = SlimeSpitComponentArray.getComponent(entity.id);
-         clientArgs = [slimeSpitComponent.size];
-         break;
-      }
-      case IEntityType.spitPoison: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.woodenDoor: {
-         const doorComponent = DoorComponentArray.getComponent(entity.id);
-         clientArgs = [doorComponent.toggleType, doorComponent.doorOpenProgress];
-         break;
-      }
-      case IEntityType.battleaxeProjectile: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.golem: {
-         const golemComponent = GolemComponentArray.getComponent(entity.id);
-         clientArgs = [golemComponent.wakeTimerTicks / GOLEM_WAKE_TIME_TICKS];
-         break;
-      }
-      case IEntityType.planterBox: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.iceArrow: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.pebblum: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.woodenEmbrasure: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.woodenFloorSpikes:
-      case IEntityType.woodenWallSpikes:
-      case IEntityType.floorPunjiSticks:
-      case IEntityType.wallPunjiSticks: {
-         clientArgs = [];
-         break;
-      }
-      case IEntityType.blueprintEntity: {
-         const blueprintComponent = BlueprintComponentArray.getComponent(entity.id);
-         clientArgs = [blueprintComponent.buildingType, getBlueprintProgress(blueprintComponent)];
-         break;
-      }
-      case IEntityType.ballista: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const turretComponent = TurretComponentArray.getComponent(entity.id);
-         const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
-         const ballistaComponent = BallistaComponentArray.getComponent(entity.id);
-         
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            turretComponent.aimDirection,
-            getBallistaChargeProgress(entity),
-            getBallistaReloadProgress(entity),
-            serializeInventoryData(getInventory(inventoryComponent, "ammoBoxInventory")),
-            ballistaComponent.ammoType,
-            ballistaComponent.ammoRemaining
-         ];
-         break;
-      }
-      case IEntityType.slingTurret: {
-         const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         const turretComponent = TurretComponentArray.getComponent(entity.id);
-
-         clientArgs = [
-            tribeComponent.tribe !== null ? tribeComponent.tribe.id : null,
-            turretComponent.aimDirection,
-            getSlingTurretChargeProgress(turretComponent),
-            getSlingTurretReloadProgress(turretComponent)
-         ];
-         break;
-      }
-   }
-
-   const statusEffectData = new Array<StatusEffectData>();
-   if (StatusEffectComponentArray.hasComponent(entity)) {
-      const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
-      for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
-         statusEffectData.push({
-            type: statusEffectComponent.activeStatusEffectTypes[i] as unknown as StatusEffect,
-            ticksElapsed: statusEffectComponent.activeStatusEffectTicksElapsed[i]
-         });
-      }
+   const componentTypes = EntityComponents[entity.type];
+   for (let i = 0; i < componentTypes.length; i++) {
+      const componentType = componentTypes[i];
+      components.push(serialiseComponent(entity, componentType));
    }
 
    return {
@@ -622,19 +182,19 @@ const bundleEntityData = (entity: Entity): EntityData<EntityType> => {
       rectangularHitboxes: rectangularHitboxes,
       ageTicks: entity.ageTicks,
       type: entity.type as unknown as EntityType,
-      clientArgs: clientArgs,
-      statusEffects: statusEffectData,
       collisionBit: entity.collisionBit,
-      collisionMask: entity.collisionMask
+      collisionMask: entity.collisionMask,
+      // @Cleanup: Is there some typescript magic we can do to avoid this evil cast
+      components: components as unknown as EntityComponentsData<EntityType>
    };
 }
 
-const bundleEntityDataArray = (visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<EntityData<EntityType>> => {
+const bundleEntityDataArray = (visibleChunkBounds: VisibleChunkBounds): Array<EntityData<EntityType>> => {
    const visibleEntities = getPlayerVisibleEntities(visibleChunkBounds);
 
    const entityDataArray = new Array<EntityData>();
    for (const entity of visibleEntities) {
-      const entityData = bundleEntityData(entity);
+      const entityData = serialiseEntityData(entity);
       entityDataArray.push(entityData);
    }
 
@@ -678,7 +238,7 @@ interface PlayerData {
    pickedUpItem: boolean;
 }
 
-const bundleTribeData = (playerData: PlayerData): TribeData => {
+const bundlePlayerTribeData = (playerData: PlayerData): PlayerTribeData => {
    return {
       id: playerData.tribe.id,
       tribeType: playerData.tribe.type,
@@ -690,6 +250,21 @@ const bundleTribeData = (playerData: PlayerData): TribeData => {
       unlockedTechs: playerData.tribe.unlockedTechs,
       techTreeUnlockProgress: playerData.tribe.techTreeUnlockProgress
    };
+}
+
+const bundleEnemyTribesData = (playerData: PlayerData): ReadonlyArray<EnemyTribeData> => {
+   const enemyTribesData = new Array<EnemyTribeData>();
+   for (const tribe of Board.tribes) {
+      if (tribe.id === playerData.tribe.id) {
+         continue;
+      }
+      
+      enemyTribesData.push({
+         id: tribe.id,
+         tribeType: tribe.type
+      });
+   }
+   return enemyTribesData;
 }
 
 /** Communicates between the server and players */
@@ -718,8 +293,17 @@ class GameServer {
    }
 
    public start(): void {
-      Board.setup();
-      SERVER.setup();
+      if (!isTimed) {
+         // Seed the random number generator
+         if (OPTIONS.inBenchmarkMode) {
+            SRandom.seed(40404040404);
+         } else {
+            SRandom.seed(randInt(0, 9999999999));
+         }
+
+         Board.setup();
+         SERVER.setup();
+      }
       
       if (SERVER.io === null) {
          // Start the server
@@ -729,6 +313,58 @@ class GameServer {
       }
 
       SERVER.isRunning = true;
+      
+      if (isTimed) {
+         if (typeof global.gc === "undefined") {
+            throw new Error("GC function is undefined! Most likely need to pass in the '--expose-gc' flag.");
+         }
+
+         Math.random = () => SRandom.next();
+
+         let j = 0;
+         while (true) {
+            for (let i = 0; i < 10; i++) {
+               global.gc();
+            }
+            
+            // Reset the board state
+            Board.reset();
+            resetYetiTerritoryTiles();
+            resetCensus();
+            resetComponents();
+            resetPerlinNoiseCache();
+
+            // Seed the random number generator
+            if (OPTIONS.inBenchmarkMode) {
+               SRandom.seed(40404040404);
+            } else {
+               SRandom.seed(randInt(0, 9999999999));
+            }
+            
+            Board.setup();
+            SERVER.setup();
+
+            // Warm up the JIT
+            for (let i = 0; i < 50; i++) {
+               SERVER.tick();
+            }
+            
+            // @Bug: When at 5000, the average tps starts at around 1.8, while at 1000 it starts at .6
+            const numTicks = 5000;
+            
+            const startTime = performance.now();
+
+            for (let i = 0; i < numTicks; i++) {
+               SERVER.tick();
+            }
+
+            const timeElapsed = performance.now() - startTime;
+            const averageTickTimeMS = timeElapsed / numTicks;
+            averageTickTimes.push(averageTickTimeMS);
+            console.log("(#" + (j + 1) + ") Average tick MS: " + averageTickTimeMS);
+            j++;
+         }
+      }
 
       if (typeof SERVER.tickInterval === "undefined") {
          if (OPTIONS.warp) {
@@ -765,7 +401,9 @@ class GameServer {
       Board.pushJoinBuffer();
       Board.removeFlaggedEntities();
 
-      SERVER.sendGameDataPackets();
+      if (!isTimed) {
+         SERVER.sendGameDataPackets();
+      }
 
       // Update server ticks and time
       // This is done at the end of the tick so that information sent by players is associated with the next tick to run
@@ -817,10 +455,10 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            createSlime(new Point(spawnPosition.x + 200, spawnPosition.y), SlimeSize.medium, []);
+            // createSlime(new Point(spawnPosition.x + 200, spawnPosition.y), SlimeSize.medium, []);
             
-            const tribe = new Tribe(TribeType.barbarians);
-            Board.addTribe(tribe);
+            // const tribe = new Tribe(TribeType.barbarians);
+            // Board.addTribe(tribe);
             // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 1000), tribe);
 
             // for (let i = 0; i < 3; i++) {
@@ -830,8 +468,8 @@ class GameServer {
             // }
             // createYeti(new Point(spawnPosition.x, spawnPosition.y + 600));
 
-            const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
-            const tribeComp = TribeComponentArray.getComponent(player.id);
+            // const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
+            // const tribeComp = TribeComponentArray.getComponent(player.id);
             // const n = 6;
             // for (let i = 0; i < n; i++) {
             //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 100), tribeComp.tribe);
@@ -843,13 +481,13 @@ class GameServer {
             // for (let i = 0; i < n2; i++) {
             //    createSlingTurret(new Point(spawnPosition.x + (i - (n2 - 1)/2) * 200, spawnPosition.y + 0), tribeComp.tribe);
             // }
-            const n3 = 3;
-            for (let i = 0; i < n3; i++) {
-               const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
-               setTimeout(() => {
-                  addItemToInventory(InventoryComponentArray.getComponent(b.id), "ammoBoxInventory", ItemType.wood, 1);
-               }, 100);
-            }
+            // const n3 = 3;
+            // for (let i = 0; i < n3; i++) {
+            //    const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
+            //    setTimeout(() => {
+            //       addItemToInventory(InventoryComponentArray.getComponent(b.id), "ammoBoxInventory", ItemType.wood, 1);
+            //    }, 100);
+            // }
             // for (let i = 0; i < n; i++) {
             //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y - 320), tribeComp.tribe);
             // }
@@ -940,56 +578,57 @@ class GameServer {
                      itemSlots: {},
                      width: SettingsConst.INITIAL_PLAYER_HOTBAR_SIZE,
                      height: 1,
-                     inventoryName: "hotbar"
+                     name: "hotbar"
                   },
                   backpackInventory: {
                      itemSlots: {},
                      width: -1,
                      height: -1,
-                     inventoryName: "backpack"
+                     name: "backpack"
                   },
                   backpackSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "backpackSlot"
+                     name: "backpackSlot"
                   },
                   heldItemSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "heldItemSlot"
+                     name: "heldItemSlot"
                   },
                   craftingOutputItemSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "craftingOutputSlot"
+                     name: "craftingOutputSlot"
                   },
                   armourSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "armourSlot"
+                     name: "armourSlot"
                   },
                   offhand: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "armourSlot"
+                     name: "armourSlot"
                   },
                   gloveSlot: {
                      itemSlots: {},
                      width: 1,
                      height: 1,
-                     inventoryName: "gloveSlot"
+                     name: "gloveSlot"
                   }
                },
                tileUpdates: [],
                serverTicks: Board.ticks,
                serverTime: Board.time,
                playerHealth: 20,
-               tribeData: bundleTribeData(playerData),
+               playerTribeData: bundlePlayerTribeData(playerData),
+               enemyTribesData: bundleEnemyTribesData(playerData),
                hasFrostShield: false,
                pickedUpItem: false,
                hotbarCrossbowLoadProgressRecord: {}
@@ -1139,11 +778,11 @@ class GameServer {
             }
          });
 
-         socket.on("shape_structure", (structureID: number, buildingType: BlueprintBuildingType): void => {
+         socket.on("shape_structure", (structureID: number, shapeType: BuildingShapeType): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               shapeStructure(player, structureID, buildingType);
+               shapeStructure(player, structureID, shapeType);
             };
          });
 
@@ -1222,7 +861,8 @@ class GameServer {
             serverTime: Board.time,
             playerHealth: player !== null ? HealthComponentArray.getComponent(player.id).health : 0,
             gameObjectDebugData: gameObjectDebugData,
-            tribeData: bundleTribeData(playerData),
+            playerTribeData: bundlePlayerTribeData(playerData),
+            enemyTribesData: bundleEnemyTribesData(playerData),
             // @Incomplete
             // hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
             hasFrostShield: false,
@@ -1295,49 +935,49 @@ class GameServer {
                itemSlots: {},
                width: SettingsConst.INITIAL_PLAYER_HOTBAR_SIZE,
                height: 1,
-               inventoryName: "hotbar"
+               name: "hotbar"
             },
             backpackInventory: {
                itemSlots: {},
                width: -1,
                height: -1,
-               inventoryName: "backpack"
+               name: "backpack"
             },
             backpackSlot: {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "backpackSlot"
+               name: "backpackSlot"
             },
             heldItemSlot: {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "heldItemSlot"
+               name: "heldItemSlot"
             },
             craftingOutputItemSlot: {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "craftingOutputSlot"
+               name: "craftingOutputSlot"
             },
             armourSlot: {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "armourSlot"
+               name: "armourSlot"
             },
             offhand: {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "offhand"
+               name: "offhand"
             },
             gloveSlot: {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "gloveSlot"
+               name: "gloveSlot"
             }
          };
       } else {
@@ -1354,31 +994,16 @@ class GameServer {
                itemSlots: {},
                width: 1,
                height: 1,
-               inventoryName: "offhand"
+               name: "offhand"
             },
             gloveSlot: SERVER.bundleInventory(player, "gloveSlot")
          };
       }
    }
 
-   private bundleInventory(player: Entity, inventoryName: string): InventoryData {
+   private bundleInventory(player: Entity, inventoryName: string): Inventory {
       const inventoryComponent = InventoryComponentArray.getComponent(player.id);
-      const inventory = getInventory(inventoryComponent, inventoryName);
-
-      const inventoryData: InventoryData = {
-         itemSlots: {},
-         width: inventory.width,
-         height: inventory.height,
-         inventoryName: inventoryName
-      };
-      for (const [itemSlot, item] of Object.entries(inventory.itemSlots) as unknown as ReadonlyArray<[number, Item]>) {
-         inventoryData.itemSlots[itemSlot] = {
-            type: item.type,
-            count: item.count,
-            id: item.id
-         };
-      }
-      return inventoryData;
+      return getInventory(inventoryComponent, inventoryName);
    }
 
    private handlePlayerDisconnect(socket: ISocket): void {
@@ -1479,6 +1104,8 @@ class GameServer {
    }
 
    private generatePlayerSpawnPosition(tribeType: TribeType): Point {
+      // @Temporary
+      return new Point(1, 1);
       const tribeInfo = TRIBE_INFO_RECORD[tribeType];
       for (let numAttempts = 0; numAttempts < 50; numAttempts++) {
          const biomeName = randItem(tribeInfo.biomes);

@@ -1,4 +1,6 @@
-import { ID_SENTINEL_VALUE } from "../Entity";
+import { ZombieComponentData } from "webgl-test-shared";
+import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import { ZombieComponentArray } from "./ComponentArray";
 
 export class ZombieComponent {
    /** The type of the zombie, 0-3 */
@@ -19,4 +21,11 @@ export class ZombieComponent {
       this.zombieType = zombieType;
       this.tombstoneID = tombstoneID;
    }
+}
+
+export function serialiseZombieComponent(zombie: Entity): ZombieComponentData {
+   const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
+   return {
+      zombieType: zombieComponent.zombieType
+   };
 }

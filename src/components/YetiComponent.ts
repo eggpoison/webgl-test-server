@@ -1,6 +1,8 @@
+import { YetiComponentData } from "webgl-test-shared";
 import Entity from "../Entity";
 import Tile from "../Tile";
 import { SnowThrowStage, YETI_SNOW_THROW_COOLDOWN } from "../entities/mobs/yeti";
+import { YetiComponentArray } from "./ComponentArray";
 
 export class YetiComponent {
    public readonly territory: ReadonlyArray<Tile>;
@@ -18,4 +20,11 @@ export class YetiComponent {
    constructor(territory: ReadonlyArray<Tile>) {
       this.territory = territory;
    }
+}
+
+export function serialiseYetiComponent(yeti: Entity): YetiComponentData {
+   const yetiComponent = YetiComponentArray.getComponent(yeti.id);
+   return {
+      attackProgress: yetiComponent.snowThrowAttackProgress
+   };
 }

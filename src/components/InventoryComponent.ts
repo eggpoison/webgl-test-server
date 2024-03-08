@@ -1,88 +1,51 @@
-import { ITEM_INFO_RECORD, InventoryData, Item, ItemData, ItemSlotsData, ItemType, StackableItemInfo, itemIsStackable } from "webgl-test-shared";
+import { ITEM_INFO_RECORD, Inventory, InventoryComponentData, Item, ItemType, StackableItemInfo, itemIsStackable } from "webgl-test-shared";
 import Entity from "../Entity";
 import { createItemEntity, itemEntityCanBePickedUp } from "../entities/item-entity";
 import { InventoryComponentArray, ItemComponentArray } from "./ComponentArray";
 import { createItem } from "../items";
 
-export type ItemSlots = { [itemSlot: number]: Item };
-
-export interface Inventory {
-   /** Width of the inventory in item slots */
-   width: number;
-   /** Height of the inventory in item slots */
-   height: number;
-   /** The items contained by the inventory. */
-   readonly itemSlots: ItemSlots;
-   /** Whether the inventory allows dropped items to be put into it */
-   readonly acceptsPickedUpItems: boolean;
-   readonly name: string;
-}
-
-export function serialiseItem(item: Item): ItemData {
-   return {
-      type: item.type,
-      count: item.count,
-      id: item.id
-   };
-}
-
-export function serializeInventoryData(inventory: Inventory): InventoryData {
-   const itemSlots: ItemSlotsData = {};
-   for (const [itemSlot, item] of Object.entries(inventory.itemSlots)) {
-      itemSlots[Number(itemSlot)] = serialiseItem(item);
-   }
-   
-   const inventoryData: InventoryData = {
-      width: inventory.width,
-      height: inventory.height,
-      itemSlots: itemSlots,
-      inventoryName: inventory.name
-   };
-   
-   return inventoryData;
-}
-
 export class InventoryComponent {
    /** Stores a record of all inventories associated with the inventory component. */
-   public readonly inventories: Record<string, Inventory> = {};
-   /**
-    * Stores all inventories associated with the inventory component in the order of when they were added.
-    * Note: the order the inventories were added affects which inventory picked up items are added to.
-    */
-   public readonly inventoryArray = new Array<[name: string, inventory: Inventory]>();
+   public readonly inventoryRecord: Record<string, Inventory> = {};
+   /** Stores all inventories associated with the inventory component in the order of when they were added. */
+   public readonly inventories = new Array<Inventory>();
+   public readonly accessibleInventories = new Array<Inventory>();
 }
 
 /** Creates and stores a new inventory in the component. */
 export function createNewInventory(inventoryComponent: InventoryComponent, name: string, width: number, height: number, acceptsPickedUpItems: boolean): Inventory {
-   if (inventoryComponent.inventories.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
+   if (inventoryComponent.inventoryRecord.hasOwnProperty(name)) throw new Error(`Tried to create an inventory when an inventory by the name of '${name}' already exists.`);
    
    const inventory: Inventory = {
       width: width,
       height: height,
       itemSlots: {},
-      acceptsPickedUpItems: acceptsPickedUpItems,
       name: name
    };
 
-   inventoryComponent.inventories[name] = inventory;
-   inventoryComponent.inventoryArray.push([name, inventory]);
+   inventoryComponent.inventoryRecord[name] = inventory;
+   inventoryComponent.inventories.push(inventory);
+
+   if (acceptsPickedUpItems) {
+      inventoryComponent.accessibleInventories.push(inventory);
+   }
 
    return inventory;
 }
 
 export function resizeInventory(inventoryComponent: InventoryComponent, name: string, width: number, height: number): void {
-   if (!inventoryComponent.inventories.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
+   if (!inventoryComponent.inventoryRecord.hasOwnProperty(name)) throw new Error(`Could not find an inventory by the name of '${name}'.`);
 
-   inventoryComponent.inventories[name].width = width;
-   inventoryComponent.inventories[name].height = height;
+   inventoryComponent.inventoryRecord[name].width = width;
+   inventoryComponent.inventoryRecord[name].height = height;
 }
 
 export function getInventory(inventoryComponent: InventoryComponent, name: string): Inventory {
-   if (!inventoryComponent.inventories.hasOwnProperty(name)) {
+   if (!inventoryComponent.inventoryRecord.hasOwnProperty(name)) {
       throw new Error(`Could not find an inventory by the name of '${name}'.`);
    }
    
-   return inventoryComponent.inventories[name];
+   return inventoryComponent.inventoryRecord[name];
 }
 
 export function getItemFromInventory(inventory: Inventory, itemSlot: number): Item | null {
@@ -123,13 +86,8 @@ export function pickupItemEntity(entity: Entity, itemEntity: Entity): boolean {
    const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
    const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
 
-   for (const [inventoryName, inventory] of inventoryComponent.inventoryArray) {
-      if (!inventory.acceptsPickedUpItems) {
-         continue;
-      }
-
-      
-      const amountPickedUp = addItemToInventory(inventoryComponent, inventoryName, itemComponent.itemType, itemComponent.amount);
+   for (const inventory of inventoryComponent.accessibleInventories) {
+      const amountPickedUp = addItemToInventory(inventoryComponent, inventory.name, itemComponent.itemType, itemComponent.amount);
       itemComponent.amount -= amountPickedUp;
 
       // When all of the item stack is picked up, don't attempt to add to any other inventories.
@@ -154,12 +112,8 @@ export function pickupItemEntity(entity: Entity, itemEntity: Entity): boolean {
 export function addItem(inventoryComponent: InventoryComponent, item: Item): number {
    let amountAdded = 0;
 
-   for (const [inventoryName, _inventory] of inventoryComponent.inventoryArray) {
-      if (!_inventory.acceptsPickedUpItems) {
-         continue;
-      }
-      
-      amountAdded += addItemToInventory(inventoryComponent, inventoryName, item.type, item.count);
+   for (const inventory of inventoryComponent.accessibleInventories) {
+      amountAdded += addItemToInventory(inventoryComponent, inventory.name, item.type, item.count);
 
       if (amountAdded === item.count) {
          break;
@@ -353,7 +307,7 @@ export function dropInventory(entity: Entity, inventoryComponent: InventoryCompo
 }
 
 export function findInventoryContainingItem(inventoryComponent: InventoryComponent, item: Item): Inventory | null {
-   for (const [_inventoryName, inventory] of inventoryComponent.inventoryArray) {
+   for (const inventory of inventoryComponent.inventories) {
       for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
          if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
             continue;
@@ -378,4 +332,11 @@ export function getFirstOccupiedItemSlotInInventory(inventory: Inventory): numbe
    }
    
    return 0;
+}
+
+export function serialiseInventoryComponent(entity: Entity): InventoryComponentData {
+   const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
+   return {
+      inventories: inventoryComponent.inventoryRecord
+   }
 }

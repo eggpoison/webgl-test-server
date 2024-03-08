@@ -1,4 +1,4 @@
-import { IEntityType, Point, randFloat, randInt, SettingsConst, TileTypeConst } from "webgl-test-shared";
+import { EntityType, IEntityType, Point, randFloat, randInt, SettingsConst, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
@@ -291,6 +291,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
    const tile = Board.getTile(tileX, tileY);
 
    // If the tile is a valid tile for the spawn info, continue with the spawn event
+   // @Speed: Instead of randomly picking a tile until it matches the spawnable, pick a random tile from the spawnable tiles
    if (spawnInfo.spawnableTiles.includes(tile.type)) {
       // Calculate a random position in that tile to run the spawn at
       let x: number;
@@ -302,7 +303,7 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
          x = (tileX + Math.random()) * SettingsConst.TILE_SIZE;
          y = (tileY + Math.random()) * SettingsConst.TILE_SIZE;
       }
-
+      
       if (spawnPositionIsValid(spawnInfo, x, y) && customSpawnConditionsAreMet(spawnInfo, x, y)) {
          spawnEntities(spawnInfo, x, y);
       }

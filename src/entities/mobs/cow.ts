@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CowComponentData, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -267,4 +267,12 @@ export function onCowRemove(cow: Entity): void {
    EscapeAIComponentArray.removeComponent(cow);
    FollowAIComponentArray.removeComponent(cow);
    CowComponentArray.removeComponent(cow);
+}
+
+export function serialiseCowComponent(cow: Entity): CowComponentData {
+   const cowComponent = CowComponentArray.getComponent(cow.id);
+   return {
+      species: cowComponent.species,
+      grazeProgress: cowComponent.grazeProgressTicks > 0 ? cowComponent.grazeProgressTicks / COW_GRAZE_TIME_TICKS : -1
+   };
 }

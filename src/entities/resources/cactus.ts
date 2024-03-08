@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CactusBodyFlowerData, CactusComponentData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { CactusComponentArray, HealthComponentArray } from "../../components/ComponentArray";
@@ -133,4 +133,12 @@ export function onCactusRemove(cactus: Entity): void {
    HealthComponentArray.removeComponent(cactus);
    StatusEffectComponentArray.removeComponent(cactus);
    CactusComponentArray.removeComponent(cactus);
+}
+
+export function serialiseCactusComponent(cactus: Entity): CactusComponentData {
+   const cactusComponent = CactusComponentArray.getComponent(cactus.id);
+   return {
+      flowers: cactusComponent.flowers,
+      limbs: cactusComponent.limbs
+   };
 }

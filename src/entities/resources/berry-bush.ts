@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
+import { BerryBushComponentData, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BerryBushComponentArray, HealthComponentArray } from "../../components/ComponentArray";
@@ -79,4 +79,11 @@ export function onBerryBushRemove(berryBush: Entity): void {
    HealthComponentArray.removeComponent(berryBush);
    StatusEffectComponentArray.removeComponent(berryBush);
    BerryBushComponentArray.removeComponent(berryBush);
+}
+
+export function serialiseBerryBushComponent(berryBush: Entity): BerryBushComponentData {
+   const berryComponent = BerryBushComponentArray.getComponent(berryBush.id);
+   return {
+      numBerries: berryComponent.numBerries
+   };
 }

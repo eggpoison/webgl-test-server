@@ -1,5 +1,6 @@
-import { SettingsConst, TribeMemberAction } from "webgl-test-shared";
-import { Inventory } from "./InventoryComponent";
+import { Inventory, InventoryUseComponentData, SettingsConst, TribeMemberAction } from "webgl-test-shared";
+import Entity from "../Entity";
+import { InventoryUseComponentArray } from "./ComponentArray";
 
 export interface InventoryUseInfo {
    selectedItemSlot: number;
@@ -75,4 +76,40 @@ export function getInventoryUseInfo(inventoryUseComponent: InventoryUseComponent
    }
 
    throw new Error("Can't find inventory use info for inventory name " + inventoryName);
+}
+
+export function hasInventoryUseInfo(inventoryUseComponent: InventoryUseComponent, inventoryName: string): boolean {
+   for (let i = 0; i < inventoryUseComponent.inventoryUseInfos.length; i++) {
+      const useInfo = inventoryUseComponent.inventoryUseInfos[i];
+      if (useInfo.inventory.name === inventoryName) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+export function serialiseInventoryUseComponent(entity: Entity): InventoryUseComponentData {
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(entity.id);
+   return {
+      inventoryUseInfos: inventoryUseComponent.inventoryUseInfos.map(inventoryUseInfo => {
+         return {
+            selectedItemSlot: inventoryUseInfo.selectedItemSlot,
+            inventoryName: inventoryUseInfo.inventory.name,
+            bowCooldownTicks: inventoryUseInfo.bowCooldownTicks,
+            itemAttackCooldowns: inventoryUseInfo.itemAttackCooldowns,
+            spearWindupCooldowns: inventoryUseInfo.spearWindupCooldowns,
+            crossbowLoadProgressRecord: inventoryUseInfo.crossbowLoadProgressRecord,
+            foodEatingTimer: inventoryUseInfo.foodEatingTimer,
+            currentAction: inventoryUseInfo.currentAction,
+            lastAttackTicks: inventoryUseInfo.lastAttackTicks,
+            lastEatTicks: inventoryUseInfo.lastEatTicks,
+            lastBowChargeTicks: inventoryUseInfo.lastBowChargeTicks,
+            lastSpearChargeTicks: inventoryUseInfo.lastSpearChargeTicks,
+            lastBattleaxeChargeTicks: inventoryUseInfo.lastBattleaxeChargeTicks,
+            lastCrossbowLoadTicks: inventoryUseInfo.lastCrossbowLoadTicks,
+            thrownBattleaxeItemID: inventoryUseInfo.thrownBattleaxeItemID
+         };
+      })
+   };
 }

@@ -222,7 +222,7 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
       }
 
       // @Temporary? Do we want them to attack bases?
-      if (!STRUCTURE_TYPES_CONST.includes(entity.type as StructureTypeConst) || entity.type === IEntityType.woodenFloorSpikes) {
+      if (!STRUCTURE_TYPES_CONST.includes(entity.type as StructureTypeConst)) {
          // Don't attack entities which aren't attacking the yeti and aren't encroaching on its territory
          if (!yetiComponent.attackingEntities.hasOwnProperty(entity.id) && !yetiComponent.territory.includes(entity.tile)) {
             continue;

@@ -1,5 +1,7 @@
-import { FrozenYetiAttackType, Point } from "webgl-test-shared";
+import { FrozenYetiAttackType, FrozenYetiComponentData, Point } from "webgl-test-shared";
 import { FROZEN_YETI_STOMP_COOLDOWN, FrozenYetiRockSpikeInfo, FrozenYetiTargetInfo } from "../entities/mobs/frozen-yeti";
+import Entity from "../Entity";
+import { FrozenYetiComponentArray } from "./ComponentArray";
 
 export class FrozenYetiComponent {
    public readonly attackingEntities: Record<number, FrozenYetiTargetInfo> = {};
@@ -19,4 +21,14 @@ export class FrozenYetiComponent {
    public targetPosition: Point | null = null;
 
    public rockSpikeInfoArray = new Array<FrozenYetiRockSpikeInfo>();
+}
+
+export function serialiseFrozenYetiComponent(frozenYeti: Entity): FrozenYetiComponentData {
+   const frozenYetiComponent = FrozenYetiComponentArray.getComponent(frozenYeti.id);
+   return {
+      attackType: frozenYetiComponent.attackType,
+      attackStage: frozenYetiComponent.attackStage,
+      stageProgress: frozenYetiComponent.stageProgress,
+      rockSpikePositions: frozenYetiComponent.rockSpikeInfoArray.map(info => [info.positionX, info.positionY])
+   };
 }

@@ -1,4 +1,6 @@
-import { ItemType, SettingsConst } from "webgl-test-shared";
+import { ItemComponentData, ItemType, SettingsConst } from "webgl-test-shared";
+import Entity from "../Entity";
+import { ItemComponentArray } from "./ComponentArray";
 
 export interface ItemComponent {
    readonly itemType: ItemType;
@@ -15,4 +17,11 @@ export function tickItemComponent(itemComponent: ItemComponent): void {
          delete itemComponent.entityPickupCooldowns[entityID];
       }
    }
+}
+
+export function serialiseItemComponent(entity: Entity): ItemComponentData {
+   const itemComponent = ItemComponentArray.getComponent(entity.id);
+   return {
+      itemType: itemComponent.itemType
+   };
 }

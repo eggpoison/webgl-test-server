@@ -1,11 +1,11 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SettingsConst, randItem, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, Point, IEntityType, TribeMemberAction, SettingsConst, randItem, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, Inventory, TribesmanAIType } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Tile from "../../Tile";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestEntity, getPositionRadialTiles, stopEntity, moveEntityToPosition } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
-import { TribesmanAIType, TribesmanComponent } from "../../components/TribesmanComponent";
+import { getInventory, addItemToInventory, consumeItem, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
+import { TribesmanComponent } from "../../components/TribesmanComponent";
 import { tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem, repairBuilding } from "./tribe-member";
 import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE } from "./tribe-worker";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
@@ -445,7 +445,7 @@ export function tickTribesman(tribesman: Entity): void {
       const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       
-      tribesmanComponent.lastAIType = TribesmanAIType.escaping;
+      tribesmanComponent.currentAIType = TribesmanAIType.escaping;
       useInfo.currentAction = TribeMemberAction.none;
       return;
    }
@@ -474,7 +474,7 @@ export function tickTribesman(tribesman: Entity): void {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
-         tribesmanComponent.lastAIType = TribesmanAIType.idle;
+         tribesmanComponent.currentAIType = TribesmanAIType.idle;
          useInfo.currentAction = TribeMemberAction.none;
          return;
       }
@@ -552,7 +552,7 @@ export function tickTribesman(tribesman: Entity): void {
 
       huntEntity(tribesman, closestTarget);
 
-      tribesmanComponent.lastAIType = TribesmanAIType.attacking;
+      tribesmanComponent.currentAIType = TribesmanAIType.attacking;
       return;
    }
 
@@ -643,7 +643,7 @@ export function tickTribesman(tribesman: Entity): void {
          tribesman.rotation = tribesman.position.calculateAngleBetween(closestDroppedItem.position);
          tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(tribesman.rotation);
          tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
-         tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
+         tribesmanComponent.currentAIType = TribesmanAIType.pickingUpDroppedItems;
          useInfo.currentAction = TribeMemberAction.none;
          
          const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
@@ -661,7 +661,7 @@ export function tickTribesman(tribesman: Entity): void {
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          haulToBarrel(tribesman, closestBarrel);
-         tribesmanComponent.lastAIType = TribesmanAIType.haulingResources;
+         tribesmanComponent.currentAIType = TribesmanAIType.haulingResources;
          useInfo.currentAction = TribeMemberAction.none;
          return;
       }
@@ -782,7 +782,7 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.x = 0;
             tribesman.acceleration.y = 0;
          }
-         tribesmanComponent.lastAIType = TribesmanAIType.grabbingFood;
+         tribesmanComponent.currentAIType = TribesmanAIType.grabbingFood;
          return;
       }
    }
@@ -824,14 +824,14 @@ export function tickTribesman(tribesman: Entity): void {
          const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
          physicsComponent.hitboxesAreDirty = true;
 
-         tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
+         tribesmanComponent.currentAIType = TribesmanAIType.patrolling;
          return;
       }
    } else if (tribesmanComponent.targetPatrolPositionX !== -1) {
       if (hasReachedPatrolPosition(tribesman, tribesmanComponent)) {
          stopEntity(tribesman);
 
-         tribesmanComponent.lastAIType = TribesmanAIType.idle;
+         tribesmanComponent.currentAIType = TribesmanAIType.idle;
          tribesmanComponent.targetPatrolPositionX = -1
          return;
       }
@@ -845,14 +845,14 @@ export function tickTribesman(tribesman: Entity): void {
       const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
       physicsComponent.hitboxesAreDirty = true;
 
-      tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
+      tribesmanComponent.currentAIType = TribesmanAIType.patrolling;
       return;
    }
 
    // If all else fails, don't do anything
    stopEntity(tribesman);
 
-   tribesmanComponent.lastAIType = TribesmanAIType.idle;
+   tribesmanComponent.currentAIType = TribesmanAIType.idle;
 }
 
 const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void => {
@@ -1089,7 +1089,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    // @Incomplete: Only accounts for hotbar
    
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
-   tribesmanComponent.lastAIType = TribesmanAIType.attacking;
+   tribesmanComponent.currentAIType = TribesmanAIType.attacking;
    
    const mostDamagingItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
 

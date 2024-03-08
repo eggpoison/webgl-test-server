@@ -1,4 +1,4 @@
-import { SettingsConst } from "webgl-test-shared";
+import { FollowAIComponentData, SettingsConst } from "webgl-test-shared";
 import Board from "../Board";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { moveEntityToPosition } from "../ai-shared";
@@ -48,4 +48,13 @@ export function followEntity(entity: Entity, followedEntity: Entity, acceleratio
 
 export function canFollow(followAIComponent: FollowAIComponent): boolean {
    return followAIComponent.followCooldownTicks === 0;
+}
+
+export function serialiseFollowAIComponent(entity: Entity): FollowAIComponentData {
+   const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
+   return {
+      followTargetID: followAIComponent.followTargetID,
+      followCooldownTicks: followAIComponent.followCooldownTicks,
+      interestTimer: followAIComponent.interestTimer
+   };
 }

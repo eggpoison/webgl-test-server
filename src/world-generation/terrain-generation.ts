@@ -139,13 +139,6 @@ export interface TerrainGenerationInfo {
 }
 
 function generateTerrain(): TerrainGenerationInfo {
-   // Seed the random number generator
-   if (OPTIONS.inBenchmarkMode) {
-      SRandom.seed(40404040404);
-   } else {
-      SRandom.seed(randInt(0, 9999999999));
-   }
-
    const biomeNameArray = new Array<Array<BiomeName>>();
    const tileTypeArray = new Array<Array<TileTypeConst>>();
    const tileIsWallArray = new Array<Array<boolean>>();
@@ -174,7 +167,7 @@ function generateTerrain(): TerrainGenerationInfo {
    const heightMap = generateOctavePerlinNoise(SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, HEIGHT_NOISE_SCALE, 3, 1.5, 0.75);
    const temperatureMap = generatePerlinNoise(SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, TEMPERATURE_NOISE_SCALE);
    const humidityMap = generatePerlinNoise(SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2, HUMIDITY_NOISE_SCALE);
-   
+
    // Push humidity and temperature towards the extremes
    for (let i = 0; i < SettingsConst.BOARD_DIMENSIONS + SettingsConst.EDGE_GENERATION_DISTANCE * 2; i++) {
       // Fill the tile array using the noise
@@ -217,6 +210,8 @@ function generateTerrain(): TerrainGenerationInfo {
    const riverFlowDirections: Record<number, Record<number, number>> = {};
    const edgeRiverFlowDirections: Record<number, Record<number, number>> = {};
    for (const tileInfo of riverTiles) {
+      // @Cleanup @Speed: Do we have to hardcode this here?
+      // Make ice rivers
       if (getBiomeName(tileInfo.tileX, tileInfo.tileY) === "tundra") {
          setTileType(tileInfo.tileX, tileInfo.tileY, TileTypeConst.ice);
       } else {
@@ -271,7 +266,7 @@ function generateTerrain(): TerrainGenerationInfo {
                }
             }
             if (typeof riverFlowDirection! === "undefined") {
-               console.log(riverFlowDirections[tileX][tileY]);
+               console.warn(riverFlowDirections[tileX][tileY]);
                throw new Error();
             }
          } else {

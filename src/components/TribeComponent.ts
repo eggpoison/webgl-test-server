@@ -1,4 +1,4 @@
-import { IEntityType, RESOURCE_ENTITY_TYPES_CONST } from "webgl-test-shared";
+import { IEntityType, RESOURCE_ENTITY_TYPES_CONST, TribeComponentData } from "webgl-test-shared";
 import Tribe from "../Tribe";
 import { HOSTILE_MOB_TYPES } from "../entities/tribes/tribe-member";
 import { TribeComponentArray } from "./ComponentArray";
@@ -16,9 +16,9 @@ export const enum EntityRelationship {
 }
 
 export class TribeComponent {
-   tribe: Tribe | null;
+   tribe: Tribe;
 
-   constructor(tribe: Tribe | null) {
+   constructor(tribe: Tribe) {
       this.tribe = tribe;
    }
 }
@@ -56,10 +56,8 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
       // Friendly buildings
       case IEntityType.woodenWall:
       case IEntityType.woodenDoor:
-      case IEntityType.woodenFloorSpikes:
-      case IEntityType.woodenWallSpikes:
-      case IEntityType.floorPunjiSticks:
-      case IEntityType.wallPunjiSticks:
+      case IEntityType.woodenSpikes:
+      case IEntityType.punjiSticks:
       case IEntityType.woodenEmbrasure:
       case IEntityType.ballista:
       case IEntityType.slingTurret:
@@ -93,4 +91,11 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
    }
 
    return EntityRelationship.neutral;
+}
+
+export function serialiseTribeComponent(entity: Entity): TribeComponentData {
+   const tribeComponent = TribeComponentArray.getComponent(entity.id);
+   return {
+      tribeID: tribeComponent.tribe.id
+   };
 }

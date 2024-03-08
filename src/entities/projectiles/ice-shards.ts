@@ -23,6 +23,7 @@ export function createIceShard(position: Point, moveDirection: number): Entity {
 }
 
 export function tickIceShard(iceShard: Entity): void {
+   // @Cleanup @Speed: Don't even need a component for this, just do it based on age with a random chance
    const iceShardComponent = IceShardComponentArray.getComponent(iceShard.id);
    if (iceShard.ageTicks / SettingsConst.TPS >= iceShardComponent.lifetime) {
       iceShard.remove();

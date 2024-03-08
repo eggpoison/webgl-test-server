@@ -1,9 +1,9 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, BuildingShapeType } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, pickupItemEntity, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem } from "../../components/InventoryComponent";
+import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -56,20 +56,18 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    const hotbarInventory = createNewInventory(inventoryComponent, "hotbar", SettingsConst.INITIAL_PLAYER_HOTBAR_SIZE, 1, true);
    inventoryUseComponent.addInventoryUseInfo(hotbarInventory);
+   const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
+   inventoryUseComponent.addInventoryUseInfo(offhandInventory);
    createNewInventory(inventoryComponent, "craftingOutputSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "heldItemSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "armourSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "gloveSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
-   if (tribe.type === TribeType.barbarians) {
-      const offhandInventory = createNewInventory(inventoryComponent, "offhand", 1, 1, false);
-      inventoryUseComponent.addInventoryUseInfo(offhandInventory);
-   }
 
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   addItem(inventoryComponent, createItem(ItemType.barrel, 2));
+   addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 50));
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
    addItem(inventoryComponent, createItem(ItemType.ballista, 3));
    addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
@@ -467,7 +465,7 @@ const snapRotationToPlayer = (player: Entity, placePosition: Point, rotation: nu
    return snapRotation;
 }
 
-export function shapeStructure(player: Entity, structureID: number, buildingType: BlueprintBuildingType): void {
+export function shapeStructure(player: Entity, structureID: number, buildingType: BuildingShapeType): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }
@@ -478,6 +476,7 @@ export function shapeStructure(player: Entity, structureID: number, buildingType
 
    let position: Point;
    switch (buildingType) {
+      case BlueprintBuildingType.tunnel:
       case BlueprintBuildingType.door: {
          position = previousStructure.position.copy();
          break;
@@ -487,10 +486,6 @@ export function shapeStructure(player: Entity, structureID: number, buildingType
          position.x += 22 * Math.sin(rotation);
          position.y += 22 * Math.cos(rotation);
          break;
-      }
-      default: {
-         console.warn("Can't shape structure into building type " + BlueprintBuildingType[buildingType]);
-         return;
       }
    }
 

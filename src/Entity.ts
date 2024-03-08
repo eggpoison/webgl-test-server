@@ -1,4 +1,4 @@
-import { DoorToggleType, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { DoorToggleType, EntityComponents, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -18,7 +18,7 @@ import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
 import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
 import { onSnowballCollision } from "./entities/snowball";
 import { onFishDeath } from "./entities/mobs/fish";
-import { ArrowComponentArray, DoorComponentArray, TribeComponentArray } from "./components/ComponentArray";
+import { DoorComponentArray } from "./components/ComponentArray";
 import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
@@ -32,10 +32,9 @@ import Hitbox from "./hitboxes/Hitbox";
 import { onIceArrowCollision } from "./entities/projectiles/ice-arrow";
 import { onPebblumCollision } from "./entities/mobs/pebblum";
 import { onGolemCollision } from "./entities/mobs/golem";
-import { onWoodenSpikesCollision } from "./entities/structures/wooden-floor-spikes";
-import { onPunjiSticksCollision } from "./entities/structures/floor-punji-sticks";
+import { onWoodenSpikesCollision } from "./entities/structures/wooden-spikes";
+import { onPunjiSticksCollision } from "./entities/structures/punji-sticks";
 import { AIHelperComponentArray } from "./components/AIHelperComponent";
-import { EntityRelationship, getTribeMemberRelationship } from "./components/TribeComponent";
 import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 export const ID_SENTINEL_VALUE = 99999999;
@@ -57,7 +56,7 @@ enum TileCollisionAxis {
 
 export const RESOURCE_ENTITY_TYPES: ReadonlyArray<IEntityType> = [IEntityType.krumblid, IEntityType.fish, IEntityType.cow, IEntityType.tree, IEntityType.boulder, IEntityType.cactus, IEntityType.iceSpikes, IEntityType.berryBush];
 
-export const NUM_ENTITY_TYPES = 37;
+export const NUM_ENTITY_TYPES = Object.keys(EntityComponents).length;
 
 export const NO_COLLISION = 0xFFFF;
 
@@ -65,7 +64,7 @@ const entityHasHardCollision = (entity: Entity): boolean => {
    // Doors have hard collision when closing/closed
    if (entity.type === IEntityType.woodenDoor) {
       const doorComponent = DoorComponentArray.getComponent(entity.id);
-      return doorComponent.toggleType === DoorToggleType.close || doorComponent.doorOpenProgress === 0;
+      return doorComponent.toggleType === DoorToggleType.close || doorComponent.openProgress === 0;
    }
    
    return entity.type === IEntityType.woodenWall || entity.type === IEntityType.woodenEmbrasure;
@@ -146,9 +145,6 @@ class Entity<T extends IEntityType = IEntityType> {
    public hitboxes = new Array<RectangularHitbox | CircularHitbox>();
 
    public isInRiver!: boolean;
-
-   // @Cleanup: Might be able to be put on the physics component
-   public overrideMoveSpeedMultiplier = false;
    
    public boundingAreaMinX = Number.MAX_SAFE_INTEGER;
    public boundingAreaMaxX = Number.MIN_SAFE_INTEGER;
@@ -169,9 +165,9 @@ class Entity<T extends IEntityType = IEntityType> {
 
       // Clamp the game object's position to within the world
       if (this.position.x < 0) this.position.x = 0;
-      if (this.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE) this.position.x = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1;
+      if (this.position.x >= SettingsConst.BOARD_UNITS) this.position.x = SettingsConst.BOARD_UNITS - 1;
       if (this.position.y < 0) this.position.y = 0;
-      if (this.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE) this.position.y = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1;
+      if (this.position.y >= SettingsConst.BOARD_UNITS) this.position.y = SettingsConst.BOARD_UNITS - 1;
 
       this.updateTile();
       this.strictCheckIsInRiver();
@@ -481,7 +477,7 @@ class Entity<T extends IEntityType = IEntityType> {
          const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity.id);
 
          const idx = aiHelperComponent.potentialVisibleEntities.indexOf(this);
-         if (idx === -1) {
+         if (idx === -1 && viewingEntity.id !== this.id) {
             aiHelperComponent.potentialVisibleEntities.push(this);
             aiHelperComponent.potentialVisibleEntityAppearances.push(1);
          } else {
@@ -501,6 +497,10 @@ class Entity<T extends IEntityType = IEntityType> {
       const numViewingMobs = chunk.viewingEntities.length;
       for (let i = 0; i < numViewingMobs; i++) {
          const viewingEntity = chunk.viewingEntities[i];
+         if (viewingEntity.id === this.id) {
+            continue;
+         }
+
          const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity.id);
 
          const idx = aiHelperComponent.potentialVisibleEntities.indexOf(this);
@@ -1206,10 +1206,8 @@ class Entity<T extends IEntityType = IEntityType> {
          case IEntityType.iceArrow: onIceArrowCollision(this, collidingEntity); break;
          case IEntityType.pebblum: onPebblumCollision(this, collidingEntity); break;
          case IEntityType.golem: onGolemCollision(this, collidingEntity); break;
-         case IEntityType.woodenWallSpikes:
-         case IEntityType.woodenFloorSpikes: onWoodenSpikesCollision(this, collidingEntity); break;
-         case IEntityType.floorPunjiSticks:
-         case IEntityType.wallPunjiSticks: onPunjiSticksCollision(this, collidingEntity); break;
+         case IEntityType.woodenSpikes: onWoodenSpikesCollision(this, collidingEntity); break;
+         case IEntityType.punjiSticks: onPunjiSticksCollision(this, collidingEntity); break;
       }
    }
 

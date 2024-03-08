@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, TreeComponentData, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, TreeComponentArray } from "../../components/ComponentArray";
@@ -42,4 +42,11 @@ export function onTreeRemove(tree: Entity): void {
    HealthComponentArray.removeComponent(tree);
    StatusEffectComponentArray.removeComponent(tree);
    TreeComponentArray.removeComponent(tree);
+}
+
+export function serialiseTreeComponent(tree: Entity): TreeComponentData {
+   const treeComponent = TreeComponentArray.getComponent(tree.id);
+   return {
+      treeSize: treeComponent.treeSize
+   };
 }

@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GolemComponentData, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { GolemComponentArray, HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -331,4 +331,11 @@ export function onGolemRemove(golem: Entity): void {
    HealthComponentArray.removeComponent(golem);
    StatusEffectComponentArray.removeComponent(golem);
    GolemComponentArray.removeComponent(golem);
+}
+
+export function serialiseGolemComponent(golem: Entity): GolemComponentData {
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
+   return {
+      wakeProgress: golemComponent.wakeTimerTicks / GOLEM_WAKE_TIME_TICKS
+   };
 }

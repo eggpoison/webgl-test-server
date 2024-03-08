@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishComponentData, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -119,7 +119,8 @@ const unfollowLeader = (fish: Entity, leader: Entity): void => {
 }
 
 export function tickFish(fish: Entity): void {
-   fish.overrideMoveSpeedMultiplier = fish.tile.type === TileTypeConst.water;
+   const physicsComponent = PhysicsComponentArray.getComponent(fish.id);
+   physicsComponent.overrideMoveSpeedMultiplier = fish.tile.type === TileTypeConst.water;
 
    const fishComponent = FishComponentArray.getComponent(fish.id);
 
@@ -169,6 +170,10 @@ export function tickFish(fish: Entity): void {
 
    // If a tribe member is wearing a fishlord suit, follow them
    if (fishComponent.leader !== null) {
+      if (fishComponent.attackTarget !== null && !Board.entityRecord.hasOwnProperty(fishComponent.attackTarget.id)) {
+         fishComponent.attackTarget = null;
+      }
+      
       if (fishComponent.attackTarget === null) {
          // Follow leader
          move(fish, fish.position.calculateAngleBetween(fishComponent.leader.position));
@@ -323,4 +328,11 @@ export function onFishRemove(fish: Entity): void {
    EscapeAIComponentArray.removeComponent(fish);
    FishComponentArray.removeComponent(fish);
    AIHelperComponentArray.removeComponent(fish);
+}
+
+export function serialiseFishComponent(fish: Entity): FishComponentData {
+   const fishComponent = FishComponentArray.getComponent(fish.id);
+   return {
+      colour: fishComponent.colour
+   };
 }

@@ -1,4 +1,4 @@
-import { IEntityType, PlayerCauseOfDeath, SettingsConst, clamp } from "webgl-test-shared";
+import { HealthComponentData, IEntityType, PlayerCauseOfDeath, SettingsConst, clamp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
@@ -19,7 +19,6 @@ import { onGolemHurt } from "../entities/mobs/golem";
 import { onWoodenWallDeath } from "../entities/structures/wooden-wall";
 import { AIHelperComponentArray } from "./AIHelperComponent";
 import { SERVER } from "../server";
-import { PhysicsComponentArray } from "./PhysicsComponent";
 
 export class HealthComponent {
    public readonly maxHealth: number;
@@ -272,4 +271,12 @@ export function removeDefence(healthComponent: HealthComponent, name: string): v
    
    healthComponent.defence -= healthComponent.defenceFactors[name];
    delete healthComponent.defenceFactors[name];
+}
+
+export function serialiseHealthComponent(entity: Entity): HealthComponentData {
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
+   return {
+      health: healthComponent.health,
+      maxHealth: healthComponent.maxHealth
+   };
 }

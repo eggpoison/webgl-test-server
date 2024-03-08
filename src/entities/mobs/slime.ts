@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, SlimeComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -58,7 +58,8 @@ interface AngerPropagationInfo {
 export function createSlime(position: Point, size: SlimeSize, orbSizes: Array<SlimeSize>): Entity {
    const slime = new Entity(position, IEntityType.slime, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slime.rotation = 2 * Math.PI * Math.random();
-   slime.collisionPushForceMultiplier = 0.5;
+   slime.
+   collisionPushForceMultiplier = 0.5;
 
    const mass = 1 + size * 0.5;
    const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size]);
@@ -199,7 +200,8 @@ const getChaseTargetID = (slime: Entity, slimeComponent: SlimeComponent): number
 
 export function tickSlime(slime: Entity): void {
    // Slimes move at normal speed on slime and sludge blocks
-   slime.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime || slime.tile.type === TileTypeConst.sludge;
+   const physicsComponent = PhysicsComponentArray.getComponent(slime.id);
+   physicsComponent.overrideMoveSpeedMultiplier = slime.tile.type === TileTypeConst.slime || slime.tile.type === TileTypeConst.sludge;
 
    const slimeComponent = SlimeComponentArray.getComponent(slime.id);
 

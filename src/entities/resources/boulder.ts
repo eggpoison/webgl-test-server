@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, StatusEffectConst, randInt } from "webgl-test-shared";
+import { BoulderComponentData, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { BoulderComponentArray, HealthComponentArray } from "../../components/ComponentArray";
@@ -35,4 +35,11 @@ export function onBoulderRemove(boulder: Entity): void {
    HealthComponentArray.removeComponent(boulder);
    StatusEffectComponentArray.removeComponent(boulder);
    BoulderComponentArray.removeComponent(boulder);
+}
+
+export function serialiseBoulderComponent(boulder: Entity): BoulderComponentData {
+   const boulderComponent = BoulderComponentArray.getComponent(boulder.id);
+   return {
+      boulderType: boulderComponent.boulderType
+   };
 }

@@ -28,7 +28,7 @@ import { FishComponent } from "./FishComponent";
 import Board from "../Board";
 import { FrozenYetiComponent } from "./FrozenYetiComponent";
 import { RockSpikeProjectileComponent } from "./RockSpikeProjectileComponent";
-import { CookingComponent } from "./CookingEntityComponent";
+import { CookingComponent } from "./CookingComponent";
 import { ThrowingProjectileComponent } from "./ThrowingProjectileComponent";
 import { HutComponent } from "./HutComponent";
 import { SlimeSpitComponent } from "./SlimeSpitComponent";
@@ -36,11 +36,11 @@ import { DoorComponent } from "./DoorComponent";
 import { GolemComponent } from "./GolemComponent";
 import { IceSpikesComponent } from "./IceSpikesComponent";
 import { PebblumComponent } from "./PebblumComponent";
-import { PhysicsComponent } from "./PhysicsComponent";
 import { BlueprintComponent } from "./BlueprintComponent";
 import { TurretComponent } from "./TurretComponent";
-import { BallistaComponent } from "./BallistaComponent";
+import { AmmoBoxComponent } from "./AmmoBoxComponent";
 import { ResearchBenchComponent } from "./ResearchBenchComponent";
+import { SpikesComponent } from "./SpikesComponent";
 
 export class ComponentArray<T extends {} = {}> {
    public components = new Array<T>();
@@ -114,6 +114,14 @@ export class ComponentArray<T extends {} = {}> {
       const id = this.indexToEntityMap[index];
       return Board.entityRecord[id];
    }
+
+   public reset(): void {
+      this.components = [];
+      this.componentBuffer = [];
+      this.entityToIndexMap = {};
+      this.indexToEntityMap = {};
+      this.componentBufferIDs = [];
+   }
 }
 
 export const TribeComponentArray = new ComponentArray<TribeComponent>();
@@ -144,7 +152,7 @@ export const SnowballComponentArray = new ComponentArray<SnowballComponent>();
 export const FishComponentArray = new ComponentArray<FishComponent>();
 export const FrozenYetiComponentArray = new ComponentArray<FrozenYetiComponent>();
 export const RockSpikeProjectileComponentArray = new ComponentArray<RockSpikeProjectileComponent>();
-export const CookingEntityComponentArray = new ComponentArray<CookingComponent>();
+export const CookingComponentArray = new ComponentArray<CookingComponent>();
 export const ThrowingProjectileComponentArray = new ComponentArray<ThrowingProjectileComponent>();
 export const HutComponentArray = new ComponentArray<HutComponent>();
 export const SlimeSpitComponentArray = new ComponentArray<SlimeSpitComponent>();
@@ -154,5 +162,6 @@ export const IceSpikesComponentArray = new ComponentArray<IceSpikesComponent>();
 export const PebblumComponentArray = new ComponentArray<PebblumComponent>();
 export const BlueprintComponentArray = new ComponentArray<BlueprintComponent>();
 export const TurretComponentArray = new ComponentArray<TurretComponent>();
-export const BallistaComponentArray = new ComponentArray<BallistaComponent>();
+export const AmmoBoxComponentArray = new ComponentArray<AmmoBoxComponent>();
 export const ResearchBenchComponentArray = new ComponentArray<ResearchBenchComponent>();
+export const SpikesComponentArray = new ComponentArray<SpikesComponent>();

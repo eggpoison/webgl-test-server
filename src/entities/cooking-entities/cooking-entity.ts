@@ -1,6 +1,6 @@
 import { CookingIngredientItemType, FuelSourceItemType, IEntityType, ItemType, SettingsConst } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { CookingEntityComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
+import { CookingComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, consumeItemTypeFromInventory, getInventory } from "../../components/InventoryComponent";
 
 export interface HeatingRecipe {
@@ -64,7 +64,7 @@ const getHeatingRecipeByIngredientType = (heatingEntityType: IEntityType, ingred
 }
 
 export function tickCookingEntity(entity: Entity): void {
-   const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity.id);
+   const cookingEntityComponent = CookingComponentArray.getComponent(entity.id);
    const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
 
    const fuelInventory = getInventory(inventoryComponent, "fuelInventory");

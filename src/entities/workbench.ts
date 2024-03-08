@@ -3,6 +3,7 @@ import Entity from "../Entity";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { HealthComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../components/StatusEffectComponent";
 
 export const WORKBENCH_SIZE = 80;
 
@@ -13,10 +14,12 @@ export function createWorkbench(position: Point): Entity {
    workbench.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(workbench, new HealthComponent(15));
+   StatusEffectComponentArray.addComponent(workbench, new StatusEffectComponent(0));
 
    return workbench;
 }
 
 export function onWorkbenchRemove(workbench: Entity): void {
    HealthComponentArray.removeComponent(workbench);
+   StatusEffectComponentArray.removeComponent(workbench);
 }

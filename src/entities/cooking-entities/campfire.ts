@@ -1,12 +1,12 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { CookingEntityComponentArray, HealthComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
+import { CookingComponentArray, HealthComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { InventoryComponent, createNewInventory } from "../../components/InventoryComponent";
 import { tickCookingEntity } from "./cooking-entity";
-import { CookingComponent } from "../../components/CookingEntityComponent";
+import { CookingComponent } from "../../components/CookingComponent";
 
 export const CAMPFIRE_SIZE = 104;
 
@@ -29,7 +29,7 @@ export function createCampfire(position: Point): Entity {
 
    const cookingEntityComponent = new CookingComponent();
    cookingEntityComponent.remainingHeatSeconds = LIFETIME_SECONDS;
-   CookingEntityComponentArray.addComponent(campfire, cookingEntityComponent);
+   CookingComponentArray.addComponent(campfire, cookingEntityComponent);
 
    return campfire;
 }

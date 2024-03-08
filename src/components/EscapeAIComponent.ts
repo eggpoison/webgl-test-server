@@ -1,3 +1,7 @@
+import { EscapeAIComponentData } from "webgl-test-shared";
+import Entity from "../Entity";
+import { EscapeAIComponentArray } from "./ComponentArray";
+
 export class EscapeAIComponent {
    /** IDs of all entities attacking the entity */
    public readonly attackingEntityIDs = new Array<number>();
@@ -12,4 +16,12 @@ export function updateEscapeAIComponent(escapeAIComponent: EscapeAIComponent, at
          i--;
       }
    }
+}
+
+export function serialiseEscapeAIComponent(entity: Entity): EscapeAIComponentData {
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(entity.id);
+   return {
+      attackingEntityIDs: escapeAIComponent.attackingEntityIDs,
+      attackEntityTicksSinceLastAttack: escapeAIComponent.attackEntityTicksSinceLastAttack
+   };
 }

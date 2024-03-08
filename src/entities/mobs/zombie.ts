@@ -12,11 +12,13 @@ import { entityHasReachedPosition, moveEntityToPosition, runHerdAI, stopEntity }
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
-import { InventoryUseComponent, getInventoryUseInfo } from "../../components/InventoryUseComponent";
+import { InventoryUseComponent, getInventoryUseInfo, hasInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { attackEntity, calculateRadialAttackTargets, wasTribeMemberKill } from "../tribes/tribe-member";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { createItemsOverEntity } from "../../entity-shared";
+
+const TURN_SPEED = 3 * Math.PI;
 
 const MAX_HEALTH = 20;
 
@@ -67,6 +69,11 @@ export function createZombie(position: Point, isGolden: boolean, tombstoneID: nu
    const inventoryUseComponent = new InventoryUseComponent();
    InventoryUseComponentArray.addComponent(zombie, inventoryUseComponent);
    inventoryUseComponent.addInventoryUseInfo(inventory);
+
+   if (Math.random() < 0.7) {
+      const offhandInventory = createNewInventory(inventoryComponent, "offhand", 0, 0, false);
+      inventoryUseComponent.addInventoryUseInfo(offhandInventory);
+   }
    
    return zombie;
 }
@@ -134,8 +141,10 @@ const doBiteAttack = (zombie: Entity, target: Entity): void => {
    zombieComponent.attackCooldownTicks = Math.floor(randFloat(3, 4) * SettingsConst.TPS);
 
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(zombie.id);
-   const useInfo = getInventoryUseInfo(inventoryUseComponent, "handSlot");
-   useInfo.lastAttackTicks = Board.ticks;
+   getInventoryUseInfo(inventoryUseComponent, "handSlot").lastAttackTicks = Board.ticks;
+   if (hasInventoryUseInfo(inventoryUseComponent, "offhand")) {
+      getInventoryUseInfo(inventoryUseComponent, "offhand").lastAttackTicks = Board.ticks;
+   }
 }
 
 const doAttack = (zombie: Entity, target: Entity): void => {
@@ -193,7 +202,10 @@ export function tickZombie(zombie: Entity): void {
          doAttack(zombie, attackTarget);
       }
       
-      moveEntityToPosition(zombie, attackTarget.position.x, attackTarget.position.y, ACCELERATION);
+      const targetDirection = zombie.position.calculateAngleBetween(attackTarget.position);
+      zombie.turn(targetDirection, TURN_SPEED);
+      zombie.acceleration.x = ACCELERATION * Math.sin(targetDirection);
+      zombie.acceleration.y = ACCELERATION * Math.cos(targetDirection);
       return;
    } else {
       zombieComponent.attackCooldownTicks = Math.floor(2.5 * SettingsConst.TPS);
@@ -219,7 +231,11 @@ export function tickZombie(zombie: Entity): void {
          }
       }
       if (closestFoodItem !== null) {
-         moveEntityToPosition(zombie, closestFoodItem.position.x, closestFoodItem.position.y, ACCELERATION);
+         const targetDirection = zombie.position.calculateAngleBetween(closestFoodItem.position);
+         zombie.turn(targetDirection, TURN_SPEED);
+         zombie.acceleration.x = ACCELERATION * Math.sin(targetDirection);
+         zombie.acceleration.y = ACCELERATION * Math.cos(targetDirection);
+
          if (zombie.isColliding(closestFoodItem) !== NO_COLLISION) {
             healEntity(zombie, 3, zombie.id);
             closestFoodItem.remove();
@@ -232,7 +248,11 @@ export function tickZombie(zombie: Entity): void {
    if (zombieComponent.visibleHurtEntityTicks < HURT_ENTITY_INVESTIGATE_TICKS) {
       if (Board.entityRecord.hasOwnProperty(zombieComponent.visibleHurtEntityID)) {
          const hurtEntity = Board.entityRecord[zombieComponent.visibleHurtEntityID];
-         moveEntityToPosition(zombie, hurtEntity.position.x, hurtEntity.position.y, ACCELERATION_SLOW);
+
+         const targetDirection = zombie.position.calculateAngleBetween(hurtEntity.position);
+         zombie.turn(targetDirection, TURN_SPEED);
+         zombie.acceleration.x = ACCELERATION_SLOW * Math.sin(targetDirection);
+         zombie.acceleration.y = ACCELERATION_SLOW * Math.cos(targetDirection);
          return;
       }
    }
@@ -373,7 +393,7 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
 }
 
 export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
-   if (HealthComponentArray.hasComponent(attackingEntity) && attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenWallSpikes && attackingEntity.type !== IEntityType.woodenFloorSpikes && attackingEntity.type !== IEntityType.floorPunjiSticks && attackingEntity.type !== IEntityType.wallPunjiSticks) {
+   if (HealthComponentArray.hasComponent(attackingEntity) && attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenSpikes && attackingEntity.type !== IEntityType.punjiSticks) {
       const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
       zombieComponent.attackingEntityIDs[attackingEntity.id] = CHASE_PURSUE_TIME_TICKS;
    }

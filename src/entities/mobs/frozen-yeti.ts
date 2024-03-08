@@ -572,9 +572,9 @@ export function tickFrozenYeti(frozenYeti: Entity): void {
             // Windup
             case 0: {
                // Track target
-               frozenYeti.turn(angleToTarget, 0.9);
+               frozenYeti.turn(angleToTarget, 0.7);
 
-               frozenYetiComponent.stageProgress += 0.5 / SettingsConst.TPS;
+               frozenYetiComponent.stageProgress += 0.4 / SettingsConst.TPS;
                attemptToAdvanceStage(frozenYetiComponent);
                break;
             }

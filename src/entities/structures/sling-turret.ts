@@ -14,15 +14,15 @@ import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow
 // @Cleanup: A lot of copy and paste from ballista.ts
 
 
-const COOLDOWN_TICKS = 1.5 * SettingsConst.TPS;
-const RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS);
+export const SLING_TURRET_SHOT_COOLDOWN_TICKS = 1.5 * SettingsConst.TPS;
+export const SLING_TURRET_RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS);
 const VISION_RANGE = 400;
 
 export function addSlingTurretHitboxes(entity: Entity): void {
    entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05));
 }
 
-export function createSlingTurret(position: Point, tribe: Tribe | null, rotation: number): Entity {
+export function createSlingTurret(position: Point, tribe: Tribe, rotation: number): Entity {
    const slingTurret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slingTurret.rotation = rotation;
 
@@ -30,7 +30,7 @@ export function createSlingTurret(position: Point, tribe: Tribe | null, rotation
 
    HealthComponentArray.addComponent(slingTurret, new HealthComponent(25));
    StatusEffectComponentArray.addComponent(slingTurret, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));
-   TurretComponentArray.addComponent(slingTurret, new TurretComponent(COOLDOWN_TICKS));
+   TurretComponentArray.addComponent(slingTurret, new TurretComponent(SLING_TURRET_SHOT_COOLDOWN_TICKS));
    TribeComponentArray.addComponent(slingTurret, new TribeComponent(tribe));
    AIHelperComponentArray.addComponent(slingTurret, new AIHelperComponent(VISION_RANGE));
    
@@ -118,15 +118,15 @@ export function tickSlingTurret(turret: Entity): void {
             slingTurretComponent.aimDirection = targetDirection - turret.rotation;
             if (slingTurretComponent.fireCooldownTicks === 0) {
                fire(turret, slingTurretComponent);
-               slingTurretComponent.fireCooldownTicks = COOLDOWN_TICKS + RELOAD_TIME_TICKS;
+               slingTurretComponent.fireCooldownTicks = SLING_TURRET_SHOT_COOLDOWN_TICKS + SLING_TURRET_RELOAD_TIME_TICKS;
             }
          }
          return;
       }
    }
 
-   if (slingTurretComponent.fireCooldownTicks < COOLDOWN_TICKS) {
-      slingTurretComponent.fireCooldownTicks = COOLDOWN_TICKS;
+   if (slingTurretComponent.fireCooldownTicks < SLING_TURRET_SHOT_COOLDOWN_TICKS) {
+      slingTurretComponent.fireCooldownTicks = SLING_TURRET_SHOT_COOLDOWN_TICKS;
    }
 }
 
@@ -136,20 +136,4 @@ export function onSlingTurretRemove(turret: Entity): void {
    TurretComponentArray.removeComponent(turret);
    TribeComponentArray.removeComponent(turret);
    AIHelperComponentArray.removeComponent(turret);
-}
-
-export function getSlingTurretChargeProgress(slingTurretComponent: TurretComponent): number {
-   if (slingTurretComponent.fireCooldownTicks > COOLDOWN_TICKS) {
-      return 0;
-   }
-   
-   return 1 - slingTurretComponent.fireCooldownTicks / COOLDOWN_TICKS;
-}
-
-export function getSlingTurretReloadProgress(slingTurretComponent: TurretComponent): number {
-   if (slingTurretComponent.fireCooldownTicks < COOLDOWN_TICKS) {
-      return 0;
-   }
-
-   return 1 - (slingTurretComponent.fireCooldownTicks - COOLDOWN_TICKS) / RELOAD_TIME_TICKS;
 }

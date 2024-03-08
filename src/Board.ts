@@ -1,4 +1,4 @@
-import { BiomeName, DecorationInfo, EntityType, GrassTileInfo, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SettingsConst, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
+import { BiomeName, DecorationInfo, GrassTileInfo, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SettingsConst, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -7,8 +7,7 @@ import Tribe from "./Tribe";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
-import { TribeComponent } from "./components/TribeComponent";
-import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, BlueprintComponentArray, TurretComponentArray, BallistaComponentArray, ResearchBenchComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, BlueprintComponentArray, TurretComponentArray, AmmoBoxComponentArray, ResearchBenchComponentArray, SpikesComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity, { NO_COLLISION } from "./Entity";
@@ -57,15 +56,16 @@ import { onIceArrowRemove, tickIceArrow } from "./entities/projectiles/ice-arrow
 import { onPebblumRemove, tickPebblum } from "./entities/mobs/pebblum";
 import { PhysicsComponentArray, tickPhysicsComponent } from "./components/PhysicsComponent";
 import { onWorkbenchRemove } from "./entities/workbench";
-import { onWoodenFloorSpikesRemove } from "./entities/structures/wooden-floor-spikes";
-import { onWoodenWallSpikesRemove } from "./entities/structures/wooden-wall-spikes";
-import { onFloorPunjiSticksRemove } from "./entities/structures/floor-punji-sticks";
-import { onWallPunjiSticksRemove } from "./entities/structures/wall-punji-sticks";
+import { onWoodenSpikesRemove } from "./entities/structures/wooden-spikes";
+import { onPunjiSticksRemove } from "./entities/structures/punji-sticks";
 import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure";
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
+import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
+
+const START_TIME = 6;
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -88,9 +88,9 @@ abstract class Board {
    public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time = 6;
+   public static time = START_TIME;
 
-   private static readonly entities = new Array<Entity>();
+   public static entities = new Array<Entity>();
 
    public static entityRecord: { [id: number]: Entity } = {};
 
@@ -104,10 +104,9 @@ abstract class Board {
    private static tileUpdateCoordinates: Set<number>;
 
    private static entityJoinBuffer = new Array<Entity>();
-
    private static entityRemoveBuffer = new Array<Entity>();
 
-   private static tribes = new Array<Tribe>();
+   public static tribes = new Array<Tribe>();
 
    // @Incomplete @Bug: These shouldn't be tiles but instead serverdata, so that they aren't counted in the census
    public static edgeTiles = new Array<Tile>();
@@ -117,8 +116,6 @@ abstract class Board {
    public static grassInfo: Record<number, Record<number, GrassTileInfo>>;
 
    public static decorations: ReadonlyArray<DecorationInfo>;
-
-   public static tribeComponents = new Array<TribeComponent>();
 
    public static setup(): void {
       this.initialiseChunks();
@@ -161,6 +158,18 @@ abstract class Board {
             }
          }
       }
+   }
+
+   public static reset(): void {
+      this.time = START_TIME;
+      this.ticks = 0;
+      this.chunks = [];
+      this.entities = [];
+      this.entityRecord = {};
+      this.entityJoinBuffer = [];
+      this.entityRemoveBuffer = [];
+      this.tribes = [];
+      this.edgeTiles = [];
    }
 
    public static isNight(): boolean {
@@ -227,10 +236,6 @@ abstract class Board {
       for (const tribe of this.tribes) {
          tribe.tick();
       }
-   }
-
-   public static getTribes(): ReadonlyArray<Tribe> {
-      return this.tribes;
    }
 
    public static entityIsFlaggedForRemoval(entity: Entity): boolean {
@@ -303,14 +308,13 @@ abstract class Board {
             case IEntityType.rockSpikeProjectile: onRockSpikeRemove(entity); break;
             case IEntityType.itemEntity: onItemEntityRemove(entity); break;
             case IEntityType.workbench: onWorkbenchRemove(entity); break;
-            case IEntityType.woodenFloorSpikes: onWoodenFloorSpikesRemove(entity); break;
-            case IEntityType.woodenWallSpikes: onWoodenWallSpikesRemove(entity); break;
-            case IEntityType.floorPunjiSticks: onFloorPunjiSticksRemove(entity); break;
-            case IEntityType.wallPunjiSticks: onWallPunjiSticksRemove(entity); break;
+            case IEntityType.woodenSpikes: onWoodenSpikesRemove(entity); break;
+            case IEntityType.punjiSticks: onPunjiSticksRemove(entity); break;
             case IEntityType.woodenEmbrasure: onWoodenEmbrasureRemove(entity); break;
             case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;
             case IEntityType.ballista: onBallistaRemove(entity); break;
             case IEntityType.slingTurret: onSlingTurretRemove(entity); break;
+            case IEntityType.woodenTunnel: onWoodenTunnelRemove(entity); break;
          }
       }
 
@@ -325,6 +329,7 @@ abstract class Board {
          }
       }
 
+      // @Speed: Ideally we should remove this as there are many entities which the switch won't fire for at all
       for (let i = 0; i < this.entities.length; i++) {
          const entity = this.entities[i];
 
@@ -557,7 +562,7 @@ abstract class Board {
       this.pushComponentsFromArray(FishComponentArray);
       this.pushComponentsFromArray(FrozenYetiComponentArray);
       this.pushComponentsFromArray(RockSpikeProjectileComponentArray);
-      this.pushComponentsFromArray(CookingEntityComponentArray);
+      this.pushComponentsFromArray(CookingComponentArray);
       this.pushComponentsFromArray(ThrowingProjectileComponentArray);
       this.pushComponentsFromArray(HutComponentArray);
       this.pushComponentsFromArray(SlimeSpitComponentArray);
@@ -568,8 +573,9 @@ abstract class Board {
       this.pushComponentsFromArray(PhysicsComponentArray);
       this.pushComponentsFromArray(BlueprintComponentArray);
       this.pushComponentsFromArray(TurretComponentArray);
-      this.pushComponentsFromArray(BallistaComponentArray);
+      this.pushComponentsFromArray(AmmoBoxComponentArray);
       this.pushComponentsFromArray(ResearchBenchComponentArray);
+      this.pushComponentsFromArray(SpikesComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {

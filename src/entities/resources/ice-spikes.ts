@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, IceSpikesComponentData, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, IceSpikesComponentArray } from "../../components/ComponentArray";
@@ -163,4 +163,8 @@ export function forceMaxGrowAllIceSpikes(): void {
          forceMaxGrowIceSpike(entity);
       }
    }
+}
+
+export function serialiseIceSpikesComponent(_entity: Entity): IceSpikesComponentData {
+   return {};
 }

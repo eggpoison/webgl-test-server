@@ -126,7 +126,11 @@ export function generateOctavePerlinNoise(width: number, height: number, startin
    return totalNoise;
 }
 
-const pointPerlinNoiseGrids: Record<string, Record<string, Vector>> = {};
+let pointPerlinNoiseGrids: Record<string, Record<string, Vector>> = {};
+
+export function resetPerlinNoiseCache(): void {
+   pointPerlinNoiseGrids = {};
+}
 
 export function generatePointPerlinNoise(x: number, y: number, scale: number, name: string): number {
    if (!pointPerlinNoiseGrids.hasOwnProperty(name)) {

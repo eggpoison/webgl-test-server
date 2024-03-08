@@ -90,7 +90,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
    }
 
    // Pass over friendly spikes
-   if (collidingEntity.type === IEntityType.woodenFloorSpikes || collidingEntity.type === IEntityType.woodenWallSpikes || collidingEntity.type === IEntityType.floorPunjiSticks || collidingEntity.type === IEntityType.wallPunjiSticks) {
+   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.punjiSticks) {
       const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe !== null && tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          return;

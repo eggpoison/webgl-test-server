@@ -63,7 +63,7 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
    }
 
    // Don't spawn too close to other tribes
-   for (const tribe of Board.getTribes()) {
+   for (const tribe of Board.tribes) {
       if (tribe.totem === null) {
          continue;
       }

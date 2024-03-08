@@ -5,10 +5,12 @@ import { createWoodenDoor } from "../entities/structures/wooden-door";
 import { createWoodenEmbrasure } from "../entities/structures/wooden-embrasure";
 import { createBallista } from "../entities/structures/ballista";
 import { createSlingTurret } from "../entities/structures/sling-turret";
+import { createWoodenTunnel } from "../entities/structures/wooden-tunnel";
 
 const STRUCTURE_WORK_REQUIRED: Record<BlueprintBuildingType, number> = {
    [BlueprintBuildingType.door]: 3,
    [BlueprintBuildingType.embrasure]: 5,
+   [BlueprintBuildingType.tunnel]: 3,
    [BlueprintBuildingType.ballista]: 25,
    [BlueprintBuildingType.slingTurret]: 10
 };
@@ -42,6 +44,10 @@ const constructBlueprint = (blueprintEntity: Entity, blueprintComponent: Bluepri
       }
       case BlueprintBuildingType.slingTurret: {
          createSlingTurret(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation);
+         break;
+      }
+      case BlueprintBuildingType.tunnel: {
+         createWoodenTunnel(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation);
          break;
       }
    }

@@ -1,4 +1,4 @@
-import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffectConst, customTickIntervalHasPassed } from "webgl-test-shared";
+import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectComponentData, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
 import { ComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
@@ -151,4 +151,19 @@ export function tickStatusEffectComponent(entity: Entity): void {
          }
       }
    }
+}
+
+export function serialiseStatusEffectComponent(entity: Entity): StatusEffectComponentData {
+   const statusEffects = new Array<StatusEffectData>();
+   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
+   for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
+      statusEffects.push({
+         type: statusEffectComponent.activeStatusEffectTypes[i] as unknown as StatusEffect,
+         ticksElapsed: statusEffectComponent.activeStatusEffectTicksElapsed[i]
+      });
+   }
+
+   return {
+      statusEffects: statusEffects
+   };
 }

@@ -1,4 +1,4 @@
-import { SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
+import { PhysicsComponentData, SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
 import Entity from "../Entity";
 import { ComponentArray } from "./ComponentArray";
 
@@ -15,17 +15,20 @@ for (let i = 0; i < 8; i++) {
 export class PhysicsComponent {
    public moveSpeedMultiplier = 1 + Number.EPSILON;
 
+   // @Cleanup: Might be able to be put on the physics component
+   public overrideMoveSpeedMultiplier = false;
+
    /** If set to false, the game object will not experience friction from moving over tiles. */
-   public isAffectedByFriction;
+   public isAffectedByFriction: boolean;
+
+   /** If true, the entity will not be pushed around by collisions, but will still call any relevant events. */
+   public readonly ignoreCollisions: boolean;
 
    /** Whether the game object's position has changed during the current tick or not. Used during collision detection to avoid unnecessary collision checks */
    public positionIsDirty = false;
 
    /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
    public hitboxesAreDirty = false;
-
-   /** If true, the entity will not be pushed around by collisions, but will still call any relevant events. */
-   public readonly ignoreCollisions: boolean;
    
    constructor(isAffectedByFriction: boolean, ignoreCollisions: boolean) {
       this.isAffectedByFriction = isAffectedByFriction;
@@ -54,7 +57,7 @@ const applyPhysics = (entity: Entity): void => {
    if (entity.acceleration.x !== 0 || entity.acceleration.y !== 0) {
       // @Speed: very complicated logic
       let moveSpeedMultiplier: number;
-      if (entity.overrideMoveSpeedMultiplier || !physicsComponent.isAffectedByFriction) {
+      if (physicsComponent.overrideMoveSpeedMultiplier || !physicsComponent.isAffectedByFriction) {
          moveSpeedMultiplier = 1;
       } else if (entity.tile.type === TileTypeConst.water && !entity.isInRiver) {
          moveSpeedMultiplier = physicsComponent.moveSpeedMultiplier;
@@ -71,7 +74,7 @@ const applyPhysics = (entity: Entity): void => {
 
    // If the game object is in a river, push them in the flow direction of the river
    // The tileMoveSpeedMultiplier check is so that game objects on stepping stones aren't pushed
-   if (entity.isInRiver && !entity.overrideMoveSpeedMultiplier && physicsComponent.isAffectedByFriction) {
+   if (entity.isInRiver && !physicsComponent.overrideMoveSpeedMultiplier && physicsComponent.isAffectedByFriction) {
       const flowDirection = entity.tile.riverFlowDirection;
       entity.velocity.x += 240 * SettingsConst.I_TPS * a[flowDirection];
       entity.velocity.y += 240 * SettingsConst.I_TPS * b[flowDirection];
@@ -156,4 +159,8 @@ export function applyKnockback(entity: Entity, knockback: number, knockbackDirec
    const knockbackForce = knockback / entity.totalMass;
    entity.velocity.x += knockbackForce * Math.sin(knockbackDirection);
    entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
+}
+
+export function serialisePhysicsComponent(_entity: Entity): PhysicsComponentData {
+   return {};
 }

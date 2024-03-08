@@ -40,7 +40,7 @@ export function generateRiverTiles(): ReadonlyArray<WaterTileGenerationInfo> {
       const riverNoise = generateOctavePerlinNoise(SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING * 2, SettingsConst.BOARD_DIMENSIONS + BORDER_PADDING * 2, 200, 5, 2, 0.5);
 
       let maxWeight = -1;
-      let currentTileCoordinates!: TileCoordinates;
+      let currentTileCoordinates: TileCoordinates | undefined;
       for (let x = 0; x < SettingsConst.BOARD_DIMENSIONS; x++) {
          for (let y = 0; y < SettingsConst.BOARD_DIMENSIONS; y++) {
             const weight = riverNoise[x + BORDER_PADDING][y + BORDER_PADDING];
@@ -52,6 +52,10 @@ export function generateRiverTiles(): ReadonlyArray<WaterTileGenerationInfo> {
                };
             }
          }  
+      }
+
+      if (typeof currentTileCoordinates === "undefined") {
+         throw new Error();
       }
 
       while (true) {

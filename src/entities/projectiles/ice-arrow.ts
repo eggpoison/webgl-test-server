@@ -11,7 +11,7 @@ const ARROW_WIDTH = 5 * 4;
 const ARROW_HEIGHT = 14 * 4;
 const ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(ARROW_WIDTH / 2, 2) + Math.pow(ARROW_HEIGHT, 2));
 
-export function createIceArrow(position: Point, rotation: number, tribe: Tribe | null): Entity {
+export function createIceArrow(position: Point, rotation: number, tribe: Tribe): Entity {
    const iceArrow = new Entity(position, IEntityType.iceArrow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    iceArrow.rotation = rotation;
    
