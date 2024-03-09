@@ -1,4 +1,4 @@
-import { DoorToggleType, EntityComponents, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { DoorToggleType, EntityComponents, EntityDebugData, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -1313,9 +1313,9 @@ class Entity<T extends IEntityType = IEntityType> {
       }
    }
 
-   public getDebugData(): GameObjectDebugData {
+   public getDebugData(): EntityDebugData {
       return {
-         gameObjectID: this.id,
+         entityID: this.id,
          lines: [],
          circles: [],
          tileHighlights: [],

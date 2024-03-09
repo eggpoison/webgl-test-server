@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, GameObjectDebugData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, Inventory, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, HealData, ResearchOrbCompleteData, SlimeSize, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, BuildingShapeType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, EntityDebugData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, Inventory, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, HealData, ResearchOrbCompleteData, SlimeSize, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, BuildingShapeType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -267,6 +267,7 @@ const bundleEnemyTribesData = (playerData: PlayerData): ReadonlyArray<EnemyTribe
    return enemyTribesData;
 }
 
+// @Cleanup: Remove class, just have functions
 /** Communicates between the server and players */
 class GameServer {
    /** Minimum number of units away from the border that the player will spawn at */
@@ -278,7 +279,7 @@ class GameServer {
 
    private tickInterval: NodeJS.Timeout | undefined;
 
-   private trackedGameObjectID: number | null = null;
+   private trackedEntityID: number | null = null;
 
    public isRunning = false;
 
@@ -289,7 +290,7 @@ class GameServer {
    }
 
    public setTrackedGameObject(id: number | null): void {
-      SERVER.trackedGameObjectID = id;
+      SERVER.trackedEntityID = id;
    }
 
    public start(): void {
@@ -819,14 +820,14 @@ class GameServer {
    public sendGameDataPackets(): void {
       if (SERVER.io === null) return;
 
-      if (SERVER.trackedGameObjectID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedGameObjectID)) {
-         SERVER.trackedGameObjectID = null;
+      if (SERVER.trackedEntityID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedEntityID)) {
+         SERVER.trackedEntityID = null;
       }
 
-      let gameObjectDebugData: GameObjectDebugData | undefined;
-      if (SERVER.trackedGameObjectID !== null) {
-         const entity = Board.entityRecord[SERVER.trackedGameObjectID];
-         gameObjectDebugData = entity.getDebugData();
+      let entityDebugData: EntityDebugData | undefined;
+      if (SERVER.trackedEntityID !== null) {
+         const entity = Board.entityRecord[SERVER.trackedEntityID];
+         entityDebugData = entity.getDebugData();
       }
 
       for (const playerData of Object.values(SERVER.playerDataRecord)) {
@@ -860,7 +861,7 @@ class GameServer {
             serverTicks: Board.ticks,
             serverTime: Board.time,
             playerHealth: player !== null ? HealthComponentArray.getComponent(player.id).health : 0,
-            gameObjectDebugData: gameObjectDebugData,
+            gameObjectDebugData: entityDebugData,
             playerTribeData: bundlePlayerTribeData(playerData),
             enemyTribesData: bundleEnemyTribesData(playerData),
             // @Incomplete

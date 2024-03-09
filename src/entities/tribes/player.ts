@@ -66,10 +66,10 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
    // @Temporary
-   addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 50));
+   // addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 50));
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
-   addItem(inventoryComponent, createItem(ItemType.ballista, 3));
+   // addItem(inventoryComponent, createItem(ItemType.ballista, 3));
    addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
 
    return player;
