@@ -31,8 +31,6 @@ const matchesBiomeRequirements = (generationInfo: BiomeSpawnRequirements, height
 const getBiome = (height: number, temperature: number, humidity: number): BiomeName => {
    for (const [name, generationInfo] of Object.entries(BIOME_GENERATION_INFO) as Array<[BiomeName, BiomeGenerationInfo]>) {
       if (generationInfo.spawnRequirements !== null && matchesBiomeRequirements(generationInfo.spawnRequirements, height, temperature, humidity)) {
-         // @Temporary
-         if (name === "swamp") return "grasslands";
          return name;
       }
    }

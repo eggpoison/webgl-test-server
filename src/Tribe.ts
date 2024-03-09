@@ -162,7 +162,7 @@ class Tribe {
    // @Cleanup: Call these functions from the hut create functions
    public registerNewWorkerHut(workerHut: Entity): void {
       if (this.totem === null) {
-         console.warn("Can't register hut without a tribe.");
+         console.warn("Can't register a hut without a totem!");
          return;
       }
 
@@ -385,7 +385,7 @@ class Tribe {
       return this.barrels.includes(barrel);
    }
 
-   public getArea(): ReadonlyArray<Tile> {
+   public getArea(): Array<Tile> {
       const area = new Array<Tile>();
       for (const tileInfluence of Object.values(this.area)) {
          area.push(tileInfluence.tile);

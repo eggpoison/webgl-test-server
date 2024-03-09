@@ -7,10 +7,12 @@ export interface TileCoordinates {
 }
 
 class Tile {
+   // @Memory: Unnecessary, don't store these
    public readonly x: number;
    public readonly y: number;
 
    public type: TileTypeConst;
+   // @Memory @Cleanup: Might be unnecessary if we can just infer the biome from the tile type.
    public biomeName: BiomeName;
    public isWall: boolean;
 
@@ -27,8 +29,6 @@ class Tile {
 
       addTileToCensus(this);
    }
-   /** Runs every time a tile receives a random tick */
-   public onRandomTick?(): void;
 }
 
 export default Tile;

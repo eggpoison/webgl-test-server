@@ -133,6 +133,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 
       if (hutPosition !== null) {
          const hut = createWorkerHut(hutPosition, tribe);
+         // @Cleanup: This should be done in the createWorkerHut function, so that we don't forget to call it
          tribe.registerNewWorkerHut(hut);
          hut.rotation = 2 * Math.PI * Math.random();
          buildingPositions.push(hutPosition);

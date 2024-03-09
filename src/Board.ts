@@ -66,6 +66,8 @@ import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
+import { markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes } from "./pathfinding";
+import OPTIONS from "./options";
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -90,7 +92,7 @@ abstract class Board {
    /** The time of day the server is currently in (from 0 to 23) */
    public static time = 6;
 
-   private static readonly entities = new Array<Entity>();
+   public static readonly entities = new Array<Entity>();
 
    public static entityRecord: { [id: number]: Entity } = {};
 
@@ -134,13 +136,20 @@ abstract class Board {
       this.grassInfo = generationInfo.grassInfo;
       this.decorations = generationInfo.decorations;
 
-      for (let i = 0; i < generationInfo.tiles.length; i++) {
-         const tile = generationInfo.tiles[i];
-         if (tile.isWall) {
-            const chunkX = Math.floor(tile.x / SETTINGS.CHUNK_SIZE);
-            const chunkY = Math.floor(tile.y / SETTINGS.CHUNK_SIZE);
-            const chunk = this.getChunk(chunkX, chunkY);
-            chunk.hasWallTiles = true;
+      if (OPTIONS.generateWalls) {
+         for (let i = 0; i < generationInfo.tiles.length; i++) {
+            const tile = generationInfo.tiles[i];
+
+            if (tile.isWall) {
+               // Mark which chunks have wall tiles
+               const chunkX = Math.floor(tile.x / SETTINGS.CHUNK_SIZE);
+               const chunkY = Math.floor(tile.y / SETTINGS.CHUNK_SIZE);
+               const chunk = this.getChunk(chunkX, chunkY);
+               chunk.hasWallTiles = true;
+               
+               // Mark inaccessible pathfinding nodes
+               markWallTileInPathfinding(tile.x, tile.y);
+            }
          }
       }
 
@@ -258,6 +267,11 @@ abstract class Board {
 
          delete this.entityRecord[entity.id];
          removeEntityFromCensus(entity);
+
+         // Remove occupied pathfinding nodes
+         for (const node of entity.occupiedPathfindingNodes) {
+            markPathfindingNodeClearance(node, entity.id);
+         }
 
          switch (entity.type) {
             case IEntityType.cow: onCowRemove(entity); break;
@@ -399,6 +413,8 @@ abstract class Board {
          const entity = PhysicsComponentArray.getEntity(i);
          tickPhysicsComponent(entity);
       }
+
+      updateDynamicPathfindingNodes();
    }
 
    public static resolveEntityCollisions(): void {

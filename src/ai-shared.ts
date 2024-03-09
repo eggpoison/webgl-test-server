@@ -10,7 +10,8 @@ const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
 const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, 0);
 
-export function getClosestEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
+// @Cleanup: Only used in tribesman.ts, so move there.
+export function getClosestAccessibleEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
    if (entities.length === 0) {
       throw new Error("No entities in array");
    }

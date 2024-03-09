@@ -1,3 +1,4 @@
+import { PathfindingNodeIndex } from "webgl-test-shared";
 import { ID_SENTINEL_VALUE } from "../Entity";
 
 export enum TribesmanAIType {
@@ -26,6 +27,12 @@ export class TribesmanComponent {
    // @Memory @Speed: This is only used to clear the ResearchBenchComponent's preemptiveOccupeeID value when
    // the tribesmen finishes researching, is there some better way which doesn't need having this value?
    public targetResearchBenchID = ID_SENTINEL_VALUE;
+
+   public rawPath = new Array<PathfindingNodeIndex>();
+   public readonly path: Array<PathfindingNodeIndex> = [];
+   public pathfindingTargetNode: PathfindingNodeIndex = Number.MAX_SAFE_INTEGER;
+   // @Cleanup @Incomplete??
+   // public lastDistFromNextNode = 0;
 
    constructor(hutID: number) {
       this.hutID = hutID;

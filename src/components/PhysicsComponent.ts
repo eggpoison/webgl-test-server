@@ -95,9 +95,11 @@ const updatePosition = (entity: Entity): void => {
    const physicsComponent = PhysicsComponentArray.getComponent(entity);
    
    if (entity.hitboxesAreDirty) {
+      entity.pathfindingNodesAreDirty = true;
       entity.cleanHitboxes();
       entity.updateContainingChunks();
    } else if (physicsComponent.positionIsDirty) {
+      entity.pathfindingNodesAreDirty = true;
       entity.updateHitboxes();
       entity.updateContainingChunks();
    }

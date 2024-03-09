@@ -17,9 +17,7 @@ import Board from "../../Board";
 
 const VISION_RANGE = 550;
 const HITBOX_SIZE = 100 - 0.05;
-// @Temporary
-// const AIM_ARC_SIZE = Math.PI / 2.3;
-const AIM_ARC_SIZE = Math.PI * 2;
+const AIM_ARC_SIZE = Math.PI / 2;
 
 export function addBallistaHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE, 0));

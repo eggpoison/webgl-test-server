@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, Mutable, VisibleChunkBounds, GameObjectDebugData, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData, SlimeSize } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SETTINGS, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, TribeData, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, InventoryData, TribeMemberAction, ItemType, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, IEntityType, TribeType, StatusEffectData, TechID, Item, TRIBE_INFO_RECORD, randItem, BlueprintBuildingType, ItemData, StatusEffect, HealData, ResearchOrbCompleteData, EntityDebugData } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -10,23 +10,23 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { ArrowComponentArray, BallistaComponentArray, BerryBushComponentArray, BlueprintComponentArray, BoulderComponentArray, CactusComponentArray, CookingEntityComponentArray, CowComponentArray, DoorComponentArray, FishComponentArray, FrozenYetiComponentArray, GolemComponentArray, HealthComponentArray, HutComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PhysicsComponentArray, PlayerComponentArray, ResearchBenchComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimeSpitComponentArray, SnowballComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TurretComponentArray, YetiComponentArray, ZombieComponentArray } from "./components/ComponentArray";
-import { addItemToInventory, getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
+import { getInventory, serialiseItem, serializeInventoryData } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem, uninteractWithStructure } from "./entities/tribes/player";
-import { COW_GRAZE_TIME_TICKS, createCow } from "./entities/mobs/cow";
+import { COW_GRAZE_TIME_TICKS } from "./entities/mobs/cow";
 import { getZombieSpawnProgress } from "./entities/tombstone";
 import { getTilesOfBiome } from "./census";
-import { SPIT_CHARGE_TIME_TICKS, SPIT_COOLDOWN_TICKS, createSlime } from "./entities/mobs/slime";
+import { SPIT_CHARGE_TIME_TICKS, SPIT_COOLDOWN_TICKS } from "./entities/mobs/slime";
 import { getInventoryUseInfo } from "./components/InventoryUseComponent";
 import { GOLEM_WAKE_TIME_TICKS } from "./entities/mobs/golem";
 import { getBlueprintProgress } from "./components/BlueprintComponent";
 import { getSlingTurretChargeProgress, getSlingTurretReloadProgress } from "./entities/structures/sling-turret";
 import { forceMaxGrowAllIceSpikes } from "./entities/resources/ice-spikes";
-import { createBallista, getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
+import { getBallistaChargeProgress, getBallistaReloadProgress } from "./entities/structures/ballista";
+import { getEntityDebugData } from "./entity-debug-data";
+import { getVisiblePathfindingNodeOccupances } from "./pathfinding";
+import { createWoodenWall } from "./entities/structures/wooden-wall";
 import { createTribeTotem } from "./entities/tribes/tribe-totem";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
-import { createWoodenWall } from "./entities/structures/wooden-wall";
-import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
-import { createYeti } from "./entities/mobs/yeti";
 
 /*
 
@@ -815,42 +815,23 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            createSlime(new Point(spawnPosition.x + 200, spawnPosition.y), SlimeSize.medium, []);
-            
-            const tribe = new Tribe(TribeType.barbarians);
-            Board.addTribe(tribe);
-            // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 1000), tribe);
-
-            // for (let i = 0; i < 3; i++) {
-            //    const hut = createWorkerHut(new Point(spawnPosition.x + i * 200, spawnPosition.y + 700), tribe);
-            //    hut.rotation = Math.PI;
-            //    tribe.registerNewWorkerHut(hut);
-            // }
-            // createYeti(new Point(spawnPosition.x, spawnPosition.y + 600));
-
             const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
             const tribeComp = TribeComponentArray.getComponent(player);
-            // const n = 6;
-            // for (let i = 0; i < n; i++) {
-            //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 100), tribeComp.tribe);
-            // }
-            // for (let i = 0; i < n; i++) {
-            //    createWoodenFloorSpikes(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y + 180), tribeComp.tribe);
-            // }
-            // const n2 = 2;
-            // for (let i = 0; i < n2; i++) {
-            //    createSlingTurret(new Point(spawnPosition.x + (i - (n2 - 1)/2) * 200, spawnPosition.y + 0), tribeComp.tribe);
-            // }
-            const n3 = 3;
-            for (let i = 0; i < n3; i++) {
-               const b = createBallista(new Point(spawnPosition.x + (i - n3/2) * 150, spawnPosition.y - 420), tribeComp.tribe, 0);
-               setTimeout(() => {
-                  addItemToInventory(InventoryComponentArray.getComponent(b), "ammoBoxInventory", ItemType.wood, 1);
-               }, 100);
+            
+            createTribeTotem(new Point(player.position.x, player.position.y - 200), tribeComp.tribe!);
+
+            const n = 5;
+            const yo = 100;
+            
+         for (let i = 0; i < n; i++) {
+               createWoodenWall(new Point(player.position.x, player.position.y + yo + i * 64), tribeComp.tribe);
             }
-            // for (let i = 0; i < n; i++) {
-            //    createWoodenWall(new Point(spawnPosition.x + (i - n/2) * 64, spawnPosition.y - 320), tribeComp.tribe);
-            // }
+
+            const hut = createWorkerHut(new Point(player.position.x + 250, player.position.y + 100), tribeComp.tribe!);
+            tribeComp.tribe!.registerNewWorkerHut(hut);
+
+            // const hut2 = createWorkerHut(new Point(player.position.x - 250, player.position.y - 100), tribeComp.tribe!);
+            // tribeComp.tribe!.registerNewWorkerHut(hut2);
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -990,7 +971,8 @@ class GameServer {
                tribeData: bundleTribeData(playerData),
                hasFrostShield: false,
                pickedUpItem: false,
-               hotbarCrossbowLoadProgressRecord: {}
+               hotbarCrossbowLoadProgressRecord: {},
+               visiblePathfindingNodeOccupances: []
             };
 
             SERVER.playerDataRecord[socket.id] = playerData;
@@ -1182,10 +1164,10 @@ class GameServer {
          SERVER.trackedGameObjectID = null;
       }
 
-      let gameObjectDebugData: GameObjectDebugData | undefined;
+      let entityDebugData: EntityDebugData | undefined;
       if (SERVER.trackedGameObjectID !== null) {
          const entity = Board.entityRecord[SERVER.trackedGameObjectID];
-         gameObjectDebugData = entity.getDebugData();
+         entityDebugData = getEntityDebugData(entity);
       }
 
       for (const playerData of Object.values(SERVER.playerDataRecord)) {
@@ -1219,13 +1201,15 @@ class GameServer {
             serverTicks: Board.ticks,
             serverTime: Board.time,
             playerHealth: player !== null ? HealthComponentArray.getComponent(player).health : 0,
-            gameObjectDebugData: gameObjectDebugData,
+            entityDebugData: entityDebugData,
             tribeData: bundleTribeData(playerData),
             // @Incomplete
             // hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
             hasFrostShield: false,
             pickedUpItem: playerData.pickedUpItem,
-            hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player)
+            hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player),
+            // @Incomplete: Only send if dev and the checkbox is enabled
+            visiblePathfindingNodeOccupances: getVisiblePathfindingNodeOccupances(extendedVisibleChunkBounds)
          };
 
          // Send the game data to the player

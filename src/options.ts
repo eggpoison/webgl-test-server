@@ -8,14 +8,15 @@ interface Options {
    readonly warp: boolean;
 }
 
+// @Speed: Make into const enum
 const OPTIONS: Options = {
    spawnEntities: true,
-   spawnTribes: false,
-   generateRivers: false,
+   spawnTribes: true,
+   generateRivers: true,
    generateWalls: true,
-   inBenchmarkMode: false,
+   inBenchmarkMode: true,
    logging: false,
-   warp: false
+   warp: true
 };
 
 

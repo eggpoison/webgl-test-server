@@ -1,4 +1,4 @@
-import { DoorToggleType, GameObjectDebugData, GenericArrowType, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { DoorToggleType, IEntityType, PathfindingNodeIndex, Point, RIVER_STEPPING_STONE_SIZES, SETTINGS, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -36,6 +36,7 @@ import { onWoodenSpikesCollision } from "./entities/structures/wooden-floor-spik
 import { onPunjiSticksCollision } from "./entities/structures/floor-punji-sticks";
 import { AIHelperComponentArray } from "./components/AIHelperComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "./components/TribeComponent";
+import { entityCanBlockPathfinding, getHitboxOccupiedNodes, markPathfindingNodeOccupance } from "./pathfinding";
 
 export const ID_SENTINEL_VALUE = 99999999;
 
@@ -148,6 +149,8 @@ class Entity<T extends IEntityType = IEntityType> {
    /** Whether the game object's hitboxes' bounds have changed during the current tick or not. If true, marks the game object to have its hitboxes and containing chunks updated */
    public hitboxesAreDirty = false;
 
+   public pathfindingNodesAreDirty = false;
+
    public collidingEntityIDs = new Array<number>();
    
    /** If true, the game object is flagged for deletion at the beginning of the next tick */
@@ -162,6 +165,8 @@ class Entity<T extends IEntityType = IEntityType> {
 
    public readonly collisionBit: number;
    public readonly collisionMask: number;
+
+   public occupiedPathfindingNodes = new Set<PathfindingNodeIndex>();
 
    constructor(position: Point, type: T, collisionBit: number, collisionMask: number) {
       this.position = position;
@@ -211,6 +216,19 @@ class Entity<T extends IEntityType = IEntityType> {
       hitbox.chunkBounds[1] = Math.floor(boundsMaxX / SETTINGS.CHUNK_UNITS);
       hitbox.chunkBounds[2] = Math.floor(boundsMinY / SETTINGS.CHUNK_UNITS);
       hitbox.chunkBounds[3] = Math.floor(boundsMaxY / SETTINGS.CHUNK_UNITS);
+
+      // @Cleanup: Move this thing to pathfinding.ts
+      // Add to occupied pathfinding nodes
+      if (entityCanBlockPathfinding(this.type)) {
+         const occupiedNodes = getHitboxOccupiedNodes(hitbox);
+         for (let i = 0; i < occupiedNodes.length; i++) {
+            const node = occupiedNodes[i];
+            if (!this.occupiedPathfindingNodes.has(node)) {
+               markPathfindingNodeOccupance(node, this.id);
+               this.occupiedPathfindingNodes.add(node);
+            }
+         }
+      }
    }
 
    /** Recalculates the game objects' bounding area, hitbox positions and bounds, and the hasPotentialWallTileCollisions flag */
@@ -1320,16 +1338,6 @@ class Entity<T extends IEntityType = IEntityType> {
       }
 
       this.isRemoved = true;
-   }
-
-   public getDebugData(): GameObjectDebugData {
-      return {
-         gameObjectID: this.id,
-         lines: [],
-         circles: [],
-         tileHighlights: [],
-         debugEntries: []
-      };
    }
 
    public turn(targetRotation: number, turnSpeed: number): void {
