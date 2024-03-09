@@ -1,18 +1,19 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, IceSpikesComponentData, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, IceSpikesComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
-import { StatusEffectComponent, applyStatusEffect } from "../../components/StatusEffectComponent";
+import { HealthComponentArray, IceSpikesComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { StatusEffectComponent, StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { createIceShard } from "../projectiles/ice-shards";
 import { SERVER } from "../../server";
 import { IceSpikesComponent } from "../../components/IceSpikesComponent";
 import Board from "../../Board";
 import { createItemsOverEntity } from "../../entity-shared";
+import { applyKnockback } from "../../components/PhysicsComponent";
 
 const ICE_SPIKE_RADIUS = 40;
 
-const TICKS_TO_GROW = 1/5 * SETTINGS.TPS;
+const TICKS_TO_GROW = 1/5 * SettingsConst.TPS;
 const GROWTH_TICK_CHANCE = 0.5;
 const GROWTH_OFFSET = 60;
 
@@ -20,7 +21,7 @@ export function createIceSpikes(position: Point, rootIceSpike?: Entity): Entity 
    const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.iceSpikes, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.iceSpikes);
    iceSpikes.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, ICE_SPIKE_RADIUS, 0);
+   const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, ICE_SPIKE_RADIUS);
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));
@@ -35,7 +36,7 @@ const canGrow = (iceSpikesComponent: IceSpikesComponent): boolean => {
       return false;
    }
    
-   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike);
+   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike.id);
    return rootIceSpikesComponent.numChildrenIceSpikes < rootIceSpikesComponent.maxChildren;
 }
 
@@ -61,18 +62,18 @@ const grow = (iceSpikes: Entity): void => {
 
    const minDistanceToEntity = Board.distanceToClosestEntity(position);
    if (minDistanceToEntity >= 40) {
-      const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+      const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes.id);
       createIceSpikes(position, iceSpikesComponent.rootIceSpike);
       
-      const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike);
+      const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikesComponent.rootIceSpike.id);
       rootIceSpikesComponent.numChildrenIceSpikes++;
    }
 }
 
 export function tickIceSpikes(iceSpikes: Entity): void {
-   const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+   const iceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes.id);
 
-   if (canGrow(iceSpikesComponent) && Math.random() < GROWTH_TICK_CHANCE / SETTINGS.TPS) {
+   if (canGrow(iceSpikesComponent) && Math.random() < GROWTH_TICK_CHANCE / SettingsConst.TPS) {
       iceSpikesComponent.iceSpikeGrowProgressTicks++;
       if (iceSpikesComponent.iceSpikeGrowProgressTicks >= TICKS_TO_GROW) {
          grow(iceSpikes);
@@ -86,12 +87,12 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (canDamageEntity(healthComponent, "ice_spikes")) {
          const hitDirection = iceSpikes.position.calculateAngleBetween(collidingEntity.position);
          
          damageEntity(collidingEntity, 1, iceSpikes, PlayerCauseOfDeath.ice_spikes, "ice_spikes");
-         applyHitKnockback(collidingEntity, 180, hitDirection);
+         applyKnockback(collidingEntity, 180, hitDirection);
          SERVER.registerEntityHit({
             entityPositionX: collidingEntity.position.x,
             entityPositionY: collidingEntity.position.y,
@@ -105,7 +106,7 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
          addLocalInvulnerabilityHash(healthComponent, "ice_spikes", 0.3);
    
          if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-            applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 5 * SETTINGS.TPS);
+            applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 5 * SettingsConst.TPS);
          }
       }
    }
@@ -144,7 +145,7 @@ export function onIceSpikesRemove(iceSpikes: Entity): void {
 
 /** Forces an ice spike to immediately grow its maximum number of children */
 const forceMaxGrowIceSpike = (iceSpikes: Entity): void => {
-   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes);
+   const rootIceSpikesComponent = IceSpikesComponentArray.getComponent(iceSpikes.id);
    
    const connectedIceSpikes = [iceSpikes];
 
@@ -162,4 +163,8 @@ export function forceMaxGrowAllIceSpikes(): void {
          forceMaxGrowIceSpike(entity);
       }
    }
+}
+
+export function serialiseIceSpikesComponent(_entity: Entity): IceSpikesComponentData {
+   return {};
 }

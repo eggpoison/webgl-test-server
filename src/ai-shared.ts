@@ -1,14 +1,15 @@
-import { I_TPS, Point, SETTINGS, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
+import { SettingsConst, Point, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity, { NO_COLLISION } from "./Entity";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
-const TURN_CONSTANT = Math.PI / SETTINGS.TPS;
+const TURN_CONSTANT = Math.PI / SettingsConst.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1, 0);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1);
 
 // @Cleanup: Only used in tribesman.ts, so move there.
 export function getClosestAccessibleEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
@@ -30,8 +31,9 @@ export function getClosestAccessibleEntity(entity: Entity, entities: ReadonlyArr
 
 /** Estimates the distance it will take for the entity to stop */
 const estimateStopDistance = (entity: Entity): number => {
+   // @Incomplete: Hard-coded
    // Estimate time it will take for the entity to stop
-   const stopTime = Math.pow(entity.velocity.length(), 0.8) / (3 * SETTINGS.FRICTION_CONSTANT);
+   const stopTime = Math.pow(entity.velocity.length(), 0.8) / (3 * 50);
    const stopDistance = (Math.pow(stopTime, 2) + stopTime) * entity.velocity.length();
    return stopDistance;
 }
@@ -62,7 +64,8 @@ export function moveEntityToPosition(entity: Entity, positionX: number, position
    entity.acceleration.x = acceleration * Math.sin(direction);
    entity.acceleration.y = acceleration * Math.cos(direction);
    if (direction !== entity.rotation) {
-      entity.hitboxesAreDirty = true;
+      const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
    entity.rotation = direction;
 }
@@ -213,13 +216,13 @@ export function runHerdAI(entity: Entity, herdMembers: ReadonlyArray<Entity>, vi
       let distanceFromWall!: number;
 
       // Top wall
-      if (entity.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - visionRange) {
+      if (entity.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - visionRange) {
          directionToNearestWall = Math.PI / 2;
-         distanceFromWall = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - entity.position.y;
+         distanceFromWall = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - entity.position.y;
       // Right wall
-      } else if (entity.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - visionRange) {
+      } else if (entity.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - visionRange) {
          directionToNearestWall = 0;
-         distanceFromWall = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - entity.position.x;
+         distanceFromWall = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - entity.position.x;
       // Bottom wall
       } else if (entity.position.y <= visionRange) {
          directionToNearestWall = Math.PI * 3 / 2;
@@ -265,17 +268,19 @@ export function runHerdAI(entity: Entity, herdMembers: ReadonlyArray<Entity>, vi
    }
 
    entity.rotation += angularVelocity;
-   entity.hitboxesAreDirty = true;
+   
+   const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 /** Gets all tiles within a given distance from a position */
 export function getPositionRadialTiles(position: Point, radius: number): Array<Tile> {
    const tiles = new Array<Tile>();
 
-   const minTileX = Math.max(Math.min(Math.floor((position.x - radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const maxTileX = Math.max(Math.min(Math.floor((position.x + radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const minTileY = Math.max(Math.min(Math.floor((position.y - radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const maxTileY = Math.max(Math.min(Math.floor((position.y + radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+   const minTileX = Math.max(Math.min(Math.floor((position.x - radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const maxTileX = Math.max(Math.min(Math.floor((position.x + radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const minTileY = Math.max(Math.min(Math.floor((position.y - radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const maxTileY = Math.max(Math.min(Math.floor((position.y + radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
 
    const radiusSquared = Math.pow(radius, 2);
 
@@ -286,7 +291,7 @@ export function getPositionRadialTiles(position: Point, radius: number): Array<T
          // Don't try to wander to wall tiles or water
          if (tile.isWall || tile.type === TileTypeConst.water) continue;
 
-         const distanceSquared = Math.pow(position.x - tileX * SETTINGS.TILE_SIZE, 2) + Math.pow(position.y - tileY * SETTINGS.TILE_SIZE, 2);
+         const distanceSquared = Math.pow(position.x - tileX * SettingsConst.TILE_SIZE, 2) + Math.pow(position.y - tileY * SettingsConst.TILE_SIZE, 2);
          if (distanceSquared <= radiusSquared) {
             tiles.push(tile);
          }
@@ -300,10 +305,10 @@ export function getPositionRadialTiles(position: Point, radius: number): Array<T
 export function getAllowedPositionRadialTiles(position: Point, radius: number, validTileTargets: ReadonlyArray<TileTypeConst>): Array<Tile> {
    const tiles = new Array<Tile>();
 
-   const minTileX = Math.max(Math.min(Math.floor((position.x - radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const maxTileX = Math.max(Math.min(Math.floor((position.x + radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const minTileY = Math.max(Math.min(Math.floor((position.y - radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const maxTileY = Math.max(Math.min(Math.floor((position.y + radius) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+   const minTileX = Math.max(Math.min(Math.floor((position.x - radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const maxTileX = Math.max(Math.min(Math.floor((position.x + radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const minTileY = Math.max(Math.min(Math.floor((position.y - radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const maxTileY = Math.max(Math.min(Math.floor((position.y + radius) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
 
    const radiusSquared = Math.pow(radius, 2);
 
@@ -314,7 +319,7 @@ export function getAllowedPositionRadialTiles(position: Point, radius: number, v
          // Don't try to wander to wall tiles or disallowed tiles
          if (tile.isWall || validTileTargets.indexOf(tile.type) === -1) continue;
 
-         const distanceSquared = Math.pow(position.x - tileX * SETTINGS.TILE_SIZE, 2) + Math.pow(position.y - tileY * SETTINGS.TILE_SIZE, 2);
+         const distanceSquared = Math.pow(position.x - tileX * SettingsConst.TILE_SIZE, 2) + Math.pow(position.y - tileY * SettingsConst.TILE_SIZE, 2);
          if (distanceSquared <= radiusSquared) {
             tiles.push(tile);
          }
@@ -344,10 +349,10 @@ export function entityIsInVisionRange(position: Point, visionRange: number, enti
 }
 
 export function getEntitiesInVisionRange(x: number, y: number, visionRange: number): Array<Entity> {
-   const minChunkX = Math.max(Math.min(Math.floor((x - visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((x + visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((y - visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((y + visionRange) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.min(Math.floor((x - visionRange) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((x + visionRange) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((y - visionRange) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((y + visionRange) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
 
    testCircularHitbox.radius = visionRange;
    testCircularHitbox.object.position.x = x;
@@ -487,7 +492,7 @@ export function turnAngle(angle: number, targetAngle: number, turnSpeed: number)
    const clockwiseDist = getClockwiseAngleDistance(angle, targetAngle);
    if (clockwiseDist < Math.PI) {
       // Turn clockwise
-      let result = angle + turnSpeed * I_TPS;
+      let result = angle + turnSpeed * SettingsConst.I_TPS;
       // @Incomplete: Will this sometimes cause snapping?
       if (result > targetAngle) {
          result = targetAngle;
@@ -495,7 +500,7 @@ export function turnAngle(angle: number, targetAngle: number, turnSpeed: number)
       return result;
    } else {
       // Turn counterclockwise
-      let result = angle - turnSpeed * I_TPS;
+      let result = angle - turnSpeed * SettingsConst.I_TPS;
       if (result < targetAngle) {
          result = targetAngle;
       }

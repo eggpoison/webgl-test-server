@@ -18,20 +18,10 @@ import { createTree } from "./entities/resources/tree";
 import { createWorkbench } from "./entities/workbench";
 import { createYeti } from "./entities/mobs/yeti";
 import { createZombie } from "./entities/mobs/zombie";
-import { createResearchBench } from "./entities/research-bench";
-import { createWoodenWall } from "./entities/structures/wooden-wall";
 import { createSpitPoison } from "./entities/projectiles/spit-poison";
-import { createWoodenDoor } from "./entities/structures/wooden-door";
 import { createGolem } from "./entities/mobs/golem";
 import { createPlanterBox } from "./entities/structures/planter-box";
 import { createPebblum } from "./entities/mobs/pebblum";
-import { createWoodenEmbrasure } from "./entities/structures/wooden-embrasure";
-import { createWoodenFloorSpikes } from "./entities/structures/wooden-floor-spikes";
-import { createWoodenWallSpikes } from "./entities/structures/wooden-wall-spikes";
-import { createFloorPunjiSticks } from "./entities/structures/floor-punji-sticks";
-import { createWallPunjiSticks } from "./entities/structures/wall-punji-sticks";
-import { createBallista } from "./entities/structures/ballista";
-import { createSlingTurret } from "./entities/structures/sling-turret";
 
 export function createEntity(position: Point, entityType: IEntityType): Entity {
    switch (entityType) {
@@ -53,19 +43,18 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.workbench: return createWorkbench(position);
       case IEntityType.yeti: return createYeti(position);
       case IEntityType.zombie: return createZombie(position, false, ID_SENTINEL_VALUE);
-      case IEntityType.woodenWall: return createWoodenWall(position, null);
-      case IEntityType.woodenDoor: return createWoodenDoor(position, null, 0);
-      case IEntityType.woodenEmbrasure: return createWoodenEmbrasure(position, null, 0);
       case IEntityType.spitPoison: return createSpitPoison(position);
       case IEntityType.golem: return createGolem(position);
       case IEntityType.planterBox: return createPlanterBox(position);
       case IEntityType.pebblum: return createPebblum(position, ID_SENTINEL_VALUE);
-      case IEntityType.woodenFloorSpikes: return createWoodenFloorSpikes(position, null);
-      case IEntityType.woodenWallSpikes: return createWoodenWallSpikes(position, null);
-      case IEntityType.floorPunjiSticks: return createFloorPunjiSticks(position, null);
-      case IEntityType.wallPunjiSticks: return createWallPunjiSticks(position, null);
-      case IEntityType.ballista: return createBallista(position, null, 0);
-      case IEntityType.slingTurret: return createSlingTurret(position, null, 0);
+      case IEntityType.woodenSpikes:
+      case IEntityType.punjiSticks:
+      case IEntityType.ballista:
+      case IEntityType.slingTurret:
+      case IEntityType.woodenWall:
+      case IEntityType.woodenDoor:
+      case IEntityType.woodenEmbrasure:
+      case IEntityType.woodenTunnel:
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow:

@@ -1,11 +1,11 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS } from "webgl-test-shared";
+import { BerryBushComponentData, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { BerryBushComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
+import { BerryBushComponentArray, HealthComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { createItemEntity } from "../item-entity";
 import Board from "../../Board";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 
 const BERRY_BUSH_RADIUS = 40;
 
@@ -16,7 +16,7 @@ export function createBerryBush(position: Point): Entity {
    const berryBush = new Entity(position, IEntityType.berryBush, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    berryBush.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(berryBush, 1, 0, 0, BERRY_BUSH_RADIUS, 0);
+   const hitbox = new CircularHitbox(berryBush, 1, 0, 0, BERRY_BUSH_RADIUS);
    berryBush.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(berryBush, new HealthComponent(10));
@@ -30,12 +30,12 @@ export function createBerryBush(position: Point): Entity {
 }
 
 export function tickBerryBush(berryBush: Entity): void {
-   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush.id);
    if (berryBushComponent.numBerries >= 5) {
       return;
    }
 
-   berryBushComponent.berryGrowTimer += 1 / SETTINGS.TPS;
+   berryBushComponent.berryGrowTimer += SettingsConst.I_TPS;
    if (berryBushComponent.berryGrowTimer >= BERRY_GROW_TIME) {
       // Grow a new berry
       berryBushComponent.berryGrowTimer = 0;
@@ -44,7 +44,7 @@ export function tickBerryBush(berryBush: Entity): void {
 }
 
 export function dropBerry(berryBush: Entity): void {
-   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+   const berryBushComponent = BerryBushComponentArray.getComponent(berryBush.id);
    if (berryBushComponent.numBerries === 0) {
       return;
    }
@@ -79,4 +79,11 @@ export function onBerryBushRemove(berryBush: Entity): void {
    HealthComponentArray.removeComponent(berryBush);
    StatusEffectComponentArray.removeComponent(berryBush);
    BerryBushComponentArray.removeComponent(berryBush);
+}
+
+export function serialiseBerryBushComponent(berryBush: Entity): BerryBushComponentData {
+   const berryComponent = BerryBushComponentArray.getComponent(berryBush.id);
+   return {
+      numBerries: berryComponent.numBerries
+   };
 }

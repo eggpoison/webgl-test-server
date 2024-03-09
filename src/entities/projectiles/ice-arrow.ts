@@ -1,9 +1,9 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
+import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
 import Tribe from "../../Tribe";
 
@@ -11,21 +11,21 @@ const ARROW_WIDTH = 5 * 4;
 const ARROW_HEIGHT = 14 * 4;
 const ARROW_DESTROY_DISTANCE = Math.sqrt(Math.pow(ARROW_WIDTH / 2, 2) + Math.pow(ARROW_HEIGHT, 2));
 
-export function createIceArrow(position: Point, rotation: number, tribe: Tribe | null): Entity {
+export function createIceArrow(position: Point, rotation: number, tribe: Tribe): Entity {
    const iceArrow = new Entity(position, IEntityType.iceArrow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    iceArrow.rotation = rotation;
    
-   const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, ARROW_WIDTH, ARROW_HEIGHT, 0);
+   const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, ARROW_WIDTH, ARROW_HEIGHT);
    iceArrow.addHitbox(hitbox);
    
-   PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false));
+   PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false, true));
    TribeComponentArray.addComponent(iceArrow, new TribeComponent(tribe));
 
    return iceArrow;
 }
 
 export function tickIceArrow(iceArrow: Entity): void {
-   if (iceArrow.ageTicks >= 1.5 * SETTINGS.TPS) {
+   if (iceArrow.ageTicks >= 1.5 * SettingsConst.TPS) {
       iceArrow.remove();
       return;
    }
@@ -45,7 +45,7 @@ export function tickIceArrow(iceArrow: Entity): void {
    }
    
    // Destroy the arrow if it reaches the border
-   if (iceArrow.position.x <= ARROW_DESTROY_DISTANCE || iceArrow.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE || iceArrow.position.y <= ARROW_DESTROY_DISTANCE || iceArrow.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
+   if (iceArrow.position.x <= ARROW_DESTROY_DISTANCE || iceArrow.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE || iceArrow.position.y <= ARROW_DESTROY_DISTANCE || iceArrow.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
       iceArrow.remove();
       return;
    }
@@ -53,14 +53,14 @@ export function tickIceArrow(iceArrow: Entity): void {
 
 export function onIceArrowCollision(arrow: Entity, collidingEntity: Entity): void {
    // Don't damage any friendly entities
-   const tribeComponent = TribeComponentArray.getComponent(arrow);
+   const tribeComponent = TribeComponentArray.getComponent(arrow.id);
    if (getTribeMemberRelationship(tribeComponent, collidingEntity) === EntityRelationship.friendly) {
       return;
    }
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       if (StatusEffectComponentArray.hasComponent(collidingEntity)) {
-         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SETTINGS.TPS);
+         applyStatusEffect(collidingEntity, StatusEffectConst.freezing, 3 * SettingsConst.TPS);
       }
       
       arrow.remove();

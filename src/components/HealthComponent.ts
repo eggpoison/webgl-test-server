@@ -1,6 +1,6 @@
-import { IEntityType, PlayerCauseOfDeath, SETTINGS, clamp } from "webgl-test-shared";
+import { HealthComponentData, IEntityType, PlayerCauseOfDeath, SettingsConst, clamp } from "webgl-test-shared";
 import Entity from "../Entity";
-import { HealthComponentArray, PhysicsComponentArray } from "./ComponentArray";
+import { HealthComponentArray } from "./ComponentArray";
 import TombstoneDeathManager from "../tombstone-deaths";
 import { onBerryBushHurt } from "../entities/resources/berry-bush";
 import { onCowHurt } from "../entities/mobs/cow";
@@ -40,7 +40,7 @@ export class HealthComponent {
 export function tickHealthComponent(healthComponent: HealthComponent): void {
    // Update local invulnerability hashes
    for (let i = 0; i < healthComponent.localIframeHashes.length; i++) {
-      healthComponent.localIframeDurations[i] -= 1 / SETTINGS.TPS;
+      healthComponent.localIframeDurations[i] -= SettingsConst.I_TPS;
       if (healthComponent.localIframeDurations[i] <= 0) {
          healthComponent.localIframeHashes.splice(i, 1);
          healthComponent.localIframeDurations.splice(i, 1);
@@ -64,7 +64,7 @@ export function canDamageEntity(healthComponent: HealthComponent, attackHash: st
  * @returns Whether the damage was received
  */
 export function damageEntity(entity: Entity, damage: number, attackingEntity: Entity | null, causeOfDeath: PlayerCauseOfDeath, attackHash?: string): boolean {
-   const healthComponent = HealthComponentArray.getComponent(entity);
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
 
    const absorbedDamage = damage * clamp(healthComponent.defence, 0, 1);
    const actualDamage = damage - absorbedDamage;
@@ -190,7 +190,7 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
             continue;
          }
 
-         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity);
+         const aiHelperComponent = AIHelperComponentArray.getComponent(viewingEntity.id);
          if (aiHelperComponent.visibleEntities.includes(entity)) {
             switch (viewingEntity.type) {
                case IEntityType.zombie: {
@@ -209,23 +209,12 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
    return true;
 }
 
-// @Cleanup: Should this be here?
-export function applyHitKnockback(entity: Entity, knockback: number, knockbackDirection: number): void {
-   if (!PhysicsComponentArray.hasComponent(entity)) {
-      return;
-   }
-   
-   const knockbackForce = knockback / entity.totalMass;
-   entity.velocity.x += knockbackForce * Math.sin(knockbackDirection);
-   entity.velocity.y += knockbackForce * Math.cos(knockbackDirection);
-}
-
 export function healEntity(entity: Entity, healAmount: number, healerID: number): void {
    if (healAmount <= 0) {
       return;
    }
    
-   const healthComponent = HealthComponentArray.getComponent(entity);
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
 
    healthComponent.health += healAmount;
 
@@ -262,7 +251,7 @@ export function addLocalInvulnerabilityHash(healthComponent: HealthComponent, ha
 }
 
 export function getEntityHealth(entity: Entity): number {
-   const healthComponent = HealthComponentArray.getComponent(entity);
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
    return healthComponent.health;
 }
 
@@ -282,4 +271,12 @@ export function removeDefence(healthComponent: HealthComponent, name: string): v
    
    healthComponent.defence -= healthComponent.defenceFactors[name];
    delete healthComponent.defenceFactors[name];
+}
+
+export function serialiseHealthComponent(entity: Entity): HealthComponentData {
+   const healthComponent = HealthComponentArray.getComponent(entity.id);
+   return {
+      health: healthComponent.health,
+      maxHealth: healthComponent.maxHealth
+   };
 }

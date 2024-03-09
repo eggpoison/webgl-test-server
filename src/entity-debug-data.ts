@@ -14,7 +14,7 @@ export function getEntityDebugData(entity: Entity): EntityDebugData {
    };
 
    if (TribesmanComponentArray.hasComponent(entity)) {
-      const tribesmanComponent = TribesmanComponentArray.getComponent(entity);
+      const tribesmanComponent = TribesmanComponentArray.getComponent(entity.id);
       if (tribesmanComponent.path.length > 0) {
          debugData.pathData = {
             pathNodes: tribesmanComponent.path,

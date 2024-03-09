@@ -2,12 +2,12 @@ import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, ItemType, Pl
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { createItemEntity } from "../item-entity";
-import { HealthComponentArray, PhysicsComponentArray, ThrowingProjectileComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
+import { HealthComponentArray, ThrowingProjectileComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
 
 const DROP_VELOCITY = 400;
@@ -15,10 +15,10 @@ const DROP_VELOCITY = 400;
 export function createSpearProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const spear = new Entity(position, IEntityType.spearProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, 12, 60, 0);
+   const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, 12, 60);
    spear.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(spear, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(spear, new PhysicsComponent(true, false));
    ThrowingProjectileComponentArray.addComponent(spear, new ThrowingProjectileComponent(tribeMemberID, item));
 
    return spear;
@@ -33,10 +33,9 @@ export function tickSpearProjectile(spear: Entity): void {
 
 export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entity): void {
    // Don't hurt the entity who threw the spear
-   const spearComponent = ThrowingProjectileComponentArray.getComponent(spear);
+   const spearComponent = ThrowingProjectileComponentArray.getComponent(spear.id);
    if (Board.entityRecord.hasOwnProperty(spearComponent.tribeMemberID)) {
-      const throwingEntity = Board.entityRecord[spearComponent.tribeMemberID];
-      if (getTribeMemberRelationship(TribeComponentArray.getComponent(throwingEntity), collidingEntity) === EntityRelationship.friendly) {
+      if (getTribeMemberRelationship(TribeComponentArray.getComponent(spearComponent.tribeMemberID), collidingEntity) === EntityRelationship.friendly) {
          return;
       }
    }
@@ -55,7 +54,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
    // Damage the entity
    const hitDirection = spear.position.calculateAngleBetween(collidingEntity.position);
    damageEntity(collidingEntity, damage, tribeMember, PlayerCauseOfDeath.spear);
-   applyHitKnockback(collidingEntity, 350, hitDirection);
+   applyKnockback(collidingEntity, 350, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,

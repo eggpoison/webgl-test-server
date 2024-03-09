@@ -1,8 +1,9 @@
-import { IEntityType, PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffectConst, customTickIntervalHasPassed } from "webgl-test-shared";
-import { PhysicsComponentArray, StatusEffectComponentArray } from "./ComponentArray";
+import { PlayerCauseOfDeath, STATUS_EFFECT_MODIFIERS, StatusEffect, StatusEffectComponentData, StatusEffectConst, StatusEffectData, customTickIntervalHasPassed } from "webgl-test-shared";
+import { ComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 import { damageEntity } from "./HealthComponent";
 import { SERVER } from "../server";
+import { PhysicsComponentArray } from "./PhysicsComponent";
 
 export class StatusEffectComponent {
    public readonly activeStatusEffectTypes = new Array<StatusEffectConst>();
@@ -16,12 +17,14 @@ export class StatusEffectComponent {
    }
 }
 
+export const StatusEffectComponentArray = new ComponentArray<StatusEffectComponent>();
+
 const entityIsImmuneToStatusEffect = (statusEffectComponent: StatusEffectComponent, statusEffect: StatusEffectConst): boolean => {
    return (statusEffectComponent.statusEffectImmunityBitset & statusEffect) !== 0;
 }
 
 export function applyStatusEffect(entity: Entity, statusEffect: StatusEffectConst, durationTicks: number): void {
-   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
+   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
    if (entityIsImmuneToStatusEffect(statusEffectComponent, statusEffect)) {
       return;
    }
@@ -34,7 +37,7 @@ export function applyStatusEffect(entity: Entity, statusEffect: StatusEffectCons
       statusEffectComponent.activeStatusEffectTicksRemaining.push(durationTicks);
 
       if (PhysicsComponentArray.hasComponent(entity)) {
-         const physicsComponent = PhysicsComponentArray.getComponent(entity);
+         const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
          physicsComponent.moveSpeedMultiplier *= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
       }
    } else {
@@ -59,12 +62,12 @@ export function hasStatusEffect(statusEffectComponent: StatusEffectComponent, st
 }
 
 export function clearStatusEffect(entity: Entity, statusEffectIndex: number): void {
-   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
+   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
 
    if (PhysicsComponentArray.hasComponent(entity)) {
       const statusEffect = statusEffectComponent.activeStatusEffectTypes[statusEffectIndex];
       
-      const physicsComponent = PhysicsComponentArray.getComponent(entity);
+      const physicsComponent = PhysicsComponentArray.getComponent(entity.id);
       physicsComponent.moveSpeedMultiplier /= STATUS_EFFECT_MODIFIERS[statusEffect].moveSpeedMultiplier;
    }
 
@@ -74,7 +77,7 @@ export function clearStatusEffect(entity: Entity, statusEffectIndex: number): vo
 }
 
 export function tickStatusEffectComponent(entity: Entity): void {
-   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity);
+   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
 
    for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
       const statusEffect = statusEffectComponent.activeStatusEffectTypes[i];
@@ -148,4 +151,19 @@ export function tickStatusEffectComponent(entity: Entity): void {
          }
       }
    }
+}
+
+export function serialiseStatusEffectComponent(entity: Entity): StatusEffectComponentData {
+   const statusEffects = new Array<StatusEffectData>();
+   const statusEffectComponent = StatusEffectComponentArray.getComponent(entity.id);
+   for (let i = 0; i < statusEffectComponent.activeStatusEffectTypes.length; i++) {
+      statusEffects.push({
+         type: statusEffectComponent.activeStatusEffectTypes[i] as unknown as StatusEffect,
+         ticksElapsed: statusEffectComponent.activeStatusEffectTicksElapsed[i]
+      });
+   }
+
+   return {
+      statusEffects: statusEffects
+   };
 }

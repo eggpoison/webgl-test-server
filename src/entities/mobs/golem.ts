@@ -1,16 +1,16 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, I_TPS, ItemType, PlayerCauseOfDeath, Point, SETTINGS, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GolemComponentData, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, distance, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { GolemComponentArray, HealthComponentArray, PebblumComponentArray, PhysicsComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { GolemComponentArray, HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { GolemComponent } from "../../components/GolemComponent";
 import Board from "../../Board";
 import { stopEntity } from "../../ai-shared";
 import { createPebblum } from "./pebblum";
 import { SERVER } from "../../server";
 import { createItemsOverEntity } from "../../entity-shared";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 export const BODY_GENERATION_RADIUS = 55;
 
@@ -22,11 +22,11 @@ const ROCK_MASSIVE_MASS = 2.25;
 
 const TARGET_ENTITY_FORGET_TIME = 20;
 
-export const GOLEM_WAKE_TIME_TICKS = Math.floor(2.5 * SETTINGS.TPS);
+export const GOLEM_WAKE_TIME_TICKS = Math.floor(2.5 * SettingsConst.TPS);
 
-const PEBBLUM_SUMMON_COOLDOWN_TICKS = 10 * SETTINGS.TPS;
+const PEBBLUM_SUMMON_COOLDOWN_TICKS = 10 * SettingsConst.TPS;
 
-const ROCK_SHIFT_INTERVAL = Math.floor(0.225 * SETTINGS.TPS);
+const ROCK_SHIFT_INTERVAL = Math.floor(0.225 * SettingsConst.TPS);
 
 const hitboxIsTooClose = (golem: Entity, hitboxX: number, hitboxY: number): boolean => {
    for (let j = 0; j < golem.hitboxes.length; j++) {
@@ -56,15 +56,15 @@ const getMinSeparationFromOtherHitboxes = (golem: Entity, hitboxX: number, hitbo
 }
 
 const updateGolemHitboxPositions = (golem: Entity, golemComponent: GolemComponent, wakeProgress: number): void => {
-   for (let i = 0; i < golem.hitboxes.length; i++) {
-      const hitbox = golem.hitboxes[i];
+   for (let i = 0; i < golemComponent.rockInfoArray.length; i++) {
+      const rockInfo = golemComponent.rockInfoArray[i];
 
-      const rockInfo = golemComponent.rockInfoRecord[hitbox.localID];
-      hitbox.offsetX = lerp(rockInfo.sleepOffsetX, rockInfo.awakeOffsetX, wakeProgress);
-      hitbox.offsetY = lerp(rockInfo.sleepOffsetY, rockInfo.awakeOffsetY, wakeProgress);
+      rockInfo.hitbox.offsetX = lerp(rockInfo.sleepOffsetX, rockInfo.awakeOffsetX, wakeProgress);
+      rockInfo.hitbox.offsetY = lerp(rockInfo.sleepOffsetY, rockInfo.awakeOffsetY, wakeProgress);
    }
 
-   golem.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(golem.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 export function createGolem(position: Point): Entity {
@@ -72,11 +72,11 @@ export function createGolem(position: Point): Entity {
    golem.rotation = 2 * Math.PI * Math.random();
 
    // Create core hitbox
-   const hitbox = new CircularHitbox(golem, ROCK_MASSIVE_MASS, 0, 0, 36, 0);
+   const hitbox = new CircularHitbox(golem, ROCK_MASSIVE_MASS, 0, 0, 36);
    golem.addHitbox(hitbox);
 
    // Create head hitbox
-   golem.addHitbox(new CircularHitbox(golem, ROCK_LARGE_MASS, 0, 45, 32, 1));
+   golem.addHitbox(new CircularHitbox(golem, ROCK_LARGE_MASS, 0, 45, 32));
    
    // Create body hitboxes
    let i = 0;
@@ -104,7 +104,7 @@ export function createGolem(position: Point): Entity {
       }
 
       const mass = size === 0 ? ROCK_SMALL_MASS : ROCK_MEDIUM_MASS;
-      const hitbox = new CircularHitbox(golem, mass, offsetX, offsetY, radius, 2 + i);
+      const hitbox = new CircularHitbox(golem, mass, offsetX, offsetY, radius);
       golem.addHitbox(hitbox);
 
       i++;
@@ -113,21 +113,26 @@ export function createGolem(position: Point): Entity {
    // Create hand hitboxes
    for (let j = 0; j < 2; j++) {
       const offsetX = 60 * (j === 0 ? -1 : 1);
-      const hitbox = new CircularHitbox(golem, ROCK_MEDIUM_MASS, offsetX, 50, 20, 2 + i + j * 2);
+      const hitbox = new CircularHitbox(golem, ROCK_MEDIUM_MASS, offsetX, 50, 20);
       golem.addHitbox(hitbox);
 
       // Wrist
       const inFactor = 0.75;
-      golem.addHitbox(new CircularHitbox(golem, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, 12, 3 + i + j * 2));
+      golem.addHitbox(new CircularHitbox(golem, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, 12));
    }
 
-   PhysicsComponentArray.addComponent(golem, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(golem, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(golem, new HealthComponent(150));
    StatusEffectComponentArray.addComponent(golem, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.burning | StatusEffectConst.poisoned));
    const golemComponent = new GolemComponent(golem.hitboxes, PEBBLUM_SUMMON_COOLDOWN_TICKS);
    GolemComponentArray.addComponent(golem, golemComponent);
 
-   updateGolemHitboxPositions(golem, golemComponent, 0);
+   // Set initial hitbox positions (sleeping)
+   for (let i = 0; i < golemComponent.rockInfoArray.length; i++) {
+      const rockInfo = golemComponent.rockInfoArray[i];
+      rockInfo.hitbox.offsetX = rockInfo.sleepOffsetX;
+      rockInfo.hitbox.offsetY = rockInfo.sleepOffsetY;
+   }
 
    return golem;
 }
@@ -148,9 +153,8 @@ const getTarget = (golemComponent: GolemComponent): Entity => {
 }
 
 const shiftRocks = (golem: Entity, golemComponent: GolemComponent): void => {
-   for (let i = 0; i < golem.hitboxes.length; i++) {
-      const hitbox = golem.hitboxes[i];
-      const rockInfo = golemComponent.rockInfoRecord[hitbox.localID];
+   for (let i = 0; i < golemComponent.rockInfoArray.length; i++) {
+      const rockInfo = golemComponent.rockInfoArray[i];
 
       rockInfo.currentShiftTimerTicks++;
       if (rockInfo.currentShiftTimerTicks >= ROCK_SHIFT_INTERVAL) {
@@ -164,11 +168,12 @@ const shiftRocks = (golem: Entity, golemComponent: GolemComponent): void => {
       }
 
       const shiftProgress = rockInfo.currentShiftTimerTicks / ROCK_SHIFT_INTERVAL;
-      hitbox.offsetX = lerp(rockInfo.lastOffsetX, rockInfo.targetOffsetX, shiftProgress);
-      hitbox.offsetY = lerp(rockInfo.lastOffsetY, rockInfo.targetOffsetY, shiftProgress);
+      rockInfo.hitbox.offsetX = lerp(rockInfo.lastOffsetX, rockInfo.targetOffsetX, shiftProgress);
+      rockInfo.hitbox.offsetY = lerp(rockInfo.lastOffsetY, rockInfo.targetOffsetY, shiftProgress);
    }
 
-   golem.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(golem.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 const summonPebblums = (golem: Entity, golemComponent: GolemComponent, target: Entity): void => {
@@ -185,7 +190,7 @@ const summonPebblums = (golem: Entity, golemComponent: GolemComponent, target: E
 }
 
 export function tickGolem(golem: Entity): void {
-   const golemComponent = GolemComponentArray.getComponent(golem);
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
    
    // Remove targets which are dead or have been out of aggro long enough
    // @Speed: Remove calls to Object.keys, Number, and hasOwnProperty
@@ -198,7 +203,7 @@ export function tickGolem(golem: Entity): void {
          continue;
       }
 
-      golemComponent.attackingEntities[targetID].timeSinceLastAggro += I_TPS;
+      golemComponent.attackingEntities[targetID].timeSinceLastAggro += SettingsConst.I_TPS;
       if (golemComponent.attackingEntities[targetID].timeSinceLastAggro >= TARGET_ENTITY_FORGET_TIME) {
          delete golemComponent.attackingEntities[targetID];
       }
@@ -232,7 +237,7 @@ export function tickGolem(golem: Entity): void {
       }
 
       const pebblum = Board.entityRecord[pebblumID];
-      const pebblumComponent = PebblumComponentArray.getComponent(pebblum);
+      const pebblumComponent = PebblumComponentArray.getComponent(pebblum.id);
       pebblumComponent.targetEntityID = target.id;
    }
 
@@ -270,7 +275,7 @@ export function onGolemHurt(golem: Entity, attackingEntity: Entity, damage: numb
       return;
    }
    
-   const golemComponent = GolemComponentArray.getComponent(golem);
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
 
    // Update/create the entity's targetInfo record
    if (golemComponent.attackingEntities.hasOwnProperty(attackingEntity.id)) {
@@ -290,12 +295,12 @@ export function onGolemCollision(golem: Entity, collidingEntity: Entity): void {
    }
    
    // Don't hurt entities which aren't attacking the golem
-   const golemComponent = GolemComponentArray.getComponent(golem);
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
    if (!golemComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
       return;
    }
    
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "golem")) {
       return;
    }
@@ -303,7 +308,7 @@ export function onGolemCollision(golem: Entity, collidingEntity: Entity): void {
    const hitDirection = golem.position.calculateAngleBetween(collidingEntity.position);
    // @Incomplete: Cause of death
    damageEntity(collidingEntity, 3, golem, PlayerCauseOfDeath.yeti, "golem");
-   applyHitKnockback(collidingEntity, 300, hitDirection);
+   applyKnockback(collidingEntity, 300, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,
@@ -326,4 +331,11 @@ export function onGolemRemove(golem: Entity): void {
    HealthComponentArray.removeComponent(golem);
    StatusEffectComponentArray.removeComponent(golem);
    GolemComponentArray.removeComponent(golem);
+}
+
+export function serialiseGolemComponent(golem: Entity): GolemComponentData {
+   const golemComponent = GolemComponentArray.getComponent(golem.id);
+   return {
+      wakeProgress: golemComponent.wakeTimerTicks / GOLEM_WAKE_TIME_TICKS
+   };
 }

@@ -1,6 +1,6 @@
-import { CookingIngredientItemType, FuelSourceItemType, IEntityType, ItemType, SETTINGS } from "webgl-test-shared";
+import { CookingIngredientItemType, FuelSourceItemType, IEntityType, ItemType, SettingsConst } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { CookingEntityComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
+import { CookingComponentArray, InventoryComponentArray } from "../../components/ComponentArray";
 import { addItemToInventory, consumeItemTypeFromInventory, getInventory } from "../../components/InventoryComponent";
 
 export interface HeatingRecipe {
@@ -64,8 +64,8 @@ const getHeatingRecipeByIngredientType = (heatingEntityType: IEntityType, ingred
 }
 
 export function tickCookingEntity(entity: Entity): void {
-   const cookingEntityComponent = CookingEntityComponentArray.getComponent(entity);
-   const inventoryComponent = InventoryComponentArray.getComponent(entity);
+   const cookingEntityComponent = CookingComponentArray.getComponent(entity.id);
+   const inventoryComponent = InventoryComponentArray.getComponent(entity.id);
 
    const fuelInventory = getInventory(inventoryComponent, "fuelInventory");
    const ingredientInventory = getInventory(inventoryComponent, "ingredientInventory");
@@ -88,7 +88,7 @@ export function tickCookingEntity(entity: Entity): void {
       }
 
       if (cookingEntityComponent.remainingHeatSeconds > 0) {
-         cookingEntityComponent.heatingTimer += 1 / SETTINGS.TPS;
+         cookingEntityComponent.heatingTimer += SettingsConst.I_TPS;
          if (cookingEntityComponent.heatingTimer >= cookingEntityComponent.currentRecipe.cookTime) {
             // Remove from ingredient inventory and add to output inventory
             consumeItemTypeFromInventory(inventoryComponent, "ingredientInventory", cookingEntityComponent.currentRecipe.ingredientType, cookingEntityComponent.currentRecipe.ingredientAmount);
@@ -98,7 +98,7 @@ export function tickCookingEntity(entity: Entity): void {
             cookingEntityComponent.currentRecipe = null;
          }
 
-         cookingEntityComponent.remainingHeatSeconds -= 1 / SETTINGS.TPS;
+         cookingEntityComponent.remainingHeatSeconds -= SettingsConst.I_TPS;
       }
    }
 }

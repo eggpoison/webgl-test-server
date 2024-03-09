@@ -1,8 +1,9 @@
-import { DoorToggleType, SETTINGS, angle, lerp } from "webgl-test-shared";
+import { DoorComponentData, DoorToggleType, SettingsConst, angle, lerp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { DoorComponentArray } from "./ComponentArray";
+import { PhysicsComponentArray } from "./PhysicsComponent";
 
-const DOOR_SWING_SPEED = 5 / SETTINGS.TPS;
+const DOOR_SWING_SPEED = 5 / SettingsConst.TPS;
 
 export class DoorComponent {
    public readonly originX: number;
@@ -10,7 +11,7 @@ export class DoorComponent {
    public readonly closedRotation: number;
    
    public toggleType = DoorToggleType.none;
-   public doorOpenProgress = 0;
+   public openProgress = 0;
 
    constructor(originX: number, originY: number, closedRotation: number) {
       this.originX = originX;
@@ -23,7 +24,7 @@ const doorHalfDiagonalLength = Math.sqrt(16 * 16 + 64 * 64) / 2;
 const angleToCenter = angle(16, 64);
 
 const updateDoorOpenProgress = (door: Entity, doorComponent: DoorComponent): void => {
-   const rotation = doorComponent.closedRotation + lerp(0, -Math.PI/2 + 0.1, doorComponent.doorOpenProgress);
+   const rotation = doorComponent.closedRotation + lerp(0, -Math.PI/2 + 0.1, doorComponent.openProgress);
    
    // Rotate around the top left corner of the door
    const offsetDirection = rotation + Math.PI/2 + angleToCenter;
@@ -33,26 +34,28 @@ const updateDoorOpenProgress = (door: Entity, doorComponent: DoorComponent): voi
    door.position.x = doorComponent.originX + xOffset;
    door.position.y = doorComponent.originY + yOffset;
    door.rotation = rotation;
-   door.hitboxesAreDirty = true;
+
+   const physicsComponent = PhysicsComponentArray.getComponent(door.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 export function tickDoorComponent(door: Entity): void {
-   const doorComponent = DoorComponentArray.getComponent(door);
+   const doorComponent = DoorComponentArray.getComponent(door.id);
    
    switch (doorComponent.toggleType) {
       case DoorToggleType.open: {
-         doorComponent.doorOpenProgress += DOOR_SWING_SPEED;
-         if (doorComponent.doorOpenProgress >= 1) {
-            doorComponent.doorOpenProgress = 1;
+         doorComponent.openProgress += DOOR_SWING_SPEED;
+         if (doorComponent.openProgress >= 1) {
+            doorComponent.openProgress = 1;
             doorComponent.toggleType = DoorToggleType.none;
          }
          updateDoorOpenProgress(door, doorComponent);
          break;
       }
       case DoorToggleType.close: {
-         doorComponent.doorOpenProgress -= DOOR_SWING_SPEED;
-         if (doorComponent.doorOpenProgress <= 0) {
-            doorComponent.doorOpenProgress = 0;
+         doorComponent.openProgress -= DOOR_SWING_SPEED;
+         if (doorComponent.openProgress <= 0) {
+            doorComponent.openProgress = 0;
             doorComponent.toggleType = DoorToggleType.none;
          }
          updateDoorOpenProgress(door, doorComponent);
@@ -62,18 +65,26 @@ export function tickDoorComponent(door: Entity): void {
 }
 
 export function toggleDoor(door: Entity): void {
-   const doorComponent = DoorComponentArray.getComponent(door);
+   const doorComponent = DoorComponentArray.getComponent(door.id);
 
    // Don't toggle if already in the middle of opening/closing
    if (doorComponent.toggleType !== DoorToggleType.none) {
       return;
    }
 
-   if (doorComponent.doorOpenProgress === 0) {
+   if (doorComponent.openProgress === 0) {
       // Open the door
       doorComponent.toggleType = DoorToggleType.open;
    } else {
       // Close the door
       doorComponent.toggleType = DoorToggleType.close;
+   }
+}
+
+export function serialiseDoorComponent(door: Entity): DoorComponentData {
+   const doorComponent = DoorComponentArray.getComponent(door.id);
+   return {
+      toggleType: doorComponent.toggleType,
+      openProgress: doorComponent.openProgress
    }
 }

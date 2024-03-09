@@ -1,11 +1,11 @@
-import { Point, SETTINGS, TileTypeConst, TribeType, randItem } from "webgl-test-shared";
+import { Point, SettingsConst, TileTypeConst, TribeType, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import Tribe from "./Tribe";
 import OPTIONS from "./options";
 import { createTribeTotem } from "./entities/tribes/tribe-totem";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { createBarrel } from "./entities/tribes/barrel";
-import { PhysicsComponentArray } from "./components/ComponentArray";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 /** Average number of spawn attempts that are done each second */
 const TRIBE_SPAWN_RATE = 0.5;
@@ -63,7 +63,7 @@ const isValidTribeSpawnPosition = (position: Point): boolean => {
    }
 
    // Don't spawn too close to other tribes
-   for (const tribe of Board.getTribes()) {
+   for (const tribe of Board.tribes) {
       if (tribe.totem === null) {
          continue;
       }
@@ -91,8 +91,8 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
          continue;
       }
 
-      const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (tile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
       const position = new Point(x, y);
 
       const minHutDistance = HUT_MIN_DISTANCES[tribe.type];
@@ -120,9 +120,6 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    Board.addTribe(tribe);
 
    totem.rotation = 2 * Math.PI * Math.random();
-   
-   // @Cleanup: We shouldn't have to do this.
-   totem.hitboxesAreDirty = true;
 
    const buildingPositions: Array<Point> = [position];
 
@@ -149,8 +146,8 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
 
 const runSpawnAttempt = (): void => {
    // @Speed: Garbage collection
-   const x = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
-   const y = SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE * Math.random();
+   const x = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE * Math.random();
+   const y = SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE * Math.random();
    const spawnPosition = new Point(x, y);
 
    if (isValidTribeSpawnPosition(spawnPosition)) {

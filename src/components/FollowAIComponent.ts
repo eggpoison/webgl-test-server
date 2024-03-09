@@ -1,4 +1,4 @@
-import { SETTINGS } from "webgl-test-shared";
+import { FollowAIComponentData, SettingsConst } from "webgl-test-shared";
 import Board from "../Board";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { moveEntityToPosition } from "../ai-shared";
@@ -17,7 +17,7 @@ export class FollowAIComponent {
 }
 
 export function updateFollowAIComponent(entity: Entity, visibleEntities: ReadonlyArray<Entity>, interestDuration: number): void {
-   const followAIComponent = FollowAIComponentArray.getComponent(entity);
+   const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       if (followAIComponent.followCooldownTicks > 0) {
          followAIComponent.followCooldownTicks--;
@@ -31,7 +31,7 @@ export function updateFollowAIComponent(entity: Entity, visibleEntities: Readonl
          return;
       }
       
-      followAIComponent.interestTimer += 1 / SETTINGS.TPS;
+      followAIComponent.interestTimer += SettingsConst.I_TPS;
       if (followAIComponent.interestTimer >= interestDuration) {
          followAIComponent.followTargetID = ID_SENTINEL_VALUE;
       }
@@ -39,7 +39,7 @@ export function updateFollowAIComponent(entity: Entity, visibleEntities: Readonl
 }
 
 export function followEntity(entity: Entity, followedEntity: Entity, acceleration: number, newFollowCooldownTicks: number): void {
-   const followAIComponent = FollowAIComponentArray.getComponent(entity);
+   const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
    followAIComponent.followTargetID = followedEntity.id;
    followAIComponent.followCooldownTicks = newFollowCooldownTicks;
    followAIComponent.interestTimer = 0;
@@ -48,4 +48,13 @@ export function followEntity(entity: Entity, followedEntity: Entity, acceleratio
 
 export function canFollow(followAIComponent: FollowAIComponent): boolean {
    return followAIComponent.followCooldownTicks === 0;
+}
+
+export function serialiseFollowAIComponent(entity: Entity): FollowAIComponentData {
+   const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
+   return {
+      followTargetID: followAIComponent.followTargetID,
+      followCooldownTicks: followAIComponent.followCooldownTicks,
+      interestTimer: followAIComponent.interestTimer
+   };
 }

@@ -5,9 +5,11 @@ abstract class SRandom {
    private static a = 1103515245;
    private static c = 12345;
 
-   private static state = -1;
+   private static state = 0;
+   public static num = 0;
 
    public static seed(n: number): void {
+      this.num = 0;
       this.state = n;
 
       // Skip first 5 values
@@ -17,6 +19,7 @@ abstract class SRandom {
    }
 
    private static nextInt(): number {
+      this.num++; // @Temporary
       this.state = (this.a * this.state + this.c) % this.m;
       return this.state;
    }

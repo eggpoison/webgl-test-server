@@ -3,6 +3,8 @@ import CircularHitbox from "../hitboxes/CircularHitbox";
 import Hitbox from "../hitboxes/Hitbox";
 
 export interface RockInfo {
+   /** The hitbox corresponding to the rock info */
+   readonly hitbox: Hitbox;
    readonly sleepOffsetX: number;
    readonly sleepOffsetY: number;
    readonly awakeOffsetX: number;
@@ -14,8 +16,8 @@ export interface RockInfo {
    currentShiftTimerTicks: number;
 }
 
-const generateRockInfoRecord = (hitboxes: ReadonlyArray<Hitbox>): Record<number, RockInfo> => {
-   const rockInfoRecord: Record<number, RockInfo> = {};
+const generateRockInfoArray = (hitboxes: ReadonlyArray<Hitbox>): Array<RockInfo> => {
+   const rockInfoArray = new Array<RockInfo>();
    
    for (let i = 0; i < hitboxes.length; i++) {
       const hitbox = hitboxes[i] as CircularHitbox;
@@ -23,7 +25,8 @@ const generateRockInfoRecord = (hitboxes: ReadonlyArray<Hitbox>): Record<number,
       const offsetMagnitude = BODY_GENERATION_RADIUS * Math.random()
       const offsetDirection = 2 * Math.PI * Math.random();
 
-      rockInfoRecord[hitbox.localID] = {
+      rockInfoArray.push({
+         hitbox: hitbox,
          sleepOffsetX: offsetMagnitude * Math.sin(offsetDirection),
          sleepOffsetY: offsetMagnitude * Math.cos(offsetDirection),
          awakeOffsetX: hitbox.offsetX,
@@ -33,10 +36,10 @@ const generateRockInfoRecord = (hitboxes: ReadonlyArray<Hitbox>): Record<number,
          targetOffsetX: hitbox.offsetX,
          targetOffsetY: hitbox.offsetY,
          currentShiftTimerTicks: 0
-      };
+      });
    }
    
-   return rockInfoRecord;
+   return rockInfoArray;
 }
 
 export interface GolemTargetInfo {
@@ -45,7 +48,7 @@ export interface GolemTargetInfo {
 }
 
 export class GolemComponent {
-   public readonly rockInfoRecord: Record<number, RockInfo>;
+   public readonly rockInfoArray: Array<RockInfo>;
    public readonly attackingEntities: Record<number, GolemTargetInfo> = {};
    public wakeTimerTicks = 0;
 
@@ -53,7 +56,7 @@ export class GolemComponent {
    public pebblumSummonCooldownTicks: number;
    
    constructor(hitboxes: ReadonlyArray<Hitbox>, pebblumSummonCooldownTicks: number) {
-      this.rockInfoRecord = generateRockInfoRecord(hitboxes);
+      this.rockInfoArray = generateRockInfoArray(hitboxes);
       this.pebblumSummonCooldownTicks = pebblumSummonCooldownTicks;
    }
 }

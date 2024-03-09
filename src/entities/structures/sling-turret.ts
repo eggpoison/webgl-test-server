@@ -1,8 +1,8 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { HealthComponentArray, StatusEffectComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import Tribe from "../../Tribe";
@@ -14,15 +14,15 @@ import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow
 // @Cleanup: A lot of copy and paste from ballista.ts
 
 
-const COOLDOWN_TICKS = 1.5 * SETTINGS.TPS;
-const RELOAD_TIME_TICKS = Math.floor(0.4 * SETTINGS.TPS);
+export const SLING_TURRET_SHOT_COOLDOWN_TICKS = 1.5 * SettingsConst.TPS;
+export const SLING_TURRET_RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS);
 const VISION_RANGE = 400;
 
 export function addSlingTurretHitboxes(entity: Entity): void {
-   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05, 0));
+   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05));
 }
 
-export function createSlingTurret(position: Point, tribe: Tribe | null, rotation: number): Entity {
+export function createSlingTurret(position: Point, tribe: Tribe, rotation: number): Entity {
    const slingTurret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slingTurret.rotation = rotation;
 
@@ -30,7 +30,7 @@ export function createSlingTurret(position: Point, tribe: Tribe | null, rotation
 
    HealthComponentArray.addComponent(slingTurret, new HealthComponent(25));
    StatusEffectComponentArray.addComponent(slingTurret, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));
-   TurretComponentArray.addComponent(slingTurret, new TurretComponent(COOLDOWN_TICKS));
+   TurretComponentArray.addComponent(slingTurret, new TurretComponent(SLING_TURRET_SHOT_COOLDOWN_TICKS));
    TribeComponentArray.addComponent(slingTurret, new TribeComponent(tribe));
    AIHelperComponentArray.addComponent(slingTurret, new AIHelperComponent(VISION_RANGE));
    
@@ -47,7 +47,7 @@ const entityIsTargetted = (entity: Entity, tribeComponent: TribeComponent): bool
 }
 
 const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
-   const tribeComponent = TribeComponentArray.getComponent(turret);
+   const tribeComponent = TribeComponentArray.getComponent(turret.id);
    
    let closestValidTarget: Entity;
    let minDist = 9999999.9;
@@ -91,8 +91,8 @@ const fire = (turret: Entity, slingTurretComponent: TurretComponent): void => {
 }
 
 export function tickSlingTurret(turret: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(turret);
-   const slingTurretComponent = TurretComponentArray.getComponent(turret);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(turret.id);
+   const slingTurretComponent = TurretComponentArray.getComponent(turret.id);
 
    if (aiHelperComponent.visibleEntities.length > 0) {
       const target = getTarget(turret, aiHelperComponent.visibleEntities);
@@ -104,9 +104,9 @@ export function tickSlingTurret(turret: Entity): void {
          // Turn to face the target
          const angleDiff = getAngleDiff(turretAimDirection, targetDirection);
          if (angleDiff < 0) {
-            slingTurretComponent.aimDirection -= Math.PI / SETTINGS.TPS;
+            slingTurretComponent.aimDirection -= Math.PI * SettingsConst.I_TPS;
          } else {
-            slingTurretComponent.aimDirection += Math.PI / SETTINGS.TPS;
+            slingTurretComponent.aimDirection += Math.PI * SettingsConst.I_TPS;
          }
 
          if (slingTurretComponent.fireCooldownTicks > 0) {
@@ -118,15 +118,15 @@ export function tickSlingTurret(turret: Entity): void {
             slingTurretComponent.aimDirection = targetDirection - turret.rotation;
             if (slingTurretComponent.fireCooldownTicks === 0) {
                fire(turret, slingTurretComponent);
-               slingTurretComponent.fireCooldownTicks = COOLDOWN_TICKS + RELOAD_TIME_TICKS;
+               slingTurretComponent.fireCooldownTicks = SLING_TURRET_SHOT_COOLDOWN_TICKS + SLING_TURRET_RELOAD_TIME_TICKS;
             }
          }
          return;
       }
    }
 
-   if (slingTurretComponent.fireCooldownTicks < COOLDOWN_TICKS) {
-      slingTurretComponent.fireCooldownTicks = COOLDOWN_TICKS;
+   if (slingTurretComponent.fireCooldownTicks < SLING_TURRET_SHOT_COOLDOWN_TICKS) {
+      slingTurretComponent.fireCooldownTicks = SLING_TURRET_SHOT_COOLDOWN_TICKS;
    }
 }
 
@@ -136,20 +136,4 @@ export function onSlingTurretRemove(turret: Entity): void {
    TurretComponentArray.removeComponent(turret);
    TribeComponentArray.removeComponent(turret);
    AIHelperComponentArray.removeComponent(turret);
-}
-
-export function getSlingTurretChargeProgress(slingTurretComponent: TurretComponent): number {
-   if (slingTurretComponent.fireCooldownTicks > COOLDOWN_TICKS) {
-      return 0;
-   }
-   
-   return 1 - slingTurretComponent.fireCooldownTicks / COOLDOWN_TICKS;
-}
-
-export function getSlingTurretReloadProgress(slingTurretComponent: TurretComponent): number {
-   if (slingTurretComponent.fireCooldownTicks < COOLDOWN_TICKS) {
-      return 0;
-   }
-
-   return 1 - (slingTurretComponent.fireCooldownTicks - COOLDOWN_TICKS) / RELOAD_TIME_TICKS;
 }

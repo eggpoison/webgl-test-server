@@ -1,4 +1,4 @@
-import { IEntityType, Point, randFloat, randInt, SETTINGS, TileTypeConst } from "webgl-test-shared";
+import { EntityType, IEntityType, Point, randFloat, randInt, SettingsConst, TileTypeConst } from "webgl-test-shared";
 import Board from "./Board";
 import { addEntityToCensus, getEntityCount, getTileTypeCount } from "./census";
 import OPTIONS from "./options";
@@ -208,9 +208,9 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
    // Pack spawning
  
    const minX = Math.max(spawnOriginX - PACK_SPAWN_RANGE, 0);
-   const maxX = Math.min(spawnOriginX + PACK_SPAWN_RANGE, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
+   const maxX = Math.min(spawnOriginX + PACK_SPAWN_RANGE, SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1);
    const minY = Math.max(spawnOriginY - PACK_SPAWN_RANGE, 0);
-   const maxY = Math.min(spawnOriginY + PACK_SPAWN_RANGE, SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1);
+   const maxY = Math.min(spawnOriginY + PACK_SPAWN_RANGE, SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1);
 
    let totalSpawnAttempts = 0;
 
@@ -239,7 +239,7 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
          spawnPositionY = randFloat(minY, maxY);
       }
 
-      const tile = Board.getTile(Math.floor(spawnPositionX / SETTINGS.TILE_SIZE), Math.floor(spawnPositionY / SETTINGS.TILE_SIZE));
+      const tile = Board.getTile(Math.floor(spawnPositionX / SettingsConst.TILE_SIZE), Math.floor(spawnPositionY / SettingsConst.TILE_SIZE));
       if (!spawnInfo.spawnableTiles.includes(tile.type)) {
          continue;
       }
@@ -257,10 +257,10 @@ const spawnEntities = (spawnInfo: EntitySpawnInfo, spawnOriginX: number, spawnOr
 }
 
 export function spawnPositionIsValid(spawnInfo: EntitySpawnInfo, positionX: number, positionY: number): boolean {
-   const minChunkX = Math.max(Math.min(Math.floor((positionX - spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((positionX + spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((positionY - spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((positionY + spawnInfo.minSpawnDistance) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.min(Math.floor((positionX - spawnInfo.minSpawnDistance) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((positionX + spawnInfo.minSpawnDistance) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((positionY - spawnInfo.minSpawnDistance) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((positionY + spawnInfo.minSpawnDistance) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
 
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
@@ -282,27 +282,28 @@ const runSpawnEvent = (spawnInfo: EntitySpawnInfo): void => {
    let tileX: number;
    let tileY: number;
    if (OPTIONS.inBenchmarkMode) {
-      tileX = SRandom.randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
-      tileY = SRandom.randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+      tileX = SRandom.randInt(0, SettingsConst.BOARD_SIZE * SettingsConst.CHUNK_SIZE - 1);
+      tileY = SRandom.randInt(0, SettingsConst.BOARD_SIZE * SettingsConst.CHUNK_SIZE - 1);
    } else {
-      tileX = randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
-      tileY = randInt(0, SETTINGS.BOARD_SIZE * SETTINGS.CHUNK_SIZE - 1);
+      tileX = randInt(0, SettingsConst.BOARD_SIZE * SettingsConst.CHUNK_SIZE - 1);
+      tileY = randInt(0, SettingsConst.BOARD_SIZE * SettingsConst.CHUNK_SIZE - 1);
    }
    const tile = Board.getTile(tileX, tileY);
 
    // If the tile is a valid tile for the spawn info, continue with the spawn event
+   // @Speed: Instead of randomly picking a tile until it matches the spawnable, pick a random tile from the spawnable tiles
    if (spawnInfo.spawnableTiles.includes(tile.type)) {
       // Calculate a random position in that tile to run the spawn at
       let x: number;
       let y: number;
       if (OPTIONS.inBenchmarkMode) {
-         x = (tileX + SRandom.next()) * SETTINGS.TILE_SIZE;
-         y = (tileY + SRandom.next()) * SETTINGS.TILE_SIZE;
+         x = (tileX + SRandom.next()) * SettingsConst.TILE_SIZE;
+         y = (tileY + SRandom.next()) * SettingsConst.TILE_SIZE;
       } else {
-         x = (tileX + Math.random()) * SETTINGS.TILE_SIZE;
-         y = (tileY + Math.random()) * SETTINGS.TILE_SIZE;
+         x = (tileX + Math.random()) * SettingsConst.TILE_SIZE;
+         y = (tileY + Math.random()) * SettingsConst.TILE_SIZE;
       }
-
+      
       if (spawnPositionIsValid(spawnInfo, x, y) && customSpawnConditionsAreMet(spawnInfo, x, y)) {
          spawnEntities(spawnInfo, x, y);
       }
@@ -320,7 +321,7 @@ export function runSpawnAttempt(): void {
          continue;
       }
 
-      let numSpawnEvents = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE * spawnInfo.spawnRate / SETTINGS.TPS;
+      let numSpawnEvents = SettingsConst.BOARD_SIZE * SettingsConst.BOARD_SIZE * spawnInfo.spawnRate / SettingsConst.TPS;
       const rand = OPTIONS.inBenchmarkMode ? SRandom.next() : Math.random();
       if (rand < numSpawnEvents % 1) {
          numSpawnEvents = Math.ceil(numSpawnEvents);

@@ -1,7 +1,7 @@
-import { COLLISION_BITS, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SETTINGS, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CowComponentData, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, PhysicsComponentArray, StatusEffectComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
+import { BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, getEntityHealth, healEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
@@ -15,19 +15,19 @@ import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHe
 import { FollowAIComponent, canFollow, followEntity, updateFollowAIComponent } from "../../components/FollowAIComponent";
 import { CowComponent, updateCowComponent } from "../../components/CowComponent";
 import { dropBerry } from "../resources/berry-bush";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
+import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
 
 const MAX_HEALTH = 10;
 const VISION_RANGE = 256;
 
-const MIN_GRAZE_COOLDOWN = 30 * SETTINGS.TPS;
-const MAX_GRAZE_COOLDOWN = 60 * SETTINGS.TPS;
+const MIN_GRAZE_COOLDOWN = 30 * SettingsConst.TPS;
+const MAX_GRAZE_COOLDOWN = 60 * SettingsConst.TPS;
 
-const MIN_FOLLOW_COOLDOWN = 15 * SETTINGS.TPS;
-const MAX_FOLLOW_COOLDOWN = 30 * SETTINGS.TPS;
+const MIN_FOLLOW_COOLDOWN = 15 * SettingsConst.TPS;
+const MAX_FOLLOW_COOLDOWN = 30 * SettingsConst.TPS;
 
-export const COW_GRAZE_TIME_TICKS = 5 * SETTINGS.TPS;
+export const COW_GRAZE_TIME_TICKS = 5 * SettingsConst.TPS;
 
 // Herd AI constants
 const TURN_RATE = 0.4;
@@ -41,10 +41,10 @@ export function createCow(position: Point): Entity {
    
    const cow = new Entity(position, IEntityType.cow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100, 0);
+   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100);
    cow.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(cow, new HealthComponent(MAX_HEALTH));
    StatusEffectComponentArray.addComponent(cow, new StatusEffectComponent(0));
    AIHelperComponentArray.addComponent(cow, new AIHelperComponent(VISION_RANGE));
@@ -86,7 +86,7 @@ const findHerdMembers = (cowComponent: CowComponent, visibleEntities: ReadonlyAr
    for (let i = 0; i < visibleEntities.length; i++) {
       const entity = visibleEntities[i];
       if (entity.type === IEntityType.cow) {
-         const otherCowComponent = CowComponentArray.getComponent(entity);
+         const otherCowComponent = CowComponentArray.getComponent(entity.id);
          if (otherCowComponent.species === cowComponent.species) {
             herdMembers.push(entity);
          }
@@ -96,14 +96,14 @@ const findHerdMembers = (cowComponent: CowComponent, visibleEntities: ReadonlyAr
 }
 
 export function tickCow(cow: Entity): void {
-   const cowComponent = CowComponentArray.getComponent(cow);
+   const cowComponent = CowComponentArray.getComponent(cow.id);
    updateCowComponent(cowComponent);
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(cow);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(cow.id);
    
    // Escape AI
-   const escapeAIComponent = EscapeAIComponentArray.getComponent(cow);
-   updateEscapeAIComponent(escapeAIComponent, 5 * SETTINGS.TPS);
+   const escapeAIComponent = EscapeAIComponentArray.getComponent(cow.id);
+   updateEscapeAIComponent(escapeAIComponent, 5 * SettingsConst.TPS);
    if (escapeAIComponent.attackingEntityIDs.length > 0) {
       const escapeEntity = chooseEscapeEntity(cow, aiHelperComponent.visibleEntities);
       if (escapeEntity !== null) {
@@ -124,7 +124,7 @@ export function tickCow(cow: Entity): void {
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
       const itemEntity = aiHelperComponent.visibleEntities[i];
       if (itemEntity.type === IEntityType.itemEntity) {
-         const itemComponent = ItemComponentArray.getComponent(itemEntity);
+         const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
          if (itemComponent.itemType === ItemType.berry) {
             const wasEaten = chaseAndEatItemEntity(cow, itemEntity, 200);
             if (wasEaten) {
@@ -154,7 +154,7 @@ export function tickCow(cow: Entity): void {
             }
    
             // Don't shake bushes without berries
-            const berryBushComponent = BerryBushComponentArray.getComponent(berryBush);
+            const berryBushComponent = BerryBushComponentArray.getComponent(berryBush.id);
             if (berryBushComponent.numBerries === 0) {
                continue;
             }
@@ -182,7 +182,7 @@ export function tickCow(cow: Entity): void {
             const testEntities = Board.getEntitiesAtPosition(testPositionX, testPositionY);
             if (testEntities.has(berryBush)) {
                cowComponent.bushShakeTimer++;
-               if (cowComponent.bushShakeTimer >= 1.5 * SETTINGS.TPS) {
+               if (cowComponent.bushShakeTimer >= 1.5 * SettingsConst.TPS) {
                   dropBerry(berryBush);
                   cowComponent.bushShakeTimer = 0;
                   cowComponent.targetBushID = ID_SENTINEL_VALUE;
@@ -199,7 +199,7 @@ export function tickCow(cow: Entity): void {
    }
 
    // Follow AI
-   const followAIComponent = FollowAIComponentArray.getComponent(cow);
+   const followAIComponent = FollowAIComponentArray.getComponent(cow.id);
    updateFollowAIComponent(cow, aiHelperComponent.visibleEntities, 7)
    if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
       // Continue following the entity
@@ -228,7 +228,7 @@ export function tickCow(cow: Entity): void {
    }
 
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(cow);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(cow.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(cow, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;
@@ -241,8 +241,8 @@ export function tickCow(cow: Entity): void {
          targetTile = getWanderTargetTile(cow, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "grasslands"));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       wander(cow, x, y, 200)
    } else {
       stopEntity(cow);
@@ -267,4 +267,12 @@ export function onCowRemove(cow: Entity): void {
    EscapeAIComponentArray.removeComponent(cow);
    FollowAIComponentArray.removeComponent(cow);
    CowComponentArray.removeComponent(cow);
+}
+
+export function serialiseCowComponent(cow: Entity): CowComponentData {
+   const cowComponent = CowComponentArray.getComponent(cow.id);
+   return {
+      species: cowComponent.species,
+      grazeProgress: cowComponent.grazeProgressTicks > 0 ? cowComponent.grazeProgressTicks / COW_GRAZE_TIME_TICKS : -1
+   };
 }

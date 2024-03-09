@@ -1,12 +1,13 @@
-import { COLLISION_BITS, CactusBodyFlowerData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, lerp, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CactusBodyFlowerData, CactusComponentData, CactusLimbData, CactusLimbFlowerData, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, lerp, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { CactusComponentArray, HealthComponentArray, StatusEffectComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity } from "../../components/HealthComponent";
+import { CactusComponentArray, HealthComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { createItemsOverEntity } from "../../entity-shared";
 import { CactusComponent } from "../../components/CactusComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
+import { applyKnockback } from "../../components/PhysicsComponent";
 
 const RADIUS = 40;
 /** Amount the hitbox is brought in. */
@@ -72,7 +73,7 @@ export function createCactus(position: Point): Entity {
    const cactus = new Entity(position, IEntityType.cactus, COLLISION_BITS.cactus, DEFAULT_COLLISION_MASK);
    cactus.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(cactus, 1, 0, 0, RADIUS - HITBOX_PADDING, 0);
+   const hitbox = new CircularHitbox(cactus, 1, 0, 0, RADIUS - HITBOX_PADDING);
    cactus.addHitbox(hitbox);
 
    const flowers = generateRandomFlowers();
@@ -81,7 +82,7 @@ export function createCactus(position: Point): Entity {
    // Create hitboxes for all the cactus limbs
    for (let i = 0; i < limbs.length; i++) {
       const limb = limbs[i]
-      const hitbox = new CircularHitbox(cactus, 0.4, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), 18, i + 1);
+      const hitbox = new CircularHitbox(cactus, 0.4, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), 18);
       cactus.addHitbox(hitbox);
    }
 
@@ -102,7 +103,7 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
       return;
    }
 
-   const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+   const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
    if (!canDamageEntity(healthComponent, "cactus")) {
       return;
    }
@@ -110,7 +111,7 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
    const hitDirection = cactus.position.calculateAngleBetween(collidingEntity.position);
 
    damageEntity(collidingEntity, 1, cactus, PlayerCauseOfDeath.cactus, "cactus");
-   applyHitKnockback(collidingEntity, 200, hitDirection);
+   applyKnockback(collidingEntity, 200, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,
@@ -132,4 +133,12 @@ export function onCactusRemove(cactus: Entity): void {
    HealthComponentArray.removeComponent(cactus);
    StatusEffectComponentArray.removeComponent(cactus);
    CactusComponentArray.removeComponent(cactus);
+}
+
+export function serialiseCactusComponent(cactus: Entity): CactusComponentData {
+   const cactusComponent = CactusComponentArray.getComponent(cactus.id);
+   return {
+      flowers: cactusComponent.flowers,
+      limbs: cactusComponent.limbs
+   };
 }

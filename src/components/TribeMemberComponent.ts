@@ -1,4 +1,6 @@
-import { TribeType, randInt } from "webgl-test-shared";
+import { TribeMemberComponentData, TribeType, randInt } from "webgl-test-shared";
+import Entity from "../Entity";
+import { TribeMemberComponentArray } from "./ComponentArray";
 
 export class TribeMemberComponent {
    public readonly warPaintType: number;
@@ -12,4 +14,11 @@ export class TribeMemberComponent {
          this.warPaintType = -1;
       }
    }
+}
+
+export function serialiseTribeMemberComponent(entity: Entity): TribeMemberComponentData {
+   const tribeMemberComponent = TribeMemberComponentArray.getComponent(entity.id);
+   return {
+      warPaintType: tribeMemberComponent.warPaintType
+   };
 }

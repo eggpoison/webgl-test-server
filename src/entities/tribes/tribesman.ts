@@ -1,9 +1,9 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, SETTINGS, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { getInventory, addItemToInventory, consumeItem, Inventory, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
+import { getInventory, addItemToInventory, consumeItem, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
 import { TribesmanAIType } from "../../components/TribesmanComponent";
 import { tickTribeMember, tribeMemberCanPickUpItem, attackEntity, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem, repairBuilding } from "./tribe-member";
 import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE } from "./tribe-worker";
@@ -17,6 +17,7 @@ import { getItemAttackCooldown } from "../../items";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { attemptToOccupyResearchBench, canResearchAtBench, continueResearching, markPreemptiveMoveToBench, shouldMoveToResearchBench } from "../../components/ResearchBenchComponent";
 import { entityHasReachedNode, getAngleToNode, getClosestPathfindNode, pathfind, positionIsAccessible, smoothPath } from "../../pathfinding";
+import { PhysicsComponentArray } from "../../components/PhysicsComponent";
 
 const SLOW_ACCELERATION = 200;
 const ACCELERATION = 400;
@@ -72,7 +73,7 @@ const getRadius = (tribesman: Entity): number => {
 const getSlowAcceleration = (tribesman: Entity): number => {
    let acceleration = SLOW_ACCELERATION;
 
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    acceleration *= TRIBE_INFO_RECORD[tribeComponent.tribe!.type].moveSpeedMultiplier;
 
    return acceleration;
@@ -81,14 +82,14 @@ const getSlowAcceleration = (tribesman: Entity): number => {
 const getAcceleration = (tribesman: Entity): number => {
    let acceleration = ACCELERATION;
 
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    acceleration *= TRIBE_INFO_RECORD[tribeComponent.tribe!.type].moveSpeedMultiplier;
 
    return acceleration;
 }
 
 const getFoodItemSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
    // @Speed
    for (const [_itemSlot, item] of Object.entries(hotbarInventory.itemSlots)) {
@@ -105,7 +106,7 @@ const shouldEscape = (healthComponent: HealthComponent): boolean => {
 }
 
 const positionIsSafe = (tribesman: Entity, x: number, y: number): boolean => {
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    
    const visibleEntitiesFromItem = getEntitiesInVisionRange(x, y, getTribesmanVisionRange(tribesman));
    for (const entity of visibleEntitiesFromItem) {
@@ -118,7 +119,7 @@ const positionIsSafe = (tribesman: Entity, x: number, y: number): boolean => {
 }
 
 const findNearestBarrel = (tribesman: Entity): Entity | null => {
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    if (tribeComponent.tribe === null) return null;
    
    let minDistance = Number.MAX_SAFE_INTEGER;
@@ -136,8 +137,8 @@ const findNearestBarrel = (tribesman: Entity): Entity | null => {
 
 /** Deposit all resources from the tribesman's inventory into a barrel */
 const depositResources = (tribesman: Entity, barrel: Entity): void => {
-   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman);
-   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel);
+   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
+   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel.id);
    const tribesmanInventory = getInventory(tribesmanInventoryComponent, "hotbar");
 
    // 
@@ -223,7 +224,7 @@ const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
 }
 
 const hasFood = (tribesman: Entity): boolean => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    for (let slotNum = 1; slotNum <= hotbarInventory.width * hotbarInventory.height; slotNum++) {
@@ -244,7 +245,7 @@ const grabBarrelFood = (tribesman: Entity, barrel: Entity): void => {
    // Grab the food stack with the highest total heal amount
    // 
 
-   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel);
+   const barrelInventoryComponent = InventoryComponentArray.getComponent(barrel.id);
    const barrelInventory = getInventory(barrelInventoryComponent, "inventory");
 
    let foodItemSlot = -1;
@@ -271,7 +272,7 @@ const grabBarrelFood = (tribesman: Entity, barrel: Entity): void => {
       throw new Error("Couldn't find a food item to grab.");
    }
 
-   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const tribesmanInventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    addItemToInventory(tribesmanInventoryComponent, "hotbar", food.type, food.count);
    consumeItem(barrelInventoryComponent, "inventory", foodItemSlot, 999);
 }
@@ -287,7 +288,7 @@ const hasAvailableHotbarSlot = (hotbarInventory: Inventory): boolean => {
 }
 
 const barrelHasFood = (barrel: Entity): boolean => {
-   const inventoryComponent = InventoryComponentArray.getComponent(barrel);
+   const inventoryComponent = InventoryComponentArray.getComponent(barrel.id);
    const inventory = getInventory(inventoryComponent, "inventory");
 
    for (let slotNum = 1; slotNum <= inventory.width * inventory.height; slotNum++) {
@@ -357,7 +358,7 @@ const getAvailableResearchBenchID = (tribesman: Entity, tribeComponent: TribeCom
 }
 
 const shouldRecalculatePath = (tribesman: Entity, x: number, y: number): boolean => {
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman); // @Speed
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id); // @Speed
 
    if (tribesmanComponent.path.length === 0) {
       const targetNode = getClosestPathfindNode(x, y);
@@ -372,7 +373,7 @@ const shouldRecalculatePath = (tribesman: Entity, x: number, y: number): boolean
 }
 
 const pathfindToPosition = (tribesman: Entity, x: number, y: number, targetEntityID: number): void => {
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman); // @Speed
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id); // @Speed
 
    // If moving to a new target node, recalculate path
    if (shouldRecalculatePath(tribesman, x, y)) {
@@ -423,7 +424,7 @@ export function tickTribesman(tribesman: Entity): void {
    
    tickTribeMember(tribesman);
    
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
 
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
    const armourInventory = getInventory(inventoryComponent, "armourSlot");
@@ -442,8 +443,8 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman);
-   const tribeComponent = TribeComponentArray.getComponent(tribesman);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman.id);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
 
    // @Cleanup: A nicer way to do this might be to sort the visible entities array based on the 'threat level' of each entity
 
@@ -486,18 +487,18 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
    tribesmanComponent.targetResearchBenchID = ID_SENTINEL_VALUE;
 
    // Escape from enemies when low on health
-   const healthComponent = HealthComponentArray.getComponent(tribesman);
+   const healthComponent = HealthComponentArray.getComponent(tribesman.id);
    if (shouldEscape(healthComponent) && visibleEnemies.length > 0) {
       escape(tribesman, visibleEnemies);
 
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       
-      tribesmanComponent.lastAIType = TribesmanAIType.escaping;
+      tribesmanComponent.currentAIType = TribesmanAIType.escaping;
       useInfo.currentAction = TribeMemberAction.none;
       return;
    }
@@ -508,9 +509,10 @@ export function tickTribesman(tribesman: Entity): void {
          continue;
       }
 
-      const playerComponent = PlayerComponentArray.getComponent(entity);
+      const playerComponent = PlayerComponentArray.getComponent(entity.id);
       if (playerComponent.interactingEntityID === tribesman.id) {
-         tribesman.hitboxesAreDirty = true;
+         const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+         physicsComponent.hitboxesAreDirty = true;
 
          tribesman.rotation = tribesman.position.calculateAngleBetween(entity.position);
          const distance = tribesman.position.calculateDistanceBetween(entity.position);
@@ -522,10 +524,10 @@ export function tickTribesman(tribesman: Entity): void {
             tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(tribesman.rotation);
          }
 
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
-         tribesmanComponent.lastAIType = TribesmanAIType.idle;
+         tribesmanComponent.currentAIType = TribesmanAIType.idle;
          useInfo.currentAction = TribeMemberAction.none;
          return;
       }
@@ -571,7 +573,7 @@ export function tickTribesman(tribesman: Entity): void {
    if (healthComponent.health < healthComponent.maxHealth) {
       const foodItemSlot = getFoodItemSlot(tribesman);
       if (foodItemSlot !== null) {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          useInfo.selectedItemSlot = foodItemSlot;
 
@@ -602,7 +604,7 @@ export function tickTribesman(tribesman: Entity): void {
 
       huntEntity(tribesman, closestTarget);
 
-      tribesmanComponent.lastAIType = TribesmanAIType.attacking;
+      tribesmanComponent.currentAIType = TribesmanAIType.attacking;
       return;
    }
 
@@ -631,7 +633,9 @@ export function tickTribesman(tribesman: Entity): void {
          const direction = tribesman.position.calculateAngleBetween(closestBlueprint.position);
          if (direction !== tribesman.rotation) {
             tribesman.rotation = direction;
-            tribesman.hitboxesAreDirty = true;
+
+            const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+            physicsComponent.hitboxesAreDirty = true;
          }
 
          // @Cleanup: Copy and pasted from huntEntity. Should be combined into its own function
@@ -651,7 +655,7 @@ export function tickTribesman(tribesman: Entity): void {
          }
 
          // Select the hammer item slot
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          useInfo.selectedItemSlot = hammerItemSlot;
 
@@ -681,7 +685,7 @@ export function tickTribesman(tribesman: Entity): void {
          }
 
          const distance = tribesman.position.calculateDistanceBetween(itemEntity.position);
-         const itemComponent = ItemComponentArray.getComponent(itemEntity);
+         const itemComponent = ItemComponentArray.getComponent(itemEntity.id);
          if (distance < minDistance && tribeMemberCanPickUpItem(tribesman, itemComponent.itemType)) {
             closestDroppedItem = itemEntity;
             minDistance = distance;
@@ -689,11 +693,10 @@ export function tickTribesman(tribesman: Entity): void {
       }
 
       if (typeof closestDroppedItem !== "undefined") {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          pathfindToPosition(tribesman, closestDroppedItem.position.x, closestDroppedItem.position.y, closestDroppedItem.id);
-         tribesmanComponent.lastAIType = TribesmanAIType.pickingUpDroppedItems;
          useInfo.currentAction = TribeMemberAction.none;
          
          return;
@@ -704,11 +707,11 @@ export function tickTribesman(tribesman: Entity): void {
    if (inventoryIsFull(inventoryComponent, "hotbar")) {
       const closestBarrel = findNearestBarrel(tribesman);
       if (closestBarrel !== null) {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          
          haulToBarrel(tribesman, closestBarrel);
-         tribesmanComponent.lastAIType = TribesmanAIType.haulingResources;
+         tribesmanComponent.currentAIType = TribesmanAIType.haulingResources;
          useInfo.currentAction = TribeMemberAction.none;
          return;
       }
@@ -797,7 +800,7 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    useInfo.currentAction = TribeMemberAction.none;
 
@@ -821,7 +824,7 @@ export function tickTribesman(tribesman: Entity): void {
             grabBarrelFood(tribesman, closestBarrelWithFood);
             stopEntity(tribesman);
          }
-         tribesmanComponent.lastAIType = TribesmanAIType.grabbingFood;
+         tribesmanComponent.currentAIType = TribesmanAIType.grabbingFood;
          return;
       }
    }
@@ -832,7 +835,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // If nothing else to do, patrol tribe area
-   if (tribesmanComponent.targetPatrolPositionX === -1 && Math.random() < 0.3 / SETTINGS.TPS) {
+   if (tribesmanComponent.targetPatrolPositionX === -1 && Math.random() < 0.3 / SettingsConst.TPS) {
       // Filter tiles in tribe area
       const potentialTiles = tribeComponent.tribe.getArea();
 
@@ -841,8 +844,8 @@ export function tickTribesman(tribesman: Entity): void {
          const idx = randInt(0, potentialTiles.length - 1);
          const tile = potentialTiles[idx];
          
-         const x = (tile.x + Math.random()) * SETTINGS.TILE_SIZE;
-         const y = (tile.y + Math.random()) * SETTINGS.TILE_SIZE;
+         const x = (tile.x + Math.random()) * SettingsConst.TILE_SIZE;
+         const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
 
          if (positionIsAccessible(x, y, tribesman.id, getRadius(tribesman))) {
             // Patrol to that position
@@ -850,8 +853,7 @@ export function tickTribesman(tribesman: Entity): void {
             tribesmanComponent.targetPatrolPositionX = x;
             tribesmanComponent.targetPatrolPositionY = y;
             pathfindToPosition(tribesman, x, y, ID_SENTINEL_VALUE);
-
-            tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
+            
             return;
          }
 
@@ -862,20 +864,23 @@ export function tickTribesman(tribesman: Entity): void {
       if (tribesmanComponent.path.length === 0 || !positionIsAccessible(tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY, tribesman.id, getRadius(tribesman))) {
          stopEntity(tribesman);
 
-         tribesmanComponent.lastAIType = TribesmanAIType.idle;
+         tribesmanComponent.currentAIType = TribesmanAIType.idle;
          tribesmanComponent.targetPatrolPositionX = -1
          return;
       }
       
       pathfindToPosition(tribesman, tribesmanComponent.targetPatrolPositionX, tribesmanComponent.targetPatrolPositionY, ID_SENTINEL_VALUE);
 
-      tribesmanComponent.lastAIType = TribesmanAIType.patrolling;
+      const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+      physicsComponent.hitboxesAreDirty = true;
+
+      tribesmanComponent.currentAIType = TribesmanAIType.patrolling;
       return;
    }
 
    // If all else fails, don't do anything
    stopEntity(tribesman);
-   tribesmanComponent.lastAIType = TribesmanAIType.idle;
+   tribesmanComponent.currentAIType = TribesmanAIType.idle;
 }
 
 const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void => {
@@ -911,13 +916,14 @@ const escape = (tribesman: Entity, visibleEnemies: ReadonlyArray<Entity>): void 
    tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(runDirection);
    tribesman.acceleration.y = getAcceleration(tribesman) * Math.cos(runDirection);
 
-   tribesman.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 // @Cleanup: Copy and paste
 
 const getBestWeaponSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    let bestWeaponLevel = -1;
@@ -946,7 +952,7 @@ const getBestWeaponSlot = (tribesman: Entity): number | null => {
 }
 
 const getBestPickaxeSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    let bestPickaxeLevel = -1;
@@ -975,7 +981,7 @@ const getBestPickaxeSlot = (tribesman: Entity): number | null => {
 }
 
 const getBestAxeSlot = (tribesman: Entity): number | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    let bestAxeLevel = -1;
@@ -1038,7 +1044,8 @@ const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
    }
 
    // @Speed: Shouldn't do always
-   tribesman.hitboxesAreDirty = true;
+   const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+   physicsComponent.hitboxesAreDirty = true;
 }
 
 const doMeleeAttack = (tribesman: Entity): void => {
@@ -1048,14 +1055,14 @@ const doMeleeAttack = (tribesman: Entity): void => {
 
    // Register the hit
    if (target !== null) {
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       attackEntity(tribesman, target, useInfo.selectedItemSlot, "hotbar");
    }
 }
 
 const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): number => {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");
 
    // @Incomplete: Account for status effects
@@ -1064,8 +1071,8 @@ const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): numbe
    let mostDps = 0;
    for (let itemSlot = 1; itemSlot <= hotbarInventory.width * hotbarInventory.height; itemSlot++) {
       if (!hotbarInventory.itemSlots.hasOwnProperty(itemSlot)) {
-         if (mostDps < 1 / SETTINGS.DEFAULT_ATTACK_COOLDOWN) {
-            mostDps = 1 / SETTINGS.DEFAULT_ATTACK_COOLDOWN;
+         if (mostDps < 1 / SettingsConst.DEFAULT_ATTACK_COOLDOWN) {
+            mostDps = 1 / SettingsConst.DEFAULT_ATTACK_COOLDOWN;
             bestItemSlot = itemSlot;
          }
          continue;
@@ -1091,16 +1098,16 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    
    // @Incomplete: Only accounts for hotbar
    
-   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
-   tribesmanComponent.lastAIType = TribesmanAIType.attacking;
+   const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
+   tribesmanComponent.currentAIType = TribesmanAIType.attacking;
    
    const mostDamagingItemSlot = getMostDamagingItemSlot(tribesman, huntedEntity);
 
-   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman);
+   const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    
    // Select the item slot
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    useInfo.selectedItemSlot = mostDamagingItemSlot;
    
    const inventory = getInventory(inventoryComponent, "hotbar");
@@ -1114,7 +1121,9 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          const direction = tribesman.position.calculateAngleBetween(huntedEntity.position);
          if (direction !== tribesman.rotation) {
             tribesman.rotation = direction;
-            tribesman.hitboxesAreDirty = true;
+
+            const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
+            physicsComponent.hitboxesAreDirty = true;
          }
 
          const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
@@ -1132,7 +1141,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          }
          
          const ticksSinceLastAction = Board.ticks - useInfo.lastSpearChargeTicks;
-         if (ticksSinceLastAction >= 3 * SETTINGS.TPS) {
+         if (ticksSinceLastAction >= 3 * SettingsConst.TPS) {
             // Throw spear
             useItem(tribesman, selectedItem, "hotbar", useInfo.selectedItemSlot);
             useInfo.currentAction = TribeMemberAction.none;

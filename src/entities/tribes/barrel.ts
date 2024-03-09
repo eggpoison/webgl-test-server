@@ -1,19 +1,19 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, createNewInventory } from "../../components/InventoryComponent";
 import Tribe from "../../Tribe";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { TribeComponent } from "../../components/TribeComponent";
 
 export const BARREL_SIZE = 80;
 
-export function createBarrel(position: Point, tribe: Tribe | null): Entity {
+export function createBarrel(position: Point, tribe: Tribe): Entity {
    const barrel = new Entity(position, IEntityType.barrel, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(barrel, 1.5, 0, 0, BARREL_SIZE / 2, 0);
+   const hitbox = new CircularHitbox(barrel, 1.5, 0, 0, BARREL_SIZE / 2);
    barrel.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(barrel, new HealthComponent(20));

@@ -1,4 +1,6 @@
-import { ArrowStatusEffectInfo, GenericArrowType } from "webgl-test-shared";
+import { ArrowComponentData, ArrowStatusEffectInfo, GenericArrowType } from "webgl-test-shared";
+import Entity from "../Entity";
+import { ArrowComponentArray } from "./ComponentArray";
 
 export class ArrowComponent {
    public readonly type: GenericArrowType;
@@ -17,4 +19,11 @@ export class ArrowComponent {
       this.ignoreFriendlyBuildings = ignoreFriendlyBuildings;
       this.statusEffect = statusEffect;
    }
+}
+
+export function serialiseArrowComponent(entity: Entity): ArrowComponentData {
+   const arrowComponent = ArrowComponentArray.getComponent(entity.id);
+   return {
+      arrowType: arrowComponent.type
+   };
 }

@@ -1,10 +1,10 @@
-import { RESEARCH_ORB_AMOUNTS, RESEARCH_ORB_COMPLETE_TIME, SETTINGS, getRandomResearchOrbSize } from "webgl-test-shared";
+import { RESEARCH_ORB_AMOUNTS, RESEARCH_ORB_COMPLETE_TIME, SettingsConst, getRandomResearchOrbSize } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { InventoryUseComponentArray, ResearchBenchComponentArray, TribeComponentArray, TribesmanComponentArray } from "./ComponentArray";
 import Board from "../Board";
 import { getInventoryUseInfo } from "./InventoryUseComponent";
 
-const ORB_COMPLETE_TICKS = Math.floor(RESEARCH_ORB_COMPLETE_TIME * SETTINGS.TPS);
+const ORB_COMPLETE_TICKS = Math.floor(RESEARCH_ORB_COMPLETE_TIME * SettingsConst.TPS);
 
 export class ResearchBenchComponent {
    public isOccupied = false;
@@ -18,13 +18,13 @@ export class ResearchBenchComponent {
 }
 
 export function tickResearchBenchComponent(researchBench: Entity): void {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench);
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
    
    // @Speed: This runs every tick, but this condition only activates rarely when the bench is being used.
    if (researchBenchComponent.isOccupied) {
       if (Board.entityRecord.hasOwnProperty(researchBenchComponent.occupeeID)) {
          const tribesman = Board.entityRecord[researchBenchComponent.occupeeID];
-         const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman);
+         const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
          if (tribesmanComponent.targetResearchBenchID !== researchBench.id) {
             researchBenchComponent.occupeeID = ID_SENTINEL_VALUE;
             researchBenchComponent.isOccupied = false;
@@ -38,8 +38,8 @@ export function tickResearchBenchComponent(researchBench: Entity): void {
    }
 }
 
-export function attemptToOccupyResearchBench(bench: Entity, researcher: Entity): void {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(bench);
+export function attemptToOccupyResearchBench(researchBench: Entity, researcher: Entity): void {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
    if (researchBenchComponent.isOccupied) {
       return;
    }
@@ -49,8 +49,8 @@ export function attemptToOccupyResearchBench(bench: Entity, researcher: Entity):
    researchBenchComponent.preemptiveOccupeeID = ID_SENTINEL_VALUE;
 }
 
-export function deoccupyResearchBench(bench: Entity, researcher: Entity): void {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(bench);
+export function deoccupyResearchBench(researchBench: Entity, researcher: Entity): void {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
    if (researcher.id !== researchBenchComponent.occupeeID) {
       return;
    }
@@ -60,40 +60,40 @@ export function deoccupyResearchBench(bench: Entity, researcher: Entity): void {
    researchBenchComponent.orbCompleteProgressTicks = 0;
 }
 
-export function canResearchAtBench(bench: Entity, researcher: Entity): boolean {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(bench);
+export function canResearchAtBench(researchBench: Entity, researcher: Entity): boolean {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
    return researchBenchComponent.occupeeID === researcher.id;
 }
 
 /** Whether or not a tribesman should try to mvoe to research at this bench */
-export function shouldMoveToResearchBench(bench: Entity, researcher: Entity): boolean {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(bench);
+export function shouldMoveToResearchBench(researchBench: Entity, researcher: Entity): boolean {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
 
    // Try to move if it isn't occupied and isn't being preemprively moved to by another tribesman
    return !researchBenchComponent.isOccupied && (researchBenchComponent.preemptiveOccupeeID === ID_SENTINEL_VALUE || researchBenchComponent.preemptiveOccupeeID === researcher.id);
 }
 
-export function markPreemptiveMoveToBench(bench: Entity, researcher: Entity): void {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(bench);
+export function markPreemptiveMoveToBench(researchBench: Entity, researcher: Entity): void {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
    researchBenchComponent.preemptiveOccupeeID = researcher.id;
 }
 
 // @Cleanup: Should this be in tribesman.ts?
-export function continueResearching(bench: Entity, researcher: Entity): void {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(bench);
+export function continueResearching(researchBench: Entity, researcher: Entity): void {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
 
    researchBenchComponent.orbCompleteProgressTicks++;
    if (researchBenchComponent.orbCompleteProgressTicks >= ORB_COMPLETE_TICKS) {
       const size = getRandomResearchOrbSize();
       const amount = RESEARCH_ORB_AMOUNTS[size];
 
-      const tribeComponent = TribeComponentArray.getComponent(bench);
+      const tribeComponent = TribeComponentArray.getComponent(researchBench.id);
       tribeComponent.tribe!.studyTech(researcher.position.x, researcher.position.y, amount);
       
       researchBenchComponent.orbCompleteProgressTicks = 0;
 
       // Make the tribesman slap the bench each time they complete an orb
-      const inventoryUseComponent = InventoryUseComponentArray.getComponent(researcher);
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(researcher.id);
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       useInfo.lastAttackTicks = Board.ticks;
    }

@@ -4,7 +4,6 @@ interface Options {
    readonly generateRivers: boolean;
    readonly generateWalls: boolean;
    readonly inBenchmarkMode: boolean
-   readonly logging: boolean;
    readonly warp: boolean;
 }
 
@@ -12,11 +11,10 @@ interface Options {
 const OPTIONS: Options = {
    spawnEntities: true,
    spawnTribes: true,
-   generateRivers: true,
+   generateRivers: false,
    generateWalls: true,
-   inBenchmarkMode: true,
-   logging: false,
-   warp: true
+   inBenchmarkMode: false,
+   warp: false
 };
 
 

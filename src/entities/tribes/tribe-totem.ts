@@ -1,10 +1,10 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { HealthComponentArray, StatusEffectComponentArray, TotemBannerComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, TotemBannerComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { TotemBannerPosition } from "../../components/TotemBannerComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import Tribe from "../../Tribe";
 import { TribeComponent } from "../../components/TribeComponent";
 
@@ -27,7 +27,7 @@ for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
 export function createTribeTotem(position: Point, tribe: Tribe): Entity {
    const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new CircularHitbox(totem, 2.2, 0, 0, TRIBE_TOTEM_SIZE / 2, 0);
+   const hitbox = new CircularHitbox(totem, 2.2, 0, 0, TRIBE_TOTEM_SIZE / 2);
    totem.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(totem, new HealthComponent(50));
@@ -45,7 +45,7 @@ export function createTribeTotem(position: Point, tribe: Tribe): Entity {
 }
 
 export function onTribeTotemDeath(totem: Entity): void {
-   const tribeComponent = TribeComponentArray.getComponent(totem);
+   const tribeComponent = TribeComponentArray.getComponent(totem.id);
    tribeComponent.tribe!.clearTotem();
 }
 

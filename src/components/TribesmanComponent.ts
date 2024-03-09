@@ -1,5 +1,6 @@
-import { PathfindingNodeIndex } from "webgl-test-shared";
-import { ID_SENTINEL_VALUE } from "../Entity";
+import { PathfindingNodeIndex, TribesmanComponentData } from "webgl-test-shared";
+import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import { TribesmanComponentArray } from "./ComponentArray";
 
 export enum TribesmanAIType {
    escaping,
@@ -19,7 +20,7 @@ export class TribesmanComponent {
    /** ID of the current entity being hunted by the tribesman */
    public huntedEntityID = ID_SENTINEL_VALUE;
 
-   public lastAIType = TribesmanAIType.idle;
+   public currentAIType = TribesmanAIType.idle;
    
    public targetPatrolPositionX = -1;
    public targetPatrolPositionY = -1;
@@ -37,4 +38,11 @@ export class TribesmanComponent {
    constructor(hutID: number) {
       this.hutID = hutID;
    }
+}
+
+export function serialiseTribesmanComponent(entity: Entity): TribesmanComponentData {
+   const tribesmanComponent = TribesmanComponentArray.getComponent(entity.id);
+   return {
+      aiType: tribesmanComponent.currentAIType
+   };
 }

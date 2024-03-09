@@ -1,7 +1,8 @@
-import { IEntityType, Point, SETTINGS, angle, lerp, randItem } from "webgl-test-shared";
+import { IEntityType, Point, SettingsConst, angle, lerp, randItem } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Entity from "./Entity";
+import { PhysicsComponentArray } from "./components/PhysicsComponent";
 
 const FLESH_SWORD_VISION_RANGE = 250;
 
@@ -11,10 +12,10 @@ const FLESH_SWORD_ESCAPE_MOVE_SPEED = 50;
 const FLESH_SWORD_WANDER_RATE = 0.3;
 
 const getVisibleEntities = (itemEntity: Entity): ReadonlyArray<Entity> => {
-   const minChunkX = Math.max(Math.min(Math.floor((itemEntity.position.x - FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkX = Math.max(Math.min(Math.floor((itemEntity.position.x + FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const minChunkY = Math.max(Math.min(Math.floor((itemEntity.position.y - FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-   const maxChunkY = Math.max(Math.min(Math.floor((itemEntity.position.y + FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+   const minChunkX = Math.max(Math.min(Math.floor((itemEntity.position.x - FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkX = Math.max(Math.min(Math.floor((itemEntity.position.x + FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const minChunkY = Math.max(Math.min(Math.floor((itemEntity.position.y - FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+   const maxChunkY = Math.max(Math.min(Math.floor((itemEntity.position.y + FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
 
    const entitiesInVisionRange = new Array<Entity>();
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
@@ -55,10 +56,10 @@ const getRunTarget = (itemEntity: Entity, visibleEntities: ReadonlyArray<Entity>
 const getTileWanderTargets = (itemEntity: Entity): Array<Tile> => {
    const wanderTargets = new Array<Tile>();
 
-   const minTileX = Math.max(Math.min(Math.floor((itemEntity.position.x - FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const maxTileX = Math.max(Math.min(Math.floor((itemEntity.position.x + FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const minTileY = Math.max(Math.min(Math.floor((itemEntity.position.y - FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
-   const maxTileY = Math.max(Math.min(Math.floor((itemEntity.position.y + FLESH_SWORD_VISION_RANGE) / SETTINGS.TILE_SIZE), SETTINGS.BOARD_DIMENSIONS - 1), 0);
+   const minTileX = Math.max(Math.min(Math.floor((itemEntity.position.x - FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const maxTileX = Math.max(Math.min(Math.floor((itemEntity.position.x + FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const minTileY = Math.max(Math.min(Math.floor((itemEntity.position.y - FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
+   const maxTileY = Math.max(Math.min(Math.floor((itemEntity.position.y + FLESH_SWORD_VISION_RANGE) / SettingsConst.TILE_SIZE), SettingsConst.BOARD_DIMENSIONS - 1), 0);
 
    for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
       for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
@@ -67,7 +68,7 @@ const getTileWanderTargets = (itemEntity: Entity): Array<Tile> => {
          if (tile.isWall) continue;
 
          
-         const position = new Point((tileX + Math.random()) * SETTINGS.TILE_SIZE, (tileY + Math.random()) * SETTINGS.TILE_SIZE);
+         const position = new Point((tileX + Math.random()) * SettingsConst.TILE_SIZE, (tileY + Math.random()) * SettingsConst.TILE_SIZE);
          const distance = itemEntity.position.calculateDistanceBetween(position);
          if (distance <= FLESH_SWORD_VISION_RANGE) {
             wanderTargets.push(tile);
@@ -138,7 +139,7 @@ export function runFleshSwordAI(itemEntity: Entity) {
          }
       } else {
          // Chance to try to wander to a nearby tile
-         if (Math.random() < FLESH_SWORD_WANDER_RATE / SETTINGS.TPS) {
+         if (Math.random() < FLESH_SWORD_WANDER_RATE / SettingsConst.TPS) {
             const tileWanderTargets = getTileWanderTargets(itemEntity);
    
             // If any of the tiles are in a swamp, move to them
@@ -165,8 +166,8 @@ export function runFleshSwordAI(itemEntity: Entity) {
                targetTile = randItem(tileWanderTargets);
             }
    
-            const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-            const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+            const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+            const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
             info.tileTargetPosition = new Point(x, y);
             moveSpeed = FLESH_SWORD_WANDER_MOVE_SPEED;
             wiggleSpeed = 1;
@@ -179,14 +180,15 @@ export function runFleshSwordAI(itemEntity: Entity) {
       
       const directMoveAngle = angle(targetPositionX - itemEntity.position.x, targetPositionY - itemEntity.position.y);
 
-      const moveAngleOffset = Math.sin(info.internalWiggleTicks / SETTINGS.TPS * 10) * Math.PI * 0.2;
+      const moveAngleOffset = Math.sin(info.internalWiggleTicks / SettingsConst.TPS * 10) * Math.PI * 0.2;
 
       const moveAngle = directMoveAngle + moveAngleOffset;
       itemEntity.rotation = moveAngle - Math.PI/4;
       itemEntity.velocity.x = moveSpeed! * Math.sin(moveAngle);
       itemEntity.velocity.y = moveSpeed! * Math.cos(moveAngle);
 
-      itemEntity.hitboxesAreDirty = true;
+      const physicsComponent = PhysicsComponentArray.getComponent(itemEntity.id);
+      physicsComponent.hitboxesAreDirty = true;
    }
 }
 

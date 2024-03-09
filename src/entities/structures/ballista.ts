@@ -1,14 +1,14 @@
-import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, ItemType, Point, SETTINGS, StatusEffectConst } from "webgl-test-shared";
+import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
-import { BallistaComponentArray, HealthComponentArray, InventoryComponentArray, StatusEffectComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
+import { AmmoBoxComponentArray, HealthComponentArray, InventoryComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { TurretComponent } from "../../components/TurretComponent";
 import { HealthComponent } from "../../components/HealthComponent";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
-import { BallistaComponent } from "../../components/BallistaComponent";
+import { AmmoBoxComponent } from "../../components/AmmoBoxComponent";
 import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow";
 import { InventoryComponent, consumeItemTypeFromInventory, createNewInventory, getFirstOccupiedItemSlotInInventory, getInventory, getItemFromInventory } from "../../components/InventoryComponent";
 import { angleIsInRange, getClockwiseAngleDistance, getMaxAngleToCircularHitbox, getMaxAngleToRectangularHitbox, getMinAngleToCircularHitbox, getMinAngleToRectangularHitbox } from "../../ai-shared";
@@ -20,10 +20,10 @@ const HITBOX_SIZE = 100 - 0.05;
 const AIM_ARC_SIZE = Math.PI / 2;
 
 export function addBallistaHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE, 0));
+   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE));
 }
 
-export function createBallista(position: Point, tribe: Tribe | null, rotation: number): Entity {
+export function createBallista(position: Point, tribe: Tribe, rotation: number): Entity {
    const ballista = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    ballista.rotation = rotation;
 
@@ -34,7 +34,7 @@ export function createBallista(position: Point, tribe: Tribe | null, rotation: n
    TribeComponentArray.addComponent(ballista, new TribeComponent(tribe));
    TurretComponentArray.addComponent(ballista, new TurretComponent(0));
    AIHelperComponentArray.addComponent(ballista, new AIHelperComponent(VISION_RANGE));
-   BallistaComponentArray.addComponent(ballista, new BallistaComponent());
+   AmmoBoxComponentArray.addComponent(ballista, new AmmoBoxComponent());
 
    const inventoryComponent = new InventoryComponent();
    InventoryComponentArray.addComponent(ballista, inventoryComponent);
@@ -44,7 +44,7 @@ export function createBallista(position: Point, tribe: Tribe | null, rotation: n
 }
 
 const getAmmoType = (turret: Entity): BallistaAmmoType | null => {
-   const inventoryComponent = InventoryComponentArray.getComponent(turret);
+   const inventoryComponent = InventoryComponentArray.getComponent(turret.id);
    const ammoBoxInventory = getInventory(inventoryComponent, "ammoBoxInventory");
 
    const firstOccupiedSlot = getFirstOccupiedItemSlotInInventory(ammoBoxInventory);
@@ -111,7 +111,7 @@ const entityIsTargetted = (turret: Entity, entity: Entity, tribeComponent: Tribe
 }
 
 const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
-   const tribeComponent = TribeComponentArray.getComponent(turret);
+   const tribeComponent = TribeComponentArray.getComponent(turret.id);
    
    let closestValidTarget: Entity;
    let minDist = 9999999.9;
@@ -135,7 +135,7 @@ const getTarget = (turret: Entity, visibleEntities: ReadonlyArray<Entity>): Enti
 }
 
 const attemptAmmoLoad = (ballista: Entity): void => {
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const ballistaComponent = AmmoBoxComponentArray.getComponent(ballista.id);
    
    const ammoType = getAmmoType(ballista);
    if (ammoType !== null) {
@@ -143,13 +143,13 @@ const attemptAmmoLoad = (ballista: Entity): void => {
       ballistaComponent.ammoType = ammoType;
       ballistaComponent.ammoRemaining = AMMO_INFO_RECORD[ammoType].ammoMultiplier;
 
-      const inventoryComponent = InventoryComponentArray.getComponent(ballista);
+      const inventoryComponent = InventoryComponentArray.getComponent(ballista.id);
       consumeItemTypeFromInventory(inventoryComponent, "ammoBoxInventory", ammoType, 1);
    }
 }
 
 const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
-   const turretComponent = TurretComponentArray.getComponent(ballista);
+   const turretComponent = TurretComponentArray.getComponent(ballista.id);
 
    const ammoInfo = AMMO_INFO_RECORD[ammoType];
    
@@ -190,7 +190,7 @@ const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
    }
 
    // Consume ammo
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const ballistaComponent = AmmoBoxComponentArray.getComponent(ballista.id);
    ballistaComponent.ammoRemaining--;
 
    if (ballistaComponent.ammoRemaining === 0) {
@@ -199,9 +199,9 @@ const fire = (ballista: Entity, ammoType: BallistaAmmoType): void => {
 }
 
 export function tickBallista(ballista: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(ballista);
-   const turretComponent = TurretComponentArray.getComponent(ballista);
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(ballista.id);
+   const turretComponent = TurretComponentArray.getComponent(ballista.id);
+   const ballistaComponent = AmmoBoxComponentArray.getComponent(ballista.id);
 
    // Attempt to load ammo if there is none loaded
    // @Speed: ideally shouldn't be done every tick, just when the inventory is changed (ammo is added to the inventory)
@@ -227,14 +227,14 @@ export function tickBallista(ballista: Entity): void {
          const clockwiseDist = getClockwiseAngleDistance(turretAimDirection, targetDirection);
          if (clockwiseDist >= Math.PI) {
             // Turn counterclockwise
-            turretComponent.aimDirection -= Math.PI / 3 / SETTINGS.TPS;
+            turretComponent.aimDirection -= Math.PI / 3 * SettingsConst.I_TPS;
             // @Incomplete: Will this sometimes cause snapping?
             if (turretComponent.aimDirection + ballista.rotation < targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
             }
          } else {
             // Turn clockwise
-            turretComponent.aimDirection += Math.PI / 3 / SETTINGS.TPS;
+            turretComponent.aimDirection += Math.PI / 3 * SettingsConst.I_TPS;
             if (turretComponent.aimDirection + ballista.rotation > targetDirection) {
                turretComponent.aimDirection = targetDirection - ballista.rotation;
             }
@@ -279,39 +279,4 @@ export function onBallistaRemove(ballista: Entity): void {
    TurretComponentArray.removeComponent(ballista);
    AIHelperComponentArray.removeComponent(ballista);
    InventoryComponentArray.removeComponent(ballista);
-}
-
-// @Copynpaste: Following 2 functions copied from sling-turret.ts. Perhaps unify into 1 component?
-
-export function getBallistaChargeProgress(ballista: Entity): number {
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
-   if (ballistaComponent.ammoRemaining === 0) {
-      return 0;
-   }
-
-   const shotCooldownTicks = AMMO_INFO_RECORD[ballistaComponent.ammoType].shotCooldownTicks;
-   const turretComponent = TurretComponentArray.getComponent(ballista);
-   
-   if (turretComponent.fireCooldownTicks > shotCooldownTicks) {
-      return 0;
-   }
-
-   return 1 - turretComponent.fireCooldownTicks / shotCooldownTicks;
-}
-
-export function getBallistaReloadProgress(ballista: Entity): number {
-   const ballistaComponent = BallistaComponentArray.getComponent(ballista);
-   if (ballistaComponent.ammoRemaining === 0) {
-      return 0;
-   }
-
-   const shotCooldownTicks = AMMO_INFO_RECORD[ballistaComponent.ammoType].shotCooldownTicks;
-   const turretComponent = TurretComponentArray.getComponent(ballista);
-
-   if (turretComponent.fireCooldownTicks < shotCooldownTicks) {
-      return 0;
-   }
-   
-   const reloadTimeTicks = AMMO_INFO_RECORD[ballistaComponent.ammoType].reloadTimeTicks;
-   return 1 - (turretComponent.fireCooldownTicks - shotCooldownTicks) / reloadTimeTicks;
 }

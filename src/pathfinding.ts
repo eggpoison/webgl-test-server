@@ -1,4 +1,4 @@
-import { IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SETTINGS, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
+import { IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -281,13 +281,13 @@ export function markPathfindingNodeClearance(nodeIndex: PathfindingNodeIndex, en
 }
 
 export function markWallTileInPathfinding(tileX: number, tileY: number): void {
-   const x = tileX * SETTINGS.TILE_SIZE;
-   const y = tileY * SETTINGS.TILE_SIZE;
+   const x = tileX * SettingsConst.TILE_SIZE;
+   const y = tileY * SettingsConst.TILE_SIZE;
 
    const minNodeX = Math.ceil(x / PathfindingSettingsConst.NODE_SEPARATION);
    const minNodeY = Math.floor(y / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeX = Math.ceil((x + SETTINGS.TILE_SIZE) / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeY = Math.floor((y + SETTINGS.TILE_SIZE) / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeX = Math.ceil((x + SettingsConst.TILE_SIZE) / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeY = Math.floor((y + SettingsConst.TILE_SIZE) / PathfindingSettingsConst.NODE_SEPARATION);
 
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
@@ -572,10 +572,10 @@ export function smoothPath(path: ReadonlyArray<PathfindingNodeIndex>, pathfindin
 }
 
 export function getVisiblePathfindingNodeOccupances(visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<PathfindingNodeIndex> {
-   const minNodeX = Math.ceil(visibleChunkBounds[0] * SETTINGS.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeX = Math.floor(visibleChunkBounds[1] * SETTINGS.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
-   const minNodeY = Math.ceil(visibleChunkBounds[2] * SETTINGS.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeY = Math.floor(visibleChunkBounds[3] * SETTINGS.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
+   const minNodeX = Math.ceil(visibleChunkBounds[0] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeX = Math.floor(visibleChunkBounds[1] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
+   const minNodeY = Math.ceil(visibleChunkBounds[2] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeY = Math.floor(visibleChunkBounds[3] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
 
    const occupances = new Array<PathfindingNodeIndex>();
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {

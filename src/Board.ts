@@ -1,4 +1,4 @@
-import { BiomeName, DecorationInfo, EntityType, GrassTileInfo, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SETTINGS, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { BiomeName, DecorationInfo, GrassTileInfo, IEntityType, Point, RIVER_STEPPING_STONE_SIZES, RiverSteppingStoneData, SettingsConst, ServerTileUpdateData, TileType, TileTypeConst, WaterRockData, circleAndRectangleDoIntersect, circlesDoIntersect, randItem } from "webgl-test-shared";
 import Chunk from "./Chunk";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -7,8 +7,7 @@ import Tribe from "./Tribe";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
-import { TribeComponent } from "./components/TribeComponent";
-import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingEntityComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, StatusEffectComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, PhysicsComponentArray, BlueprintComponentArray, TurretComponentArray, BallistaComponentArray, ResearchBenchComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, BlueprintComponentArray, TurretComponentArray, AmmoBoxComponentArray, ResearchBenchComponentArray, SpikesComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity, { NO_COLLISION } from "./Entity";
@@ -27,7 +26,7 @@ import { onArrowRemove, tickArrowProjectile } from "./entities/projectiles/woode
 import { onYetiRemove, tickYeti } from "./entities/mobs/yeti";
 import { onSnowballRemove, tickSnowball } from "./entities/snowball";
 import { onFishRemove, tickFish } from "./entities/mobs/fish";
-import { tickStatusEffectComponent } from "./components/StatusEffectComponent";
+import { StatusEffectComponentArray, tickStatusEffectComponent } from "./components/StatusEffectComponent";
 import { onTreeRemove } from "./entities/resources/tree";
 import { onBoulderRemove } from "./entities/resources/boulder";
 import { onCactusRemove } from "./entities/resources/cactus";
@@ -55,12 +54,10 @@ import { onGolemRemove, tickGolem } from "./entities/mobs/golem";
 import { onPlanterBoxRemove } from "./entities/structures/planter-box";
 import { onIceArrowRemove, tickIceArrow } from "./entities/projectiles/ice-arrow";
 import { onPebblumRemove, tickPebblum } from "./entities/mobs/pebblum";
-import { tickPhysicsComponent } from "./components/PhysicsComponent";
+import { PhysicsComponentArray, tickPhysicsComponent } from "./components/PhysicsComponent";
 import { onWorkbenchRemove } from "./entities/workbench";
-import { onWoodenFloorSpikesRemove } from "./entities/structures/wooden-floor-spikes";
-import { onWoodenWallSpikesRemove } from "./entities/structures/wooden-wall-spikes";
-import { onFloorPunjiSticksRemove } from "./entities/structures/floor-punji-sticks";
-import { onWallPunjiSticksRemove } from "./entities/structures/wall-punji-sticks";
+import { onWoodenSpikesRemove } from "./entities/structures/wooden-spikes";
+import { onPunjiSticksRemove } from "./entities/structures/punji-sticks";
 import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure";
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
@@ -68,6 +65,9 @@ import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/slin
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
 import { markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes } from "./pathfinding";
 import OPTIONS from "./options";
+import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
+
+const START_TIME = 6;
 
 const OFFSETS: ReadonlyArray<[xOffest: number, yOffset: number]> = [
    [-1, -1],
@@ -90,9 +90,9 @@ abstract class Board {
    public static ticks = 0;
 
    /** The time of day the server is currently in (from 0 to 23) */
-   public static time = 6;
+   public static time = START_TIME;
 
-   public static readonly entities = new Array<Entity>();
+   public static entities = new Array<Entity>();
 
    public static entityRecord: { [id: number]: Entity } = {};
 
@@ -106,10 +106,9 @@ abstract class Board {
    private static tileUpdateCoordinates: Set<number>;
 
    private static entityJoinBuffer = new Array<Entity>();
-
    private static entityRemoveBuffer = new Array<Entity>();
 
-   private static tribes = new Array<Tribe>();
+   public static tribes = new Array<Tribe>();
 
    // @Incomplete @Bug: These shouldn't be tiles but instead serverdata, so that they aren't counted in the census
    public static edgeTiles = new Array<Tile>();
@@ -119,8 +118,6 @@ abstract class Board {
    public static grassInfo: Record<number, Record<number, GrassTileInfo>>;
 
    public static decorations: ReadonlyArray<DecorationInfo>;
-
-   public static tribeComponents = new Array<TribeComponent>();
 
    public static setup(): void {
       this.initialiseChunks();
@@ -142,8 +139,8 @@ abstract class Board {
 
             if (tile.isWall) {
                // Mark which chunks have wall tiles
-               const chunkX = Math.floor(tile.x / SETTINGS.CHUNK_SIZE);
-               const chunkY = Math.floor(tile.y / SETTINGS.CHUNK_SIZE);
+               const chunkX = Math.floor(tile.x / SettingsConst.CHUNK_SIZE);
+               const chunkY = Math.floor(tile.y / SettingsConst.CHUNK_SIZE);
                const chunk = this.getChunk(chunkX, chunkY);
                chunk.hasWallTiles = true;
                
@@ -158,10 +155,10 @@ abstract class Board {
       // Add river stepping stones to chunks
       for (const steppingStoneData of generationInfo.riverSteppingStones) {
          const size = RIVER_STEPPING_STONE_SIZES[steppingStoneData.size];
-         const minChunkX = Math.max(Math.min(Math.floor((steppingStoneData.positionX - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkX = Math.max(Math.min(Math.floor((steppingStoneData.positionX + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const minChunkY = Math.max(Math.min(Math.floor((steppingStoneData.positionY - size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-         const maxChunkY = Math.max(Math.min(Math.floor((steppingStoneData.positionY + size/2) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+         const minChunkX = Math.max(Math.min(Math.floor((steppingStoneData.positionX - size/2) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+         const maxChunkX = Math.max(Math.min(Math.floor((steppingStoneData.positionX + size/2) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+         const minChunkY = Math.max(Math.min(Math.floor((steppingStoneData.positionY - size/2) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
+         const maxChunkY = Math.max(Math.min(Math.floor((steppingStoneData.positionY + size/2) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
          
          for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
@@ -172,13 +169,25 @@ abstract class Board {
       }
    }
 
+   public static reset(): void {
+      this.time = START_TIME;
+      this.ticks = 0;
+      this.chunks = [];
+      this.entities = [];
+      this.entityRecord = {};
+      this.entityJoinBuffer = [];
+      this.entityRemoveBuffer = [];
+      this.tribes = [];
+      this.edgeTiles = [];
+   }
+
    public static isNight(): boolean {
       return Board.time < 6 || Board.time >= 18;
    }
 
    private static initialiseChunks(): void {
-      for (let y = 0; y < SETTINGS.BOARD_SIZE; y++) {
-         for (let x = 0; x < SETTINGS.BOARD_SIZE; x++) {
+      for (let y = 0; y < SettingsConst.BOARD_SIZE; y++) {
+         for (let x = 0; x < SettingsConst.BOARD_SIZE; x++) {
             const chunk = new Chunk(x, y);
             this.chunks.push(chunk);
          }
@@ -186,7 +195,7 @@ abstract class Board {
    }
 
    public static tickIntervalHasPassed(intervalSeconds: number): boolean {
-      const ticksPerInterval = intervalSeconds * SETTINGS.TPS;
+      const ticksPerInterval = intervalSeconds * SettingsConst.TPS;
       
       const previousCheck = (this.ticks - 1) / ticksPerInterval;
       const check = this.ticks / ticksPerInterval;
@@ -198,12 +207,12 @@ abstract class Board {
    }
 
    public static getTile(tileX: number, tileY: number): Tile {
-      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
       return this.tiles[tileIndex];
    }
 
    public static replaceTile(tileX: number, tileY: number, tileType: TileTypeConst, biomeName: BiomeName, isWall: boolean, riverFlowDirection: number): void {
-      const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+      const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
       const tile = this.tiles[tileIndex];
 
       removeTileFromCensus(tile);
@@ -217,7 +226,7 @@ abstract class Board {
    }
 
    public static getChunk(chunkX: number, chunkY: number): Chunk {
-      const chunkIndex = chunkY * SETTINGS.BOARD_SIZE + chunkX;
+      const chunkIndex = chunkY * SettingsConst.BOARD_SIZE + chunkX;
       return this.chunks[chunkIndex];
    }
 
@@ -238,8 +247,8 @@ abstract class Board {
       }
    }
 
-   public static getTribes(): ReadonlyArray<Tribe> {
-      return this.tribes;
+   public static entityIsFlaggedForRemoval(entity: Entity): boolean {
+      return this.entityRemoveBuffer.indexOf(entity) !== -1;
    }
 
    /** Removes game objects flagged for deletion */
@@ -258,7 +267,7 @@ abstract class Board {
          }
 
          if (AIHelperComponentArray.hasComponent(entity)) {
-            const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
+            const aiHelperComponent = AIHelperComponentArray.getComponent(entity.id);
             for (let i = 0; i < aiHelperComponent.visibleChunks.length; i++) {
                const chunk = aiHelperComponent.visibleChunks[i];
                chunk.viewingEntities.splice(chunk.viewingEntities.indexOf(entity), 1);
@@ -313,14 +322,13 @@ abstract class Board {
             case IEntityType.rockSpikeProjectile: onRockSpikeRemove(entity); break;
             case IEntityType.itemEntity: onItemEntityRemove(entity); break;
             case IEntityType.workbench: onWorkbenchRemove(entity); break;
-            case IEntityType.woodenFloorSpikes: onWoodenFloorSpikesRemove(entity); break;
-            case IEntityType.woodenWallSpikes: onWoodenWallSpikesRemove(entity); break;
-            case IEntityType.floorPunjiSticks: onFloorPunjiSticksRemove(entity); break;
-            case IEntityType.wallPunjiSticks: onWallPunjiSticksRemove(entity); break;
+            case IEntityType.woodenSpikes: onWoodenSpikesRemove(entity); break;
+            case IEntityType.punjiSticks: onPunjiSticksRemove(entity); break;
             case IEntityType.woodenEmbrasure: onWoodenEmbrasureRemove(entity); break;
             case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;
             case IEntityType.ballista: onBallistaRemove(entity); break;
             case IEntityType.slingTurret: onSlingTurretRemove(entity); break;
+            case IEntityType.woodenTunnel: onWoodenTunnelRemove(entity); break;
          }
       }
 
@@ -335,12 +343,9 @@ abstract class Board {
          }
       }
 
+      // @Speed: Ideally we should remove this as there are many entities which the switch won't fire for at all
       for (let i = 0; i < this.entities.length; i++) {
          const entity = this.entities[i];
-
-         // Remove old collisions
-         // @Speed: yeah no.
-         entity.collidingEntityIDs = [];
 
          switch (entity.type) {
             case IEntityType.player: tickPlayer(entity); break;
@@ -418,15 +423,11 @@ abstract class Board {
    }
 
    public static resolveEntityCollisions(): void {
-      // @Speed: Perhaps there is some architecture which can avoid the check that game objects are already colliding, or the glorified bubble sort thing
-      // Ideal implementation:
-      // Ensure that any two game objects only get checked together ONCE
-      // As few checks as possible (e.g. check for if they have already collided this tick)
-      // BSP?
-
+      // @Speed: Multithreading
+      
       const a = new Array<Testt>();
       
-      const numChunks = SETTINGS.BOARD_SIZE * SETTINGS.BOARD_SIZE;
+      const numChunks = SettingsConst.BOARD_SIZE * SettingsConst.BOARD_SIZE;
       for (let i = 0; i < numChunks; i++) {
          const chunk = this.chunks[i];
          for (let j = 0; j <= chunk.entities.length - 2; j++) {
@@ -434,27 +435,13 @@ abstract class Board {
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const entity2 = chunk.entities[k];
 
-               // If the entities have already collided this tick, don't try again
-               // @Speed: slow slow slow slow
-               // if (entity1.collidingEntityIDs.indexOf(entity2.id) !== -1) {
-               //    // note: happens about 2% of the time
-               //    continue;
-               // }
-
                const collisionNum = entity1.isColliding(entity2);
                if (collisionNum !== NO_COLLISION) {
-                  // perhaps just add to list
                   a.push({
                      entity1: entity1,
                      entity2: entity2,
                      collisionNum: collisionNum
                   });
-                  
-                  // const entity1HitboxLocalID = collisionNum & 0xFF;
-                  // const entity2HitboxLocalID = (collisionNum & 0xFF00) >> 8;
-                  
-                  // entity1.collide(entity2, entity1HitboxLocalID, entity2HitboxLocalID);
-                  // entity2.collide(entity1, entity2HitboxLocalID, entity1HitboxLocalID);
                }
             }
          }
@@ -464,6 +451,7 @@ abstract class Board {
          const test = a[i];
 
          // Check for duplicates
+         // @Speed O(n^2)
          let isDupe = false;
          for (let j = 0; j < i; j++) {
             const test2 = a[j];
@@ -476,17 +464,17 @@ abstract class Board {
             continue;
          }
                   
-         const entity1HitboxLocalID = test.collisionNum & 0xFF;
-         const entity2HitboxLocalID = (test.collisionNum & 0xFF00) >> 8;
+         const entity1HitboxIndex = test.collisionNum & 0xFF;
+         const entity2HitboxIndex = (test.collisionNum & 0xFF00) >> 8;
          
-         test.entity1.collide(test.entity2, entity1HitboxLocalID, entity2HitboxLocalID);
-         test.entity2.collide(test.entity1, entity2HitboxLocalID, entity1HitboxLocalID);
+         test.entity1.collide(test.entity2, entity1HitboxIndex, entity2HitboxIndex);
+         test.entity2.collide(test.entity1, entity2HitboxIndex, entity1HitboxIndex);
       }
    }
 
    /** Registers a tile update to be sent to the clients */
    public static registerNewTileUpdate(x: number, y: number): void {
-      const tileIndex = y * SETTINGS.BOARD_DIMENSIONS + x;
+      const tileIndex = y * SettingsConst.BOARD_DIMENSIONS + x;
       this.tileUpdateCoordinates.add(tileIndex);
    }
 
@@ -495,8 +483,8 @@ abstract class Board {
       // Generate the tile updates array
       const tileUpdates = new Array<ServerTileUpdateData>();
       for (const tileIndex of this.tileUpdateCoordinates) {
-         const tileX = tileIndex % SETTINGS.BOARD_DIMENSIONS;
-         const tileY = Math.floor(tileIndex / SETTINGS.BOARD_DIMENSIONS);
+         const tileX = tileIndex % SettingsConst.BOARD_DIMENSIONS;
+         const tileY = Math.floor(tileIndex / SettingsConst.BOARD_DIMENSIONS);
          
          const tile = this.getTile(tileX, tileY);
          tileUpdates.push({
@@ -515,7 +503,7 @@ abstract class Board {
    public static spreadGrass(): void {
       const grassTiles = getTilesOfType(TileType.grass);
 
-      let numSpreadedGrass = grassTiles.length / SETTINGS.BOARD_DIMENSIONS / SETTINGS.BOARD_DIMENSIONS / SETTINGS.TPS;
+      let numSpreadedGrass = grassTiles.length / SettingsConst.BOARD_DIMENSIONS / SettingsConst.BOARD_DIMENSIONS / SettingsConst.TPS;
       if (Math.random() > numSpreadedGrass % 1) {
          numSpreadedGrass = Math.ceil(numSpreadedGrass);
       } else {
@@ -590,7 +578,7 @@ abstract class Board {
       this.pushComponentsFromArray(FishComponentArray);
       this.pushComponentsFromArray(FrozenYetiComponentArray);
       this.pushComponentsFromArray(RockSpikeProjectileComponentArray);
-      this.pushComponentsFromArray(CookingEntityComponentArray);
+      this.pushComponentsFromArray(CookingComponentArray);
       this.pushComponentsFromArray(ThrowingProjectileComponentArray);
       this.pushComponentsFromArray(HutComponentArray);
       this.pushComponentsFromArray(SlimeSpitComponentArray);
@@ -601,21 +589,22 @@ abstract class Board {
       this.pushComponentsFromArray(PhysicsComponentArray);
       this.pushComponentsFromArray(BlueprintComponentArray);
       this.pushComponentsFromArray(TurretComponentArray);
-      this.pushComponentsFromArray(BallistaComponentArray);
+      this.pushComponentsFromArray(AmmoBoxComponentArray);
       this.pushComponentsFromArray(ResearchBenchComponentArray);
+      this.pushComponentsFromArray(SpikesComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {
-         // @Cleanup: Is this necessary?
-         entity.cleanHitboxes();
+         // Only now add the entity to chunks, as if they are added when the entity is created then the entity will be
+         // accessible but its components won't.
          entity.updateContainingChunks();
-   
+
          this.entities.push(entity);
          this.entityRecord[entity.id] = entity;
 
          // @Speed @Cleanup: Should be in its associated file!
          if (entity.type === IEntityType.researchBench) {
-            const tribeComponent = TribeComponentArray.getComponent(entity);
+            const tribeComponent = TribeComponentArray.getComponent(entity.id);
             tribeComponent.tribe!.addResearchBench(entity);
          }
       }
@@ -624,16 +613,16 @@ abstract class Board {
    }
 
    public static isInBoard(position: Point): boolean {
-      return position.x >= 0 && position.x <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1 && position.y >= 0 && position.y <= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - 1;
+      return position.x >= 0 && position.x <= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1 && position.y >= 0 && position.y <= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - 1;
    }
 
    public static distanceToClosestEntity(position: Point): number {
       let minDistance = 2000;
 
-      const minChunkX = Math.max(Math.min(Math.floor((position.x - 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((position.x + 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((position.y - 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((position.y + 2000) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkX = Math.max(Math.min(Math.floor((position.x - 2000) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((position.x + 2000) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((position.y - 2000) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((position.y + 2000) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
 
       const checkedEntities = new Set<Entity>();
       
@@ -664,8 +653,8 @@ abstract class Board {
       // @Speed: Garbage collection
       const testPosition = new Point(x, y);
 
-      const chunkX = Math.floor(x / SETTINGS.CHUNK_UNITS);
-      const chunkY = Math.floor(y / SETTINGS.CHUNK_UNITS);
+      const chunkX = Math.floor(x / SettingsConst.CHUNK_UNITS);
+      const chunkY = Math.floor(y / SettingsConst.CHUNK_UNITS);
 
       const entities = new Set<Entity>();
       
@@ -696,24 +685,24 @@ abstract class Board {
    }
 
    public static tileIsInBoard(tileX: number, tileY: number): boolean {
-      return tileX >= 0 && tileX < SETTINGS.BOARD_DIMENSIONS && tileY >= 0 && tileY < SETTINGS.BOARD_DIMENSIONS;
+      return tileX >= 0 && tileX < SettingsConst.BOARD_DIMENSIONS && tileY >= 0 && tileY < SettingsConst.BOARD_DIMENSIONS;
    }
 
    public static positionIsInBoard(x: number, y: number): boolean {
-      return x >= 0 && x < SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE && y >= 0 && y < SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE;
+      return x >= 0 && x < SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE && y >= 0 && y < SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE;
    }
 
    public static getTileAtPosition(position: Point): Tile {
-      const tileX = Math.floor(position.x / SETTINGS.TILE_SIZE);
-      const tileY = Math.floor(position.y / SETTINGS.TILE_SIZE);
+      const tileX = Math.floor(position.x / SettingsConst.TILE_SIZE);
+      const tileY = Math.floor(position.y / SettingsConst.TILE_SIZE);
       return this.getTile(tileX, tileY);
    }
 
    public static getEntitiesInRange(position: Point, range: number): Array<Entity> {
-      const minChunkX = Math.max(Math.min(Math.floor((position.x - range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkX = Math.max(Math.min(Math.floor((position.x + range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const minChunkY = Math.max(Math.min(Math.floor((position.y - range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
-      const maxChunkY = Math.max(Math.min(Math.floor((position.y + range) / SETTINGS.TILE_SIZE / SETTINGS.CHUNK_SIZE), SETTINGS.BOARD_SIZE - 1), 0);
+      const minChunkX = Math.max(Math.min(Math.floor((position.x - range) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+      const maxChunkX = Math.max(Math.min(Math.floor((position.x + range) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+      const minChunkY = Math.max(Math.min(Math.floor((position.y - range) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
+      const maxChunkY = Math.max(Math.min(Math.floor((position.y + range) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1), 0);
 
       const checkedEntities = new Set<Entity>();
       const entities = new Array<Entity>();
@@ -747,10 +736,10 @@ export function tileRaytraceMatchesTileTypes(startX: number, startY: number, end
    */
    
    // Convert to tile coordinates
-   const x0 = startX / SETTINGS.TILE_SIZE;
-   const x1 = endX / SETTINGS.TILE_SIZE;
-   const y0 = startY / SETTINGS.TILE_SIZE;
-   const y1 = endY / SETTINGS.TILE_SIZE;
+   const x0 = startX / SettingsConst.TILE_SIZE;
+   const x1 = endX / SettingsConst.TILE_SIZE;
+   const y0 = startY / SettingsConst.TILE_SIZE;
+   const y1 = endY / SettingsConst.TILE_SIZE;
    
    const dx = Math.abs(x0 - x1);
    const dy = Math.abs(y0 - y1);

@@ -1,9 +1,9 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SETTINGS, STRUCTURE_TYPES_CONST, SnowballSize, StatusEffectConst, StructureTypeConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, SnowballSize, StatusEffectConst, StructureTypeConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
 import Entity, { NO_COLLISION } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
-import { HealthComponentArray, ItemComponentArray, PhysicsComponentArray, SnowballComponentArray, StatusEffectComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
-import { HealthComponent, addLocalInvulnerabilityHash, applyHitKnockback, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { HealthComponentArray, ItemComponentArray, SnowballComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
+import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
 import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
@@ -14,7 +14,7 @@ import { createItemsOverEntity } from "../../entity-shared";
 import { createSnowball } from "../snowball";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -48,13 +48,13 @@ export enum SnowThrowStage {
 
 const registerYetiTerritory = (yeti: Entity, territory: ReadonlyArray<Tile>): void => {
    for (const tile of territory) {
-      const tileIndex = tile.y * SETTINGS.BOARD_DIMENSIONS + tile.x;
+      const tileIndex = tile.y * SettingsConst.BOARD_DIMENSIONS + tile.x;
       yetiTerritoryTiles[tileIndex] = yeti;
    }
 }
 
 const removeYetiTerritory = (tileX: number, tileY: number): void => {
-   const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+   const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
    delete yetiTerritoryTiles[tileIndex];
 }
 
@@ -63,7 +63,7 @@ export function resetYetiTerritoryTiles(): void {
 }
 
 const tileBelongsToYetiTerritory = (tileX: number, tileY: number): boolean => {
-   const tileIndex = tileY * SETTINGS.BOARD_DIMENSIONS + tileX;
+   const tileIndex = tileY * SettingsConst.BOARD_DIMENSIONS + tileX;
    return yetiTerritoryTiles.hasOwnProperty(tileIndex);
 }
 
@@ -74,7 +74,7 @@ const generateYetiTerritoryTiles = (originTileX: number, originTileY: number): R
 
    const tileIsValid = (tile: Tile): boolean => {
       // Make sure the tile is inside the board
-      if (tile.x < 0 || tile.x >= SETTINGS.BOARD_DIMENSIONS || tile.y < 0 || tile.y >= SETTINGS.BOARD_DIMENSIONS) {
+      if (tile.x < 0 || tile.x >= SettingsConst.BOARD_DIMENSIONS || tile.y < 0 || tile.y >= SettingsConst.BOARD_DIMENSIONS) {
          return false;
       }
 
@@ -136,8 +136,8 @@ const generateYetiTerritoryTiles = (originTileX: number, originTileY: number): R
 }
 
 export function yetiSpawnPositionIsValid(positionX: number, positionY: number): boolean {
-   const originTileX = Math.floor(positionX / SETTINGS.TILE_SIZE);
-   const originTileY = Math.floor(positionY / SETTINGS.TILE_SIZE);
+   const originTileX = Math.floor(positionX / SettingsConst.TILE_SIZE);
+   const originTileY = Math.floor(positionY / SettingsConst.TILE_SIZE);
 
    const territoryTiles = generateYetiTerritoryTiles(originTileX, originTileY);
    return territoryTiles.length >= MIN_TERRITORY_SIZE;
@@ -147,10 +147,10 @@ export function createYeti(position: Point): Entity {
    const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    yeti.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2, 0);
+   const hitbox = new CircularHitbox(yeti, 3, 0, 0, YETI_SIZE / 2);
    yeti.addHitbox(hitbox);
 
-   PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true));
+   PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(yeti, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(yeti, new StatusEffectComponent(StatusEffectConst.freezing));
    WanderAIComponentArray.addComponent(yeti, new WanderAIComponent());
@@ -201,7 +201,7 @@ const throwSnow = (yeti: Entity, target: Entity): void => {
 }
 
 const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
-   const yetiComponent = YetiComponentArray.getComponent(yeti);
+   const yetiComponent = YetiComponentArray.getComponent(yeti.id);
    
    let minDistSquared = Number.MAX_SAFE_INTEGER;
    let closestTarget: Entity | null = null;
@@ -215,14 +215,14 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
       
       // Don't chase frostlings which aren't attacking the yeti
       if ((entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior || entity.type === IEntityType.player) && !yetiComponent.attackingEntities.hasOwnProperty(entity.id)) {
-         const tribeComponent = TribeComponentArray.getComponent(entity);
+         const tribeComponent = TribeComponentArray.getComponent(entity.id);
          if (tribeComponent.tribe !== null && tribeComponent.tribe.type === TribeType.frostlings) {
             continue;
          }
       }
 
       // @Temporary? Do we want them to attack bases?
-      if (!STRUCTURE_TYPES_CONST.includes(entity.type as StructureTypeConst) || entity.type === IEntityType.woodenFloorSpikes) {
+      if (!STRUCTURE_TYPES_CONST.includes(entity.type as StructureTypeConst)) {
          // Don't attack entities which aren't attacking the yeti and aren't encroaching on its territory
          if (!yetiComponent.attackingEntities.hasOwnProperty(entity.id) && !yetiComponent.territory.includes(entity.tile)) {
             continue;
@@ -240,12 +240,12 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
 }
 
 export function tickYeti(yeti: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(yeti);
-   const yetiComponent = YetiComponentArray.getComponent(yeti);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(yeti.id);
+   const yetiComponent = YetiComponentArray.getComponent(yeti.id);
 
    // @Speed
    for (const id of Object.keys(yetiComponent.attackingEntities).map(idString => Number(idString))) {
-      yetiComponent.attackingEntities[id] -= 1 / SETTINGS.TPS;
+      yetiComponent.attackingEntities[id] -= SettingsConst.I_TPS;
       if (yetiComponent.attackingEntities[id] <= 0) {
          delete yetiComponent.attackingEntities[id];
       }
@@ -262,7 +262,7 @@ export function tickYeti(yeti: Entity): void {
          } else {
             switch (yetiComponent.snowThrowStage) {
                case SnowThrowStage.windup: {
-                  yetiComponent.snowThrowAttackProgress -= 1 / SETTINGS.TPS / SNOW_THROW_WINDUP_TIME;
+                  yetiComponent.snowThrowAttackProgress -= SettingsConst.I_TPS / SNOW_THROW_WINDUP_TIME;
                   if (yetiComponent.snowThrowAttackProgress <= 0) {
                      throwSnow(yeti, yetiComponent.attackTarget!);
                      yetiComponent.snowThrowAttackProgress = 0;
@@ -274,13 +274,15 @@ export function tickYeti(yeti: Entity): void {
                   const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
                   if (direction !== yeti.rotation) {
                      yeti.rotation = direction;
-                     yeti.hitboxesAreDirty = true;
+
+                     const physicsComponent = PhysicsComponentArray.getComponent(yeti.id);
+                     physicsComponent.hitboxesAreDirty = true;
                   }
                   stopEntity(yeti);
                   return;
                }
                case SnowThrowStage.hold: {
-                  yetiComponent.snowThrowHoldTimer += 1 / SETTINGS.TPS;
+                  yetiComponent.snowThrowHoldTimer += SettingsConst.I_TPS;
                   if (yetiComponent.snowThrowHoldTimer >= SNOW_THROW_HOLD_TIME) {
                      yetiComponent.snowThrowStage = SnowThrowStage.return;
                   }
@@ -288,13 +290,15 @@ export function tickYeti(yeti: Entity): void {
                   const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
                   if (direction !== yeti.rotation) {
                      yeti.rotation = direction;
-                     yeti.hitboxesAreDirty = true;
+
+                     const physicsComponent = PhysicsComponentArray.getComponent(yeti.id);
+                     physicsComponent.hitboxesAreDirty = true;
                   }
                   stopEntity(yeti);
                   return;
                }
                case SnowThrowStage.return: {
-                  yetiComponent.snowThrowAttackProgress += 1 / SETTINGS.TPS / SNOW_THROW_RETURN_TIME;
+                  yetiComponent.snowThrowAttackProgress += SettingsConst.I_TPS / SNOW_THROW_RETURN_TIME;
                   if (yetiComponent.snowThrowAttackProgress >= 1) {
                      yetiComponent.snowThrowAttackProgress = 1;
                      yetiComponent.attackTarget = null;
@@ -314,7 +318,7 @@ export function tickYeti(yeti: Entity): void {
       }
    }
 
-   yetiComponent.snowThrowCooldown -= 1 / SETTINGS.TPS;
+   yetiComponent.snowThrowCooldown -= SettingsConst.I_TPS;
    if (yetiComponent.snowThrowCooldown < 0) {
       yetiComponent.snowThrowCooldown = 0;
    }
@@ -336,7 +340,7 @@ export function tickYeti(yeti: Entity): void {
             continue;
          }
 
-         const itemComponent = ItemComponentArray.getComponent(entity);
+         const itemComponent = ItemComponentArray.getComponent(entity.id);
          if (itemComponent.itemType === ItemType.raw_beef || itemComponent.itemType === ItemType.raw_fish) {
             const distance = yeti.position.calculateDistanceBetween(entity.position);
             if (distance < minDist) {
@@ -356,7 +360,7 @@ export function tickYeti(yeti: Entity): void {
    }
 
    // Wander AI
-   const wanderAIComponent = WanderAIComponentArray.getComponent(yeti);
+   const wanderAIComponent = WanderAIComponentArray.getComponent(yeti.id);
    if (wanderAIComponent.targetPositionX !== -1) {
       if (entityHasReachedPosition(yeti, wanderAIComponent.targetPositionX, wanderAIComponent.targetPositionY)) {
          wanderAIComponent.targetPositionX = -1;
@@ -369,8 +373,8 @@ export function tickYeti(yeti: Entity): void {
          targetTile = getWanderTargetTile(yeti, VISION_RANGE);
       } while (++attempts <= 50 && (targetTile.isWall || targetTile.biomeName !== "tundra" || !yetiComponent.territory.includes(targetTile)));
 
-      const x = (targetTile.x + Math.random()) * SETTINGS.TILE_SIZE;
-      const y = (targetTile.y + Math.random()) * SETTINGS.TILE_SIZE;
+      const x = (targetTile.x + Math.random()) * SettingsConst.TILE_SIZE;
+      const y = (targetTile.y + Math.random()) * SettingsConst.TILE_SIZE;
       wander(yeti, x, y, 100);
    } else {
       stopEntity(yeti);
@@ -383,27 +387,27 @@ export function onYetiCollision(yeti: Entity, collidingEntity: Entity): void {
 
    // Don't damage snowballs thrown by the yeti
    if (collidingEntity.type === IEntityType.snowball) {
-      const snowballComponent = SnowballComponentArray.getComponent(collidingEntity);
+      const snowballComponent = SnowballComponentArray.getComponent(collidingEntity.id);
       if (snowballComponent.yetiID === yeti.id) {
          return;
       }
    }
    
    // Don't damage yetis which haven't damaged it
-   const yetiComponent = YetiComponentArray.getComponent(yeti);
+   const yetiComponent = YetiComponentArray.getComponent(yeti.id);
    if ((collidingEntity.type === IEntityType.yeti || collidingEntity.type === IEntityType.frozenYeti) && !yetiComponent.attackingEntities.hasOwnProperty(collidingEntity.id)) {
       return;
    }
    
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const healthComponent = HealthComponentArray.getComponent(collidingEntity);
+      const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       if (!canDamageEntity(healthComponent, "yeti")) {
          return;
       }
       
       const hitDirection = yeti.position.calculateAngleBetween(collidingEntity.position);
       damageEntity(collidingEntity, 3, yeti, PlayerCauseOfDeath.yeti, "yeti");
-      applyHitKnockback(collidingEntity, 200, hitDirection);
+      applyKnockback(collidingEntity, 200, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,
@@ -419,7 +423,7 @@ export function onYetiCollision(yeti: Entity, collidingEntity: Entity): void {
 }
 
 export function onYetiHurt(yeti: Entity, attackingEntity: Entity): void {
-   const yetiComponent = YetiComponentArray.getComponent(yeti);
+   const yetiComponent = YetiComponentArray.getComponent(yeti.id);
    yetiComponent.attackingEntities[attackingEntity.id] = ATTACK_PURSUE_TIME;
 }
 
@@ -428,7 +432,7 @@ export function onYetiDeath(yeti: Entity): void {
    createItemsOverEntity(yeti, ItemType.yeti_hide, randInt(2, 3));
 
    // Remove territory
-   const yetiComponent = YetiComponentArray.getComponent(yeti);
+   const yetiComponent = YetiComponentArray.getComponent(yeti.id);
    for (let i = 0; i < yetiComponent.territory.length; i++) {
       const territoryTile = yetiComponent.territory[i];
       removeYetiTerritory(territoryTile.x, territoryTile.y);

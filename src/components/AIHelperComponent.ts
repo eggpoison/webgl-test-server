@@ -1,4 +1,4 @@
-import { SETTINGS, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
+import { AIHelperComponentData, SettingsConst, circleAndRectangleDoIntersect, circlesDoIntersect } from "webgl-test-shared";
 import Chunk from "../Chunk";
 import Entity from "../Entity";
 import Board from "../Board";
@@ -32,7 +32,6 @@ const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): b
       return circlesDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
    } else {
       // Rectangular hitbox
-      // @Speed
       return circleAndRectangleDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
    }
 }
@@ -58,6 +57,8 @@ const entityIsVisible = (entity: Entity, checkEntity: Entity, visionRange: numbe
 const calculateVisibleEntities = (entity: Entity, aiHelperComponent: AIHelperComponent): Array<Entity> => {
    const visibleEntities = new Array<Entity>();
 
+   // @Speed: Try declaring potential visible entities and visionRange at the top
+
    for (let i = 0; i < aiHelperComponent.potentialVisibleEntities.length; i++) {
       const currentEntity = aiHelperComponent.potentialVisibleEntities[i];
       if (entityIsVisible(entity, currentEntity, aiHelperComponent.visionRange)) {
@@ -65,18 +66,16 @@ const calculateVisibleEntities = (entity: Entity, aiHelperComponent: AIHelperCom
       }
    }
 
-   visibleEntities.splice(visibleEntities.indexOf(entity), 1);
-
    return visibleEntities;
 }
 
 export function tickAIHelperComponent(entity: Entity): void {
-   const aiHelperComponent = AIHelperComponentArray.getComponent(entity);
+   const aiHelperComponent = AIHelperComponentArray.getComponent(entity.id);
    
-   const minChunkX = Math.max(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkX = Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
-   const minChunkY = Math.max(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), 0);
-   const maxChunkY = Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SETTINGS.CHUNK_UNITS), SETTINGS.BOARD_SIZE - 1);
+   const minChunkX = Math.max(Math.floor((entity.position.x - aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((entity.position.x + aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((entity.position.y - aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((entity.position.y + aiHelperComponent.visionRange) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
    
    // If the entity hasn't changed visible chunk bounds, then the potential visible entities will be the same
    // and only the visible entities need to updated
@@ -127,12 +126,12 @@ export function tickAIHelperComponent(entity: Entity): void {
          aiHelperComponent.visibleChunks.push(chunk);
 
          // Add existing game objects to the potentially visible list
-         const numGameObjects = chunk.entities.length;
-         for (let i = 0; i < numGameObjects; i++) {
-            const gameObject = chunk.entities[i];
-            const idx = aiHelperComponent.potentialVisibleEntities.indexOf(gameObject);
-            if (idx === -1) {
-               aiHelperComponent.potentialVisibleEntities.push(gameObject);
+         const numEntities = chunk.entities.length;
+         for (let i = 0; i < numEntities; i++) {
+            const currentEntity = chunk.entities[i];
+            const idx = aiHelperComponent.potentialVisibleEntities.indexOf(currentEntity);
+            if (idx === -1 && currentEntity.id !== entity.id) {
+               aiHelperComponent.potentialVisibleEntities.push(currentEntity);
                aiHelperComponent.potentialVisibleEntityAppearances.push(1);
             } else {
                aiHelperComponent.potentialVisibleEntityAppearances[idx]++;
@@ -142,4 +141,12 @@ export function tickAIHelperComponent(entity: Entity): void {
    }
 
    aiHelperComponent.visibleEntities = calculateVisibleEntities(entity, aiHelperComponent);
+}
+
+export function serialiseAIHelperComponent(entity: Entity): AIHelperComponentData {
+   const aiHelperComponent = AIHelperComponentArray.getComponent(entity.id);
+   
+   return {
+      visionRange: aiHelperComponent.visionRange
+   };
 }

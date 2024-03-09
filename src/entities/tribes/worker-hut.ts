@@ -1,10 +1,10 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
-import { HealthComponentArray, HutComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, HutComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
-import { StatusEffectComponent } from "../../components/StatusEffectComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { HutComponent } from "../../components/HutComponent";
 import { TribeComponent } from "../../components/TribeComponent";
 
@@ -15,7 +15,7 @@ export function createWorkerHut(position: Point, tribe: Tribe): Entity {
    // @Temporary
    hut.rotation = 3 * Math.PI / 2;
 
-   const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE, 0);
+   const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE);
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(20));
@@ -27,7 +27,7 @@ export function createWorkerHut(position: Point, tribe: Tribe): Entity {
 }
 
 export function onWorkerHutRemove(hut: Entity): void {
-   const tribeComponent = TribeComponentArray.getComponent(hut);
+   const tribeComponent = TribeComponentArray.getComponent(hut.id);
    tribeComponent.tribe!.removeWorkerHut(hut);
    
    HealthComponentArray.removeComponent(hut);

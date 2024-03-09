@@ -4,8 +4,8 @@
       "moduleResolution": "node",
       "esModuleInterop": true,
       "strict": true,
-      "sourceMap": true,
-      "removeComments": true,
+      "sourceMap": false,
+      "removeComments": false,
       "baseUrl": "./"
    },
    "include": [

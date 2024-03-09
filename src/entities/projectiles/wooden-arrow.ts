@@ -1,14 +1,14 @@
-import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SETTINGS } from "webgl-test-shared";
+import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SettingsConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
-import { ArrowComponentArray, HealthComponentArray, PhysicsComponentArray, StatusEffectComponentArray, TribeComponentArray } from "../../components/ComponentArray";
-import { applyHitKnockback, damageEntity } from "../../components/HealthComponent";
+import { ArrowComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { damageEntity } from "../../components/HealthComponent";
 import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
-import { PhysicsComponent } from "../../components/PhysicsComponent";
+import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
-import { applyStatusEffect } from "../../components/StatusEffectComponent";
+import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 
 // @Cleanup: Rename file to something more generic
 
@@ -31,12 +31,12 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
    const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    arrow.rotation = thrower.rotation;
    
-   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight, 0);
+   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight);
    arrow.addHitbox(hitbox);
 
-   const throwerTribeComponent = TribeComponentArray.getComponent(thrower);
+   const throwerTribeComponent = TribeComponentArray.getComponent(thrower.id);
    
-   PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false));
+   PhysicsComponentArray.addComponent(arrow, new PhysicsComponent(false, true));
    TribeComponentArray.addComponent(arrow, new TribeComponent(throwerTribeComponent.tribe));
    ArrowComponentArray.addComponent(arrow, new ArrowComponent(thrower.id, arrowInfo.type, arrowInfo.damage, arrowInfo.knockback, arrowInfo.ignoreFriendlyBuildings, arrowInfo.statusEffect));
    
@@ -44,7 +44,7 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
 }
 
 export function tickArrowProjectile(arrow: Entity): void {
-   if (arrow.ageTicks >= 1.5 * SETTINGS.TPS) {
+   if (arrow.ageTicks >= 1.5 * SettingsConst.TPS) {
       arrow.remove();
       return;
    }
@@ -64,15 +64,15 @@ export function tickArrowProjectile(arrow: Entity): void {
    }
    
    // Destroy the arrow if it reaches the border
-   if (arrow.position.x <= ARROW_DESTROY_DISTANCE || arrow.position.x >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE || arrow.position.y <= ARROW_DESTROY_DISTANCE || arrow.position.y >= SETTINGS.BOARD_DIMENSIONS * SETTINGS.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
+   if (arrow.position.x <= ARROW_DESTROY_DISTANCE || arrow.position.x >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE || arrow.position.y <= ARROW_DESTROY_DISTANCE || arrow.position.y >= SettingsConst.BOARD_DIMENSIONS * SettingsConst.TILE_SIZE - ARROW_DESTROY_DISTANCE) {
       arrow.remove();
       return;
    }
 }
 
 export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): void {
-   const arrowComponent = ArrowComponentArray.getComponent(arrow);
-   const tribeComponent = TribeComponentArray.getComponent(arrow);
+   const arrowComponent = ArrowComponentArray.getComponent(arrow.id);
+   const tribeComponent = TribeComponentArray.getComponent(arrow.id);
 
    // Ignore friendlies, and friendly buildings if the ignoreFriendlyBuildings flag is set
    const relationship = getTribeMemberRelationship(tribeComponent, collidingEntity);
@@ -82,7 +82,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
 
    // Break without damaging friendly embrasures
    if (collidingEntity.type === IEntityType.woodenEmbrasure) {
-      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity);
+      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          arrow.remove();
          return;
@@ -90,21 +90,21 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
    }
 
    // Pass over friendly spikes
-   if (collidingEntity.type === IEntityType.woodenFloorSpikes || collidingEntity.type === IEntityType.woodenWallSpikes || collidingEntity.type === IEntityType.floorPunjiSticks || collidingEntity.type === IEntityType.wallPunjiSticks) {
-      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity);
+   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.punjiSticks) {
+      const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe !== null && tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          return;
       }
    }
 
    if (HealthComponentArray.hasComponent(collidingEntity)) {
-      const arrowComponent = ArrowComponentArray.getComponent(arrow);
+      const arrowComponent = ArrowComponentArray.getComponent(arrow.id);
 
       const thrower = Board.entityRecord.hasOwnProperty(arrowComponent.throwerID) ? Board.entityRecord[arrowComponent.throwerID] : null;
       const hitDirection = arrow.position.calculateAngleBetween(collidingEntity.position);
       
       damageEntity(collidingEntity, arrowComponent.damage, thrower, PlayerCauseOfDeath.arrow);
-      applyHitKnockback(collidingEntity, arrowComponent.knockback, hitDirection);
+      applyKnockback(collidingEntity, arrowComponent.knockback, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,
