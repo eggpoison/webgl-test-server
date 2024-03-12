@@ -18,7 +18,7 @@ import { TribeComponent } from "../../components/TribeComponent";
 
 export const TRIBE_WARRIOR_RADIUS = 32;
 const INVENTORY_SIZE = 3;
-export const TRIBE_WARRIOR_VISION_RANGE = 360;
+export const TRIBE_WARRIOR_VISION_RANGE = 560;
 
 export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number): Entity {
    const warrior = new Entity(position, IEntityType.tribeWarrior, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -83,10 +83,13 @@ export function onTribeWarriorDeath(warrior: Entity): void {
    
    const hut = Board.entityRecord[tribesmanComponent.hutID];
    const tribeComponent = TribeComponentArray.getComponent(warrior.id);
-   tribeComponent.tribe!.respawnTribesman(hut);
+   tribeComponent.tribe.respawnTribesman(hut);
 }
 
 export function onTribeWarriorRemove(warrior: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(warrior.id);
+   tribeComponent.tribe.registerTribeMemberDeath(warrior);
+
    PhysicsComponentArray.removeComponent(warrior);
    HealthComponentArray.removeComponent(warrior);
    StatusEffectComponentArray.removeComponent(warrior);

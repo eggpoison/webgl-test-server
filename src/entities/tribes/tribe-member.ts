@@ -334,7 +334,7 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
 
    // Register the hit
    damageEntity(targetEntity, attackDamage, tribeMember, PlayerCauseOfDeath.tribe_member);
-   applyKnockback(targetEntity, 250, hitDirection);
+   applyKnockback(targetEntity, attackKnockback, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: targetEntity.position.x,
       entityPositionY: targetEntity.position.y,
@@ -441,6 +441,7 @@ export function calculateBlueprintWorkTarget(tribeMember: Entity, targetEntities
    return closestEntity;
 }
 
+// @Cleanup: Rename function. shouldn't be 'attack'
 // @Cleanup: Not just for tribe members, move to different file
 export function calculateRadialAttackTargets(entity: Entity, attackOffset: number, attackRadius: number): ReadonlyArray<Entity> {
    const attackPositionX = entity.position.x + attackOffset * Math.sin(entity.rotation);
@@ -765,33 +766,26 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
             case IEntityType.tribeTotem: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               // Don't place a tribe totem if they aren't in a tribe
-               if (tribeComponent.tribe === null) {
-                  return;
-               }
-
                placedEntity = createTribeTotem(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.workerHut: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               if (tribeComponent.tribe === null) {
-                  throw new Error("Tribe member didn't belong to a tribe when placing a hut");
-               }
                
                placedEntity = createWorkerHut(placePosition, tribeComponent.tribe);
+               // @Incomplete @Bug
                placedEntity.rotation = placeRotation; // This has to be done before the hut is registered in its tribe
+               // @Cleanup: Move to create function
                tribeComponent.tribe.registerNewWorkerHut(placedEntity);
                break;
             }
             case IEntityType.warriorHut: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               if (tribeComponent.tribe === null) {
-                  throw new Error("Tribe member didn't belong to a tribe when placing a hut");
-               }
                
                placedEntity = createWarriorHut(placePosition, tribeComponent.tribe);
+               // @Incomplete @Bug
                placedEntity.rotation = placeRotation; // This has to be done before the hut is registered in its tribe
+               // @Cleanup: Move to create function
                tribeComponent.tribe.registerNewWarriorHut(placedEntity);
                break;
             }
@@ -799,9 +793,8 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
 
                placedEntity = createBarrel(placePosition, tribeComponent.tribe);
-               if (tribeComponent.tribe !== null) {
-                  tribeComponent.tribe.addBarrel(placedEntity);
-               }
+               // @Cleanup: Move to create function
+               tribeComponent.tribe.addBarrel(placedEntity);
                break;
             }
             case IEntityType.campfire: {
@@ -814,7 +807,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
             case IEntityType.researchBench: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createResearchBench(placePosition, tribeComponent.tribe!);
+               placedEntity = createResearchBench(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.woodenWall: {
@@ -892,7 +885,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                   knockback: itemInfo.projectileKnockback,
                   hitboxWidth: 12,
                   hitboxHeight: 64,
-                  ignoreFriendlyBuildings: true,
+                  ignoreFriendlyBuildings: false,
                   statusEffect: null
                }
                arrow = createWoodenArrow(spawnPosition, tribeMember, arrowInfo);
@@ -1069,7 +1062,7 @@ export function tickTribeMember(tribeMember: Entity): void {
    tickInventoryUseInfo(tribeMember, useInfo);
 
    const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-   if (tribeComponent.tribe!.type === TribeType.barbarians && tribeMember.type !== IEntityType.tribeWorker) {
+   if (tribeComponent.tribe.type === TribeType.barbarians && tribeMember.type !== IEntityType.tribeWorker) {
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
       tickInventoryUseInfo(tribeMember, useInfo);
    }

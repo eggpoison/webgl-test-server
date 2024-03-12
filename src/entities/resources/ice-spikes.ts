@@ -114,7 +114,7 @@ export function onIceSpikesCollision(iceSpikes: Entity, collidingEntity: Entity)
 
 export function onIceSpikesDeath(iceSpikes: Entity): void {
    if (Math.random() < 0.5) {
-      createItemsOverEntity(iceSpikes, ItemType.frostcicle, 1);
+      createItemsOverEntity(iceSpikes, ItemType.frostcicle, 1, 40);
    }
    
    // 

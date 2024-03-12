@@ -1,10 +1,11 @@
-import { SettingsConst, Point, TileTypeConst, angle, curveWeight } from "webgl-test-shared";
-import Board from "./Board";
+import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import Board, { raytraceHasWallTile } from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
-import Entity, { NO_COLLISION } from "./Entity";
+import Entity from "./Entity";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import { PhysicsComponentArray } from "./components/PhysicsComponent";
+import { CollisionVars, isColliding } from "./collision";
 
 const TURN_CONSTANT = Math.PI / SettingsConst.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
@@ -45,7 +46,7 @@ export function willStopAtDesiredDistance(entity: Entity, desiredDistance: numbe
 }
 
 export function chaseAndEatItemEntity(entity: Entity, itemEntity: Entity, acceleration: number): boolean {
-   if (entity.isColliding(itemEntity) !== NO_COLLISION) {
+   if (isColliding(entity, itemEntity) !== CollisionVars.NO_COLLISION) {
       itemEntity.remove();
       return true;
    }
@@ -487,8 +488,18 @@ export function angleIsInRange(angle: number, minAngle: number, maxAngle: number
    return distFromMinToAngle < distFromMinToMax;
 }
 
+export function getTurnSmoothingMultiplier(entity: Entity, targetDirection: number): number {
+   const dotProduct = Math.sin(entity.rotation) * Math.sin(targetDirection) + Math.cos(entity.rotation) * Math.cos(targetDirection);
+   if (dotProduct <= 0) {
+      // Turn at full speed when facing away from the direction
+      return 1;
+   } else {
+      // Turn slower the closer the entity is to their desired direction
+      return lerp(1, 0.4, dotProduct);
+   }
+}
+
 export function turnAngle(angle: number, targetAngle: number, turnSpeed: number): number {
-   
    const clockwiseDist = getClockwiseAngleDistance(angle, targetAngle);
    if (clockwiseDist < Math.PI) {
       // Turn clockwise
@@ -506,4 +517,98 @@ export function turnAngle(angle: number, targetAngle: number, turnSpeed: number)
       }
       return result;
    }
+}
+
+const lineIntersectsRectangularHitbox = (lineX1: number, lineY1: number, lineX2: number, lineY2: number, hitbox: RectangularHitbox): boolean => {
+   const rectPosX = hitbox.object.position.x + hitbox.rotatedOffsetX;
+   const rectPosY = hitbox.object.position.y + hitbox.rotatedOffsetY;
+   
+   // Rotate the line and rectangle to axis-align the rectangle
+   const rectRotation = hitbox.rotation + hitbox.object.rotation;
+   const x1 = rotateXAroundPoint(lineX1, lineY1, rectPosX, rectPosY, -rectRotation);
+   const y1 = rotateYAroundPoint(lineX1, lineY1, rectPosX, rectPosY, -rectRotation);
+   const x2 = rotateXAroundPoint(lineX2, lineY2, rectPosX, rectPosY, -rectRotation);
+   const y2 = rotateYAroundPoint(lineX2, lineY2, rectPosX, rectPosY, -rectRotation);
+
+   const xMin = Math.min(x1, x2);
+   const xMax = Math.max(x1, x2);
+   const yMin = Math.min(y1, y2);
+   const yMax = Math.max(y1, y2);
+   
+   if (rectPosX - hitbox.width / 2 > xMax || rectPosX + hitbox.width / 2 < xMin) {
+      return false;
+   } 
+   
+   if (rectPosY - hitbox.height / 2 > yMax || rectPosY + hitbox.height / 2 < yMin) {
+      return false;
+   }
+
+   const yAtRectLeft = y1 + (y2 - y1) * ((rectPosX - hitbox.width / 2 - x1) / (x2 - x1));
+   const yAtRectRight = y1 + (y2 - y1) * ((rectPosX + hitbox.width / 2 - x1) / (x2 - x1));
+
+   if (rectPosY - hitbox.height / 2 > yAtRectLeft && rectPosY - hitbox.height / 2 > yAtRectRight) {
+      return false;
+   }
+
+   if (rectPosY + hitbox.height / 2 < yAtRectLeft && rectPosY + hitbox.height / 2 < yAtRectRight) {
+      return false;
+   }
+
+   return true;
+}
+
+const entityIsInLineOfSight = (entity: Entity, originEntity: Entity, targetEntity: Entity): boolean => {
+   for (let i = 0; i < entity.hitboxes.length; i++) {
+      const hitbox = entity.hitboxes[i];
+
+      if (hitbox.hasOwnProperty("radius")) {
+         // @Incomplete
+      } else {
+         if (lineIntersectsRectangularHitbox(originEntity.position.x, originEntity.position.y, targetEntity.position.x, targetEntity.position.y, hitbox as RectangularHitbox)) {
+            return true;
+         }
+      }
+   }
+
+   return false;
+}
+
+export function hasLineOfSightToEntity(originEntity: Entity, targetEntity: Entity, ignoredEntityIDs: ReadonlyArray<number>): boolean {
+   // 
+   // Check for entity hitboxes in the path between
+   // 
+
+   const minX = Math.min(originEntity.position.x, targetEntity.position.x);
+   const maxX = Math.max(originEntity.position.x, targetEntity.position.x);
+   const minY = Math.min(originEntity.position.y, targetEntity.position.y);
+   const maxY = Math.max(originEntity.position.y, targetEntity.position.y);
+
+   const minChunkX = Math.floor(minX / SettingsConst.CHUNK_UNITS);
+   const maxChunkX = Math.floor(maxX / SettingsConst.CHUNK_UNITS);
+   const minChunkY = Math.floor(minY / SettingsConst.CHUNK_UNITS);
+   const maxChunkY = Math.floor(maxY / SettingsConst.CHUNK_UNITS);
+
+   for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+
+         for (let i = 0; i < chunk.entities.length; i++) {
+            const entity = chunk.entities[i];
+            if (entity === originEntity || entity === targetEntity || ignoredEntityIDs.includes(entity.id)) {
+               continue;
+            }
+
+            if (entityIsInLineOfSight(entity, originEntity, targetEntity)) {
+               return false;
+            }
+         }
+      }
+   }
+   
+   // Check for walls in between
+   if (raytraceHasWallTile(originEntity.position.x, originEntity.position.y, targetEntity.position.x, targetEntity.position.y)) {
+      return false;
+   }
+
+   return true;
 }

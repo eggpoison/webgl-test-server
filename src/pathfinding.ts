@@ -1,4 +1,4 @@
-import { IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
+import { EntityType, IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -143,12 +143,12 @@ class Heap {
    }
 }
 
-const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, pathfindingEntityID: number, targetEntityID: number, pathfindingEntityFootprint: number): boolean => {
+const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
    // First make sure that the node itself is accessible
    if (inaccessiblePathfindingNodes.hasOwnProperty(node)) {
       for (let i = 0; i < inaccessiblePathfindingNodes[node].length; i++) {
          const id = inaccessiblePathfindingNodes[node][i];
-         if (id !== pathfindingEntityID && id !== targetEntityID) {
+         if (ignoredEntityIDs.indexOf(id) === -1) {
             return false;
          }
       }
@@ -182,7 +182,7 @@ const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, pathfindingEntity
          // If the node is occupied by anything other than the pathfinding or target entity, then the node isn't accessible
          for (let i = 0; i < inaccessiblePathfindingNodes[currentNode].length; i++) {
             const id = inaccessiblePathfindingNodes[currentNode][i];
-            if (id !== pathfindingEntityID && id !== targetEntityID) {
+            if (ignoredEntityIDs.indexOf(id) === -1) {
                return false;
             }
          }
@@ -303,9 +303,9 @@ export function getClosestPathfindNode(x: number, y: number): PathfindingNodeInd
    return nodeY * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX;
 }
 
-export function positionIsAccessible(x: number, y: number, pathfindingEntityID: number, pathfindingEntityFootprint: number): boolean {
+export function positionIsAccessible(x: number, y: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean {
    const node = getClosestPathfindNode(x, y);
-   return nodeIsAccessibleForEntity(node, pathfindingEntityID, pathfindingEntityID, pathfindingEntityFootprint);
+   return nodeIsAccessibleForEntity(node, ignoredEntityIDs, pathfindingEntityFootprint);
 }
 
 export function getAngleToNode(entity: Entity, node: PathfindingNodeIndex): number {
@@ -319,6 +319,18 @@ export function getDistFromNode(entity: Entity, node: PathfindingNodeIndex): num
    const y = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) * PathfindingSettingsConst.NODE_SEPARATION;
 
    return Math.sqrt(Math.pow(x - entity.position.x, 2) + Math.pow(y - entity.position.y, 2));
+}
+
+export function getDistBetweenNodes(node1: PathfindingNodeIndex, node2: PathfindingNodeIndex): number {
+   const x1 = node1 % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH;
+   const y1 = Math.floor(node1 / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH);
+
+   const x2 = node2 % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH;
+   const y2 = Math.floor(node2 / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH);
+
+   const diffX = x1 - x2;
+   const diffY = y1 - y2;
+   return Math.sqrt(diffX * diffX + diffY * diffY);
 }
 
 export function entityHasReachedNode(entity: Entity, node: PathfindingNodeIndex): boolean {
@@ -336,7 +348,7 @@ const aStarHeuristic = (startNode: PathfindingNodeIndex, endNode: PathfindingNod
    return distance(startNodeX, startNodeY, endNodeX, endNodeY);
 }
 
-const getNodeNeighbours = (node: PathfindingNodeIndex, pathfindingEntityID: number, targetEntityID: number, pathfindingEntityFootprint: number): ReadonlyArray<PathfindingNodeIndex> => {
+const getNodeNeighbours = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): ReadonlyArray<PathfindingNodeIndex> => {
    const nodeX = node % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH;
    const nodeY = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH);
 
@@ -346,49 +358,49 @@ const getNodeNeighbours = (node: PathfindingNodeIndex, pathfindingEntityID: numb
 
    // Left neighbour
    const leftNode = nodeY * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX - 1;
-   if (nodeIsAccessibleForEntity(leftNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(leftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(leftNode);
    }
    
    // Right neighbour
    const rightNode = nodeY * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX + 1;
-   if (nodeIsAccessibleForEntity(rightNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(rightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(rightNode);
    }
 
    // Bottom neighbour
    const bottomNode = (nodeY - 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX;
-   if (nodeIsAccessibleForEntity(bottomNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(bottomNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(bottomNode);
    }
 
    // Top neighbour
    const topNode = (nodeY + 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX;
-   if (nodeIsAccessibleForEntity(topNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(topNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(topNode);
    }
 
    // Top left neighbour
    const topLeftNode = (nodeY + 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX - 1;
-   if (nodeIsAccessibleForEntity(topLeftNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(topLeftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(topLeftNode);
    }
 
    // Top right neighbour
    const topRightNode = (nodeY + 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX + 1;
-   if (nodeIsAccessibleForEntity(topRightNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(topRightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(topRightNode);
    }
 
    // Bottom left neighbour
    const bottomLeftNode = (nodeY - 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX - 1;
-   if (nodeIsAccessibleForEntity(bottomLeftNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(bottomLeftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(bottomLeftNode);
    }
 
    // Bottom right neighbour
    const bottomRightNode = (nodeY - 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX + 1;
-   if (nodeIsAccessibleForEntity(bottomRightNode, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (nodeIsAccessibleForEntity(bottomRightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
       neighbours.push(bottomRightNode);
    }
 
@@ -396,23 +408,29 @@ const getNodeNeighbours = (node: PathfindingNodeIndex, pathfindingEntityID: numb
 }
 
 /** A-star pathfinding algorithm */
-export function pathfind(startX: number, startY: number, endX: number, endY: number, pathfindingEntityID: number, targetEntityID: number, pathfindingEntityFootprint: number): Array<PathfindingNodeIndex> {
+export function pathfind(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): Array<PathfindingNodeIndex> {
    const start = getClosestPathfindNode(startX, startY);
    const goal = getClosestPathfindNode(endX, endY);
 
-   if (!nodeIsAccessibleForEntity(goal, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (!nodeIsAccessibleForEntity(goal, ignoredEntityIDs, pathfindingEntityFootprint)) {
       // for (const id of inaccessiblePathfindingNodes[goal]) {
       //    if (id !== targetEntityID && !Board.entityRecord.hasOwnProperty(id)) {
       //       console.warn("Entity which doesn't exist is blocking off a node.")
       //    }
       // }
 
-      // console.warn("Goal is inaccessible! at " + startX + " " + startY);
-      // console.trace();
+      const id = ignoredEntityIDs[ignoredEntityIDs.length - 1];
+      const e = Board.entityRecord[id];
+      if (typeof e !== "undefined") {
+         console.log(EntityType[e.type]);
+      }
+
+      console.trace();
+      console.warn("Goal is inaccessible! at " + startX + " " + startY);
       return [];
    }
 
-   if (pathBetweenNodesIsClear(start, goal, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+   if (pathBetweenNodesIsClear(start, goal, ignoredEntityIDs, pathfindingEntityFootprint)) {
       return [start, goal];
    }
    
@@ -455,9 +473,9 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
          return path;
       }
 
-      // @Incomplete: What impact will this including already seen nodes have?
+      // @Incomplete: What impact does this including already seen nodes have?
       const currentGScore = gScore[current];
-      const neighbours = getNodeNeighbours(current, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint);
+      const neighbours = getNodeNeighbours(current, ignoredEntityIDs, pathfindingEntityFootprint);
       for (let i = 0; i < neighbours.length; i++) {
          const neighbour = neighbours[i];
 
@@ -479,7 +497,80 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
    return [];
 }
 
-const pathBetweenNodesIsClear = (node1: PathfindingNodeIndex, node2: PathfindingNodeIndex, pathfindingEntityID: number, targetEntityID: number, pathfindingEntityFootprint: number): boolean => {
+/** A-star pathfinding algorithm */
+export function radialPathfind(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number, goalRadius: number): Array<PathfindingNodeIndex> {
+   const start = getClosestPathfindNode(startX, startY);
+   const goal = getClosestPathfindNode(endX, endY);
+
+   if (pathBetweenNodesIsClear(start, goal, ignoredEntityIDs, pathfindingEntityFootprint)) {
+      return [start, goal];
+   }
+   
+   const cameFrom: Record<PathfindingNodeIndex, number> = {};
+
+   const gScore: Record<PathfindingNodeIndex, number> = {};
+   gScore[start] = 0;
+
+   const fScore: Record<PathfindingNodeIndex, number> = {};
+   fScore[start] = aStarHeuristic(start, goal);
+
+   const openSet = new Heap(); // @Speed
+   openSet.gScore = gScore;
+   openSet.fScore = fScore;
+   openSet.addNode(start);
+
+   // @Incomplete: Investigate the closed set
+   
+   let i = 0;
+   while (openSet.currentItemCount > 0) {
+      // @Cleanup @Incomplete: Is this supposed to happen?
+      if (++i >= 5000) {
+         // const e = Board.entityRecord[pathfindingEntityID];
+         
+         // console.warn("POTENTIAL UNRESOLVEABLE PATH at " + e.position.x + " " + e.position.y);
+         // console.trace();
+         return [];
+      }
+
+      let current = openSet.removeFirst();
+
+      // If reached the goal, return the path from start to the goal
+
+      if (getDistBetweenNodes(current, goal) <= goalRadius) {
+         // Reconstruct the path
+         const path: Array<PathfindingNodeIndex> = [current];
+         while (cameFrom.hasOwnProperty(current)) {
+            current = cameFrom[current];
+            path.splice(0, 0, current);
+         }
+         return path;
+      }
+
+      // @Incomplete: What impact will this including already seen nodes have?
+      const currentGScore = gScore[current];
+      const neighbours = getNodeNeighbours(current, ignoredEntityIDs, pathfindingEntityFootprint);
+      for (let i = 0; i < neighbours.length; i++) {
+         const neighbour = neighbours[i];
+
+         const tentativeGScore = currentGScore + aStarHeuristic(current, neighbour);
+         const neighbourGScore = gScore.hasOwnProperty(neighbour) ? gScore[neighbour] : 999999;
+         if (tentativeGScore < neighbourGScore) {
+            cameFrom[neighbour] = current;
+            gScore[neighbour] = tentativeGScore;
+            fScore[neighbour] = tentativeGScore + aStarHeuristic(neighbour, goal);
+
+            if (!openSet.containsNode(neighbour)) {
+               openSet.addNode(neighbour);
+            }
+         }
+      }
+   }
+
+   // On failure, return an empty array
+   return [];
+}
+
+const pathBetweenNodesIsClear = (node1: PathfindingNodeIndex, node2: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
    // Convert to node coordinates
    const x0 = node1 % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH;
    const y0 = Math.floor(node1 / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH);
@@ -528,7 +619,7 @@ const pathBetweenNodesIsClear = (node1: PathfindingNodeIndex, node2: Pathfinding
 
    for (; n > 0; n--) {
       const node = y * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + x;
-      if (!nodeIsAccessibleForEntity(node, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+      if (!nodeIsAccessibleForEntity(node, ignoredEntityIDs, pathfindingEntityFootprint)) {
          return false;
       }
 
@@ -544,14 +635,14 @@ const pathBetweenNodesIsClear = (node1: PathfindingNodeIndex, node2: Pathfinding
    return true;
 }
 
-export function smoothPath(path: ReadonlyArray<PathfindingNodeIndex>, pathfindingEntityID: number, targetEntityID: number, pathfindingEntityFootprint: number): Array<PathfindingNodeIndex> {
+export function smoothPath(path: ReadonlyArray<PathfindingNodeIndex>, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): Array<PathfindingNodeIndex> {
    const smoothedPath = new Array<PathfindingNodeIndex>();
    let lastCheckpoint = path[0];
    let previousNode = path[1];
    for (let i = 2; i < path.length; i++) {
       const node = path[i];
 
-      if (!pathBetweenNodesIsClear(node, lastCheckpoint, pathfindingEntityID, targetEntityID, pathfindingEntityFootprint)) {
+      if (!pathBetweenNodesIsClear(node, lastCheckpoint, ignoredEntityIDs, pathfindingEntityFootprint)) {
          smoothedPath.push(previousNode);
          lastCheckpoint = previousNode;
       }

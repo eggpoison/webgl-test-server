@@ -323,7 +323,7 @@ export function onGolemCollision(golem: Entity, collidingEntity: Entity): void {
 }
 
 export function onGolemDeath(golem: Entity): void {
-   createItemsOverEntity(golem, ItemType.living_rock, randInt(10, 20));
+   createItemsOverEntity(golem, ItemType.living_rock, randInt(10, 20), 60);
 }
 
 export function onGolemRemove(golem: Entity): void {

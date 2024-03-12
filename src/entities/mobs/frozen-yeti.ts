@@ -707,11 +707,11 @@ export function onFrozenYetiHurt(frozenYeti: Entity, attackingEntity: Entity, da
 }
 
 export function onFrozenYetiDeath(frozenYeti: Entity, attackingEntity: Entity | null): void {
-   createItemsOverEntity(frozenYeti, ItemType.raw_beef, randInt(13, 18));
+   createItemsOverEntity(frozenYeti, ItemType.raw_beef, randInt(13, 18), 90);
 
    if (wasTribeMemberKill(attackingEntity)) {
-      createItemsOverEntity(frozenYeti, ItemType.deepfrost_heart, randInt(2, 3));
-      createItemsOverEntity(frozenYeti, ItemType.yeti_hide, randInt(5, 7));
+      createItemsOverEntity(frozenYeti, ItemType.deepfrost_heart, randInt(2, 3), 30);
+      createItemsOverEntity(frozenYeti, ItemType.yeti_hide, randInt(5, 7), 90);
    }
 }
 

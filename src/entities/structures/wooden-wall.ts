@@ -26,7 +26,7 @@ export function createWoodenWall(position: Point, tribe: Tribe): Entity {
 
 export function onWoodenWallDeath(wall: Entity, attackingEntity: Entity | null): void {
    if (wasTribeMemberKill(attackingEntity)) {
-      createItemsOverEntity(wall, ItemType.wooden_wall, 1)
+      createItemsOverEntity(wall, ItemType.wooden_wall, 1, 40);
    }
 }
 

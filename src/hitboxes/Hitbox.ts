@@ -12,6 +12,7 @@ abstract class Hitbox {
    public offsetX: number;
    public offsetY: number;
 
+   // @Cleanup: The whole thing with adding rotated offset to object position is very inconvenient, would be much better to do the client thing of having a position property
    public rotatedOffsetX!: number;
    public rotatedOffsetY!: number;
 

@@ -194,7 +194,7 @@ export function registerCommand(command: string, player: Entity): void {
 
       case "unlockall": {
          const tribeComponent = TribeComponentArray.getComponent(player.id);
-         tribeComponent.tribe!.unlockAllTechs();
+         tribeComponent.tribe.unlockAllTechs();
          
          break;
       }

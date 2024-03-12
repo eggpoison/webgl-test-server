@@ -1,4 +1,4 @@
-import { EntityDebugData, Mutable } from "webgl-test-shared";
+import { EntityDebugData, Mutable, TribesmanAIType } from "webgl-test-shared";
 import Entity from "./Entity";
 import { TribesmanComponentArray } from "./components/ComponentArray";
 import { TRIBESMAN_COMMUNICATION_RANGE, getTribesmanVisionRange } from "./entities/tribes/tribesman";
@@ -15,6 +15,9 @@ export function getEntityDebugData(entity: Entity): EntityDebugData {
 
    if (TribesmanComponentArray.hasComponent(entity)) {
       const tribesmanComponent = TribesmanComponentArray.getComponent(entity.id);
+
+      debugData.debugEntries!.push("Current AI type: " + TribesmanAIType[tribesmanComponent.currentAIType]);
+      
       if (tribesmanComponent.path.length > 0) {
          debugData.pathData = {
             pathNodes: tribesmanComponent.path,

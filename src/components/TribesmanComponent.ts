@@ -1,16 +1,11 @@
-import { PathfindingNodeIndex, TribesmanComponentData } from "webgl-test-shared";
+import { PathfindingNodeIndex, TribesmanAIType, TribesmanComponentData } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import { TribesmanComponentArray } from "./ComponentArray";
 
-export enum TribesmanAIType {
-   escaping,
-   attacking,
-   harvestingResources,
-   pickingUpDroppedItems,
-   haulingResources,
-   grabbingFood,
-   patrolling,
-   idle
+export const enum TribesmanPathType {
+   default,
+   /** Indicates that the path was caused by another tribesman wanting them to come */
+   tribesmanRequest
 }
 
 export class TribesmanComponent {
@@ -32,6 +27,7 @@ export class TribesmanComponent {
    public rawPath = new Array<PathfindingNodeIndex>();
    public readonly path: Array<PathfindingNodeIndex> = [];
    public pathfindingTargetNode: PathfindingNodeIndex = Number.MAX_SAFE_INTEGER;
+   public pathType = TribesmanPathType.default;
    // @Cleanup @Incomplete??
    // public lastDistFromNextNode = 0;
 

@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, randFloat, randInt } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE, NO_COLLISION } from "../../Entity";
+import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
@@ -8,7 +8,7 @@ import { InventoryComponent, createNewInventory, dropInventory, getInventory, pi
 import Board from "../../Board";
 import { StatusEffectComponent, StatusEffectComponentArray, applyStatusEffect, hasStatusEffect } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, moveEntityToPosition, runHerdAI, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, runHerdAI, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
@@ -17,6 +17,7 @@ import { attackEntity, calculateRadialAttackTargets, wasTribeMemberKill } from "
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { createItemsOverEntity } from "../../entity-shared";
+import { CollisionVars, isColliding } from "../../collision";
 
 const TURN_SPEED = 3 * Math.PI;
 
@@ -236,7 +237,7 @@ export function tickZombie(zombie: Entity): void {
          zombie.acceleration.x = ACCELERATION * Math.sin(targetDirection);
          zombie.acceleration.y = ACCELERATION * Math.cos(targetDirection);
 
-         if (zombie.isColliding(closestFoodItem) !== NO_COLLISION) {
+         if (isColliding(zombie, closestFoodItem) !== CollisionVars.NO_COLLISION) {
             healEntity(zombie, 3, zombie.id);
             closestFoodItem.remove();
          }
@@ -371,13 +372,13 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
       const hitDirection = zombie.position.calculateAngleBetween(collidingEntity.position);
 
       // Damage and knock back the player
-      damageEntity(collidingEntity, 2, zombie, PlayerCauseOfDeath.zombie, "zombie");
+      damageEntity(collidingEntity, 1, zombie, PlayerCauseOfDeath.zombie, "zombie");
       applyKnockback(collidingEntity, 150, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,
          hitEntityID: collidingEntity.id,
-         damage: 2,
+         damage: 1,
          knockback: 150,
          angleFromAttacker: hitDirection,
          attackerID: zombie.id,
@@ -411,7 +412,7 @@ export function onZombieDeath(zombie: Entity): void {
    }
 
    if (wasTribeMemberKill(zombie) && Math.random() < 0.1) {
-      createItemsOverEntity(zombie, ItemType.eyeball, 1);
+      createItemsOverEntity(zombie, ItemType.eyeball, 1, 40);
    }
 }
 

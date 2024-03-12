@@ -88,7 +88,7 @@ export function continueResearching(researchBench: Entity, researcher: Entity): 
       const amount = RESEARCH_ORB_AMOUNTS[size];
 
       const tribeComponent = TribeComponentArray.getComponent(researchBench.id);
-      tribeComponent.tribe!.studyTech(researcher.position.x, researcher.position.y, amount);
+      tribeComponent.tribe.studyTech(researcher.position.x, researcher.position.y, amount);
       
       researchBenchComponent.orbCompleteProgressTicks = 0;
 

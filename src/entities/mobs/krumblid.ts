@@ -101,7 +101,7 @@ export function onKrumblidHurt(cow: Entity, attackingEntity: Entity): void {
 }
 
 export function onKrumblidDeath(krumblid: Entity): void {
-   createItemsOverEntity(krumblid, ItemType.leather, randInt(2, 3));
+   createItemsOverEntity(krumblid, ItemType.leather, randInt(2, 3), 30);
 }
 
 export function onKrumblidRemove(krumblid: Entity): void {

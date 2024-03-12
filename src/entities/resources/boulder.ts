@@ -27,7 +27,7 @@ export function createBoulder(position: Point): Entity {
 
 export function onBoulderDeath(boulder: Entity, attackingEntity: Entity): void {
    if (wasTribeMemberKill(attackingEntity)) {
-      createItemsOverEntity(boulder, ItemType.rock, randInt(5, 7));
+      createItemsOverEntity(boulder, ItemType.rock, randInt(5, 7), 40);
    }
 }
 

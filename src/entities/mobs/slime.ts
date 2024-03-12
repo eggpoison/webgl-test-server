@@ -445,7 +445,7 @@ export function onSlimeHurt(slime: Entity, attackingEntity: Entity): void {
 export function onSlimeDeath(slime: Entity, attackingEntity: Entity): void {
    if (wasTribeMemberKill(attackingEntity)) {
       const slimeComponent = SlimeComponentArray.getComponent(slime.id);
-      createItemsOverEntity(slime, ItemType.slimeball, randInt(...SLIME_DROP_AMOUNTS[slimeComponent.size]));
+      createItemsOverEntity(slime, ItemType.slimeball, randInt(...SLIME_DROP_AMOUNTS[slimeComponent.size]), 40);
    }
 }
 

@@ -126,7 +126,7 @@ export function onCactusCollision(cactus: Entity, collidingEntity: Entity): void
 }
 
 export function onCactusDeath(cactus: Entity): void {
-   createItemsOverEntity(cactus, ItemType.cactus_spine, randInt(2, 5));
+   createItemsOverEntity(cactus, ItemType.cactus_spine, randInt(2, 5), 40);
 }
 
 export function onCactusRemove(cactus: Entity): void {

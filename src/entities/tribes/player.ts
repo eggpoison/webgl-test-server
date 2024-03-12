@@ -35,8 +35,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // @Temporary
-   const hitbox = new CircularHitbox(player, 1, 0, 0, 32);
-   // const hitbox = new RectangularHitbox(player, 1, 0, 0, 64, 64);
+   const hitbox = new CircularHitbox(player, 1.25, 0, 0, 32);
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
@@ -69,8 +68,10 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    // addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
    // addItem(inventoryComponent, createItem(ItemType.barrel, 2));
    // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
-   addItem(inventoryComponent, createItem(ItemType.ballista, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_bow, 1));
    // addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
+
+   tribe.registerNewTribeMember(player);
 
    return player;
 }
@@ -130,6 +131,9 @@ export function onPlayerDeath(player: Entity): void {
 }
 
 export function onPlayerRemove(player: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(player.id);
+   tribeComponent.tribe.registerTribeMemberDeath(player);
+   
    PhysicsComponentArray.removeComponent(player);
    HealthComponentArray.removeComponent(player);
    StatusEffectComponentArray.removeComponent(player);
@@ -267,7 +271,6 @@ const attemptSwing = (player: Entity, attackTargets: ReadonlyArray<Entity>, item
 }
 
 export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPacket): void {
-   // @Cleanup: Rename function. shouldn't be 'attack'
    const targets = calculateRadialAttackTargets(player, ATTACK_OFFSET, ATTACK_RADIUS);
 
    const didSwingWithRightHand = attemptSwing(player, targets, attackPacket.itemSlot, "hotbar");
@@ -277,7 +280,7 @@ export function processPlayerAttackPacket(player: Entity, attackPacket: AttackPa
 
    // If a barbarian, attack with offhand
    const tribeComponent = TribeComponentArray.getComponent(player.id);
-   if (tribeComponent.tribe!.type === TribeType.barbarians) {
+   if (tribeComponent.tribe.type === TribeType.barbarians) {
       attemptSwing(player, targets, 1, "offhand");
    }
 }
@@ -409,10 +412,6 @@ export function processTechUnlock(player: Entity, techID: TechID): void {
    const tech = getTechByID(techID);
    
    const tribeComponent = TribeComponentArray.getComponent(player.id);
-   if (tribeComponent.tribe === null) {
-      console.warn("Cannot research a tech without a tribe.");
-      return;
-   }
    const inventoryComponent = InventoryComponentArray.getComponent(player.id);
 
    const hotbarInventory = getInventory(inventoryComponent, "hotbar");

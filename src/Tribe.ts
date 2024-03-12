@@ -34,23 +34,13 @@ interface ChunkInfluence {
    numInfluences: number;
 }
 
-interface ReinforcementInfo {
-   readonly targetEntity: Entity;
-   secondsSinceNotice: number;
-}
-
 class Tribe {
-   private static readonly REINFORCEMENT_NOTICE_DURATION_SECONDS = 60;
-   
    public readonly id: number;
    
    public readonly type: TribeType;
 
    public totem: Entity | null = null;
    
-   // @Cleanup: Do we actually use this at all?
-   private readonly members = new Array<Entity>();
-
    // /** Stores all tribe huts belonging to the tribe */
    private readonly huts = new Array<Entity>();
 
@@ -64,14 +54,15 @@ class Tribe {
 
    public tribesmanCap: number;
 
-   public readonly reinforcementInfoArray = new Array<ReinforcementInfo>();
-
    public selectedTechID: TechID | null = null;
    public readonly unlockedTechs = new Array<TechID>();
    public readonly techTreeUnlockProgress: TechTreeUnlockProgress = {};
 
    private readonly respawnTimesRemaining = new Array<number>();
    private readonly respawnHutIDs = new Array<number>();
+
+   /** IDs of all friendly tribesmen */
+   public readonly friendlyTribesmenIDs = new Array<number>();
    
    constructor(tribeType: TribeType) {
       this.id = getAvailableID();
@@ -123,25 +114,6 @@ class Tribe {
             i--;
          }
       }
-      
-      // @Temporary
-      for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
-         const info = this.reinforcementInfoArray[i];
-
-         // Remove notices for entities which no longer exist
-         if (!Board.entityRecord.hasOwnProperty(info.targetEntity.id)) {
-            this.reinforcementInfoArray.splice(i, 1);
-            i--;
-            continue;
-         }
-
-         // Remove old notices
-         info.secondsSinceNotice += SettingsConst.I_TPS;
-         if (info.secondsSinceNotice >= Tribe.REINFORCEMENT_NOTICE_DURATION_SECONDS) {
-            this.reinforcementInfoArray.splice(i, 1);
-            i--;
-         }
-      }
    }
 
    public addResearchBench(bench: Entity): void {
@@ -155,10 +127,6 @@ class Tribe {
       }
    }
    
-   public addTribeMember(member: Entity): void {
-      this.members.push(member);
-   }
-
    // @Cleanup: Call these functions from the hut create functions
    public registerNewWorkerHut(workerHut: Entity): void {
       if (this.totem === null) {
@@ -269,7 +237,18 @@ class Tribe {
       // @Incomplete: Will make hitboxes dirty!!
       tribesman.rotation = hut.rotation;
 
-      this.members.push(tribesman);
+      this.registerNewTribeMember(tribesman);
+   }
+
+   public registerNewTribeMember(tribeMember: Entity): void {
+      this.friendlyTribesmenIDs.push(tribeMember.id);
+   }
+
+   public registerTribeMemberDeath(tribeMember: Entity): void {
+      const idx = this.friendlyTribesmenIDs.indexOf(tribeMember.id);
+      if (idx !== -1) {
+         this.friendlyTribesmenIDs.splice(idx, 1);
+      }
    }
 
    public getNumHuts(): number {
@@ -389,25 +368,6 @@ class Tribe {
          area.push(tileInfluence.tile);
       }
       return area;
-   }
-
-   public requestReinforcements(target: Entity): void {
-      let idx = -1;
-      for (let i = 0; i < this.reinforcementInfoArray.length; i++) {
-         const reinforcementInfo = this.reinforcementInfoArray[i];
-         if (reinforcementInfo.targetEntity === target) {
-            idx = i;
-         }
-      }
-
-      if (idx === -1) {
-         this.reinforcementInfoArray.push({
-            targetEntity: target,
-            secondsSinceNotice: 0
-         });
-      } else {
-         this.reinforcementInfoArray[idx].secondsSinceNotice = 0;
-      }
    }
 
    public studyTech(researcherX: number, researcherY: number, studyAmount: number): void {

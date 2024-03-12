@@ -10,7 +10,7 @@ import generateTerrain from "./world-generation/terrain-generation";
 import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, BlueprintComponentArray, TurretComponentArray, AmmoBoxComponentArray, ResearchBenchComponentArray, SpikesComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
-import Entity, { NO_COLLISION } from "./Entity";
+import Entity from "./Entity";
 import { tickHealthComponent } from "./components/HealthComponent";
 import { onBerryBushRemove, tickBerryBush } from "./entities/resources/berry-bush";
 import { onIceShardRemove, tickIceShard } from "./entities/projectiles/ice-shards";
@@ -66,6 +66,7 @@ import { tickResearchBenchComponent } from "./components/ResearchBenchComponent"
 import { markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes } from "./pathfinding";
 import OPTIONS from "./options";
 import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
+import { CollisionVars, collide, isColliding } from "./collision";
 
 const START_TIME = 6;
 
@@ -435,8 +436,8 @@ abstract class Board {
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const entity2 = chunk.entities[k];
 
-               const collisionNum = entity1.isColliding(entity2);
-               if (collisionNum !== NO_COLLISION) {
+               const collisionNum = isColliding(entity1, entity2);
+               if (collisionNum !== CollisionVars.NO_COLLISION) {
                   a.push({
                      entity1: entity1,
                      entity2: entity2,
@@ -467,8 +468,8 @@ abstract class Board {
          const entity1HitboxIndex = test.collisionNum & 0xFF;
          const entity2HitboxIndex = (test.collisionNum & 0xFF00) >> 8;
          
-         test.entity1.collide(test.entity2, entity1HitboxIndex, entity2HitboxIndex);
-         test.entity2.collide(test.entity1, entity2HitboxIndex, entity1HitboxIndex);
+         collide(test.entity1, test.entity2, entity1HitboxIndex, entity2HitboxIndex);
+         collide(test.entity2, test.entity1, entity2HitboxIndex, entity1HitboxIndex);
       }
    }
 
@@ -605,7 +606,7 @@ abstract class Board {
          // @Speed @Cleanup: Should be in its associated file!
          if (entity.type === IEntityType.researchBench) {
             const tribeComponent = TribeComponentArray.getComponent(entity.id);
-            tribeComponent.tribe!.addResearchBench(entity);
+            tribeComponent.tribe.addResearchBench(entity);
          }
       }
 
@@ -797,4 +798,74 @@ export function tileRaytraceMatchesTileTypes(startX: number, startY: number, end
    }
 
    return true;
+}
+
+// @Cleanup: Copy and paste
+export function raytraceHasWallTile(startX: number, startY: number, endX: number, endY: number): boolean {
+   /*
+   Kindly yoinked from https://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
+   */
+   
+   // Convert to tile coordinates
+   const x0 = startX / SettingsConst.TILE_SIZE;
+   const x1 = endX / SettingsConst.TILE_SIZE;
+   const y0 = startY / SettingsConst.TILE_SIZE;
+   const y1 = endY / SettingsConst.TILE_SIZE;
+   
+   const dx = Math.abs(x0 - x1);
+   const dy = Math.abs(y0 - y1);
+
+   // Starting tile coordinates
+   let x = Math.floor(x0);
+   let y = Math.floor(y0);
+
+   const dt_dx = 1 / dx;
+   const dt_dy = 1 / dy;
+
+   let n = 1;
+   let x_inc, y_inc;
+   let t_next_vertical, t_next_horizontal;
+
+   if (dx === 0) {
+      x_inc = 0;
+      t_next_horizontal = dt_dx; // Infinity
+   } else if (x1 > x0) {
+      x_inc = 1;
+      n += Math.floor(x1) - x;
+      t_next_horizontal = (Math.floor(x0) + 1 - x0) * dt_dx;
+   } else {
+      x_inc = -1;
+      n += x - Math.floor(x1);
+      t_next_horizontal = (x0 - Math.floor(x0)) * dt_dx;
+   }
+
+   if (dy === 0) {
+      y_inc = 0;
+      t_next_vertical = dt_dy; // Infinity
+   } else if (y1 > y0) {
+      y_inc = 1;
+      n += Math.floor(y1) - y;
+      t_next_vertical = (Math.floor(y0) + 1 - y0) * dt_dy;
+   } else {
+      y_inc = -1;
+      n += y - Math.floor(y1);
+      t_next_vertical = (y0 - Math.floor(y0)) * dt_dy;
+   }
+
+   for (; n > 0; n--) {
+      const tile = Board.getTile(x, y);
+      if (tile.isWall) {
+         return true;
+      }
+
+      if (t_next_vertical < t_next_horizontal) {
+         y += y_inc;
+         t_next_vertical += dt_dy;
+      } else {
+         x += x_inc;
+         t_next_horizontal += dt_dx;
+      }
+   }
+
+   return false;
 }

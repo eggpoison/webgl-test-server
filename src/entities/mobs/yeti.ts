@@ -1,11 +1,11 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, SnowballSize, StatusEffectConst, StructureTypeConst, TribeType, randFloat, randInt, randItem } from "webgl-test-shared";
-import Entity, { NO_COLLISION } from "../../Entity";
+import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, ItemComponentArray, SnowballComponentArray, TribeComponentArray, WanderAIComponentArray, YetiComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { WanderAIComponent } from "../../components/WanderAIComponent";
-import { entityHasReachedPosition, moveEntityToPosition, stopEntity } from "../../ai-shared";
+import { entityHasReachedPosition, stopEntity } from "../../ai-shared";
 import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { YetiComponent } from "../../components/YetiComponent";
@@ -15,17 +15,16 @@ import { createSnowball } from "../snowball";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
+import { CollisionVars, isColliding } from "../../collision";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
 
 const YETI_SIZE = 128;
 
-// @Temporary
-const VISION_RANGE = 550;
-// const VISION_RANGE = 400;
+const VISION_RANGE = 500;
 
-const ATTACK_PURSUE_TIME = 5;
+const ATTACK_PURSUE_TIME_TICKS = 5 * SettingsConst.TPS;
 
 export const YETI_SNOW_THROW_COOLDOWN = 7;
 const SMALL_SNOWBALL_THROW_SPEED = [550, 650] as const;
@@ -36,6 +35,8 @@ const SNOW_THROW_WINDUP_TIME = 1.75;
 const SNOW_THROW_HOLD_TIME = 0.1;
 const SNOW_THROW_RETURN_TIME = 0.6;
 const SNOW_THROW_KICKBACK_AMOUNT = 110;
+
+const TURN_SPEED = Math.PI * 3/2;
 
 // /** Stores which tiles belong to which yetis' territories */
 let yetiTerritoryTiles: Record<number, Entity> = {};
@@ -202,9 +203,18 @@ const throwSnow = (yeti: Entity, target: Entity): void => {
 
 const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): Entity | null => {
    const yetiComponent = YetiComponentArray.getComponent(yeti.id);
+
+   // @Speed
+   // Decrease remaining pursue time
+   for (const id of Object.keys(yetiComponent.attackingEntities).map(idString => Number(idString))) {
+      yetiComponent.attackingEntities[id].remainingPursueTicks--;
+      if (yetiComponent.attackingEntities[id].remainingPursueTicks <= 0) {
+         delete yetiComponent.attackingEntities[id];
+      }
+   }
    
-   let minDistSquared = Number.MAX_SAFE_INTEGER;
-   let closestTarget: Entity | null = null;
+   let mostDamageDealt = 0;
+   let target: Entity | null = null;
    for (let i = 0; i < visibleEntities.length; i++) {
       const entity = visibleEntities[i];
 
@@ -216,7 +226,7 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
       // Don't chase frostlings which aren't attacking the yeti
       if ((entity.type === IEntityType.tribeWorker || entity.type === IEntityType.tribeWarrior || entity.type === IEntityType.player) && !yetiComponent.attackingEntities.hasOwnProperty(entity.id)) {
          const tribeComponent = TribeComponentArray.getComponent(entity.id);
-         if (tribeComponent.tribe !== null && tribeComponent.tribe.type === TribeType.frostlings) {
+         if (tribeComponent.tribe.type === TribeType.frostlings) {
             continue;
          }
       }
@@ -229,92 +239,78 @@ const getYetiTarget = (yeti: Entity, visibleEntities: ReadonlyArray<Entity>): En
          }
       }
 
-      const distanceSquared = yeti.position.calculateDistanceSquaredBetween(entity.position);
-      if (distanceSquared < minDistSquared) {
-         minDistSquared = distanceSquared;
-         closestTarget = entity;
+      if (!yetiComponent.attackingEntities.hasOwnProperty(entity.id)) {
+         // Attack targets which haven't dealt any damage (with the lowest priority)
+         if (mostDamageDealt === 0) {
+            target = entity;
+         }
+      } else {
+         const damageDealt = yetiComponent.attackingEntities[entity.id].totalDamageDealt;
+         if (damageDealt > mostDamageDealt) {
+            mostDamageDealt = damageDealt;
+            target = entity;
+         }
       }
    }
 
-   return closestTarget;
+   return target;
 }
 
 export function tickYeti(yeti: Entity): void {
    const aiHelperComponent = AIHelperComponentArray.getComponent(yeti.id);
    const yetiComponent = YetiComponentArray.getComponent(yeti.id);
 
-   // @Speed
-   for (const id of Object.keys(yetiComponent.attackingEntities).map(idString => Number(idString))) {
-      yetiComponent.attackingEntities[id] -= SettingsConst.I_TPS;
-      if (yetiComponent.attackingEntities[id] <= 0) {
-         delete yetiComponent.attackingEntities[id];
-      }
-   }
-
-   // @Temporary
-   if (1+1===3) {
-      if (yetiComponent.isThrowingSnow) {
-         // If the target has run outside the yeti's vision range, cancel the attack
-         if (yetiComponent.attackTarget !== null && yeti.position.calculateDistanceBetween(yetiComponent.attackTarget.position) > VISION_RANGE) {
-            yetiComponent.snowThrowAttackProgress = 1;
-            yetiComponent.attackTarget = null;
-            yetiComponent.isThrowingSnow = false;
-         } else {
-            switch (yetiComponent.snowThrowStage) {
-               case SnowThrowStage.windup: {
-                  yetiComponent.snowThrowAttackProgress -= SettingsConst.I_TPS / SNOW_THROW_WINDUP_TIME;
-                  if (yetiComponent.snowThrowAttackProgress <= 0) {
-                     throwSnow(yeti, yetiComponent.attackTarget!);
-                     yetiComponent.snowThrowAttackProgress = 0;
-                     yetiComponent.snowThrowCooldown = YETI_SNOW_THROW_COOLDOWN;
-                     yetiComponent.snowThrowStage = SnowThrowStage.hold;
-                     yetiComponent.snowThrowHoldTimer = 0;
-                  }
-   
-                  const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
-                  if (direction !== yeti.rotation) {
-                     yeti.rotation = direction;
-
-                     const physicsComponent = PhysicsComponentArray.getComponent(yeti.id);
-                     physicsComponent.hitboxesAreDirty = true;
-                  }
-                  stopEntity(yeti);
-                  return;
+   if (yetiComponent.isThrowingSnow) {
+      // If the target has run outside the yeti's vision range, cancel the attack
+      if (yetiComponent.attackTarget !== null && yeti.position.calculateDistanceBetween(yetiComponent.attackTarget.position) > VISION_RANGE) {
+         yetiComponent.snowThrowAttackProgress = 1;
+         yetiComponent.attackTarget = null;
+         yetiComponent.isThrowingSnow = false;
+      } else {
+         switch (yetiComponent.snowThrowStage) {
+            case SnowThrowStage.windup: {
+               yetiComponent.snowThrowAttackProgress -= SettingsConst.I_TPS / SNOW_THROW_WINDUP_TIME;
+               if (yetiComponent.snowThrowAttackProgress <= 0) {
+                  throwSnow(yeti, yetiComponent.attackTarget!);
+                  yetiComponent.snowThrowAttackProgress = 0;
+                  yetiComponent.snowThrowCooldown = YETI_SNOW_THROW_COOLDOWN;
+                  yetiComponent.snowThrowStage = SnowThrowStage.hold;
+                  yetiComponent.snowThrowHoldTimer = 0;
                }
-               case SnowThrowStage.hold: {
-                  yetiComponent.snowThrowHoldTimer += SettingsConst.I_TPS;
-                  if (yetiComponent.snowThrowHoldTimer >= SNOW_THROW_HOLD_TIME) {
-                     yetiComponent.snowThrowStage = SnowThrowStage.return;
-                  }
-   
-                  const direction = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
-                  if (direction !== yeti.rotation) {
-                     yeti.rotation = direction;
 
-                     const physicsComponent = PhysicsComponentArray.getComponent(yeti.id);
-                     physicsComponent.hitboxesAreDirty = true;
-                  }
-                  stopEntity(yeti);
-                  return;
+               const targetDirection = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+               yeti.turn(targetDirection, TURN_SPEED);
+               stopEntity(yeti);
+               return;
+            }
+            case SnowThrowStage.hold: {
+               yetiComponent.snowThrowHoldTimer += SettingsConst.I_TPS;
+               if (yetiComponent.snowThrowHoldTimer >= SNOW_THROW_HOLD_TIME) {
+                  yetiComponent.snowThrowStage = SnowThrowStage.return;
                }
-               case SnowThrowStage.return: {
-                  yetiComponent.snowThrowAttackProgress += SettingsConst.I_TPS / SNOW_THROW_RETURN_TIME;
-                  if (yetiComponent.snowThrowAttackProgress >= 1) {
-                     yetiComponent.snowThrowAttackProgress = 1;
-                     yetiComponent.attackTarget = null;
-                     yetiComponent.isThrowingSnow = false;
-                  }
+
+               const targetDirection = yeti.position.calculateAngleBetween(yetiComponent.attackTarget!.position);
+               yeti.turn(targetDirection, TURN_SPEED);
+               stopEntity(yeti);
+               return;
+            }
+            case SnowThrowStage.return: {
+               yetiComponent.snowThrowAttackProgress += SettingsConst.I_TPS / SNOW_THROW_RETURN_TIME;
+               if (yetiComponent.snowThrowAttackProgress >= 1) {
+                  yetiComponent.snowThrowAttackProgress = 1;
+                  yetiComponent.attackTarget = null;
+                  yetiComponent.isThrowingSnow = false;
                }
             }
          }
-      } else if (yetiComponent.snowThrowCooldown === 0 && !yetiComponent.isThrowingSnow) {
-         const target = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
-         if (target !== null) {
-            yetiComponent.isThrowingSnow = true;
-            yetiComponent.attackTarget = target;
-            yetiComponent.snowThrowAttackProgress = 1;
-            yetiComponent.snowThrowStage = SnowThrowStage.windup;
-         }
+      }
+   } else if (yetiComponent.snowThrowCooldown === 0 && !yetiComponent.isThrowingSnow) {
+      const target = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
+      if (target !== null) {
+         yetiComponent.isThrowingSnow = true;
+         yetiComponent.attackTarget = target;
+         yetiComponent.snowThrowAttackProgress = 1;
+         yetiComponent.snowThrowStage = SnowThrowStage.windup;
       }
    }
 
@@ -326,7 +322,10 @@ export function tickYeti(yeti: Entity): void {
    // Chase AI
    const chaseTarget = getYetiTarget(yeti, aiHelperComponent.visibleEntities);
    if (chaseTarget !== null) {
-      moveEntityToPosition(yeti, chaseTarget.position.x, chaseTarget.position.y, 375);
+      const targetDirection = yeti.position.calculateAngleBetween(chaseTarget.position);
+      yeti.turn(targetDirection, TURN_SPEED);
+      yeti.acceleration.x = 375 * Math.sin(targetDirection);
+      yeti.acceleration.y = 375 * Math.cos(targetDirection);
       return;
    }
 
@@ -350,8 +349,11 @@ export function tickYeti(yeti: Entity): void {
          }
       }
       if (closestFoodItem !== null) {
-         moveEntityToPosition(yeti, closestFoodItem.position.x, closestFoodItem.position.y, 100);
-         if (yeti.isColliding(closestFoodItem) !== NO_COLLISION) {
+         const targetDirection = yeti.position.calculateAngleBetween(closestFoodItem.position);
+         yeti.turn(targetDirection, TURN_SPEED);
+         yeti.acceleration.x = 100 * Math.sin(targetDirection);
+         yeti.acceleration.y = 100 * Math.cos(targetDirection);
+         if (isColliding(yeti, closestFoodItem) !== CollisionVars.NO_COLLISION) {
             healEntity(yeti, 3, yeti.id);
             closestFoodItem.remove();
          }
@@ -406,13 +408,13 @@ export function onYetiCollision(yeti: Entity, collidingEntity: Entity): void {
       }
       
       const hitDirection = yeti.position.calculateAngleBetween(collidingEntity.position);
-      damageEntity(collidingEntity, 3, yeti, PlayerCauseOfDeath.yeti, "yeti");
+      damageEntity(collidingEntity, 2, yeti, PlayerCauseOfDeath.yeti, "yeti");
       applyKnockback(collidingEntity, 200, hitDirection);
       SERVER.registerEntityHit({
          entityPositionX: collidingEntity.position.x,
          entityPositionY: collidingEntity.position.y,
          hitEntityID: collidingEntity.id,
-         damage: 3,
+         damage: 2,
          knockback: 200,
          angleFromAttacker: hitDirection,
          attackerID: yeti.id,
@@ -422,14 +424,22 @@ export function onYetiCollision(yeti: Entity, collidingEntity: Entity): void {
    }
 }
 
-export function onYetiHurt(yeti: Entity, attackingEntity: Entity): void {
+export function onYetiHurt(yeti: Entity, attackingEntity: Entity, damage: number): void {
    const yetiComponent = YetiComponentArray.getComponent(yeti.id);
-   yetiComponent.attackingEntities[attackingEntity.id] = ATTACK_PURSUE_TIME;
+   if (yetiComponent.attackingEntities.hasOwnProperty(attackingEntity.id)) {
+      yetiComponent.attackingEntities[attackingEntity.id].remainingPursueTicks += ATTACK_PURSUE_TIME_TICKS;
+      yetiComponent.attackingEntities[attackingEntity.id].totalDamageDealt += damage;
+   } else {
+      yetiComponent.attackingEntities[attackingEntity.id] = {
+         remainingPursueTicks: ATTACK_PURSUE_TIME_TICKS,
+         totalDamageDealt: damage
+      };
+   }
 }
 
 export function onYetiDeath(yeti: Entity): void {
-   createItemsOverEntity(yeti, ItemType.raw_beef, randInt(4, 7));
-   createItemsOverEntity(yeti, ItemType.yeti_hide, randInt(2, 3));
+   createItemsOverEntity(yeti, ItemType.raw_beef, randInt(4, 7), 80);
+   createItemsOverEntity(yeti, ItemType.yeti_hide, randInt(2, 3), 80);
 
    // Remove territory
    const yetiComponent = YetiComponentArray.getComponent(yeti.id);

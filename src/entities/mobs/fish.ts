@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishComponentData, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
-import Entity, { NO_COLLISION } from "../../Entity";
+import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -17,6 +17,7 @@ import { getInventory } from "../../components/InventoryComponent";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
+import { CollisionVars, isColliding } from "../../collision";
 
 const MAX_HEALTH = 5;
 
@@ -181,7 +182,7 @@ export function tickFish(fish: Entity): void {
          // Attack the target
          move(fish, fish.position.calculateAngleBetween(fishComponent.attackTarget.position));
 
-         if (fish.isColliding(fishComponent.attackTarget) !== NO_COLLISION) {
+         if (isColliding(fish, fishComponent.attackTarget) !== CollisionVars.NO_COLLISION) {
             const healthComponent = HealthComponentArray.getComponent(fishComponent.attackTarget.id);
             if (!canDamageEntity(healthComponent, "fish")) {
                return;
@@ -311,7 +312,7 @@ export function onFishHurt(fish: Entity, attackingEntity: Entity): void {
 }
 
 export function onFishDeath(fish: Entity): void {
-   createItemsOverEntity(fish, ItemType.raw_fish, 1);
+   createItemsOverEntity(fish, ItemType.raw_fish, 1, 40);
 }
 
 export function onFishRemove(fish: Entity): void {

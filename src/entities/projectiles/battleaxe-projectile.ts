@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SettingsConst, lerp } from "webgl-test-shared";
-import Entity, { NO_COLLISION } from "../../Entity";
+import Entity from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
@@ -9,6 +9,7 @@ import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
+import { CollisionVars, isColliding } from "../../collision";
 
 const RETURN_TIME_TICKS = 1 * SettingsConst.TPS;
 
@@ -38,7 +39,7 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       
       const owner = Board.entityRecord[throwingProjectileComponent.tribeMemberID];
 
-      if (battleaxe.isColliding(owner) !== NO_COLLISION) {
+      if (isColliding(battleaxe, owner) !== CollisionVars.NO_COLLISION) {
          battleaxe.remove();
          return;
       }

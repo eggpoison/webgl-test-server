@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, TribeMemberAction, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, HealData, ResearchOrbCompleteData, EntityDebugData, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, BuildingShapeType, Inventory } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, TribeMemberAction, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, HealData, ResearchOrbCompleteData, EntityDebugData, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, BuildingShapeType, Inventory, IEntityType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -54,7 +54,7 @@ import { serialiseWanderAIComponent } from "./components/WanderAIComponent";
 import { serialiseYetiComponent } from "./components/YetiComponent";
 import { serialiseZombieComponent } from "./components/ZombieComponent";
 import SRandom from "./SRandom";
-import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
+import { createYeti, resetYetiTerritoryTiles } from "./entities/mobs/yeti";
 import { resetComponents } from "./components/components";
 import { resetPerlinNoiseCache } from "./perlin-noise";
 import { serialiseAmmoBoxComponent } from "./components/AmmoBoxComponent";
@@ -70,13 +70,6 @@ const TIME_PASS_RATE = 300;
 
 const isTimed = process.argv[2] === "timed";
 const averageTickTimes = new Array<number>();
-
-if (isTimed) {
-   process.on("SIGINT", () => {
-      console.log(averageTickTimes);
-      process.exit();
-   });
-}
 
 /*
 
@@ -327,6 +320,7 @@ class GameServer {
 
          let j = 0;
          while (true) {
+            // Collect garbage from previous run
             for (let i = 0; i < 10; i++) {
                global.gc();
             }
@@ -354,18 +348,24 @@ class GameServer {
             }
             
             // @Bug: When at 5000, the average tps starts at around 1.8, while at 1000 it starts at .6
-            const numTicks = 5000;
+            const numTicks = 1000;
             
             const startTime = performance.now();
 
+            const a = [];
+            let l = startTime;
             for (let i = 0; i < numTicks; i++) {
                SERVER.tick();
+               const n = performance.now();
+               a.push(n - l);
+               l = n;
             }
 
             const timeElapsed = performance.now() - startTime;
             const averageTickTimeMS = timeElapsed / numTicks;
             averageTickTimes.push(averageTickTimeMS);
             console.log("(#" + (j + 1) + ") Average tick MS: " + averageTickTimeMS);
+            console.log(Math.min(...a), Math.max(...a));
             j++;
          }
       }
@@ -459,23 +459,29 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
+            // if(1+1===2)return;
             const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
             const tribeComp = TribeComponentArray.getComponent(player.id);
             
             createTribeTotem(new Point(player.position.x, player.position.y - 200), tribeComp.tribe!);
 
-            const n = 5;
+            const n = 10;
             const yo = 100;
             
-         for (let i = 0; i < n; i++) {
-               createWoodenWall(new Point(player.position.x, player.position.y + yo + i * 64), tribeComp.tribe);
+            for (let i = -n/2; i < n/2; i++) {
+               createWoodenWall(new Point(player.position.x + i * 64, player.position.y + yo), tribeComp.tribe);
             }
 
-            const hut = createWorkerHut(new Point(player.position.x + 250, player.position.y + 100), tribeComp.tribe!);
+            const hut = createWorkerHut(new Point(player.position.x + 250, player.position.y - 100), tribeComp.tribe!);
             tribeComp.tribe!.registerNewWorkerHut(hut);
 
-            // const hut2 = createWorkerHut(new Point(player.position.x - 250, player.position.y - 100), tribeComp.tribe!);
-            // tribeComp.tribe!.registerNewWorkerHut(hut2);
+            const hut2 = createWorkerHut(new Point(player.position.x - 350, player.position.y - 100), tribeComp.tribe!);
+            tribeComp.tribe!.registerNewWorkerHut(hut2);
+
+            const hut3 = createWorkerHut(new Point(player.position.x - 100, player.position.y - 400), tribeComp.tribe!);
+            tribeComp.tribe!.registerNewWorkerHut(hut3);
+
+            createYeti(new Point(player.position.x, player.position.y + 500));
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -978,7 +984,7 @@ class GameServer {
             heldItemSlot: SERVER.bundleInventory(player, "heldItemSlot"),
             craftingOutputItemSlot: SERVER.bundleInventory(player, "craftingOutputSlot"),
             armourSlot: SERVER.bundleInventory(player, "armourSlot"),
-            offhand: tribeComponent.tribe!.type === TribeType.barbarians ? SERVER.bundleInventory(player, "offhand") : {
+            offhand: tribeComponent.tribe.type === TribeType.barbarians ? SERVER.bundleInventory(player, "offhand") : {
                itemSlots: {},
                width: 1,
                height: 1,
@@ -1074,7 +1080,7 @@ class GameServer {
       }
 
       const tribeComponent = TribeComponentArray.getComponent(player.id);
-      if (tribeComponent.tribe!.type === TribeType.barbarians) {
+      if (tribeComponent.tribe.type === TribeType.barbarians) {
          const offhandUseInfo = getInventoryUseInfo(inventoryUseComponent, "offhand");
 
          if (playerDataPacket.offhandAction === TribeMemberAction.eat && offhandUseInfo.currentAction !== TribeMemberAction.eat) {

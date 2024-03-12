@@ -35,7 +35,7 @@ export function createTree(position: Point): Entity {
 
 export function onTreeDeath(tree: Entity): void {
    const treeComponent = TreeComponentArray.getComponent(tree.id);
-   createItemsOverEntity(tree, ItemType.wood, randInt(...WOOD_DROP_AMOUNTS[treeComponent.treeSize]));
+   createItemsOverEntity(tree, ItemType.wood, randInt(...WOOD_DROP_AMOUNTS[treeComponent.treeSize]), 40);
 }
 
 export function onTreeRemove(tree: Entity): void {

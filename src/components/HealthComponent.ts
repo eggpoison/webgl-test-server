@@ -138,7 +138,7 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
       }
       case IEntityType.yeti: {
          if (attackingEntity !== null) {
-            onYetiHurt(entity, attackingEntity);
+            onYetiHurt(entity, attackingEntity, damage);
          }
          break;
       }

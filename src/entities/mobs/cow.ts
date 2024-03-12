@@ -254,8 +254,8 @@ export function onCowHurt(cow: Entity, attackingEntity: Entity): void {
 }
 
 export function onCowDeath(cow: Entity): void {
-   createItemsOverEntity(cow, ItemType.raw_beef, randInt(1, 2));
-   createItemsOverEntity(cow, ItemType.leather, randInt(0, 2));
+   createItemsOverEntity(cow, ItemType.raw_beef, randInt(1, 2), 40);
+   createItemsOverEntity(cow, ItemType.leather, randInt(0, 2), 40);
 }
 
 export function onCowRemove(cow: Entity): void {

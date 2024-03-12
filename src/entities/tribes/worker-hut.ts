@@ -18,7 +18,7 @@ export function createWorkerHut(position: Point, tribe: Tribe): Entity {
    const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE);
    hut.addHitbox(hitbox);
 
-   HealthComponentArray.addComponent(hut, new HealthComponent(20));
+   HealthComponentArray.addComponent(hut, new HealthComponent(50));
    StatusEffectComponentArray.addComponent(hut, new StatusEffectComponent(StatusEffectConst.poisoned));
    HutComponentArray.addComponent(hut, new HutComponent());
    TribeComponentArray.addComponent(hut, new TribeComponent(tribe));
@@ -28,7 +28,7 @@ export function createWorkerHut(position: Point, tribe: Tribe): Entity {
 
 export function onWorkerHutRemove(hut: Entity): void {
    const tribeComponent = TribeComponentArray.getComponent(hut.id);
-   tribeComponent.tribe!.removeWorkerHut(hut);
+   tribeComponent.tribe.removeWorkerHut(hut);
    
    HealthComponentArray.removeComponent(hut);
    StatusEffectComponentArray.removeComponent(hut);
