@@ -1,6 +1,6 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
-import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition } from "../../ai-shared";
+import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { getInventory, addItemToInventory, consumeItem, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
@@ -16,7 +16,7 @@ import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "
 import { getItemAttackCooldown } from "../../items";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { attemptToOccupyResearchBench, canResearchAtBench, continueResearching, markPreemptiveMoveToBench, shouldMoveToResearchBench } from "../../components/ResearchBenchComponent";
-import { entityHasReachedNode, getAngleToNode, getClosestPathfindNode, pathfind, positionIsAccessible, radialPathfind, smoothPath } from "../../pathfinding";
+import { entityHasReachedNode, getAngleToNode, getClosestPathfindNode, getDistanceToNode, pathfind, positionIsAccessible, radialPathfind, smoothPath } from "../../pathfinding";
 import { PhysicsComponentArray } from "../../components/PhysicsComponent";
 
 // @Cleanup: Move all of this to the TribesmanComponent file
@@ -31,7 +31,7 @@ const ATTACK_RADIUS = 50;
 
 /** How far the tribesmen will try to stay away from the entity they're attacking */
 const DESIRED_MELEE_ATTACK_DISTANCE = 60;
-const DESIRED_RANGED_ATTACK_DISTANCE = 260;
+const DESIRED_RANGED_ATTACK_DISTANCE = 360;
 
 const DESIRED_MELEE_ATTACK_DISTANCE_NODES = Math.floor(60 / PathfindingSettingsConst.NODE_SEPARATION);
 
@@ -55,6 +55,11 @@ const RESOURCE_PRODUCTS: Partial<Record<IEntityType, ReadonlyArray<ItemType>>> =
 }
 
 const MESSAGE_INTERVAL_TICKS = 2 * SettingsConst.TPS;
+
+const EXTRA_BOW_COOLDOWNS: Partial<Record<IEntityType, number>> = {
+   [IEntityType.tribeWorker]: Math.floor(0.3 * SettingsConst.TPS),
+   [IEntityType.tribeWarrior]: Math.floor(0.1 * SettingsConst.TPS)
+};
 
 // @Incomplete: unused
 /** Messages tribesman send to each-other to communicate what is happening */
@@ -453,7 +458,15 @@ const continueCurrentPath = (tribesman: Entity): boolean => {
       const targetDirection = getAngleToNode(tribesman, nextNode);
       tribesman.turn(targetDirection, TURN_SPEED)
 
-      const acceleration = getAcceleration(tribesman);
+      let acceleration = getAcceleration(tribesman);
+
+      // If the tribesman is close to the next node, slow down as to not overshoot it
+      const distFromNode = getDistanceToNode(tribesman, nextNode);
+      if (distFromNode < 150) {
+         const distProgress = distFromNode / 150;
+         acceleration *= lerp(1, 0.3, distProgress);
+      }
+
       tribesman.acceleration.x = acceleration * Math.sin(tribesman.rotation);
       tribesman.acceleration.y = acceleration * Math.cos(tribesman.rotation);
       return true;
@@ -774,6 +787,8 @@ export function tickTribesman(tribesman: Entity): void {
             const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
             const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
             useInfo.selectedItemSlot = hammerItemSlot;
+
+            useInfo.currentAction = TribeMemberAction.none;
 
             // @Cleanup: Copy and paste from huntEntity
             const distance = calculateDistanceFromEntity(tribesman, closestDamagedBuilding);
@@ -1246,22 +1261,6 @@ const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number 
    return minDistance;
 }
 
-const engageTargetRanged = (tribesman: Entity, target: Entity): void => {
-   const distance = calculateDistanceFromEntity(tribesman, target);
-   tribesman.rotation = tribesman.position.calculateAngleBetween(target.position);
-   if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
-      tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
-      tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
-   } else {
-      tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation);
-      tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation);
-   }
-
-   // @Speed: Shouldn't do always
-   const physicsComponent = PhysicsComponentArray.getComponent(tribesman.id);
-   physicsComponent.hitboxesAreDirty = true;
-}
-
 const doMeleeAttack = (tribesman: Entity): void => {
    // Find the attack target
    const attackTargets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
@@ -1368,18 +1367,43 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
       
       // Don't do a melee attack if using a bow, instead charge the bow
       if (weaponCategory === "bow") {
-         // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
-         if (useInfo.currentAction !== TribeMemberAction.chargeBow) {
-            const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
-            useInfo.bowCooldownTicks = itemInfo.shotCooldownTicks;
-         }
-         useInfo.currentAction = TribeMemberAction.chargeBow;
+         const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
          
-         engageTargetRanged(tribesman, huntedEntity);
+         // @Cleanup: Copy and paste
+         const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
+         if (entityIsInLineOfSight(tribesman, huntedEntity, tribeComponent.tribe.friendlyTribesmenIDs) && willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
+            // If the tribesman will stop too close to the target, move back a bit
+            if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE - 20, distance)) {
+               tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
+               tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
+            } else {
+               stopEntity(tribesman);
+            }
 
-         // If the bow is fully charged, fire it
-         if (useInfo.bowCooldownTicks === 0) {
-            useItem(tribesman, selectedItem, "hotbar", useInfo.selectedItemSlot);
+            const targetRotation = tribesman.position.calculateAngleBetween(huntedEntity.position);
+            tribesman.turn(targetRotation, TURN_SPEED);
+
+            if (useInfo.currentAction !== TribeMemberAction.chargeBow) {
+               // If the tribesman is only just charging the bow, reset the cooldown to prevent the bow firing immediately
+               const itemInfo = ITEM_INFO_RECORD[selectedItem.type] as BowItemInfo;
+               useInfo.bowCooldownTicks = itemInfo.shotCooldownTicks;
+               tribesmanComponent.extraBowCooldownTicks = EXTRA_BOW_COOLDOWNS[tribesman.type]!;
+            } else if (tribesmanComponent.extraBowCooldownTicks > 0) {
+               tribesmanComponent.extraBowCooldownTicks--;
+            } else if (useInfo.bowCooldownTicks > 0) {
+               useInfo.bowCooldownTicks--;
+            } else {
+               // If the bow is fully charged, fire it
+               useItem(tribesman, selectedItem, "hotbar", useInfo.selectedItemSlot);
+               tribesmanComponent.extraBowCooldownTicks = EXTRA_BOW_COOLDOWNS[tribesman.type]!;
+            }
+            useInfo.currentAction = TribeMemberAction.chargeBow;
+
+            clearPath(tribesman);
+         } else {
+            pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, 0);
+
+            useInfo.currentAction = TribeMemberAction.none;
          }
 
          return;

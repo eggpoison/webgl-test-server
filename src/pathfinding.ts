@@ -314,6 +314,15 @@ export function getAngleToNode(entity: Entity, node: PathfindingNodeIndex): numb
    return angle(x - entity.position.x, y - entity.position.y);
 }
 
+export function getDistanceToNode(entity: Entity, node: PathfindingNodeIndex): number {
+   const x = node % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH * PathfindingSettingsConst.NODE_SEPARATION;
+   const y = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) * PathfindingSettingsConst.NODE_SEPARATION;
+
+   let diffX = entity.position.x - x;
+   let diffY = entity.position.y - y;
+   return Math.sqrt(diffX * diffX + diffY * diffY);
+}
+
 export function getDistFromNode(entity: Entity, node: PathfindingNodeIndex): number {
    const x = node % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH * PathfindingSettingsConst.NODE_SEPARATION;
    const y = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) * PathfindingSettingsConst.NODE_SEPARATION;
@@ -684,7 +693,7 @@ export function entityCanBlockPathfinding(entityType: IEntityType): boolean {
    return entityType !== IEntityType.itemEntity;
 }
 
-const updateEntityPathfindingNodeOccupance = (entity: Entity): void => {
+export function updateEntityPathfindingNodeOccupance(entity: Entity): void {
    for (const node of entity.occupiedPathfindingNodes) {
       markPathfindingNodeClearance(node, entity.id);
    }

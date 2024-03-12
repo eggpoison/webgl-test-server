@@ -63,7 +63,7 @@ import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
-import { markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes } from "./pathfinding";
+import { markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
 import OPTIONS from "./options";
 import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
@@ -599,6 +599,8 @@ abstract class Board {
          // Only now add the entity to chunks, as if they are added when the entity is created then the entity will be
          // accessible but its components won't.
          entity.updateContainingChunks();
+
+         updateEntityPathfindingNodeOccupance(entity);
 
          this.entities.push(entity);
          this.entityRecord[entity.id] = entity;
