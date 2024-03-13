@@ -63,7 +63,7 @@ import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
-import { markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
+import { clearEntityPathfindingNodes, markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
 import OPTIONS from "./options";
 import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
@@ -278,10 +278,7 @@ abstract class Board {
          delete this.entityRecord[entity.id];
          removeEntityFromCensus(entity);
 
-         // Remove occupied pathfinding nodes
-         for (const node of entity.occupiedPathfindingNodes) {
-            markPathfindingNodeClearance(node, entity.id);
-         }
+         clearEntityPathfindingNodes(entity);
 
          switch (entity.type) {
             case IEntityType.cow: onCowRemove(entity); break;
