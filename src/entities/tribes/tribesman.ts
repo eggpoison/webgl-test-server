@@ -628,6 +628,7 @@ export function tickTribesman(tribesman: Entity): void {
       return;
    }
 
+   // @Speed
    // If the player is interacting with the tribesman, move towards the player
    for (const entity of aiHelperComponent.visibleEntities) {
       if (entity.type !== IEntityType.player) {
@@ -704,6 +705,10 @@ export function tickTribesman(tribesman: Entity): void {
    if (tribesmanComponent.pathType === TribesmanPathType.tribesmanRequest) {
       continueCurrentPath(tribesman);
       tribesmanComponent.currentAIType = TribesmanAIType.assistingOtherTribesmen;
+
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+      useInfo.currentAction = TribeMemberAction.none;
       return;
    }
    
@@ -774,6 +779,7 @@ export function tickTribesman(tribesman: Entity): void {
             const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
             const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
             useInfo.selectedItemSlot = hammerItemSlot;
+            useInfo.currentAction = TribeMemberAction.none;
 
             // @Cleanup: Copy and paste from huntEntity
             const distance = calculateDistanceFromEntity(tribesman, closestDamagedBuilding);
@@ -856,6 +862,7 @@ export function tickTribesman(tribesman: Entity): void {
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
          useInfo.selectedItemSlot = hammerItemSlot;
+         useInfo.currentAction = TribeMemberAction.none;
 
          // Find the target
          const targets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);

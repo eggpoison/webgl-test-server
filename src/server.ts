@@ -460,28 +460,26 @@ class GameServer {
          // @Temporary
          setTimeout(() => {
             // if(1+1===2)return;
-            const player = Board.entityRecord[SERVER.playerDataRecord[socket.id].instanceID];
-            const tribeComp = TribeComponentArray.getComponent(player.id);
+
+            const tribe = new Tribe(TribeType.plainspeople);
             
-            createTribeTotem(new Point(player.position.x, player.position.y - 200), tribeComp.tribe!);
+            createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
             const n = 10;
-            const yo = 100;
+            const yo = 300;
             
             for (let i = -n/2; i < n/2; i++) {
-               createWoodenWall(new Point(player.position.x + i * 64, player.position.y + yo), tribeComp.tribe);
+               createWoodenWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
             }
 
-            const hut = createWorkerHut(new Point(player.position.x + 250, player.position.y - 100), tribeComp.tribe!);
-            tribeComp.tribe!.registerNewWorkerHut(hut);
+            const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 400), tribe);
+            tribe.registerNewWorkerHut(hut);
 
-            const hut2 = createWorkerHut(new Point(player.position.x - 350, player.position.y - 100), tribeComp.tribe!);
-            tribeComp.tribe!.registerNewWorkerHut(hut2);
+            const hut2 = createWorkerHut(new Point(spawnPosition.x - 350, spawnPosition.y + 400), tribe);
+            tribe.registerNewWorkerHut(hut2);
 
-            const hut3 = createWorkerHut(new Point(player.position.x - 100, player.position.y - 400), tribeComp.tribe!);
-            tribeComp.tribe!.registerNewWorkerHut(hut3);
-
-            createYeti(new Point(player.position.x, player.position.y + 500));
+            const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
+            tribe.registerNewWorkerHut(hut3);
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {

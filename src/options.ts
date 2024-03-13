@@ -13,8 +13,8 @@ const OPTIONS: Options = {
    spawnTribes: false,
    generateRivers: true,
    generateWalls: true,
-   inBenchmarkMode: true,
-   warp: true
+   inBenchmarkMode: false,
+   warp: false
 };
 
 
