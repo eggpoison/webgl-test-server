@@ -1,4 +1,4 @@
-import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint, EntityType, IEntityType } from "webgl-test-shared";
 import Board, { raytraceHasWallTile } from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -557,12 +557,38 @@ const lineIntersectsRectangularHitbox = (lineX1: number, lineY1: number, lineX2:
    return true;
 }
 
-const entityIsInLineOfSight = (entity: Entity, originEntity: Entity, targetEntity: Entity): boolean => {
+const entityAffectsLineOfSight = (entityType: IEntityType): boolean => {
+   return entityType !== IEntityType.woodenArrowProjectile;
+}
+
+const lineIntersectsCircularHitbox = (lineX1: number, lineY1: number, lineX2: number, lineY2: number, hitbox: CircularHitbox): boolean => {
+   // https://stackoverflow.com/questions/67116296/is-this-code-for-determining-if-a-circle-and-line-segment-intersects-correct
+   
+   const circleX = hitbox.object.position.x + hitbox.rotatedOffsetX;
+   const circleY = hitbox.object.position.y + hitbox.rotatedOffsetY;
+   
+   let x_linear = lineX2 - lineX1;
+   let x_constant = lineX1 - circleX;
+   let y_linear = lineY2 - lineY1;
+   let y_constant = lineY1 - circleY;
+   let a = x_linear * x_linear + y_linear * y_linear;
+   let half_b = x_linear * x_constant + y_linear * y_constant;
+   let c = x_constant * x_constant + y_constant * y_constant - hitbox.radius * hitbox.radius;
+   return (
+      half_b * half_b >= a * c &&
+      (-half_b <= a || c + half_b + half_b + a <= 0) &&
+      (half_b <= 0 || c <= 0)
+   );
+}
+
+const entityIntersectsLineOfSight = (entity: Entity, originEntity: Entity, targetEntity: Entity): boolean => {
    for (let i = 0; i < entity.hitboxes.length; i++) {
       const hitbox = entity.hitboxes[i];
 
       if (hitbox.hasOwnProperty("radius")) {
-         // @Incomplete
+         if (lineIntersectsCircularHitbox(originEntity.position.x, originEntity.position.y, targetEntity.position.x, targetEntity.position.y, hitbox as CircularHitbox)) {
+            return false;
+         }
       } else {
          if (lineIntersectsRectangularHitbox(originEntity.position.x, originEntity.position.y, targetEntity.position.x, targetEntity.position.y, hitbox as RectangularHitbox)) {
             return true;
@@ -573,7 +599,7 @@ const entityIsInLineOfSight = (entity: Entity, originEntity: Entity, targetEntit
    return false;
 }
 
-export function hasLineOfSightToEntity(originEntity: Entity, targetEntity: Entity, ignoredEntityIDs: ReadonlyArray<number>): boolean {
+export function entityIsInLineOfSight(originEntity: Entity, targetEntity: Entity, ignoredEntityIDs: ReadonlyArray<number>): boolean {
    // 
    // Check for entity hitboxes in the path between
    // 
@@ -594,11 +620,11 @@ export function hasLineOfSightToEntity(originEntity: Entity, targetEntity: Entit
 
          for (let i = 0; i < chunk.entities.length; i++) {
             const entity = chunk.entities[i];
-            if (entity === originEntity || entity === targetEntity || ignoredEntityIDs.includes(entity.id)) {
+            if (entity === originEntity || entity === targetEntity || ignoredEntityIDs.includes(entity.id) || !entityAffectsLineOfSight(entity.type)) {
                continue;
             }
 
-            if (entityIsInLineOfSight(entity, originEntity, targetEntity)) {
+            if (entityIntersectsLineOfSight(entity, originEntity, targetEntity)) {
                return false;
             }
          }

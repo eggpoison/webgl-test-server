@@ -31,6 +31,9 @@ export class TribesmanComponent {
    // @Cleanup @Incomplete??
    // public lastDistFromNextNode = 0;
 
+   /** Artificial cooldown added to tribesmen to make them a bit worse at bow combat */
+   public extraBowCooldownTicks = 0;
+
    constructor(hutID: number) {
       this.hutID = hutID;
    }

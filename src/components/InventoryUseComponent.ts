@@ -59,11 +59,6 @@ export function tickInventoryUseComponent(inventoryUseComponent: InventoryUseCom
             }
          }
       }
-
-      useInfo.bowCooldownTicks--;
-      if (useInfo.bowCooldownTicks < 0) {
-         useInfo.bowCooldownTicks = 0;
-      }
    }
 }
 

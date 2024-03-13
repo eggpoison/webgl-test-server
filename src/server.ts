@@ -45,7 +45,7 @@ import { serialiseSnowballComponent } from "./components/SnowballComponent";
 import { serialiseThrowingProjectileComponent } from "./components/ThrowingProjectileComponent";
 import { serialiseTombstoneComponent } from "./components/TombstoneComponent";
 import { serialiseTotemBannerComponent } from "./components/TotemBannerComponent";
-import { serialiseTreeComponent } from "./entities/resources/tree";
+import { createTree, serialiseTreeComponent } from "./entities/resources/tree";
 import { serialiseTribeComponent } from "./components/TribeComponent";
 import { serialiseTribeMemberComponent } from "./components/TribeMemberComponent";
 import { serialiseTribesmanComponent } from "./components/TribesmanComponent";
