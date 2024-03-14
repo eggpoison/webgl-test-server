@@ -104,9 +104,10 @@ const sendCallToArmsMessage = (communicationTargets: ReadonlyArray<Entity>, targ
    for (let i = 0; i < communicationTargets.length; i++) {
       const tribesman = communicationTargets[i];
 
+      // @Incomplete? What if they're already attacking a target?
       const healthComponent = HealthComponentArray.getComponent(tribesman.id);
       if (!shouldEscape(healthComponent)) {
-         pathfindToPosition(tribesman, targetEntity.position.x, targetEntity.position.y, targetEntity.id, TribesmanPathType.tribesmanRequest, 0);
+         pathfindToPosition(tribesman, targetEntity.position.x, targetEntity.position.y, targetEntity.id, TribesmanPathType.tribesmanRequest, Math.floor(100 / PathfindingSettingsConst.NODE_SEPARATION));
       }
    }
 }
@@ -1378,7 +1379,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          
          // @Cleanup: Copy and paste
          const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
-         if (entityIsInLineOfSight(tribesman, huntedEntity, tribeComponent.tribe.friendlyTribesmenIDs) && willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE, distance)) {
+         if (entityIsInLineOfSight(tribesman, huntedEntity, tribeComponent.tribe.friendlyTribesmenIDs)) {
             // If the tribesman will stop too close to the target, move back a bit
             if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE - 20, distance)) {
                tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
@@ -1408,7 +1409,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
 
             clearPath(tribesman);
          } else {
-            pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, 0);
+            pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, Math.floor(100 / PathfindingSettingsConst.NODE_SEPARATION));
 
             useInfo.currentAction = TribeMemberAction.none;
          }

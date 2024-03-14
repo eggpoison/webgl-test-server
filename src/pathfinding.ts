@@ -364,10 +364,8 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
    while (openSet.currentItemCount > 0) {
       // @Cleanup @Incomplete: Is this supposed to happen?
       if (++i >= 5000) {
-         // const e = Board.entityRecord[pathfindingEntityID];
-         
-         // console.warn("POTENTIAL UNRESOLVEABLE PATH at " + e.position.x + " " + e.position.y);
-         // console.trace();
+         console.warn("POTENTIAL UNRESOLVEABLE PATH");
+         console.trace();
          return [];
       }
 
@@ -409,6 +407,8 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
    }
 
    // On failure, return an empty array
+   console.warn("FAILURE");
+   console.trace();
    return [];
 }
 
