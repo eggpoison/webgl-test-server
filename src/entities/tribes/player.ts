@@ -1,9 +1,9 @@
 import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, BuildingShapeType } from "webgl-test-shared";
-import Entity from "../../Entity";
+import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { InventoryComponent, addItem, addItemToSlot, consumeItem, consumeItemTypeFromInventory, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
+import { InventoryComponent, addItem, addItemToSlot, consumeItemFromSlot, consumeItemType, consumeItemTypeFromInventory, countItemType, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -19,6 +19,7 @@ import { PhysicsComponent, PhysicsComponentArray } from "../../components/Physic
 import { EntityRelationship, TribeComponent } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
 import { deoccupyResearchBench, attemptToOccupyResearchBench } from "../../components/ResearchBenchComponent";
+import { createItemsOverEntity } from "../../entity-shared";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -67,9 +68,10 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    // @Temporary
    // addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
    // addItem(inventoryComponent, createItem(ItemType.barrel, 2));
-   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
-   addItem(inventoryComponent, createItem(ItemType.wooden_bow, 1));
-   // addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
+   addItem(inventoryComponent, createItem(ItemType.deepfrost_axe, 1));
+   addItem(inventoryComponent, createItem(ItemType.rock, 6));
 
    tribe.registerNewTribeMember(player);
 
@@ -201,7 +203,7 @@ export function processItemPickupPacket(player: Entity, entityID: number, invent
    addItemToSlot(inventoryComponent, "heldItemSlot", 1, pickedUpItem.type, amount);
 
    // Remove the item from its previous inventory
-   consumeItem(targetInventoryComponent, inventoryName, itemSlot, amount);
+   consumeItemFromSlot(targetInventoryComponent, inventoryName, itemSlot, amount);
 }
 
 export function processItemReleasePacket(player: Entity, entityID: number, inventoryName: string, itemSlot: number, amount: number): void {
@@ -293,7 +295,7 @@ export function throwItem(player: Entity, inventoryName: string, itemSlot: numbe
    }
    
    const itemType = inventory.itemSlots[itemSlot].type;
-   const amountRemoved = consumeItem(inventoryComponent, inventoryName, itemSlot, dropAmount);
+   const amountRemoved = consumeItemFromSlot(inventoryComponent, inventoryName, itemSlot, dropAmount);
 
    const dropPosition = player.position.copy();
    dropPosition.x += ITEM_THROW_OFFSET * Math.sin(throwDirection);
@@ -464,7 +466,7 @@ const snapRotationToPlayer = (player: Entity, placePosition: Point, rotation: nu
    return snapRotation;
 }
 
-export function shapeStructure(player: Entity, structureID: number, buildingType: BuildingShapeType): void {
+export function shapeStructure(player: Entity, structureID: number, optionIdx: number): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }
@@ -473,25 +475,92 @@ export function shapeStructure(player: Entity, structureID: number, buildingType
 
    const rotation = snapRotationToPlayer(player, previousStructure.position, previousStructure.rotation);
 
-   let position: Point;
-   switch (buildingType) {
-      case BlueprintBuildingType.tunnel:
-      case BlueprintBuildingType.door: {
-         position = previousStructure.position.copy();
-         break;
+   if (previousStructure.type === IEntityType.wall) {
+      // @Cleanup: These vars should be inside the case, as not all cases use them
+      let position!: Point;
+      let buildingType!: BlueprintBuildingType;
+      switch (optionIdx) {
+         case 0: {
+            const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+            const numRocks = countItemType(inventoryComponent, ItemType.rock);
+            if (numRocks < 5) {
+               return;
+            }
+
+            // Upgrade the wall to stone
+            const position = previousStructure.position.copy();
+            const tribeComponent = TribeComponentArray.getComponent(player.id);
+            createBlueprintEntity(position, BlueprintBuildingType.stoneWallUpgrade, previousStructure.id, tribeComponent.tribe, rotation);
+
+            consumeItemType(inventoryComponent, ItemType.rock, 5);
+            
+            return;
+         }
+         case 1: {
+            position = previousStructure.position.copy();
+            buildingType = BlueprintBuildingType.woodenDoor;
+            break;
+         }
+         case 2: {
+            position = previousStructure.position.copy();
+            position.x += 22 * Math.sin(rotation);
+            position.y += 22 * Math.cos(rotation);
+            buildingType = BlueprintBuildingType.embrasure;
+            break;
+         }
+         case 3: {
+            position = previousStructure.position.copy();
+            buildingType = BlueprintBuildingType.tunnel;
+            break;
+         }
+         case 4: {
+            // Deconstruct
+            previousStructure.remove();
+            createItemsOverEntity(previousStructure, ItemType.wood, 5, 40);
+            return;
+         }
       }
-      case BlueprintBuildingType.embrasure: {
-         position = previousStructure.position.copy();
-         position.x += 22 * Math.sin(rotation);
-         position.y += 22 * Math.cos(rotation);
-         break;
-      }
+   
+      previousStructure.remove();
+   
+      const tribeComponent = TribeComponentArray.getComponent(player.id);
+      createBlueprintEntity(position, buildingType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
+      return;
    }
 
-   previousStructure.remove();
+   if (previousStructure.type === IEntityType.woodenTunnel) {
+      if (optionIdx === 1) {
+         // Deconstruct
+         previousStructure.remove();
+         createItemsOverEntity(previousStructure, ItemType.wood, 5, 40);
+         return;
+      }
+      
+      const tunnelComponent = TunnelComponentArray.getComponent(previousStructure.id);
 
-   const tribeComponent = TribeComponentArray.getComponent(player.id);
-   createBlueprintEntity(position, buildingType, tribeComponent.tribe, rotation);
+      switch (tunnelComponent.doorBitset) {
+         case 0b00: {
+            // Place the door blueprint on whichever side is closest to the player
+            const dirToPlayer = previousStructure.position.calculateAngleBetween(player.position);
+            const dot = Math.sin(previousStructure.rotation) * Math.sin(dirToPlayer) + Math.cos(previousStructure.rotation) * Math.cos(dirToPlayer);
+
+            if (dot > 0) {
+               // Top door
+               tunnelComponent.doorBitset = 0b01;
+            } else {
+               // Bottom door
+               tunnelComponent.doorBitset = 0b10;
+            }
+            break;
+         }
+         case 0b10:
+         case 0b01: {
+            // One door is already placed, so place the other one
+            tunnelComponent.doorBitset = 0b11;
+            break;
+         }
+      }
+   }
 }
 
 export function interactWithStructure(player: Entity, structureID: number): void {

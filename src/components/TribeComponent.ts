@@ -51,7 +51,7 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
          return EntityRelationship.enemyBuilding;
       }
       // Buildings
-      case IEntityType.woodenWall:
+      case IEntityType.wall:
       case IEntityType.woodenDoor:
       case IEntityType.woodenSpikes:
       case IEntityType.punjiSticks:

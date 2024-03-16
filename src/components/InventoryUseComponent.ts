@@ -59,6 +59,11 @@ export function tickInventoryUseComponent(inventoryUseComponent: InventoryUseCom
             }
          }
       }
+
+      // Update bow cooldown
+      if (useInfo.bowCooldownTicks > 0) {
+         useInfo.bowCooldownTicks--;
+      }
    }
 }
 

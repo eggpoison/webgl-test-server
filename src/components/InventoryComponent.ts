@@ -246,10 +246,19 @@ export function consumeItemTypeFromInventory(inventoryComponent: InventoryCompon
    return totalAmountConsumed;
 }
 
+export function consumeItemType(inventoryComponent: InventoryComponent, itemType: ItemType, amount: number) {
+   let amountRemainingToConsume = amount;
+
+   for (let i = 0; i < inventoryComponent.inventories.length, amountRemainingToConsume > 0; i++) {
+      const inventory = inventoryComponent.inventories[i];
+      amountRemainingToConsume -= consumeItemTypeFromInventory(inventoryComponent, inventory.name, itemType, amountRemainingToConsume);
+   }
+}
+
 /**
  * @returns The amount of items consumed
  */
-export function consumeItem(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number, amount: number): number {
+export function consumeItemFromSlot(inventoryComponent: InventoryComponent, inventoryName: string, itemSlot: number, amount: number): number {
    const inventory = getInventory(inventoryComponent, inventoryName);
    
    const item = inventory.itemSlots[itemSlot];
@@ -332,6 +341,25 @@ export function getFirstOccupiedItemSlotInInventory(inventory: Inventory): numbe
    }
    
    return 0;
+}
+
+export function countItemType(inventoryComponent: InventoryComponent, itemType: ItemType): number {
+   let count = 0;
+   
+   for (let i = 0; i < inventoryComponent.inventories.length; i++) {
+      const inventory = inventoryComponent.inventories[i];
+
+      for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+         if (inventory.itemSlots.hasOwnProperty(itemSlot)) {
+            const item = inventory.itemSlots[itemSlot];
+            if (item.type === itemType) {
+               count += item.count;
+            }
+         }
+      }
+   }
+
+   return count;
 }
 
 export function serialiseInventoryComponent(entity: Entity): InventoryComponentData {

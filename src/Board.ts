@@ -7,7 +7,7 @@ import Tribe from "./Tribe";
 import Hitbox from "./hitboxes/Hitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import generateTerrain from "./world-generation/terrain-generation";
-import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, BlueprintComponentArray, TurretComponentArray, AmmoBoxComponentArray, ResearchBenchComponentArray, SpikesComponentArray } from "./components/ComponentArray";
+import { ArrowComponentArray, BerryBushComponentArray, BoulderComponentArray, CactusComponentArray, ComponentArray, CookingComponentArray, CowComponentArray, EscapeAIComponentArray, FishComponentArray, FollowAIComponentArray, FrozenYetiComponentArray, HealthComponentArray, HutComponentArray, IceShardComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, RockSpikeProjectileComponentArray, SlimeComponentArray, SlimewispComponentArray, SnowballComponentArray, ThrowingProjectileComponentArray, SlimeSpitComponentArray, TombstoneComponentArray, TotemBannerComponentArray, TreeComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray, WanderAIComponentArray, YetiComponentArray, ZombieComponentArray, DoorComponentArray, GolemComponentArray, IceSpikesComponentArray, PebblumComponentArray, BlueprintComponentArray, TurretComponentArray, AmmoBoxComponentArray, ResearchBenchComponentArray, SpikesComponentArray, TunnelComponentArray, BuildingMaterialComponentArray } from "./components/ComponentArray";
 import { tickInventoryUseComponent } from "./components/InventoryUseComponent";
 import { onPlayerRemove, tickPlayer } from "./entities/tribes/player";
 import Entity from "./Entity";
@@ -44,7 +44,7 @@ import { onWorkerHutRemove } from "./entities/tribes/worker-hut";
 import { onResearchBenchRemove } from "./entities/research-bench";
 import { onWarriorHutRemove } from "./entities/tribes/warrior-hut";
 import { onTribeWarriorRemove, tickTribeWarrior } from "./entities/tribes/tribe-warrior";
-import { onWoodenWallRemove } from "./entities/structures/wooden-wall";
+import { onWallRemove } from "./entities/structures/wall";
 import { onSlimeSpitRemove, tickSlimeSpit } from "./entities/projectiles/slime-spit";
 import { tickSpitPoison } from "./entities/projectiles/spit-poison";
 import { onWoodenDoorRemove } from "./entities/structures/wooden-door";
@@ -63,7 +63,7 @@ import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
-import { clearEntityPathfindingNodes, markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
+import { clearEntityPathfindingNodes, entityCanBlockPathfinding, markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
 import OPTIONS from "./options";
 import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
@@ -309,7 +309,7 @@ abstract class Board {
             case IEntityType.tribeWorker: onTribeWorkerRemove(entity); break;
             case IEntityType.tribeWarrior: onTribeWarriorRemove(entity); break;
             case IEntityType.researchBench: onResearchBenchRemove(entity); break;
-            case IEntityType.woodenWall: onWoodenWallRemove(entity); break;
+            case IEntityType.wall: onWallRemove(entity); break;
             case IEntityType.woodenDoor: onWoodenDoorRemove(entity); break;
             case IEntityType.battleaxeProjectile: onBattleaxeProjectileRemove(entity); break;
             case IEntityType.golem: onGolemRemove(entity); break;
@@ -590,6 +590,8 @@ abstract class Board {
       this.pushComponentsFromArray(AmmoBoxComponentArray);
       this.pushComponentsFromArray(ResearchBenchComponentArray);
       this.pushComponentsFromArray(SpikesComponentArray);
+      this.pushComponentsFromArray(TunnelComponentArray);
+      this.pushComponentsFromArray(BuildingMaterialComponentArray);
 
       // Push entities
       for (const entity of this.entityJoinBuffer) {
@@ -597,7 +599,9 @@ abstract class Board {
          // accessible but its components won't.
          entity.updateContainingChunks();
 
-         updateEntityPathfindingNodeOccupance(entity);
+         if (entityCanBlockPathfinding(entity.type)) {
+            updateEntityPathfindingNodeOccupance(entity);
+         }
 
          this.entities.push(entity);
          this.entityRecord[entity.id] = entity;
@@ -645,7 +649,8 @@ abstract class Board {
       return minDistance;
    }
 
-   public static getEntitiesAtPosition(x: number, y: number): Set<Entity> {
+   // @Cleanup: Shouldn't be in the Board file
+   public static getEntitiesAtPosition(x: number, y: number): Array<Entity> {
       if (!this.positionIsInBoard(x, y)) {
          throw new Error("Position isn't in the board");
       }
@@ -656,13 +661,13 @@ abstract class Board {
       const chunkX = Math.floor(x / SettingsConst.CHUNK_UNITS);
       const chunkY = Math.floor(y / SettingsConst.CHUNK_UNITS);
 
-      const entities = new Set<Entity>();
+      const entities = new Array<Entity>();
       
       const chunk = this.getChunk(chunkX, chunkY);
       for (const entity of chunk.entities) {
          for (const hitbox of entity.hitboxes) {
             if (this.hitboxIsInRange(testPosition, hitbox, 1)) {
-               entities.add(entity);
+               entities.push(entity);
                break;
             }
          }

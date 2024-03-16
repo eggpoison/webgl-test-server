@@ -1,9 +1,10 @@
-import { EntityType, IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
+import { IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Board from "./Board";
 import PathfindingHeap from "./PathfindingHeap";
+import OPTIONS from "./options";
 
 let inaccessiblePathfindingNodes: Record<PathfindingNodeIndex, Array<number>> = {};
 
@@ -54,6 +55,7 @@ const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, ignoredEntityIDs:
    const nodeFootprint = pathfindingEntityFootprint / PathfindingSettingsConst.NODE_SEPARATION + 1;
    const nodeFootprintSquared = nodeFootprint * nodeFootprint;
 
+   // @Incomplete: Make sure it doesn't overflow
    const minNodeX = Math.ceil(centerNodeX - nodeFootprint);
    const maxNodeX = Math.floor(centerNodeX + nodeFootprint);
    const minNodeY = Math.ceil(centerNodeY - nodeFootprint);
@@ -256,7 +258,10 @@ const aStarHeuristic = (startNode: PathfindingNodeIndex, endNode: PathfindingNod
    const startNodeY = Math.floor(startNode / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
    const endNodeX = endNode % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1;
    const endNodeY = Math.floor(endNode / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
-   return distance(startNodeX, startNodeY, endNodeX, endNodeY);
+
+   let diffX = startNodeX - endNodeX;
+   let diffY = startNodeY - endNodeY;
+   return Math.sqrt(diffX * diffX + diffY * diffY);
 }
 
 const getNodeNeighbours = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): ReadonlyArray<PathfindingNodeIndex> => {
@@ -318,26 +323,26 @@ const getNodeNeighbours = (node: PathfindingNodeIndex, ignoredEntityIDs: Readonl
    return neighbours;
 }
 
+export const enum PathfindFailureDefault {
+   /** Returns an empty path */
+   returnEmpty,
+   /** Returns the path to the node which was closest to the goal */
+   returnClosest
+}
+
+export interface PathfindOptions {
+   readonly goalRadius: number;
+   readonly failureDefault: PathfindFailureDefault;
+}
+
 /** A-star pathfinding algorithm */
-export function pathfind(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): Array<PathfindingNodeIndex> {
+export function pathfind(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number, options: PathfindOptions): Array<PathfindingNodeIndex> {
    const start = getClosestPathfindNode(startX, startY);
    const goal = getClosestPathfindNode(endX, endY);
 
-   if (!nodeIsAccessibleForEntity(goal, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      // for (const id of inaccessiblePathfindingNodes[goal]) {
-      //    if (id !== targetEntityID && !Board.entityRecord.hasOwnProperty(id)) {
-      //       console.warn("Entity which doesn't exist is blocking off a node.")
-      //    }
-      // }
-
-      const id = ignoredEntityIDs[ignoredEntityIDs.length - 1];
-      const e = Board.entityRecord[id];
-      if (typeof e !== "undefined") {
-         console.log(EntityType[e.type]);
-      }
-
+   if (options.goalRadius === 0 && !nodeIsAccessibleForEntity(goal, ignoredEntityIDs, pathfindingEntityFootprint)) {
       console.trace();
-      console.warn("Goal is inaccessible! at " + startX + " " + startY);
+      console.warn("Goal is inaccessible!");
       return [];
    }
 
@@ -364,16 +369,17 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
    while (openSet.currentItemCount > 0) {
       // @Cleanup @Incomplete: Is this supposed to happen?
       if (++i >= 5000) {
-         console.warn("POTENTIAL UNRESOLVEABLE PATH");
-         console.trace();
-         return [];
+         console.warn("!!! POTENTIAL UNRESOLVEABLE PATH !!!");
+         console.warn("!!! POTENTIAL UNRESOLVEABLE PATH !!!");
+         console.warn("!!! POTENTIAL UNRESOLVEABLE PATH !!!");
+         break;
       }
 
       let current = openSet.removeFirst();
       closedSet.add(current);
 
       // If reached the goal, return the path from start to the goal
-      if (current === goal) {
+      if ((options.goalRadius === 0 && current === goal) || (options.goalRadius > 0 && getDistBetweenNodes(current, goal) <= options.goalRadius)) {
          // Reconstruct the path
          const path: Array<PathfindingNodeIndex> = [current];
          while (cameFrom.hasOwnProperty(current)) {
@@ -406,53 +412,30 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
       }
    }
 
-   // On failure, return an empty array
-   console.warn("FAILURE");
-   console.trace();
-   return [];
-}
+   switch (options.failureDefault) {
+      case PathfindFailureDefault.returnClosest: {
+         const evaluatedNodes = Object.keys(gScore);
 
-/** A-star pathfinding algorithm */
-export function radialPathfind(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number, goalRadius: number): Array<PathfindingNodeIndex> {
-   const start = getClosestPathfindNode(startX, startY);
-   const goal = getClosestPathfindNode(endX, endY);
-
-   if (pathBetweenNodesIsClear(start, goal, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      return [start, goal];
-   }
-   
-   const cameFrom: Record<PathfindingNodeIndex, number> = {};
-
-   const gScore: Record<PathfindingNodeIndex, number> = {};
-   gScore[start] = 0;
-
-   const fScore: Record<PathfindingNodeIndex, number> = {};
-   fScore[start] = aStarHeuristic(start, goal);
-
-   const openSet = new PathfindingHeap(); // @Speed
-   openSet.gScore = gScore;
-   openSet.fScore = fScore;
-   openSet.addNode(start);
-
-   // @Incomplete: Investigate the closed set
-   
-   let i = 0;
-   while (openSet.currentItemCount > 0) {
-      // @Cleanup @Incomplete: Is this supposed to happen?
-      if (++i >= 5000) {
-         // const e = Board.entityRecord[pathfindingEntityID];
+         if (evaluatedNodes.length === 0) {
+            throw new Error();
+         }
          
-         // console.warn("POTENTIAL UNRESOLVEABLE PATH at " + e.position.x + " " + e.position.y);
-         // console.trace();
-         return [];
-      }
+         // Find the node which is the closest to the goal
+         let minHScore = 9999999999;
+         let closestNodeToGoal!: PathfindingNodeIndex;
+         for (let i = 0; i < evaluatedNodes.length; i++) {
+            const node = Number(evaluatedNodes[i]);
 
-      let current = openSet.removeFirst();
-
-      // If reached the goal, return the path from start to the goal
-
-      if (getDistBetweenNodes(current, goal) <= goalRadius) {
-         // Reconstruct the path
+            const hScore = aStarHeuristic(node, goal);
+            if (hScore < minHScore) {
+               minHScore = hScore;
+               closestNodeToGoal = node;
+            }
+         }
+         
+         // Construct the path back from that node
+         // @Cleanup: Copy and paste
+         let current = closestNodeToGoal;
          const path: Array<PathfindingNodeIndex> = [current];
          while (cameFrom.hasOwnProperty(current)) {
             current = cameFrom[current];
@@ -460,29 +443,14 @@ export function radialPathfind(startX: number, startY: number, endX: number, end
          }
          return path;
       }
-
-      // @Incomplete: What impact will this including already seen nodes have?
-      const currentGScore = gScore[current];
-      const neighbours = getNodeNeighbours(current, ignoredEntityIDs, pathfindingEntityFootprint);
-      for (let i = 0; i < neighbours.length; i++) {
-         const neighbour = neighbours[i];
-
-         const tentativeGScore = currentGScore + aStarHeuristic(current, neighbour);
-         const neighbourGScore = gScore.hasOwnProperty(neighbour) ? gScore[neighbour] : 999999;
-         if (tentativeGScore < neighbourGScore) {
-            cameFrom[neighbour] = current;
-            gScore[neighbour] = tentativeGScore;
-            fScore[neighbour] = tentativeGScore + aStarHeuristic(neighbour, goal);
-
-            if (!openSet.containsNode(neighbour)) {
-               openSet.addNode(neighbour);
-            }
+      case PathfindFailureDefault.returnEmpty: {
+         if (!OPTIONS.inBenchmarkMode) {
+            console.warn("FAILURE");
+            console.trace();
          }
+         return [];
       }
    }
-
-   // On failure, return an empty array
-   return [];
 }
 
 const pathBetweenNodesIsClear = (node1: PathfindingNodeIndex, node2: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
@@ -596,7 +564,7 @@ export function getVisiblePathfindingNodeOccupances(visibleChunkBounds: VisibleC
 }
 
 export function entityCanBlockPathfinding(entityType: IEntityType): boolean {
-   return entityType !== IEntityType.itemEntity;
+   return entityType !== IEntityType.itemEntity && entityType !== IEntityType.slimeSpit && entityType !== IEntityType.woodenArrowProjectile;
 }
 
 export function updateEntityPathfindingNodeOccupance(entity: Entity): void {

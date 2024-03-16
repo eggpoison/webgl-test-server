@@ -180,7 +180,7 @@ export function tickCow(cow: Entity): void {
          const testPositionY = cow.position.y + 60 * Math.cos(cow.rotation);
          if (Board.positionIsInBoard(testPositionX, testPositionY)) {
             const testEntities = Board.getEntitiesAtPosition(testPositionX, testPositionY);
-            if (testEntities.has(berryBush)) {
+            if (testEntities.indexOf(berryBush) !== -1) {
                cowComponent.bushShakeTimer++;
                if (cowComponent.bushShakeTimer >= 1.5 * SettingsConst.TPS) {
                   dropBerry(berryBush);

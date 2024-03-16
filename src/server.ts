@@ -22,7 +22,6 @@ import { PhysicsComponentArray, serialisePhysicsComponent } from "./components/P
 import { serialiseAIHelperComponent } from "./components/AIHelperComponent";
 import { serialiseArrowComponent } from "./components/ArrowComponent";
 import { serialiseBerryBushComponent } from "./entities/resources/berry-bush";
-import { serialiseBlueprintComponent } from "./entities/blueprint-entity";
 import { serialiseBoulderComponent } from "./entities/resources/boulder";
 import { serialiseCactusComponent } from "./entities/resources/cactus";
 import { serialiseCookingComponent } from "./components/CookingComponent";
@@ -60,10 +59,14 @@ import { resetPerlinNoiseCache } from "./perlin-noise";
 import { serialiseAmmoBoxComponent } from "./components/AmmoBoxComponent";
 import { serialiseSlimeComponent } from "./components/SlimeComponent";
 import { createTribeTotem } from "./entities/tribes/tribe-totem";
-import { createWoodenWall } from "./entities/structures/wooden-wall";
+import { createWall } from "./entities/structures/wall";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { getEntityDebugData } from "./entity-debug-data";
 import { getVisiblePathfindingNodeOccupances } from "./pathfinding";
+import { createWoodenEmbrasure } from "./entities/structures/wooden-embrasure";
+import { serialiseBlueprintComponent } from "./components/BlueprintComponent";
+import { serialiseTunnelComponent } from "./components/TunnelComponent";
+import { serialiseBuildingMaterialComponent } from "./components/BuildingMaterialComponent";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -143,6 +146,8 @@ const serialiseComponent = <T extends ServerComponentType>(entity: Entity, compo
       case ServerComponentType.wanderAI: return serialiseWanderAIComponent(entity);
       case ServerComponentType.yeti: return serialiseYetiComponent(entity);
       case ServerComponentType.zombie: return serialiseZombieComponent(entity);
+      case ServerComponentType.tunnel: return serialiseTunnelComponent(entity);
+      case ServerComponentType.buildingMaterial: return serialiseBuildingMaterialComponent(entity);
    }
 
    throw new Error("Unserialised component of type " + componentType);
@@ -459,27 +464,44 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            // if(1+1===2)return;
+            if(1+1===2)return;
 
             const tribe = new Tribe(TribeType.plainspeople);
             
             createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
-            const n = 10;
+            const w = 10;
+            const h = 10;
             const yo = 300;
             
-            for (let i = -n/2; i < n/2; i++) {
-               createWoodenWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
+            for (let i = -w/2; i < w/2; i++) {
+               if (i === 0) {
+                  createWoodenEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0);
+               } else {
+                  createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
+               }
+            }
+            
+            for (let i = 0; i < h; i++) {
+               createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
+            }
+            
+            for (let i = 0; i < h; i++) {
+               createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
+            }
+            
+            for (let i = -w/2; i < w/2; i++) {
+               createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo + (h - 1) * 64), tribe);
             }
 
             const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 400), tribe);
             tribe.registerNewWorkerHut(hut);
 
-            const hut2 = createWorkerHut(new Point(spawnPosition.x - 350, spawnPosition.y + 400), tribe);
-            tribe.registerNewWorkerHut(hut2);
+            // const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 700), tribe);
+            // tribe.registerNewWorkerHut(hut2);
 
-            const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
-            tribe.registerNewWorkerHut(hut3);
+            // const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
+            // tribe.registerNewWorkerHut(hut3);
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -768,11 +790,11 @@ class GameServer {
             }
          });
 
-         socket.on("shape_structure", (structureID: number, shapeType: BuildingShapeType): void => {
+         socket.on("shape_structure", (structureID: number, optionIdx: number): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               shapeStructure(player, structureID, shapeType);
+               shapeStructure(player, structureID, optionIdx);
             };
          });
 

@@ -2,7 +2,7 @@ import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, Bluep
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, SpikesComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
-import { addItemToSlot, consumeItem, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
+import { addItemToSlot, consumeItemFromSlot, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
 import { WORKBENCH_SIZE, createWorkbench } from "../workbench";
@@ -20,7 +20,7 @@ import { onFishLeaderHurt } from "../mobs/fish";
 import { createSpearProjectile } from "../projectiles/spear-projectile";
 import { createResearchBench } from "../research-bench";
 import { WARRIOR_HUT_SIZE, createWarriorHut } from "./warrior-hut";
-import { createWoodenWall } from "../structures/wooden-wall";
+import { createWall } from "../structures/wall";
 import { InventoryUseInfo, getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import { createBattleaxeProjectile } from "../projectiles/battleaxe-projectile";
 import { SERVER } from "../../server";
@@ -39,7 +39,7 @@ const DEFAULT_ATTACK_KNOCKBACK = 125;
 
 const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow, IEntityType.golem, IEntityType.slime, IEntityType.slimewisp];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace, IEntityType.golem];
-const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.woodenWall, IEntityType.woodenDoor, IEntityType.woodenEmbrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.woodenSpikes, IEntityType.punjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut];
+const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.wall, IEntityType.woodenDoor, IEntityType.woodenEmbrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.woodenSpikes, IEntityType.punjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut];
 export const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime, IEntityType.golem]; // @Incomplete: Golems should only hostile when awake
 
 const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1);
@@ -126,7 +126,7 @@ const PLACEABLE_ITEM_HITBOX_INFO: Record<PlaceableItemType, PlaceableItemCircula
       placeOffset: 50
    },
    [ItemType.wooden_wall]: {
-      entityType: IEntityType.woodenWall,
+      entityType: IEntityType.wall,
       type: PlaceableItemHitboxType.rectangular,
       width: 64,
       height: 64,
@@ -566,7 +566,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
    for (const snapEntity of snappableEntities) {
       let snapOrigin: Point;
       switch (snapEntity.type as StructureTypeConst) {
-         case IEntityType.woodenWall:
+         case IEntityType.wall:
          case IEntityType.woodenDoor:
          case IEntityType.woodenTunnel:
          case IEntityType.woodenSpikes:
@@ -584,7 +584,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
          }
       }
 
-      const isPlacedOnWall = snapEntity.type === IEntityType.woodenWall;
+      const isPlacedOnWall = snapEntity.type === IEntityType.wall;
 
       // @Cleanup
       let clampedSnapRotation = snapEntity.rotation;
@@ -737,7 +737,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const itemInfo = ITEM_INFO_RECORD[item.type] as FoodItemInfo;
 
          healEntity(tribeMember, itemInfo.healAmount, tribeMember.id);
-         consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
+         consumeItemFromSlot(inventoryComponent, inventoryName, itemSlot, 1);
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName)
@@ -754,7 +754,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          const placeRotation = calculatePlaceRotation(tribeMember, snapInfo);
 
          // Make sure the placeable item can be placed
-         if (!buildingCanBePlaced(placePosition.x, placePosition.y, placeRotation, item.type, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.woodenWall)) return;
+         if (!buildingCanBePlaced(placePosition.x, placePosition.y, placeRotation, item.type, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall)) return;
          
          // Spawn the placeable entity
          let placedEntity: Entity;
@@ -810,9 +810,9 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
                placedEntity = createResearchBench(placePosition, tribeComponent.tribe);
                break;
             }
-            case IEntityType.woodenWall: {
+            case IEntityType.wall: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createWoodenWall(placePosition, tribeComponent.tribe);
+               placedEntity = createWall(placePosition, tribeComponent.tribe);
                break;
             }
             case IEntityType.planterBox: {
@@ -821,22 +821,22 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
             case IEntityType.woodenSpikes: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createWoodenSpikes(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.woodenWall ? snapInfo.snappedEntityID : ID_SENTINEL_VALUE);
+               placedEntity = createWoodenSpikes(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : ID_SENTINEL_VALUE);
                break;
             }
             case IEntityType.punjiSticks: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createPunjiSticks(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.woodenWall ? snapInfo.snappedEntityID : ID_SENTINEL_VALUE);
+               placedEntity = createPunjiSticks(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : ID_SENTINEL_VALUE);
                break;
             }
             case IEntityType.ballista: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.ballista, tribeComponent.tribe, placeRotation);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.ballista, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
                break;
             }
             case IEntityType.slingTurret: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.slingTurret, tribeComponent.tribe, placeRotation);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.slingTurret, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
                break;
             }
             case IEntityType.woodenTunnel: {
@@ -853,7 +853,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          // Rotate it to match the entity's rotation
          placedEntity.rotation = placeRotation;
 
-         consumeItem(inventoryComponent, "hotbar", itemSlot, 1);
+         consumeItemFromSlot(inventoryComponent, "hotbar", itemSlot, 1);
 
          break;
       }
@@ -961,7 +961,7 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          spear.velocity.y = velocityMagnitude * Math.cos(tribeMember.rotation);
          spear.rotation = tribeMember.rotation;
 
-         consumeItem(inventoryComponent, inventoryName, itemSlot, 1);
+         consumeItemFromSlot(inventoryComponent, inventoryName, itemSlot, 1);
 
          useInfo.lastSpearChargeTicks = Board.ticks;
          

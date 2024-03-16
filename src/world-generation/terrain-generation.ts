@@ -61,7 +61,7 @@ const getTileInfo = (biomeName: BiomeName, dist: number, x: number, y: number): 
       if (matchesTileRequirements(tileGenerationInfo, weight, dist)) {
          return {
             type: tileGenerationInfo.tileType,
-            isWall: tileGenerationInfo.isWall
+            isWall: OPTIONS.generateWalls ? tileGenerationInfo.isWall : false
          };
       }
    }

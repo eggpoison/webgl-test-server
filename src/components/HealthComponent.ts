@@ -16,12 +16,11 @@ import { onPlayerHurt } from "../entities/tribes/player";
 import { onTribeWorkerHurt } from "../entities/tribes/tribe-worker";
 import { onTribeWarriorHurt } from "../entities/tribes/tribe-warrior";
 import { onGolemHurt } from "../entities/mobs/golem";
-import { onWoodenWallDeath } from "../entities/structures/wooden-wall";
 import { AIHelperComponentArray } from "./AIHelperComponent";
 import { SERVER } from "../server";
 
 export class HealthComponent {
-   public readonly maxHealth: number;
+   public maxHealth: number;
    public health: number;
 
    /** How much that incoming damage gets reduced. 0 = none, 1 = all */
@@ -94,10 +93,6 @@ export function damageEntity(entity: Entity, damage: number, attackingEntity: En
          }
          case IEntityType.frozenYeti: {
             onFrozenYetiDeath(entity, attackingEntity);
-            break;
-         }
-         case IEntityType.woodenWall: {
-            onWoodenWallDeath(entity, attackingEntity);
             break;
          }
       }

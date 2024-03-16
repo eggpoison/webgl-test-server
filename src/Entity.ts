@@ -58,18 +58,6 @@ export const RESOURCE_ENTITY_TYPES: ReadonlyArray<IEntityType> = [IEntityType.kr
 
 export const NUM_ENTITY_TYPES = Object.keys(EntityComponents).length;
 
-export const NO_COLLISION = 0xFFFF;
-
-const entityHasHardCollision = (entity: Entity): boolean => {
-   // Doors have hard collision when closing/closed
-   if (entity.type === IEntityType.woodenDoor) {
-      const doorComponent = DoorComponentArray.getComponent(entity.id);
-      return doorComponent.toggleType === DoorToggleType.close || doorComponent.openProgress === 0;
-   }
-   
-   return entity.type === IEntityType.woodenWall || entity.type === IEntityType.woodenEmbrasure;
-}
-
 // @Cleanup: Copy and pasted from shared repo
 
 const findMinWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offsetY: number, axis: Point): number => {
@@ -337,7 +325,6 @@ class Entity<T extends IEntityType = IEntityType> {
    }
 
    public tick(): void {
-      // @Cleanup: Maybe move to AgeComponent or something
       this.ageTicks++;
    }
 
@@ -1094,144 +1081,6 @@ class Entity<T extends IEntityType = IEntityType> {
       // const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
       // this.velocity.x = bx * projectionCoeff;
       // this.velocity.y = by * projectionCoeff;
-   }
-
-   private resolveCollisionHard(hitbox: Hitbox, collidingHitbox: Hitbox): void {
-      // @Incomplete: Rectangle + rectangle, circle + circle
-      
-      if (hitbox.hasOwnProperty("radius") && !collidingHitbox.hasOwnProperty("radius")) {
-         this.resolveCircleRectangleCollision(hitbox as CircularHitbox, collidingHitbox as RectangularHitbox);
-      } else if (!hitbox.hasOwnProperty("radius") && collidingHitbox.hasOwnProperty("radius")) {
-         this.resolveCircleRectangleCollision(collidingHitbox as CircularHitbox, hitbox as RectangularHitbox);
-      } else if (!hitbox.hasOwnProperty("radius") && !collidingHitbox.hasOwnProperty("radius")) {
-         this.resolveRectangleRectangleCollision(hitbox as RectangularHitbox, collidingHitbox as RectangularHitbox);
-      }
-   }
-
-   private resolveCollisionSoft(collidingEntity: Entity, collidingHitbox: Hitbox): void {
-      // @Bug @Incomplete: base the push force and distance on this hitbox not this entity
-
-      // Calculate the force of the push
-      // Force gets greater the closer together the objects are
-      const collidingHitboxX = collidingEntity.position.x + collidingHitbox.rotatedOffsetX;
-      const collidingHitboxY = collidingEntity.position.y + collidingHitbox.rotatedOffsetY;
-      const distanceBetweenEntities = distance(this.position.x, this.position.y, collidingHitboxX, collidingHitboxY);
-      const maxDistanceBetweenEntities = this.calculateMaxDistanceFromGameObject(collidingEntity);
-      const dist = Math.max(distanceBetweenEntities / maxDistanceBetweenEntities, 0.1);
-      
-      // @Incomplete: Experiment with having a constant push force. Might be good
-      const force = SettingsConst.ENTITY_PUSH_FORCE * SettingsConst.I_TPS / dist * collidingHitbox.mass / this.totalMass * collidingEntity.collisionPushForceMultiplier;
-      const pushAngle = this.position.calculateAngleBetween(collidingEntity.position) + Math.PI;
-      this.velocity.x += force * Math.sin(pushAngle);
-      this.velocity.y += force * Math.cos(pushAngle);
-   }
-
-   /**
-    * @returns A number where the first 8 bits hold the index of the entity's colliding hitbox, and the next 8 bits hold the index of the other entity's colliding hitbox
-   */
-   public isColliding(entity: Entity): number {
-      if ((entity.collisionMask & this.collisionBit) === 0 || (this.collisionMask & entity.collisionBit) === 0) {
-         return NO_COLLISION;
-      }
-
-      // AABB bounding area check
-      if (this.boundingAreaMinX > entity.boundingAreaMaxX || // minX(1) > maxX(2)
-          this.boundingAreaMaxX < entity.boundingAreaMinX || // maxX(1) < minX(2)
-          this.boundingAreaMinY > entity.boundingAreaMaxY || // minY(1) > maxY(2)
-          this.boundingAreaMaxY < entity.boundingAreaMinY) { // maxY(1) < minY(2)
-         return NO_COLLISION;
-      }
-      
-      // More expensive hitbox check
-      const numHitboxes = this.hitboxes.length;
-      const numOtherHitboxes = entity.hitboxes.length;
-      for (let i = 0; i < numHitboxes; i++) {
-         const hitbox = this.hitboxes[i];
-
-         for (let j = 0; j < numOtherHitboxes; j++) {
-            const otherHitbox = entity.hitboxes[j];
-
-            // If the objects are colliding, add the colliding object and this object
-            if (hitbox.isColliding(otherHitbox)) {
-               return i + (j << 8);
-            }
-         }
-      }
-
-      // If no hitboxes match, then they aren't colliding
-      return NO_COLLISION;
-   }
-
-   public collide(collidingEntity: Entity, hitboxIdx: number, collidingHitboxIdx: number): void {
-      if (PhysicsComponentArray.hasComponent(this)) {
-         const physicsComponent = PhysicsComponentArray.getComponent(this.id);
-         if (!physicsComponent.ignoreCollisions) {
-            const collidingHitbox = collidingEntity.hitboxes[collidingHitboxIdx];
-   
-            if (entityHasHardCollision(collidingEntity)) {
-               const hitbox = this.hitboxes[hitboxIdx];
-               this.resolveCollisionHard(hitbox, collidingHitbox);
-            } else {
-               this.resolveCollisionSoft(collidingEntity, collidingHitbox);
-            }
-         }
-      }
-
-      switch (this.type) {
-         case IEntityType.player: onPlayerCollision(this, collidingEntity); break;
-         case IEntityType.tribeWorker: onTribeWorkerCollision(this, collidingEntity); break;
-         case IEntityType.iceSpikes: onIceSpikesCollision(this, collidingEntity); break;
-         case IEntityType.iceShardProjectile: onIceShardCollision(this, collidingEntity); break;
-         case IEntityType.cactus: onCactusCollision(this, collidingEntity); break;
-         case IEntityType.zombie: onZombieCollision(this, collidingEntity); break;
-         case IEntityType.slime: onSlimeCollision(this, collidingEntity); break;
-         case IEntityType.woodenArrowProjectile: onWoodenArrowCollision(this, collidingEntity); break;
-         case IEntityType.yeti: onYetiCollision(this, collidingEntity); break;
-         case IEntityType.snowball: onSnowballCollision(this, collidingEntity); break;
-         case IEntityType.frozenYeti: onFrozenYetiCollision(this, collidingEntity); break;
-         case IEntityType.rockSpikeProjectile: onRockSpikeProjectileCollision(this, collidingEntity); break;
-         case IEntityType.spearProjectile: onSpearProjectileCollision(this, collidingEntity); break;
-         case IEntityType.slimeSpit: onSlimeSpitCollision(this, collidingEntity); break;
-         case IEntityType.spitPoison: onSpitPoisonCollision(this, collidingEntity); break;
-         case IEntityType.battleaxeProjectile: onBattleaxeProjectileCollision(this, collidingEntity); break;
-         case IEntityType.iceArrow: onIceArrowCollision(this, collidingEntity); break;
-         case IEntityType.pebblum: onPebblumCollision(this, collidingEntity); break;
-         case IEntityType.golem: onGolemCollision(this, collidingEntity); break;
-         case IEntityType.woodenSpikes: onWoodenSpikesCollision(this, collidingEntity); break;
-         case IEntityType.punjiSticks: onPunjiSticksCollision(this, collidingEntity); break;
-      }
-   }
-
-   private calculateMaxDistanceFromGameObject(gameObject: Entity): number {
-      // @Speed
-      
-      let maxDist = 0;
-
-      // Account for this object's hitboxes
-      for (const hitbox of this.hitboxes) {
-         if (hitbox.hasOwnProperty("radius")) {
-            // Circular hitbox
-            maxDist += (hitbox as CircularHitbox).radius;
-         } else {
-            // Rectangular hitbox
-            // @Speed
-            maxDist += Math.sqrt((hitbox as RectangularHitbox).width * (hitbox as RectangularHitbox).width / 4 + (hitbox as RectangularHitbox).height * (hitbox as RectangularHitbox).height / 4);
-         }
-      }
-
-      // Account for the other object's hitboxes
-      for (const hitbox of gameObject.hitboxes) {
-         if (hitbox.hasOwnProperty("radius")) {
-            // Circular hitbox
-            maxDist += (hitbox as CircularHitbox).radius;
-         } else {
-            // Rectangular hitbox
-            // @Speed
-            maxDist += Math.sqrt((hitbox as RectangularHitbox).width * (hitbox as RectangularHitbox).width / 4 + (hitbox as RectangularHitbox).height * (hitbox as RectangularHitbox).height / 4);
-         }
-      }
-
-      return maxDist;
    }
 
    public remove(): void {
