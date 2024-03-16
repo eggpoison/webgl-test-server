@@ -52,14 +52,14 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
       }
       // Buildings
       case IEntityType.wall:
-      case IEntityType.woodenDoor:
+      case IEntityType.door:
       case IEntityType.woodenSpikes:
       case IEntityType.punjiSticks:
-      case IEntityType.woodenEmbrasure:
+      case IEntityType.embrasure:
       case IEntityType.ballista:
       case IEntityType.slingTurret:
       case IEntityType.blueprintEntity:
-      case IEntityType.woodenTunnel: {
+      case IEntityType.tunnel: {
          const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
          if (entityTribeComponent.tribe === tribeComponent.tribe) {
             return EntityRelationship.friendlyBuilding;

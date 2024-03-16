@@ -11,7 +11,7 @@ import Board from "../../Board";
 
 const SIZE = 64 - 0.05;
 
-const WALL_HEALTHS = [25, 75];
+export const WALL_HEALTHS = [25, 75];
 
 export function addWallHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 1, 0, 0, SIZE, SIZE));
@@ -51,15 +51,4 @@ export function onWallRemove(wall: Entity): void {
    StatusEffectComponentArray.removeComponent(wall);
    TribeComponentArray.removeComponent(wall);
    BuildingMaterialComponentArray.removeComponent(wall);
-}
-
-export function upgradeWall(wall: Entity): void {
-   const materialComponent = BuildingMaterialComponentArray.getComponent(wall.id);
-   if (materialComponent.material < BuildingMaterial.stone) {
-      materialComponent.material++;
-
-      const healthComponent = HealthComponentArray.getComponent(wall.id);
-      healthComponent.maxHealth = WALL_HEALTHS[materialComponent.material];
-      healthComponent.health = healthComponent.maxHealth;
-   }
 }

@@ -321,7 +321,7 @@ const shouldAttackEntity = (zombie: Entity, entity: Entity): boolean => {
       || entity.type === IEntityType.barrel
       || entity.type === IEntityType.researchBench
       || entity.type === IEntityType.ballista
-      || entity.type === IEntityType.woodenDoor
+      || entity.type === IEntityType.door
       || entity.type === IEntityType.slingTurret;
 }
 

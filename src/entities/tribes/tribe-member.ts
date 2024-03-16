@@ -1,7 +1,7 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintBuildingType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import Board from "../../Board";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, SpikesComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { addItemToSlot, consumeItemFromSlot, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
@@ -33,13 +33,13 @@ import { EntityRelationship, getTribeMemberRelationship } from "../../components
 import { createBlueprintEntity } from "../blueprint-entity";
 import { getItemAttackCooldown } from "../../items";
 import { applyKnockback } from "../../components/PhysicsComponent";
-import { createWoodenTunnel } from "../structures/wooden-tunnel";
+import { createTunnel } from "../structures/tunnel";
 
 const DEFAULT_ATTACK_KNOCKBACK = 125;
 
 const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow, IEntityType.golem, IEntityType.slime, IEntityType.slimewisp];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace, IEntityType.golem];
-const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.wall, IEntityType.woodenDoor, IEntityType.woodenEmbrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.woodenSpikes, IEntityType.punjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut];
+const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.wall, IEntityType.door, IEntityType.embrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.woodenSpikes, IEntityType.punjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut];
 export const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime, IEntityType.golem]; // @Incomplete: Golems should only hostile when awake
 
 const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1);
@@ -567,8 +567,8 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
       let snapOrigin: Point;
       switch (snapEntity.type as StructureTypeConst) {
          case IEntityType.wall:
-         case IEntityType.woodenDoor:
-         case IEntityType.woodenTunnel:
+         case IEntityType.door:
+         case IEntityType.tunnel:
          case IEntityType.woodenSpikes:
          case IEntityType.punjiSticks:
          case IEntityType.ballista:
@@ -576,7 +576,7 @@ export function calculateSnapInfo(entity: Entity, placeInfo: PlaceableItemHitbox
             snapOrigin = snapEntity.position;
             break;
          }
-         case IEntityType.woodenEmbrasure: {
+         case IEntityType.embrasure: {
             const x = snapEntity.position.x - 22 * Math.sin(snapEntity.rotation);
             const y = snapEntity.position.y - 22 * Math.cos(snapEntity.rotation);
             snapOrigin = new Point(x, y);
@@ -831,17 +831,13 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
             case IEntityType.ballista: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.ballista, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintType.ballista, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
                break;
             }
             case IEntityType.slingTurret: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintBuildingType.slingTurret, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintType.slingTurret, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
                break;
-            }
-            case IEntityType.woodenTunnel: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createWoodenTunnel(placePosition, tribeComponent.tribe, placeRotation);
             }
             default: {
                // @Robustness: Should automatically detect this before compiled

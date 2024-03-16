@@ -81,7 +81,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
    }
 
    // Break without damaging friendly embrasures
-   if (collidingEntity.type === IEntityType.woodenEmbrasure) {
+   if (collidingEntity.type === IEntityType.embrasure) {
       const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          arrow.remove();

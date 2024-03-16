@@ -1,4 +1,4 @@
-import { COLLISION_BITS, IEntityType, Point, BlueprintBuildingType, assertUnreachable } from "webgl-test-shared";
+import { COLLISION_BITS, IEntityType, Point, BlueprintType, assertUnreachable } from "webgl-test-shared";
 import Entity from "../Entity";
 import { BlueprintComponentArray, HealthComponentArray, TribeComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
@@ -7,49 +7,52 @@ import { TribeComponent } from "../components/TribeComponent";
 import Tribe from "../Tribe";
 import { addBallistaHitboxes } from "./structures/ballista";
 import { addSlingTurretHitboxes } from "./structures/sling-turret";
-import { addWoodenDoorHitboxes } from "./structures/wooden-door";
-import { addWoodenEmbrasureHitboxes } from "./structures/wooden-embrasure";
-import { addWoodenTunnelHitboxes } from "./structures/wooden-tunnel";
+import { addDoorHitboxes } from "./structures/wooden-door";
+import { addEmbrasureHitboxes } from "./structures/embrasure";
+import { addTunnelHitboxes } from "./structures/tunnel";
 import { addWallHitboxes } from "./structures/wall";
 
 // @Incomplete: Remove if the associated entity is removed
 
-export function createBlueprintEntity(position: Point, buildingType: BlueprintBuildingType, associatedEntityID: number, tribe: Tribe, rotation: number): Entity {
+export function createBlueprintEntity(position: Point, blueprintType: BlueprintType, associatedEntityID: number, tribe: Tribe, rotation: number): Entity {
    const blueprintEntity = new Entity(position, IEntityType.blueprintEntity, COLLISION_BITS.none, 0);
    blueprintEntity.rotation = rotation;
 
-   switch (buildingType) {
-      case BlueprintBuildingType.tunnel: {
-         addWoodenTunnelHitboxes(blueprintEntity);
+   switch (blueprintType) {
+      case BlueprintType.woodenTunnel:
+      case BlueprintType.stoneTunnel: {
+         addTunnelHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintBuildingType.embrasure: {
-         addWoodenEmbrasureHitboxes(blueprintEntity);
+      case BlueprintType.woodenEmbrasure:
+      case BlueprintType.stoneEmbrasure: {
+         addEmbrasureHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintBuildingType.woodenDoor: {
-         addWoodenDoorHitboxes(blueprintEntity);
+      case BlueprintType.woodenDoor:
+      case BlueprintType.stoneDoor: {
+         addDoorHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintBuildingType.ballista: {
+      case BlueprintType.ballista: {
          addBallistaHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintBuildingType.slingTurret: {
+      case BlueprintType.slingTurret: {
          addSlingTurretHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintBuildingType.stoneWallUpgrade: {
+      case BlueprintType.stoneWall: {
          addWallHitboxes(blueprintEntity);
          break;
       }
       default: {
-         assertUnreachable(buildingType);
+         assertUnreachable(blueprintType);
       }
    }
 
    HealthComponentArray.addComponent(blueprintEntity, new HealthComponent(5));
-   BlueprintComponentArray.addComponent(blueprintEntity, new BlueprintComponent(buildingType, associatedEntityID));
+   BlueprintComponentArray.addComponent(blueprintEntity, new BlueprintComponent(blueprintType, associatedEntityID));
    TribeComponentArray.addComponent(blueprintEntity, new TribeComponent(tribe));
 
    return blueprintEntity;

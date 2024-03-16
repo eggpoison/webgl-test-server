@@ -1,8 +1,8 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, BlueprintBuildingType, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, BuildingShapeType } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, MATERIAL_TO_ITEM_MAP, BuildingMaterial, assertUnreachable, BlueprintType } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
+import { BuildingMaterialComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItem, addItemToSlot, consumeItemFromSlot, consumeItemType, consumeItemTypeFromInventory, countItemType, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
@@ -466,101 +466,156 @@ const snapRotationToPlayer = (player: Entity, placePosition: Point, rotation: nu
    return snapRotation;
 }
 
-export function shapeStructure(player: Entity, structureID: number, optionIdx: number): void {
-   if (!Board.entityRecord.hasOwnProperty(structureID)) {
+const blueprintTypeMatchesBuilding = (building: Entity, blueprintType: BlueprintType): boolean => {
+   const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
+
+   if (building.type === IEntityType.wall) {
+      switch (materialComponent.material) {
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneWall || blueprintType === BlueprintType.woodenDoor || blueprintType === BlueprintType.woodenEmbrasure || blueprintType === BlueprintType.woodenTunnel;
+         case BuildingMaterial.stone: return blueprintType === BlueprintType.stoneDoor || blueprintType === BlueprintType.stoneEmbrasure || blueprintType === BlueprintType.stoneTunnel;
+      }
+   }
+
+   if (building.type === IEntityType.door) {
+      switch (materialComponent.material) {
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneDoor;
+         case BuildingMaterial.stone: return false;
+      }
+   }
+
+   if (building.type === IEntityType.embrasure) {
+      switch (materialComponent.material) {
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneEmbrasure;
+         case BuildingMaterial.stone: return false;
+      }
+   }
+
+   if (building.type === IEntityType.tunnel) {
+      switch (materialComponent.material) {
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneTunnel;
+         case BuildingMaterial.stone: return false;
+      }
+   }
+
+   return false;
+}
+
+export function placeBlueprint(player: Entity, buildingID: number, blueprintType: BlueprintType): void {
+   if (!Board.entityRecord.hasOwnProperty(buildingID)) {
       return;
    }
 
-   const previousStructure = Board.entityRecord[structureID];
+   const building = Board.entityRecord[buildingID];
 
-   const rotation = snapRotationToPlayer(player, previousStructure.position, previousStructure.rotation);
+   if (!blueprintTypeMatchesBuilding(building, blueprintType)) {
+      return;
+   }
 
-   if (previousStructure.type === IEntityType.wall) {
-      // @Cleanup: These vars should be inside the case, as not all cases use them
-      let position!: Point;
-      let buildingType!: BlueprintBuildingType;
-      switch (optionIdx) {
-         case 0: {
-            const inventoryComponent = InventoryComponentArray.getComponent(player.id);
-            const numRocks = countItemType(inventoryComponent, ItemType.rock);
-            if (numRocks < 5) {
-               return;
-            }
-
-            // Upgrade the wall to stone
-            const position = previousStructure.position.copy();
-            const tribeComponent = TribeComponentArray.getComponent(player.id);
-            createBlueprintEntity(position, BlueprintBuildingType.stoneWallUpgrade, previousStructure.id, tribeComponent.tribe, rotation);
-
-            consumeItemType(inventoryComponent, ItemType.rock, 5);
-            
+   switch (blueprintType) {
+      case BlueprintType.stoneWall: {
+         const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
+         const upgradeMaterialItemType = MATERIAL_TO_ITEM_MAP[(materialComponent.material + 1) as BuildingMaterial];
+         
+         const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+         if (countItemType(inventoryComponent, upgradeMaterialItemType) < 5) {
             return;
          }
-         case 1: {
-            position = previousStructure.position.copy();
-            buildingType = BlueprintBuildingType.woodenDoor;
-            break;
-         }
-         case 2: {
-            position = previousStructure.position.copy();
+
+         // Upgrade the wall to stone
+         const position = building.position.copy();
+         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
+         createBlueprintEntity(position, BlueprintType.stoneWall, building.id, tribeComponent.tribe, rotation);
+
+         consumeItemType(inventoryComponent, upgradeMaterialItemType, 5);
+         break;
+      }
+      case BlueprintType.woodenEmbrasure:
+      case BlueprintType.woodenDoor:
+      case BlueprintType.woodenTunnel: {
+         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
+         const position = building.position.copy();
+         if (blueprintType === BlueprintType.woodenEmbrasure) {
             position.x += 22 * Math.sin(rotation);
             position.y += 22 * Math.cos(rotation);
-            buildingType = BlueprintBuildingType.embrasure;
-            break;
          }
-         case 3: {
-            position = previousStructure.position.copy();
-            buildingType = BlueprintBuildingType.tunnel;
-            break;
-         }
-         case 4: {
-            // Deconstruct
-            previousStructure.remove();
-            createItemsOverEntity(previousStructure, ItemType.wood, 5, 40);
-            return;
-         }
+         
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
+         createBlueprintEntity(building.position.copy(), blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
+         
+         building.remove();
+         break;
       }
-   
-      previousStructure.remove();
-   
-      const tribeComponent = TribeComponentArray.getComponent(player.id);
-      createBlueprintEntity(position, buildingType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
+      case BlueprintType.stoneDoor:
+      case BlueprintType.stoneEmbrasure:
+      case BlueprintType.stoneTunnel: {
+         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
+
+         if ((building.type === IEntityType.tunnel && blueprintType === BlueprintType.stoneTunnel) || (building.type === IEntityType.door && blueprintType === BlueprintType.stoneDoor) || (building.type === IEntityType.embrasure && blueprintType === BlueprintType.stoneEmbrasure)) {
+            console.log("up");
+            // Upgrade
+            createBlueprintEntity(building.position.copy(), blueprintType, building.id, tribeComponent.tribe, rotation);
+         } else {
+            console.log("CREATE");
+            createBlueprintEntity(building.position.copy(), blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
+            building.remove();
+         }
+         break;
+      }
+   }
+}
+
+export function modifyBuilding(player: Entity, buildingID: number): void {
+   if (!Board.entityRecord.hasOwnProperty(buildingID)) {
       return;
    }
 
-   if (previousStructure.type === IEntityType.woodenTunnel) {
-      if (optionIdx === 1) {
-         // Deconstruct
-         previousStructure.remove();
-         createItemsOverEntity(previousStructure, ItemType.wood, 5, 40);
-         return;
-      }
+   const building = Board.entityRecord[buildingID];
       
-      const tunnelComponent = TunnelComponentArray.getComponent(previousStructure.id);
+   const tunnelComponent = TunnelComponentArray.getComponent(building.id);
+   switch (tunnelComponent.doorBitset) {
+      case 0b00: {
+         // Place the door blueprint on whichever side is closest to the player
+         const dirToPlayer = building.position.calculateAngleBetween(player.position);
+         const dot = Math.sin(building.rotation) * Math.sin(dirToPlayer) + Math.cos(building.rotation) * Math.cos(dirToPlayer);
 
-      switch (tunnelComponent.doorBitset) {
-         case 0b00: {
-            // Place the door blueprint on whichever side is closest to the player
-            const dirToPlayer = previousStructure.position.calculateAngleBetween(player.position);
-            const dot = Math.sin(previousStructure.rotation) * Math.sin(dirToPlayer) + Math.cos(previousStructure.rotation) * Math.cos(dirToPlayer);
-
-            if (dot > 0) {
-               // Top door
-               tunnelComponent.doorBitset = 0b01;
-            } else {
-               // Bottom door
-               tunnelComponent.doorBitset = 0b10;
-            }
-            break;
+         if (dot > 0) {
+            // Top door
+            tunnelComponent.doorBitset = 0b01;
+         } else {
+            // Bottom door
+            tunnelComponent.doorBitset = 0b10;
          }
-         case 0b10:
-         case 0b01: {
-            // One door is already placed, so place the other one
-            tunnelComponent.doorBitset = 0b11;
-            break;
-         }
+         break;
+      }
+      case 0b10:
+      case 0b01: {
+         // One door is already placed, so place the other one
+         tunnelComponent.doorBitset = 0b11;
+         break;
       }
    }
+}
+
+export function deconstructBuilding(buildingID: number): void {
+   if (!Board.entityRecord.hasOwnProperty(buildingID)) {
+      return;
+   }
+
+   const building = Board.entityRecord[buildingID];
+
+   if (!BuildingMaterialComponentArray.hasComponent(building)) {
+      return;
+   }
+
+   const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
+   const materialItemType = MATERIAL_TO_ITEM_MAP[materialComponent.material];
+
+   // Deconstruct
+   building.remove();
+   createItemsOverEntity(building, materialItemType, 5, 40);
+   return;
 }
 
 export function interactWithStructure(player: Entity, structureID: number): void {
@@ -570,7 +625,7 @@ export function interactWithStructure(player: Entity, structureID: number): void
 
    const structure = Board.entityRecord[structureID];
    switch (structure.type) {
-      case IEntityType.woodenDoor: {
+      case IEntityType.door: {
          toggleDoor(structure);
          break;
       }
@@ -594,3 +649,19 @@ export function uninteractWithStructure(player: Entity, structureID: number): vo
       }
    }
 }
+// case 4: {
+//    const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
+//    const materialItemType = MATERIAL_TO_ITEM_MAP[materialComponent.material];
+
+//    // Deconstruct
+//    building.remove();
+//    createItemsOverEntity(building, materialItemType, 5, 40);
+//    return;
+// }
+
+// if (optionIdx === 1) {
+//    // Deconstruct
+//    building.remove();
+//    createItemsOverEntity(building, ItemType.wood, 5, 40);
+//    return;
+// }

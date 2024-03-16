@@ -38,13 +38,13 @@ export const enum CollisionVars {
 
 const entityHasHardCollision = (entity: Entity, collidingEntity: Entity): boolean => {
    // Doors have hard collision when closing/closed
-   if (entity.type === IEntityType.woodenDoor) {
+   if (entity.type === IEntityType.door) {
       const doorComponent = DoorComponentArray.getComponent(entity.id);
       return doorComponent.toggleType === DoorToggleType.close || doorComponent.openProgress === 0;
    }
 
    // Tunnels have hard collision outside and soft inside
-   if (entity.type === IEntityType.woodenTunnel) {
+   if (entity.type === IEntityType.tunnel) {
       const projX = Math.sin(entity.rotation + Math.PI / 2);
       const projY = Math.cos(entity.rotation + Math.PI / 2);
 
@@ -62,7 +62,7 @@ const entityHasHardCollision = (entity: Entity, collidingEntity: Entity): boolea
       return centerProj <= minProj || centerProj >= maxProj;
    }
    
-   return entity.type === IEntityType.wall || entity.type === IEntityType.woodenEmbrasure;
+   return entity.type === IEntityType.wall || entity.type === IEntityType.embrasure;
 }
 
 const getCircleCircleCollisionPushInfo = (pushedHitbox: CircularHitbox, pushingHitbox: CircularHitbox): CollisionPushInfo => {

@@ -37,7 +37,7 @@ export function createWoodenSpikes(position: Point, tribe: Tribe, attachedWallID
 
 export function onWoodenSpikesCollision(spikes: Entity, collidingEntity: Entity): void {
    // @Incomplete: Why is this condition neeeded? Shouldn't be able to be placed colliding with other structures anyway.
-   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.woodenDoor || collidingEntity.type === IEntityType.wall) {
+   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.door || collidingEntity.type === IEntityType.wall) {
       return;
    }
    

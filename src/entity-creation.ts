@@ -52,9 +52,9 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.ballista:
       case IEntityType.slingTurret:
       case IEntityType.wall:
-      case IEntityType.woodenDoor:
-      case IEntityType.woodenEmbrasure:
-      case IEntityType.woodenTunnel:
+      case IEntityType.door:
+      case IEntityType.embrasure:
+      case IEntityType.tunnel:
       case IEntityType.slimeSpit:
       case IEntityType.woodenArrowProjectile:
       case IEntityType.iceArrow:

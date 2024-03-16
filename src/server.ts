@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, TribeMemberAction, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, HealData, ResearchOrbCompleteData, EntityDebugData, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, BuildingShapeType, Inventory, IEntityType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, TribeMemberAction, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, HealData, ResearchOrbCompleteData, EntityDebugData, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, Inventory, BuildingMaterial, BlueprintType } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -11,7 +11,7 @@ import OPTIONS from "./options";
 import Entity, { ID_SENTINEL_VALUE } from "./Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PlayerComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { getInventory, serialiseInventoryComponent } from "./components/InventoryComponent";
-import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, shapeStructure, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem, uninteractWithStructure } from "./entities/tribes/player";
+import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, placeBlueprint, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem, uninteractWithStructure, modifyBuilding, deconstructBuilding } from "./entities/tribes/player";
 import { serialiseCowComponent } from "./entities/mobs/cow";
 import { getTilesOfBiome, resetCensus } from "./census";
 import { getInventoryUseInfo, serialiseInventoryUseComponent } from "./components/InventoryUseComponent";
@@ -63,7 +63,7 @@ import { createWall } from "./entities/structures/wall";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { getEntityDebugData } from "./entity-debug-data";
 import { getVisiblePathfindingNodeOccupances } from "./pathfinding";
-import { createWoodenEmbrasure } from "./entities/structures/wooden-embrasure";
+import { createEmbrasure } from "./entities/structures/embrasure";
 import { serialiseBlueprintComponent } from "./components/BlueprintComponent";
 import { serialiseTunnelComponent } from "./components/TunnelComponent";
 import { serialiseBuildingMaterialComponent } from "./components/BuildingMaterialComponent";
@@ -476,7 +476,7 @@ class GameServer {
             
             for (let i = -w/2; i < w/2; i++) {
                if (i === 0) {
-                  createWoodenEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0);
+                  createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0, BuildingMaterial.wood);
                } else {
                   createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
                }
@@ -790,11 +790,27 @@ class GameServer {
             }
          });
 
-         socket.on("shape_structure", (structureID: number, optionIdx: number): void => {
+         socket.on("place_blueprint", (structureID: number, buildingType: BlueprintType): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               shapeStructure(player, structureID, optionIdx);
+               placeBlueprint(player, structureID, buildingType);
+            };
+         });
+
+         socket.on("modify_building", (structureID: number): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               modifyBuilding(player, structureID);
+            };
+         });
+
+         socket.on("deconstruct_building", (structureID: number): void => {
+            const playerData = SERVER.playerDataRecord[socket.id];
+            const player = this.getPlayerInstance(playerData);
+            if (player !== null) {
+               deconstructBuilding(structureID);
             };
          });
 

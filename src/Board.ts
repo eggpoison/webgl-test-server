@@ -58,14 +58,14 @@ import { PhysicsComponentArray, tickPhysicsComponent } from "./components/Physic
 import { onWorkbenchRemove } from "./entities/workbench";
 import { onWoodenSpikesRemove } from "./entities/structures/wooden-spikes";
 import { onPunjiSticksRemove } from "./entities/structures/punji-sticks";
-import { onWoodenEmbrasureRemove } from "./entities/structures/wooden-embrasure";
+import { onEmbrasureRemove } from "./entities/structures/embrasure";
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
 import { clearEntityPathfindingNodes, entityCanBlockPathfinding, markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
 import OPTIONS from "./options";
-import { onWoodenTunnelRemove } from "./entities/structures/wooden-tunnel";
+import { onTunnelRemove } from "./entities/structures/tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
 
 const START_TIME = 6;
@@ -310,7 +310,7 @@ abstract class Board {
             case IEntityType.tribeWarrior: onTribeWarriorRemove(entity); break;
             case IEntityType.researchBench: onResearchBenchRemove(entity); break;
             case IEntityType.wall: onWallRemove(entity); break;
-            case IEntityType.woodenDoor: onWoodenDoorRemove(entity); break;
+            case IEntityType.door: onWoodenDoorRemove(entity); break;
             case IEntityType.battleaxeProjectile: onBattleaxeProjectileRemove(entity); break;
             case IEntityType.golem: onGolemRemove(entity); break;
             case IEntityType.planterBox: onPlanterBoxRemove(entity); break;
@@ -322,11 +322,11 @@ abstract class Board {
             case IEntityType.workbench: onWorkbenchRemove(entity); break;
             case IEntityType.woodenSpikes: onWoodenSpikesRemove(entity); break;
             case IEntityType.punjiSticks: onPunjiSticksRemove(entity); break;
-            case IEntityType.woodenEmbrasure: onWoodenEmbrasureRemove(entity); break;
+            case IEntityType.embrasure: onEmbrasureRemove(entity); break;
             case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;
             case IEntityType.ballista: onBallistaRemove(entity); break;
             case IEntityType.slingTurret: onSlingTurretRemove(entity); break;
-            case IEntityType.woodenTunnel: onWoodenTunnelRemove(entity); break;
+            case IEntityType.tunnel: onTunnelRemove(entity); break;
          }
       }
 
