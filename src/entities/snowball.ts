@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat, HitboxCollisionTypeConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import Entity from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { HealthComponentArray, SnowballComponentArray } from "../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../components/HealthComponent";
@@ -12,7 +12,7 @@ const MAX_HEALTHS: ReadonlyArray<number> = [5, 10];
 
 const DAMAGE_VELOCITY_THRESHOLD = 100;
 
-export function createSnowball(position: Point, size: SnowballSize = SnowballSize.small, yetiID: number = ID_SENTINEL_VALUE): Entity {
+export function createSnowball(position: Point, size: SnowballSize = SnowballSize.small, yetiID: number = 0): Entity {
    const snowball = new Entity(position, IEntityType.snowball, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    snowball.rotation = 2 * Math.PI * Math.random();
 

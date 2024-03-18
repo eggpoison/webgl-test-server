@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst, randInt } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -58,7 +58,7 @@ export function tickKrumblid(krumblid: Entity): void {
    // Follow AI: Make the krumblid like to hide in cacti
    const followAIComponent = FollowAIComponentArray.getComponent(krumblid.id);
    updateFollowAIComponent(krumblid, aiHelperComponent.visibleEntities, 5);
-   if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
+   if (followAIComponent.followTargetID !== 0) {
       // Continue following the entity
       const followedEntity = Board.entityRecord[followAIComponent.followTargetID];
       moveEntityToPosition(krumblid, followedEntity.position.x, followedEntity.position.y, 200);

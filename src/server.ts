@@ -8,7 +8,7 @@ import { runTribeSpawnAttempt } from "./tribe-spawning";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import OPTIONS from "./options";
-import Entity, { ID_SENTINEL_VALUE } from "./Entity";
+import Entity from "./Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, PlayerComponentArray, TribeComponentArray } from "./components/ComponentArray";
 import { getInventory, serialiseInventoryComponent } from "./components/InventoryComponent";
 import { createPlayer, interactWithStructure, processItemPickupPacket, processItemReleasePacket, processItemUsePacket, processPlayerAttackPacket, processPlayerCraftingPacket, processTechUnlock, placeBlueprint, startChargingBattleaxe, startChargingBow, startChargingSpear, startEating, throwItem, uninteractWithStructure, modifyBuilding, deconstructBuilding } from "./entities/tribes/player";
@@ -89,6 +89,7 @@ const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitb
       offsetX: hitbox.offsetX,
       offsetY: hitbox.offsetY,
       collisionType: hitbox.collisionType,
+      localID: hitbox.localID,
       width: hitbox.width,
       height: hitbox.height,
       rotation: hitbox.rotation
@@ -101,6 +102,7 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
       offsetX: hitbox.offsetX,
       offsetY: hitbox.offsetY,
       collisionType: hitbox.collisionType,
+      localID: hitbox.localID,
       radius: hitbox.radius
    };
 }
@@ -841,11 +843,11 @@ class GameServer {
             };
          });
 
-         socket.on("structure_interact", (structureID: number): void => {
+         socket.on("structure_interact", (structureID: number, interactData: number): void => {
             const playerData = SERVER.playerDataRecord[socket.id];
             const player = this.getPlayerInstance(playerData);
             if (player !== null) {
-               interactWithStructure(player, structureID);
+               interactWithStructure(player, structureID, interactData);
             };
          });
 
@@ -1137,7 +1139,7 @@ class GameServer {
       hotbarUseInfo.selectedItemSlot = playerDataPacket.selectedItemSlot;
 
       const playerComponent = PlayerComponentArray.getComponent(player.id);
-      playerComponent.interactingEntityID = playerDataPacket.interactingEntityID !== null ? playerDataPacket.interactingEntityID : ID_SENTINEL_VALUE;
+      playerComponent.interactingEntityID = playerDataPacket.interactingEntityID !== null ? playerDataPacket.interactingEntityID : 0;
 
       if (playerDataPacket.mainAction === TribeMemberAction.eat && hotbarUseInfo.currentAction !== TribeMemberAction.eat) {
          startEating(player, "hotbar");

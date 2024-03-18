@@ -1,5 +1,5 @@
 import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight, HitboxCollisionTypeConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { addItemToSlot, consumeItemFromSlot, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
@@ -804,22 +804,22 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
             }
             case IEntityType.spikes: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createSpikes(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : ID_SENTINEL_VALUE);
+               placedEntity = createSpikes(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : 0);
                break;
             }
             case IEntityType.punjiSticks: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createPunjiSticks(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : ID_SENTINEL_VALUE);
+               placedEntity = createPunjiSticks(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : 0);
                break;
             }
             case IEntityType.ballista: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintType.ballista, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintType.ballista, 0, tribeComponent.tribe, placeRotation);
                break;
             }
             case IEntityType.slingTurret: {
                const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintType.slingTurret, ID_SENTINEL_VALUE, tribeComponent.tribe, placeRotation);
+               placedEntity = createBlueprintEntity(placePosition, BlueprintType.slingTurret, 0, tribeComponent.tribe, placeRotation);
                break;
             }
             default: {

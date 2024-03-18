@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -16,7 +16,7 @@ const WALL_HITBOX_HEIGHT = 32 - 0.05;
 export function createPunjiSticks(position: Point, tribe: Tribe, attachedWallID: number): Entity {
    const punjiSticks = new Entity(position, IEntityType.punjiSticks, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   if (attachedWallID === ID_SENTINEL_VALUE) {
+   if (attachedWallID === 0) {
       // Floor hitbox
       // @Hack mass
       punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));

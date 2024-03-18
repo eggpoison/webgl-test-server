@@ -23,7 +23,8 @@ const STRUCTURE_WORK_REQUIRED: Record<BlueprintType, number> = {
    [BlueprintType.ballista]: 25,
    [BlueprintType.slingTurret]: 10,
    [BlueprintType.stoneWall]: 5,
-   [BlueprintType.stoneSpikes]: 3
+   [BlueprintType.stoneFloorSpikes]: 3,
+   [BlueprintType.stoneWallSpikes]: 3
 };
 
 export class BlueprintComponent {
@@ -117,7 +118,8 @@ const completeBlueprint = (blueprintEntity: Entity, blueprintComponent: Blueprin
       case BlueprintType.stoneDoorUpgrade:
       case BlueprintType.stoneEmbrasureUpgrade:
       case BlueprintType.stoneTunnelUpgrade:
-      case BlueprintType.stoneSpikes: {
+      case BlueprintType.stoneFloorSpikes:
+      case BlueprintType.stoneWallSpikes: {
          const building = Board.entityRecord[blueprintComponent.associatedEntityID];
          upgradeBuilding(building);
          return;
@@ -143,6 +145,7 @@ export function serialiseBlueprintComponent(blueprintEntity: Entity): BlueprintC
    const blueprintComponent = BlueprintComponentArray.getComponent(blueprintEntity.id);
    return {
       blueprintType: blueprintComponent.buildingType,
-      buildProgress: blueprintComponent.workProgress / STRUCTURE_WORK_REQUIRED[blueprintComponent.buildingType]
+      buildProgress: blueprintComponent.workProgress / STRUCTURE_WORK_REQUIRED[blueprintComponent.buildingType],
+      associatedEntityID: blueprintComponent.associatedEntityID
    };
 }

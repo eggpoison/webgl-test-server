@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import { HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { PebblumComponent } from "../../components/PebblumComponent";
@@ -27,7 +27,7 @@ export function createPebblum(position: Point, targetID: number): Entity {
 export function tickPebblum(pebblum: Entity): void {
    const pebblumComponent = PebblumComponentArray.getComponent(pebblum.id);
 
-   if (pebblumComponent.targetEntityID === ID_SENTINEL_VALUE || !Board.entityRecord.hasOwnProperty(pebblumComponent.targetEntityID)) {
+   if (pebblumComponent.targetEntityID === 0 || !Board.entityRecord.hasOwnProperty(pebblumComponent.targetEntityID)) {
       // @Incomplete
       stopEntity(pebblum);
       return;

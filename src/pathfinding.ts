@@ -1,5 +1,5 @@
 import { IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
-import Entity, { ID_SENTINEL_VALUE } from "./Entity";
+import Entity from "./Entity";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Board from "./Board";
@@ -19,22 +19,22 @@ const getNode = (nodeX: number, nodeY: number): number => {
 // Bottom border
 for (let nodeX = 0; nodeX < PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 2; nodeX++) {
    const node = getNode(nodeX, -1);
-   markPathfindingNodeOccupance(node, ID_SENTINEL_VALUE);
+   markPathfindingNodeOccupance(node, 0);
 }
 // Top border
 for (let nodeX = 0; nodeX < PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 2; nodeX++) {
    const node = getNode(nodeX, PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 2);
-   markPathfindingNodeOccupance(node, ID_SENTINEL_VALUE);
+   markPathfindingNodeOccupance(node, 0);
 }
 // Left border
 for (let nodeY = -1; nodeY < PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1; nodeY++) {
    const node = getNode(-1, nodeY);
-   markPathfindingNodeOccupance(node, ID_SENTINEL_VALUE);
+   markPathfindingNodeOccupance(node, 0);
 }
 // Right border
 for (let nodeY = -1; nodeY < PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1; nodeY++) {
    const node = getNode(PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 2, nodeY);
-   markPathfindingNodeOccupance(node, ID_SENTINEL_VALUE);
+   markPathfindingNodeOccupance(node, 0);
 }
 
 const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
@@ -196,7 +196,7 @@ export function markWallTileInPathfinding(tileX: number, tileY: number): void {
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const node = getNode(nodeX, nodeY);
-         markPathfindingNodeOccupance(node, ID_SENTINEL_VALUE);
+         markPathfindingNodeOccupance(node, 0);
       }
    }
 }

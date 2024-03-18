@@ -1,10 +1,10 @@
 import { PlayerComponentData } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import Entity from "../Entity";
 import { SERVER } from "../server";
 
 export class PlayerComponent {
    /** ID of the tribesman the player is interacting with */
-   public interactingEntityID = ID_SENTINEL_VALUE;
+   public interactingEntityID = 0;
 }
 
 export function serialisePlayerComponent(player: Entity): PlayerComponentData {

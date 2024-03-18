@@ -1,5 +1,5 @@
 import { COLLISION_BITS, CowComponentData, CowSpecies, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, getEntityHealth, healEntity } from "../../components/HealthComponent";
@@ -137,13 +137,13 @@ export function tickCow(cow: Entity): void {
    }
 
    // If the target berry bush was killed, don't try to shake it
-   if (cowComponent.targetBushID !== ID_SENTINEL_VALUE && !Board.entityRecord.hasOwnProperty(cowComponent.targetBushID)) {
-      cowComponent.targetBushID = ID_SENTINEL_VALUE;
+   if (cowComponent.targetBushID !== 0 && !Board.entityRecord.hasOwnProperty(cowComponent.targetBushID)) {
+      cowComponent.targetBushID = 0;
    }
 
    // Shake berries off berry bushes
    if (getEntityHealth(cow) < MAX_HEALTH) {
-      if (cowComponent.targetBushID === ID_SENTINEL_VALUE) {
+      if (cowComponent.targetBushID === 0) {
          // Attempt to find a berry bush
          let target: Entity | null = null;
          let minDistance = Number.MAX_SAFE_INTEGER;
@@ -170,7 +170,7 @@ export function tickCow(cow: Entity): void {
             cowComponent.targetBushID = target.id;
          }
       }
-      if (cowComponent.targetBushID !== ID_SENTINEL_VALUE) {
+      if (cowComponent.targetBushID !== 0) {
          const berryBush = Board.entityRecord[cowComponent.targetBushID];
    
          moveEntityToPosition(cow, berryBush.position.x, berryBush.position.y, 200);
@@ -185,7 +185,7 @@ export function tickCow(cow: Entity): void {
                if (cowComponent.bushShakeTimer >= 1.5 * SettingsConst.TPS) {
                   dropBerry(berryBush);
                   cowComponent.bushShakeTimer = 0;
-                  cowComponent.targetBushID = ID_SENTINEL_VALUE;
+                  cowComponent.targetBushID = 0;
                }
             } else {
                cowComponent.bushShakeTimer = 0;
@@ -201,7 +201,7 @@ export function tickCow(cow: Entity): void {
    // Follow AI
    const followAIComponent = FollowAIComponentArray.getComponent(cow.id);
    updateFollowAIComponent(cow, aiHelperComponent.visibleEntities, 7)
-   if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
+   if (followAIComponent.followTargetID !== 0) {
       // Continue following the entity
       const followedEntity = Board.entityRecord[followAIComponent.followTargetID];
       moveEntityToPosition(cow, followedEntity.position.x, followedEntity.position.y, 200);

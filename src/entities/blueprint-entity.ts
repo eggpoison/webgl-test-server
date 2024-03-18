@@ -1,5 +1,5 @@
 import { COLLISION_BITS, IEntityType, Point, BlueprintType, assertUnreachable } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import Entity from "../Entity";
 import { BlueprintComponentArray, HealthComponentArray, TribeComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
 import { BlueprintComponent } from "../components/BlueprintComponent";
@@ -11,7 +11,7 @@ import { addDoorHitboxes } from "./structures/door";
 import { addEmbrasureHitboxes } from "./structures/embrasure";
 import { addTunnelHitboxes } from "./structures/tunnel";
 import { addWallHitboxes } from "./structures/wall";
-import { addSpikesHitboxes } from "./structures/spikes";
+import { addFloorSpikesHitboxes, addWallSpikesHitboxes } from "./structures/spikes";
 
 // @Incomplete: Remove if the associated entity is removed
 
@@ -50,9 +50,12 @@ export function createBlueprintEntity(position: Point, blueprintType: BlueprintT
          addWallHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintType.stoneSpikes: {
-         // @Temporary: idsentinelval
-         addSpikesHitboxes(blueprintEntity, ID_SENTINEL_VALUE);
+      case BlueprintType.stoneFloorSpikes: {
+         addFloorSpikesHitboxes(blueprintEntity);
+         break;
+      }
+      case BlueprintType.stoneWallSpikes: {
+         addWallSpikesHitboxes(blueprintEntity);
          break;
       }
       default: {

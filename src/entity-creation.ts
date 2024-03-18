@@ -1,5 +1,5 @@
 import { IEntityType, Point, SlimeSize } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "./Entity";
+import Entity from "./Entity";
 import { createBerryBush } from "./entities/resources/berry-bush";
 import { createBoulder } from "./entities/resources/boulder";
 import { createCactus } from "./entities/resources/cactus";
@@ -42,11 +42,11 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.tree: return createTree(position);
       case IEntityType.workbench: return createWorkbench(position);
       case IEntityType.yeti: return createYeti(position);
-      case IEntityType.zombie: return createZombie(position, false, ID_SENTINEL_VALUE);
+      case IEntityType.zombie: return createZombie(position, false, 0);
       case IEntityType.spitPoison: return createSpitPoison(position);
       case IEntityType.golem: return createGolem(position);
       case IEntityType.planterBox: return createPlanterBox(position);
-      case IEntityType.pebblum: return createPebblum(position, ID_SENTINEL_VALUE);
+      case IEntityType.pebblum: return createPebblum(position, 0);
       case IEntityType.spikes:
       case IEntityType.punjiSticks:
       case IEntityType.ballista:

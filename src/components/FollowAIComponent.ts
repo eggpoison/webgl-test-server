@@ -1,12 +1,12 @@
 import { FollowAIComponentData, SettingsConst } from "webgl-test-shared";
 import Board from "../Board";
-import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import Entity from "../Entity";
 import { moveEntityToPosition } from "../ai-shared";
 import { FollowAIComponentArray } from "./ComponentArray";
 
 export class FollowAIComponent {
    /** ID of the followed entity */
-   public followTargetID = ID_SENTINEL_VALUE;
+   public followTargetID = 0;
    public followCooldownTicks: number;
    /** Keeps track of how long the mob has been interested in its target */
    public interestTimer = 0;
@@ -18,7 +18,7 @@ export class FollowAIComponent {
 
 export function updateFollowAIComponent(entity: Entity, visibleEntities: ReadonlyArray<Entity>, interestDuration: number): void {
    const followAIComponent = FollowAIComponentArray.getComponent(entity.id);
-   if (followAIComponent.followTargetID !== ID_SENTINEL_VALUE) {
+   if (followAIComponent.followTargetID !== 0) {
       if (followAIComponent.followCooldownTicks > 0) {
          followAIComponent.followCooldownTicks--;
       }
@@ -26,14 +26,14 @@ export function updateFollowAIComponent(entity: Entity, visibleEntities: Readonl
       // Make sure the follow target is still within the vision range
       const followTarget = Board.entityRecord[followAIComponent.followTargetID];
       if (!visibleEntities.includes(followTarget)) {
-         followAIComponent.followTargetID = ID_SENTINEL_VALUE;
+         followAIComponent.followTargetID = 0;
          followAIComponent.interestTimer = 0;
          return;
       }
       
       followAIComponent.interestTimer += SettingsConst.I_TPS;
       if (followAIComponent.interestTimer >= interestDuration) {
-         followAIComponent.followTargetID = ID_SENTINEL_VALUE;
+         followAIComponent.followTargetID = 0;
       }
    }
 }

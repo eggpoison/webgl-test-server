@@ -1,5 +1,5 @@
 import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, StatusEffectConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { BuildingMaterialComponentArray, HealthComponentArray, SpikesComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -17,22 +17,24 @@ const WALL_HITBOX_HEIGHT = 28 - 0.05;
 
 export const SPIKE_HEALTHS = [15, 45];
 
-export function addSpikesHitboxes(entity: Entity, attachedWallID: number): void {
-   if (attachedWallID === ID_SENTINEL_VALUE) {
-      // Floor hitbox
-      // @Hack mass
-      entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
-   } else {
-      // Wall hitbox
-      // @Hack mass
-      entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
-   }
+export function addFloorSpikesHitboxes(entity: Entity): void {
+   // @Hack mass
+   entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
+}
+
+export function addWallSpikesHitboxes(entity: Entity): void {
+   // @Hack mass
+   entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
 }
 
 export function createSpikes(position: Point, tribe: Tribe, attachedWallID: number): Entity {
    const spikes = new Entity(position, IEntityType.spikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   addSpikesHitboxes(spikes, attachedWallID);
+   if (attachedWallID !== 0) {
+      addWallSpikesHitboxes(spikes);
+   } else {
+      addFloorSpikesHitboxes(spikes);
+   }
 
    const material = BuildingMaterial.wood;
    

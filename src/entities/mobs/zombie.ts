@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, randFloat, randInt, HitboxCollisionTypeConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
 import { ZombieComponent } from "../../components/ZombieComponent";
@@ -405,7 +405,7 @@ export function onZombieDeath(zombie: Entity): void {
    dropInventory(zombie, inventoryComponent, "handSlot", 38);
 
    const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
-   if (zombieComponent.tombstoneID !== ID_SENTINEL_VALUE && Board.entityRecord.hasOwnProperty(zombieComponent.tombstoneID)) {
+   if (zombieComponent.tombstoneID !== 0 && Board.entityRecord.hasOwnProperty(zombieComponent.tombstoneID)) {
       const tombstone = Board.entityRecord[zombieComponent.tombstoneID];
       const tombstoneComponent = TombstoneComponentArray.getComponent(tombstone.id);
       tombstoneComponent.numZombies--;

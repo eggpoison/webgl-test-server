@@ -1,8 +1,8 @@
 import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, MATERIAL_TO_ITEM_MAP, BuildingMaterial, assertUnreachable, BlueprintType, HitboxCollisionTypeConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
-import { BuildingMaterialComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
+import { BuildingMaterialComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SpikesComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItem, addItemToSlot, consumeItemFromSlot, consumeItemType, consumeItemTypeFromInventory, countItemType, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
@@ -20,7 +20,7 @@ import { EntityRelationship, TribeComponent } from "../../components/TribeCompon
 import { createBlueprintEntity } from "../blueprint-entity";
 import { deoccupyResearchBench, attemptToOccupyResearchBench } from "../../components/ResearchBenchComponent";
 import { createItemsOverEntity } from "../../entity-shared";
-import { updateTunnelDoorBitset } from "../../components/TunnelComponent";
+import { toggleTunnelDoor, updateTunnelDoorBitset } from "../../components/TunnelComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -67,13 +67,13 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
    // @Temporary
-   // addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   // addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
-   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
-   // addItem(inventoryComponent, createItem(ItemType.deepfrost_axe, 1));
-   // addItem(inventoryComponent, createItem(ItemType.rock, 6));
-   // addItem(inventoryComponent, createItem(ItemType.wood, 2));
-   // addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 2));
+   addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
+   addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
+   addItem(inventoryComponent, createItem(ItemType.deepfrost_axe, 1));
+   addItem(inventoryComponent, createItem(ItemType.rock, 6));
+   addItem(inventoryComponent, createItem(ItemType.wood, 2));
+   addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 2));
 
    tribe.registerNewTribeMember(player);
 
@@ -501,7 +501,14 @@ const blueprintTypeMatchesBuilding = (building: Entity, blueprintType: Blueprint
 
    if (building.type === IEntityType.spikes) {
       switch (materialComponent.material) {
-         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneSpikes;
+         case BuildingMaterial.wood: {
+            const spikesComponent = SpikesComponentArray.getComponent(building.id);
+            if (spikesComponent.attachedWallID !== 0) {
+               return blueprintType === BlueprintType.stoneWallSpikes;
+            } else {
+               return blueprintType === BlueprintType.stoneFloorSpikes;
+            }
+         }
          case BuildingMaterial.stone: return false;
       }
    }
@@ -521,6 +528,30 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
    }
 
    switch (blueprintType) {
+      case BlueprintType.woodenEmbrasure:
+      case BlueprintType.woodenDoor:
+      case BlueprintType.woodenTunnel:
+      case BlueprintType.stoneDoor:
+      case BlueprintType.stoneEmbrasure:
+      case BlueprintType.stoneTunnel: {
+         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
+         const position = building.position.copy();
+         if (blueprintType === BlueprintType.woodenEmbrasure || blueprintType === BlueprintType.stoneEmbrasure) {
+            position.x += 22 * Math.sin(rotation);
+            position.y += 22 * Math.cos(rotation);
+         }
+         
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
+         createBlueprintEntity(position, blueprintType, 0, tribeComponent.tribe, rotation);
+         
+         building.remove();
+         break;
+      }
+      case BlueprintType.stoneDoorUpgrade:
+      case BlueprintType.stoneEmbrasureUpgrade:
+      case BlueprintType.stoneTunnelUpgrade:
+      case BlueprintType.stoneFloorSpikes:
+      case BlueprintType.stoneWallSpikes:
       case BlueprintType.stoneWall: {
          const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
          const upgradeMaterialItemType = MATERIAL_TO_ITEM_MAP[(materialComponent.material + 1) as BuildingMaterial];
@@ -530,47 +561,11 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
             return;
          }
 
-         // Upgrade the wall to stone
-         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
-         const tribeComponent = TribeComponentArray.getComponent(player.id);
-         createBlueprintEntity(building.position.copy(), BlueprintType.stoneWall, building.id, tribeComponent.tribe, rotation);
-
-         consumeItemType(inventoryComponent, upgradeMaterialItemType, 5);
-         break;
-      }
-      case BlueprintType.woodenEmbrasure:
-      case BlueprintType.woodenDoor:
-      case BlueprintType.woodenTunnel: {
-         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
-         const position = building.position.copy();
-         if (blueprintType === BlueprintType.woodenEmbrasure) {
-            position.x += 22 * Math.sin(rotation);
-            position.y += 22 * Math.cos(rotation);
-         }
-         
-         const tribeComponent = TribeComponentArray.getComponent(player.id);
-         createBlueprintEntity(position, blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
-         
-         building.remove();
-         break;
-      }
-      case BlueprintType.stoneDoor:
-      case BlueprintType.stoneEmbrasure:
-      case BlueprintType.stoneTunnel: {
-         const rotation = snapRotationToPlayer(player, building.position, building.rotation);
-         const tribeComponent = TribeComponentArray.getComponent(player.id);
-
-         createBlueprintEntity(building.position.copy(), blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
-         building.remove();
-         break;
-      }
-      case BlueprintType.stoneDoorUpgrade:
-      case BlueprintType.stoneEmbrasureUpgrade:
-      case BlueprintType.stoneTunnelUpgrade:
-      case BlueprintType.stoneSpikes: {
          // Upgrade
          const tribeComponent = TribeComponentArray.getComponent(player.id);
          createBlueprintEntity(building.position.copy(), blueprintType, building.id, tribeComponent.tribe, building.rotation);
+         
+         consumeItemType(inventoryComponent, upgradeMaterialItemType, 5);
          break;
       }
    }
@@ -640,7 +635,7 @@ export function deconstructBuilding(buildingID: number): void {
    return;
 }
 
-export function interactWithStructure(player: Entity, structureID: number): void {
+export function interactWithStructure(player: Entity, structureID: number, interactData: number): void {
    if (!Board.entityRecord.hasOwnProperty(structureID)) {
       return;
    }
@@ -654,6 +649,10 @@ export function interactWithStructure(player: Entity, structureID: number): void
       case IEntityType.researchBench: {
          attemptToOccupyResearchBench(structure, player);
          break;
+      }
+      case IEntityType.tunnel: {
+         const doorBit = interactData;
+         toggleTunnelDoor(structure, doorBit);
       }
    }
 }
@@ -671,19 +670,3 @@ export function uninteractWithStructure(player: Entity, structureID: number): vo
       }
    }
 }
-// case 4: {
-//    const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
-//    const materialItemType = MATERIAL_TO_ITEM_MAP[materialComponent.material];
-
-//    // Deconstruct
-//    building.remove();
-//    createItemsOverEntity(building, materialItemType, 5, 40);
-//    return;
-// }
-
-// if (optionIdx === 1) {
-//    // Deconstruct
-//    building.remove();
-//    createItemsOverEntity(building, ItemType.wood, 5, 40);
-//    return;
-// }

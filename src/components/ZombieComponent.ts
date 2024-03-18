@@ -1,5 +1,5 @@
 import { ZombieComponentData } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import Entity from "../Entity";
 import { ZombieComponentArray } from "./ComponentArray";
 
 export class ZombieComponent {
@@ -13,7 +13,7 @@ export class ZombieComponent {
    /** Cooldown before the zombie can do another attack */
    public attackCooldownTicks = 0;
 
-   public visibleHurtEntityID = ID_SENTINEL_VALUE;
+   public visibleHurtEntityID = 0;
    /** Ticks since the visible hurt entity was last hit */
    public visibleHurtEntityTicks = 0;
    

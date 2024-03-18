@@ -1,5 +1,4 @@
 import { CowSpecies } from "webgl-test-shared";
-import { ID_SENTINEL_VALUE } from "../Entity";
 
 export class CowComponent {
    public readonly species: CowSpecies;
@@ -7,7 +6,7 @@ export class CowComponent {
    public grazeCooldownTicks: number;
 
    // For shaking berry bushes
-   public targetBushID = ID_SENTINEL_VALUE;
+   public targetBushID = 0;
    public bushShakeTimer = 0;
 
    constructor(species: CowSpecies, grazeCooldownTicks: number) {

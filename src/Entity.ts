@@ -21,9 +21,7 @@ import { AIHelperComponentArray } from "./components/AIHelperComponent";
 import { PhysicsComponentArray } from "./components/PhysicsComponent";
 import { onCactusDeath } from "./entities/resources/cactus";
 
-export const ID_SENTINEL_VALUE = 99999999;
-
-let idCounter = 0;
+let idCounter = 1;
 
 /** Finds a unique available ID for an entity */
 export function findAvailableEntityID(): number {
@@ -130,6 +128,8 @@ class Entity<T extends IEntityType = IEntityType> {
 
    // @Cleanup: Maybe can be moved to physics component
    public pathfindingNodesAreDirty = false;
+
+   public nextHitboxLocalID = 1;
 
    constructor(position: Point, type: T, collisionBit: number, collisionMask: number) {
       this.position = position;

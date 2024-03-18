@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../Entity";
+import Entity from "../Entity";
 import { ItemComponentArray } from "../components/ComponentArray";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { ItemComponent } from "../components/ItemComponent";
@@ -8,7 +8,7 @@ import { addFleshSword, removeFleshSword } from "../flesh-sword-ai";
 
 const TICKS_TO_DESPAWN = 300 * SettingsConst.TPS;
 
-export function createItemEntity(position: Point, itemType: ItemType, amount: number, throwingEntityID: number = ID_SENTINEL_VALUE): Entity {
+export function createItemEntity(position: Point, itemType: ItemType, amount: number, throwingEntityID: number = 0): Entity {
    const itemEntity = new Entity(position, IEntityType.itemEntity, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    itemEntity.rotation = 2 * Math.PI * Math.random();
 
@@ -23,7 +23,7 @@ export function createItemEntity(position: Point, itemType: ItemType, amount: nu
    };
    ItemComponentArray.addComponent(itemEntity, itemComponent);
 
-   if (throwingEntityID !== ID_SENTINEL_VALUE) {
+   if (throwingEntityID !== 0) {
       // Add a pickup cooldown so the item isn't picked up immediately
       itemComponent.entityPickupCooldowns[throwingEntityID] = 1
    }

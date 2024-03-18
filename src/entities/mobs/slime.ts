@@ -1,5 +1,5 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randInt } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, SlimeComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, getEntityHealth, healEntity } from "../../components/HealthComponent";
@@ -140,7 +140,7 @@ const getEnemyChaseTargetID = (slime: Entity): number => {
    const aiHelperComponent = AIHelperComponentArray.getComponent(slime.id);
 
    let minDist = Number.MAX_SAFE_INTEGER;
-   let closestEnemyID = ID_SENTINEL_VALUE;
+   let closestEnemyID = 0;
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
       const entity = aiHelperComponent.visibleEntities[i];
 
@@ -162,8 +162,8 @@ const getChaseTargetID = (slime: Entity, slimeComponent: SlimeComponent): number
    const aiHelperComponent = AIHelperComponentArray.getComponent(slime.id);
 
    let minDist = Number.MAX_SAFE_INTEGER;
-   let closestEnemyID = ID_SENTINEL_VALUE;
-   let closestMergerID = ID_SENTINEL_VALUE;
+   let closestEnemyID = 0;
+   let closestMergerID = 0;
    for (let i = 0; i < aiHelperComponent.visibleEntities.length; i++) {
       const entity = aiHelperComponent.visibleEntities[i];
 
@@ -192,7 +192,7 @@ const getChaseTargetID = (slime: Entity, slimeComponent: SlimeComponent): number
       }
    }
 
-   if (closestEnemyID !== ID_SENTINEL_VALUE) {
+   if (closestEnemyID !== 0) {
       return closestEnemyID;
    }
    return closestMergerID;
@@ -255,7 +255,7 @@ export function tickSlime(slime: Entity): void {
       // Chase enemies
       chaseTargetID = getEnemyChaseTargetID(slime);
    }
-   if (chaseTargetID !== ID_SENTINEL_VALUE) {
+   if (chaseTargetID !== 0) {
       const chaseTarget = Board.entityRecord[chaseTargetID];
       
       const targetDirection = slime.position.calculateAngleBetween(chaseTarget.position);

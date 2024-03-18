@@ -1,12 +1,16 @@
 import { HitboxCollisionTypeConst, Point } from "webgl-test-shared";
 import RectangularHitbox from "./RectangularHitbox";
 import CircularHitbox from "./CircularHitbox";
+import Entity from "../Entity";
 
 export type HitboxObject = { position: Point, rotation: number };
 
 export type HitboxBounds = [minX: number, maxX: number, minY: number, maxY: number];
 
 abstract class Hitbox {
+   /** Unique identifier in its entities' hitboxes */
+   public readonly localID: number;
+   
    public object: HitboxObject;
    public readonly mass: number;
    public offsetX: number;
@@ -27,6 +31,9 @@ abstract class Hitbox {
       this.offsetX = offsetX;
       this.offsetY = offsetY;
       this.collisionType = collisionType;
+
+      this.localID = (object as Entity).nextHitboxLocalID;
+      (object as Entity).nextHitboxLocalID++;
 
       this.updateOffset();
    }

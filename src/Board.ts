@@ -67,6 +67,7 @@ import { clearEntityPathfindingNodes, entityCanBlockPathfinding, markPathfinding
 import OPTIONS from "./options";
 import { onTunnelRemove } from "./entities/structures/tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
+import { tickTunnelComponent } from "./components/TunnelComponent";
 
 const START_TIME = 6;
 
@@ -404,6 +405,11 @@ abstract class Board {
       for (let i = 0; i < DoorComponentArray.components.length; i++) {
          const door = DoorComponentArray.getEntity(i);
          tickDoorComponent(door);
+      }
+
+      for (let i = 0; i < TunnelComponentArray.components.length; i++) {
+         const tunnel = TunnelComponentArray.getEntity(i);
+         tickTunnelComponent(tunnel);
       }
 
       for (let i = 0; i < ResearchBenchComponentArray.components.length; i++) {

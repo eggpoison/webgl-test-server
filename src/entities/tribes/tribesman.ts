@@ -1,5 +1,5 @@
 import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp } from "webgl-test-shared";
-import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
+import Entity from "../../Entity";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -406,11 +406,11 @@ const getOccupiedResearchBenchID = (tribesman: Entity, tribeComponent: TribeComp
       }
    }
 
-   return ID_SENTINEL_VALUE;
+   return 0;
 }
 
 const getAvailableResearchBenchID = (tribesman: Entity, tribeComponent: TribeComponent): number => {
-   let id = ID_SENTINEL_VALUE;
+   let id = 0;
    let minDist = Number.MAX_SAFE_INTEGER;
 
    for (let i = 0; i < tribeComponent.tribe.researchBenches.length; i++) {
@@ -616,7 +616,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
-   tribesmanComponent.targetResearchBenchID = ID_SENTINEL_VALUE;
+   tribesmanComponent.targetResearchBenchID = 0;
 
    // As soon as the tribesman stops patrolling, clear the existing target patrol position.
    if (tribesmanComponent.currentAIType !== TribesmanAIType.patrolling) {
@@ -686,15 +686,15 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // Continue hunting existing entity
-   if (shouldEscape(healthComponent) || (tribesmanComponent.huntedEntityID !== ID_SENTINEL_VALUE && !Board.entityRecord.hasOwnProperty(tribesmanComponent.huntedEntityID))) {
-      tribesmanComponent.huntedEntityID = ID_SENTINEL_VALUE;
+   if (shouldEscape(healthComponent) || (tribesmanComponent.huntedEntityID !== 0 && !Board.entityRecord.hasOwnProperty(tribesmanComponent.huntedEntityID))) {
+      tribesmanComponent.huntedEntityID = 0;
    }
-   if (tribesmanComponent.huntedEntityID !== ID_SENTINEL_VALUE) {
+   if (tribesmanComponent.huntedEntityID !== 0) {
       const huntedEntity = Board.entityRecord[tribesmanComponent.huntedEntityID];
       
       const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
       if (distance > getHuntingVisionRange(tribesman)) {
-         tribesmanComponent.huntedEntityID = ID_SENTINEL_VALUE;
+         tribesmanComponent.huntedEntityID = 0;
       } else {
          huntEntity(tribesman, huntedEntity);
       }
@@ -937,7 +937,7 @@ export function tickTribesman(tribesman: Entity): void {
    if (tribeComponent.tribe.currentTechRequiresResearching() && tribesman.type === IEntityType.tribeWorker) {
       // Continue researching at an occupied bench
       const occupiedBenchID = getOccupiedResearchBenchID(tribesman, tribeComponent);
-      if (occupiedBenchID !== ID_SENTINEL_VALUE) {
+      if (occupiedBenchID !== 0) {
          const bench = Board.entityRecord[occupiedBenchID];
          
          continueResearching(bench, tribesman);
@@ -948,7 +948,7 @@ export function tickTribesman(tribesman: Entity): void {
       }
       
       const benchID = getAvailableResearchBenchID(tribesman, tribeComponent);
-      if (benchID !== ID_SENTINEL_VALUE) {
+      if (benchID !== 0) {
          const bench = Board.entityRecord[benchID];
          
          markPreemptiveMoveToBench(bench, tribesman);
@@ -1060,7 +1060,7 @@ export function tickTribesman(tribesman: Entity): void {
          const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
 
          if (positionIsAccessible(x, y, tribeComponent.tribe.friendlyTribesmenIDs, getRadius(tribesman))) {
-            const didPathfind = pathfindToPosition(tribesman, x, y, ID_SENTINEL_VALUE, TribesmanPathType.default, 0, PathfindFailureDefault.returnEmpty);
+            const didPathfind = pathfindToPosition(tribesman, x, y, 0, TribesmanPathType.default, 0, PathfindFailureDefault.returnEmpty);
             if (didPathfind) {
                // Patrol to that position
                tribesmanComponent.targetPatrolPositionX = x;
