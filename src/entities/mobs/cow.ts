@@ -1,4 +1,4 @@
-import { COLLISION_BITS, CowComponentData, CowSpecies, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, CowComponentData, CowSpecies, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst, TileInfoConst, TileTypeConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { BerryBushComponentArray, CowComponentArray, EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, ItemComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -41,7 +41,7 @@ export function createCow(position: Point): Entity {
    
    const cow = new Entity(position, IEntityType.cow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, 50, 100);
+   const hitbox = new RectangularHitbox(cow, 1.2, 0, 0, HitboxCollisionTypeConst.soft, 50, 100);
    cow.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(cow, new PhysicsComponent(true, false));

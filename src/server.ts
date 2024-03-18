@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, TribeMemberAction, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, HealData, ResearchOrbCompleteData, EntityDebugData, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, Inventory, BuildingMaterial, BlueprintType } from "webgl-test-shared";
+import { AttackPacket, GameDataPacket, PlayerDataPacket, Point, SettingsConst, randInt, InitialGameDataPacket, ServerTileData, GameDataSyncPacket, RespawnDataPacket, EntityData, EntityType, VisibleChunkBounds, RectangularHitboxData, CircularHitboxData, PlayerInventoryData, TribeMemberAction, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, TileType, HitData, TribeType, TechID, TRIBE_INFO_RECORD, randItem, HealData, ResearchOrbCompleteData, EntityDebugData, ServerComponentType, ComponentData, EntityComponents, EntityComponentsData, PlayerTribeData, EnemyTribeData, Inventory, BuildingMaterial, BlueprintType, SlimeSize } from "webgl-test-shared";
 import Board from "./Board";
 import { registerCommand } from "./commands";
 import { runSpawnAttempt, spawnInitialEntities } from "./entity-spawning";
@@ -67,6 +67,8 @@ import { createEmbrasure } from "./entities/structures/embrasure";
 import { serialiseBlueprintComponent } from "./components/BlueprintComponent";
 import { serialiseTunnelComponent } from "./components/TunnelComponent";
 import { serialiseBuildingMaterialComponent } from "./components/BuildingMaterialComponent";
+import { serialiseSpikesComponent } from "./components/SpikesComponent";
+import { createSlime } from "./entities/mobs/slime";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -86,6 +88,7 @@ const bundleRectangularHitboxData = (hitbox: RectangularHitbox): RectangularHitb
       mass: hitbox.mass,
       offsetX: hitbox.offsetX,
       offsetY: hitbox.offsetY,
+      collisionType: hitbox.collisionType,
       width: hitbox.width,
       height: hitbox.height,
       rotation: hitbox.rotation
@@ -97,6 +100,7 @@ const bundleCircularHitboxData = (hitbox: CircularHitbox): CircularHitboxData =>
       mass: hitbox.mass,
       offsetX: hitbox.offsetX,
       offsetY: hitbox.offsetY,
+      collisionType: hitbox.collisionType,
       radius: hitbox.radius
    };
 }
@@ -148,6 +152,7 @@ const serialiseComponent = <T extends ServerComponentType>(entity: Entity, compo
       case ServerComponentType.zombie: return serialiseZombieComponent(entity);
       case ServerComponentType.tunnel: return serialiseTunnelComponent(entity);
       case ServerComponentType.buildingMaterial: return serialiseBuildingMaterialComponent(entity);
+      case ServerComponentType.spikes: return serialiseSpikesComponent(entity);
    }
 
    throw new Error("Unserialised component of type " + componentType);
@@ -284,6 +289,8 @@ class GameServer {
 
    public isRunning = false;
 
+   private nextTickTime = 0;
+   
    /** Sets up the various stuff */
    public setup() {
       spawnInitialEntities();
@@ -294,7 +301,7 @@ class GameServer {
       SERVER.trackedEntityID = id;
    }
 
-   public start(): void {
+   public async start(): Promise<void> {
       if (!isTimed) {
          // Seed the random number generator
          if (OPTIONS.inBenchmarkMode) {
@@ -376,11 +383,15 @@ class GameServer {
       }
 
       if (typeof SERVER.tickInterval === "undefined") {
-         if (OPTIONS.warp) {
-            SERVER.tickInterval = setInterval(() => SERVER.tick(), 2);
-         } else {
-            SERVER.tickInterval = setInterval(() => SERVER.tick(), 1000 / SettingsConst.TPS);
+         while (SERVER.isRunning) {
+            await SERVER.tick();
          }
+         // @Incomplete: warp
+         // if (OPTIONS.warp) {
+         //    SERVER.tickInterval = setInterval(() => SERVER.tick(), 2);
+         // } else {
+         //    SERVER.tickInterval = setInterval(() => SERVER.tick(), 1000 / SettingsConst.TPS);
+         // }
       }
    }
 
@@ -393,7 +404,7 @@ class GameServer {
       this.io?.close();
    }
 
-   private tick(): void {
+   private async tick(): Promise<void> {
       // This is done before each tick to account for player packets causing entities to be removed between ticks.
       Board.removeFlaggedEntities();
 
@@ -411,7 +422,7 @@ class GameServer {
       Board.removeFlaggedEntities();
 
       if (!isTimed) {
-         SERVER.sendGameDataPackets();
+         await SERVER.sendGameDataPackets();
       }
 
       // Update server ticks and time
@@ -464,38 +475,54 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
+            // const tribe = new Tribe(TribeType.plainspeople);
+            
+            // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y - 1500), tribe);
+
+            // const w = 8;
+            // const yo = 150;
+            
+            // for (let i = -w/2; i <= w/2; i++) {
+            //    createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
+            // }
+
+            // setTimeout(() => {
+            //    const hut = createWorkerHut(new Point(spawnPosition.x, spawnPosition.y + 790), tribe);
+            //    tribe.registerNewWorkerHut(hut);
+            // }, 5000);
+
             if(1+1===2)return;
 
-            const tribe = new Tribe(TribeType.plainspeople);
+            // const tribe = new Tribe(TribeType.plainspeople);
             
-            createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
+            // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
-            const w = 10;
-            const h = 10;
-            const yo = 300;
+            // const w = 10;
+            // const h = 10;
+            // const yo = 300;
             
-            for (let i = -w/2; i < w/2; i++) {
-               if (i === 0) {
-                  createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0, BuildingMaterial.wood);
-               } else {
-                  createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
-               }
-            }
+            // for (let i = -w/2; i < w/2; i++) {
+            //    if (i === 0) {
+            //       createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0, BuildingMaterial.wood);
+            //    } else {
+            //       createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
+            //    }
+            // }
             
-            for (let i = 0; i < h; i++) {
-               createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
-            }
+            // for (let i = 0; i < h; i++) {
+            //    createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
+            // }
             
-            for (let i = 0; i < h; i++) {
-               createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
-            }
+            // for (let i = 0; i < h; i++) {
+            //    createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
+            // }
             
-            for (let i = -w/2; i < w/2; i++) {
-               createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo + (h - 1) * 64), tribe);
-            }
+            // for (let i = -w/2; i < w/2; i++) {
+            //    createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo + (h - 1) * 64), tribe);
+            // }
 
-            const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 400), tribe);
-            tribe.registerNewWorkerHut(hut);
+            // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 400), tribe);
+            // tribe.registerNewWorkerHut(hut);
 
             // const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 700), tribe);
             // tribe.registerNewWorkerHut(hut2);
@@ -844,70 +871,79 @@ class GameServer {
    }
 
    /** Send data about the server to all players */
-   public sendGameDataPackets(): void {
+   public async sendGameDataPackets(): Promise<void> {
       if (SERVER.io === null) return;
+      
+      return new Promise(resolve => {
+         this.nextTickTime += 1000 * SettingsConst.I_TPS;
+         const currentTime = performance.now();
 
-      if (SERVER.trackedEntityID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedEntityID)) {
-         SERVER.trackedEntityID = null;
-      }
+         setTimeout(() => {
+            if (SERVER.trackedEntityID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedEntityID)) {
+               SERVER.trackedEntityID = null;
+            }
+   
+            let entityDebugData: EntityDebugData | undefined;
+            if (SERVER.trackedEntityID !== null) {
+               const entity = Board.entityRecord[SERVER.trackedEntityID];
+               entityDebugData = getEntityDebugData(entity);
+            }
+   
+            for (const playerData of Object.values(SERVER.playerDataRecord)) {
+               if (!playerData.clientIsActive) {
+                  continue;
+               }
+               
+               const player = this.getPlayerInstance(playerData);
+   
+               const tileUpdates = Board.popTileUpdates();
+               
+               // @Speed @Memory
+               const extendedVisibleChunkBounds: VisibleChunkBounds = [
+                  Math.max(playerData.visibleChunkBounds[0] - 1, 0),
+                  Math.min(playerData.visibleChunkBounds[1] + 1, SettingsConst.BOARD_SIZE - 1),
+                  Math.max(playerData.visibleChunkBounds[2] - 1, 0),
+                  Math.min(playerData.visibleChunkBounds[3] + 1, SettingsConst.BOARD_SIZE - 1)
+               ];
+   
+               // @Incomplete
+               // const playerArmour = player !== null ? getItem(InventoryComponentArray.getComponent(player.id), "armourSlot", 1) : null;
+   
+               // Initialise the game data packet
+               const gameDataPacket: GameDataPacket = {
+                  entityDataArray: bundleEntityDataArray(extendedVisibleChunkBounds),
+                  inventory: this.bundlePlayerInventoryData(player),
+                  hits: playerData.hits,
+                  heals: playerData.heals,
+                  orbCompletes: playerData.orbCompletes,
+                  tileUpdates: tileUpdates,
+                  serverTicks: Board.ticks,
+                  serverTime: Board.time,
+                  playerHealth: player !== null ? HealthComponentArray.getComponent(player.id).health : 0,
+                  entityDebugData: entityDebugData,
+                  playerTribeData: bundlePlayerTribeData(playerData),
+                  enemyTribesData: bundleEnemyTribesData(playerData),
+                  // @Incomplete
+                  // hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
+                  hasFrostShield: false,
+                  pickedUpItem: playerData.pickedUpItem,
+                  hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player),
+                  // @Incomplete: Only send if dev and the checkbox is enabled
+                  visiblePathfindingNodeOccupances: getVisiblePathfindingNodeOccupances(extendedVisibleChunkBounds)
+               };
+   
+               // Send the game data to the player
+               playerData.socket.emit("game_data_packet", gameDataPacket);
+   
+               playerData.hits = [];
+               playerData.heals = [];
+               playerData.orbCompletes = [];
+               playerData.pickedUpItem = false;
+            }
 
-      let entityDebugData: EntityDebugData | undefined;
-      if (SERVER.trackedEntityID !== null) {
-         const entity = Board.entityRecord[SERVER.trackedEntityID];
-         entityDebugData = getEntityDebugData(entity);
-      }
-
-      for (const playerData of Object.values(SERVER.playerDataRecord)) {
-         if (!playerData.clientIsActive) {
-            continue;
-         }
-         
-         const player = this.getPlayerInstance(playerData);
-
-         const tileUpdates = Board.popTileUpdates();
-         
-         // @Speed @Memory
-         const extendedVisibleChunkBounds: VisibleChunkBounds = [
-            Math.max(playerData.visibleChunkBounds[0] - 1, 0),
-            Math.min(playerData.visibleChunkBounds[1] + 1, SettingsConst.BOARD_SIZE - 1),
-            Math.max(playerData.visibleChunkBounds[2] - 1, 0),
-            Math.min(playerData.visibleChunkBounds[3] + 1, SettingsConst.BOARD_SIZE - 1)
-         ];
-
-         // @Incomplete
-         // const playerArmour = player !== null ? getItem(InventoryComponentArray.getComponent(player.id), "armourSlot", 1) : null;
-
-         // Initialise the game data packet
-         const gameDataPacket: GameDataPacket = {
-            entityDataArray: bundleEntityDataArray(extendedVisibleChunkBounds),
-            inventory: this.bundlePlayerInventoryData(player),
-            hits: playerData.hits,
-            heals: playerData.heals,
-            orbCompletes: playerData.orbCompletes,
-            tileUpdates: tileUpdates,
-            serverTicks: Board.ticks,
-            serverTime: Board.time,
-            playerHealth: player !== null ? HealthComponentArray.getComponent(player.id).health : 0,
-            entityDebugData: entityDebugData,
-            playerTribeData: bundlePlayerTribeData(playerData),
-            enemyTribesData: bundleEnemyTribesData(playerData),
-            // @Incomplete
-            // hasFrostShield: player.immunityTimer === 0 && playerArmour !== null && playerArmour.type === ItemType.deepfrost_armour,
-            hasFrostShield: false,
-            pickedUpItem: playerData.pickedUpItem,
-            hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player),
-            // @Incomplete: Only send if dev and the checkbox is enabled
-            visiblePathfindingNodeOccupances: getVisiblePathfindingNodeOccupances(extendedVisibleChunkBounds)
-         };
-
-         // Send the game data to the player
-         playerData.socket.emit("game_data_packet", gameDataPacket);
-
-         playerData.hits = [];
-         playerData.heals = [];
-         playerData.orbCompletes = [];
-         playerData.pickedUpItem = false;
-      }
+            resolve();
+         }, this.nextTickTime - currentTime);
+      });
    }
 
    public registerEntityHit(hitData: HitData): void {

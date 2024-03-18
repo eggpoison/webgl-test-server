@@ -25,41 +25,20 @@ export class TribeComponent {
 
 export function getTribeMemberRelationship(tribeComponent: TribeComponent, entity: Entity): EntityRelationship {
    switch (entity.type) {
-      case IEntityType.workerHut: {
-         if (!tribeComponent.tribe.hasHut(entity)) {
-            return EntityRelationship.enemyBuilding;
-         }
-         return EntityRelationship.friendly;
-      }
-      case IEntityType.warriorHut: {
-         if (!tribeComponent.tribe.hasHut(entity)) {
-            return EntityRelationship.enemyBuilding;
-         }
-         return EntityRelationship.friendly;
-      }
-      case IEntityType.tribeTotem: {
-         if (!tribeComponent.tribe.hasTotem(entity)) {
-            return EntityRelationship.enemyBuilding;
-         }
-         return EntityRelationship.friendly;
-      }
-      case IEntityType.barrel: {
-         const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
-         if (entityTribeComponent.tribe === tribeComponent.tribe) {
-            return EntityRelationship.friendly;
-         }
-         return EntityRelationship.enemyBuilding;
-      }
       // Buildings
       case IEntityType.wall:
       case IEntityType.door:
-      case IEntityType.woodenSpikes:
+      case IEntityType.spikes:
       case IEntityType.punjiSticks:
       case IEntityType.embrasure:
       case IEntityType.ballista:
       case IEntityType.slingTurret:
       case IEntityType.blueprintEntity:
-      case IEntityType.tunnel: {
+      case IEntityType.tunnel:
+      case IEntityType.workerHut:
+      case IEntityType.warriorHut:
+      case IEntityType.tribeTotem:
+      case IEntityType.barrel: {
          const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
          if (entityTribeComponent.tribe === tribeComponent.tribe) {
             return EntityRelationship.friendlyBuilding;

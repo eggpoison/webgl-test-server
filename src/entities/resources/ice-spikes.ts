@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, IceSpikesComponentData, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, IceSpikesComponentData, ItemType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, IceSpikesComponentArray } from "../../components/ComponentArray";
@@ -21,7 +21,7 @@ export function createIceSpikes(position: Point, rootIceSpike?: Entity): Entity 
    const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.iceSpikes, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.iceSpikes);
    iceSpikes.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, ICE_SPIKE_RADIUS);
+   const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, HitboxCollisionTypeConst.soft, ICE_SPIKE_RADIUS);
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));

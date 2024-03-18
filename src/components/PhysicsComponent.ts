@@ -1,4 +1,4 @@
-import { PhysicsComponentData, SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
+import { EntityType, PhysicsComponentData, SettingsConst, TILE_FRICTIONS, TILE_MOVE_SPEED_MULTIPLIERS, TileTypeConst } from "webgl-test-shared";
 import Entity from "../Entity";
 import { ComponentArray } from "./ComponentArray";
 
@@ -48,7 +48,7 @@ const applyPhysics = (entity: Entity): void => {
 
    // @Temporary @Hack
    if (isNaN(entity.velocity.x) || isNaN(entity.velocity.x)) {
-      console.warn("Entity type " + entity.type + " velocity was NaN.");
+      console.warn("Entity type " + EntityType[entity.type] + " velocity was NaN.");
       entity.velocity.x = 0;
       entity.velocity.y = 0;
    }

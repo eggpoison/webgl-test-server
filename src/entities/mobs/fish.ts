@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishComponentData, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, FishComponentData, HitboxCollisionTypeConst, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, TileTypeConst, customTickIntervalHasPassed, randFloat, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { EscapeAIComponentArray, FishComponentArray, HealthComponentArray, InventoryComponentArray, TribeMemberComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -43,7 +43,7 @@ export function createFish(position: Point): Entity {
    const fish = new Entity(position, IEntityType.fish, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    fish.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, FISH_WIDTH, FISH_HEIGHT);
+   const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, HitboxCollisionTypeConst.soft, FISH_WIDTH, FISH_HEIGHT);
    fish.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(fish, new PhysicsComponent(true, false));

@@ -1,4 +1,4 @@
-import { Point, rotateXAroundOrigin, rotateYAroundOrigin } from "webgl-test-shared";
+import { HitboxCollisionTypeConst, Point } from "webgl-test-shared";
 import RectangularHitbox from "./RectangularHitbox";
 import CircularHitbox from "./CircularHitbox";
 
@@ -19,11 +19,14 @@ abstract class Hitbox {
    // @Memory: Would be great to remove this
    public chunkBounds: HitboxBounds = [-1, -1, -1, -1];
 
-   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number) {
+   public collisionType: HitboxCollisionTypeConst;
+
+   constructor(object: HitboxObject, mass: number, offsetX: number, offsetY: number, collisionType: HitboxCollisionTypeConst) {
       this.object = object;
       this.mass = mass;
       this.offsetX = offsetX;
       this.offsetY = offsetY;
+      this.collisionType = collisionType;
 
       this.updateOffset();
    }

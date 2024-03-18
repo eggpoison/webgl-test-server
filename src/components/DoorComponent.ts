@@ -1,4 +1,4 @@
-import { DoorComponentData, DoorToggleType, SettingsConst, angle, lerp } from "webgl-test-shared";
+import { DoorComponentData, DoorToggleType, HitboxCollisionTypeConst, SettingsConst, angle, lerp } from "webgl-test-shared";
 import Entity from "../Entity";
 import { DoorComponentArray } from "./ComponentArray";
 import { PhysicsComponentArray } from "./PhysicsComponent";
@@ -50,6 +50,8 @@ export function tickDoorComponent(door: Entity): void {
             doorComponent.toggleType = DoorToggleType.none;
          }
          updateDoorOpenProgress(door, doorComponent);
+
+         door.hitboxes[0].collisionType = HitboxCollisionTypeConst.soft;
          break;
       }
       case DoorToggleType.close: {
@@ -59,6 +61,8 @@ export function tickDoorComponent(door: Entity): void {
             doorComponent.toggleType = DoorToggleType.none;
          }
          updateDoorOpenProgress(door, doorComponent);
+
+         door.hitboxes[0].collisionType = HitboxCollisionTypeConst.hard;
          break;
       }
    }

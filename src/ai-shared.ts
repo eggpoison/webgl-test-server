@@ -1,4 +1,4 @@
-import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint, EntityType, IEntityType } from "webgl-test-shared";
+import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint, IEntityType, HitboxCollisionTypeConst } from "webgl-test-shared";
 import Board, { raytraceHasWallTile } from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -10,7 +10,7 @@ import { CollisionVars, isColliding } from "./collision";
 const TURN_CONSTANT = Math.PI / SettingsConst.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, -1);
+const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, -1);
 
 // @Cleanup: Only used in tribesman.ts, so move there.
 export function getClosestAccessibleEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {

@@ -1,4 +1,4 @@
-import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
+import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
 import { BuildingMaterialComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -14,8 +14,8 @@ const HITBOX_HEIGHT = 20 - 0.05;
 export const EMBRASURE_HEALTHS = [15, 45];
 
 export function addEmbrasureHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 0.4, -(64 - HITBOX_WIDTH) / 2 + 0.025, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
-   entity.addHitbox(new RectangularHitbox(entity, 0.4, (64 - HITBOX_WIDTH) / 2 - 0.025, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity, 0.4, -(64 - HITBOX_WIDTH) / 2 + 0.025, 0, HitboxCollisionTypeConst.hard, HITBOX_WIDTH, HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity, 0.4, (64 - HITBOX_WIDTH) / 2 - 0.025, 0, HitboxCollisionTypeConst.hard, HITBOX_WIDTH, HITBOX_HEIGHT));
 }
 
 export function createEmbrasure(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {

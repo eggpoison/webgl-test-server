@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
 import { HealthComponentArray, HutComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -12,10 +12,8 @@ export const WORKER_HUT_SIZE = 88;
 
 export function createWorkerHut(position: Point, tribe: Tribe): Entity {
    const hut = new Entity(position, IEntityType.workerHut, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
-   // @Temporary
-   hut.rotation = 3 * Math.PI / 2;
 
-   const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, WORKER_HUT_SIZE, WORKER_HUT_SIZE);
+   const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, HitboxCollisionTypeConst.soft, WORKER_HUT_SIZE, WORKER_HUT_SIZE);
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(50));

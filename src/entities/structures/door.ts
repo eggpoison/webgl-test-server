@@ -1,4 +1,4 @@
-import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point } from "webgl-test-shared";
+import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { BuildingMaterialComponentArray, DoorComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -13,8 +13,10 @@ import { BuildingMaterialComponent } from "../../components/BuildingMaterialComp
 const HITBOX_WIDTH = 64 - 0.05;
 const HITBOX_HEIGHT = 16 - 0.05;
 
+export const DOOR_HEALTHS = [15, 45];
+
 export function addDoorHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 0.5, 0, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity, 0.5, 0, 0, HitboxCollisionTypeConst.hard, HITBOX_WIDTH, HITBOX_HEIGHT));
 }
 
 export function createDoor(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {
@@ -24,7 +26,7 @@ export function createDoor(position: Point, tribe: Tribe, rotation: number, mate
    addDoorHitboxes(door);
    
    PhysicsComponentArray.addComponent(door, new PhysicsComponent(false, true));
-   HealthComponentArray.addComponent(door, new HealthComponent(15));
+   HealthComponentArray.addComponent(door, new HealthComponent(DOOR_HEALTHS[material]));
    StatusEffectComponentArray.addComponent(door, new StatusEffectComponent(0));
    DoorComponentArray.addComponent(door, new DoorComponent(position.x, position.y, rotation));
    TribeComponentArray.addComponent(door, new TribeComponent(tribe)); 

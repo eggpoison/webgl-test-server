@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst, randFloat } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, IceShardComponentArray } from "../../components/ComponentArray";
@@ -11,7 +11,7 @@ export function createIceShard(position: Point, moveDirection: number): Entity {
    const iceShard = new Entity(position, IEntityType.iceShardProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    iceShard.rotation = moveDirection;
 
-   const hitbox = new RectangularHitbox(iceShard, 0.4, 0, 0, 24, 24);
+   const hitbox = new RectangularHitbox(iceShard, 0.4, 0, 0, HitboxCollisionTypeConst.soft, 24, 24);
    iceShard.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(iceShard, new PhysicsComponent(true, false));

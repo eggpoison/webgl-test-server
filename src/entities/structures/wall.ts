@@ -1,4 +1,4 @@
-import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
+import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
 import { BlueprintComponentArray, BuildingMaterialComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -14,7 +14,7 @@ const SIZE = 64 - 0.05;
 export const WALL_HEALTHS = [25, 75];
 
 export function addWallHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 1, 0, 0, SIZE, SIZE));
+   entity.addHitbox(new RectangularHitbox(entity, 1, 0, 0, HitboxCollisionTypeConst.hard, SIZE, SIZE));
 }
 
 export function createWall(position: Point, tribe: Tribe): Entity {

@@ -1,6 +1,5 @@
-import { IEntityType, DoorToggleType, rotateXAroundPoint, rotateYAroundPoint, SettingsConst, angle, EntityType } from "webgl-test-shared";
+import { IEntityType, rotateXAroundPoint, rotateYAroundPoint, SettingsConst, angle, EntityType, HitboxCollisionTypeConst } from "webgl-test-shared";
 import Entity from "./Entity";
-import { DoorComponentArray } from "./components/ComponentArray";
 import Hitbox from "./hitboxes/Hitbox";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -23,7 +22,7 @@ import { onCactusCollision } from "./entities/resources/cactus";
 import { onIceSpikesCollision } from "./entities/resources/ice-spikes";
 import { onSnowballCollision } from "./entities/snowball";
 import { onPunjiSticksCollision } from "./entities/structures/punji-sticks";
-import { onWoodenSpikesCollision } from "./entities/structures/wooden-spikes";
+import { onSpikesCollision } from "./entities/structures/spikes";
 import { onPlayerCollision } from "./entities/tribes/player";
 import { onTribeWorkerCollision } from "./entities/tribes/tribe-worker";
 
@@ -36,34 +35,34 @@ export const enum CollisionVars {
    NO_COLLISION = 0xFFFF
 }
 
-const entityHasHardCollision = (entity: Entity, collidingEntity: Entity): boolean => {
-   // Doors have hard collision when closing/closed
-   if (entity.type === IEntityType.door) {
-      const doorComponent = DoorComponentArray.getComponent(entity.id);
-      return doorComponent.toggleType === DoorToggleType.close || doorComponent.openProgress === 0;
-   }
+// const entityHasHardCollision = (entity: Entity, collidingEntity: Entity): boolean => {
+//    // Doors have hard collision when closing/closed
+//    if (entity.type === IEntityType.door) {
+//       const doorComponent = DoorComponentArray.getComponent(entity.id);
+//       return doorComponent.toggleType === DoorToggleType.close || doorComponent.openProgress === 0;
+//    }
 
-   // Tunnels have hard collision outside and soft inside
-   if (entity.type === IEntityType.tunnel) {
-      const projX = Math.sin(entity.rotation + Math.PI / 2);
-      const projY = Math.cos(entity.rotation + Math.PI / 2);
+//    // Tunnels have hard collision outside and soft inside
+//    if (entity.type === IEntityType.tunnel) {
+//       const projX = Math.sin(entity.rotation + Math.PI / 2);
+//       const projY = Math.cos(entity.rotation + Math.PI / 2);
 
-      const o = 32 - (8 - 0.05); // @Cleanup
-      const minX = entity.position.x - o * projX;
-      const minY = entity.position.y - o * projY;
-      const maxX = entity.position.x + o * projX;
-      const maxY = entity.position.y + o * projY;
+//       const o = 32 - (8 - 0.05); // @Cleanup
+//       const minX = entity.position.x - o * projX;
+//       const minY = entity.position.y - o * projY;
+//       const maxX = entity.position.x + o * projX;
+//       const maxY = entity.position.y + o * projY;
 
-      const minProj = minX * projX + minY * projY;
-      const maxProj = maxX * projX + maxY * projY;
+//       const minProj = minX * projX + minY * projY;
+//       const maxProj = maxX * projX + maxY * projY;
 
-      const centerProj = collidingEntity.position.x * projX + collidingEntity.position.y * projY;
+//       const centerProj = collidingEntity.position.x * projX + collidingEntity.position.y * projY;
 
-      return centerProj <= minProj || centerProj >= maxProj;
-   }
+//       return centerProj <= minProj || centerProj >= maxProj;
+//    }
    
-   return entity.type === IEntityType.wall || entity.type === IEntityType.embrasure;
-}
+//    return entity.type === IEntityType.wall || entity.type === IEntityType.embrasure;
+// }
 
 const getCircleCircleCollisionPushInfo = (pushedHitbox: CircularHitbox, pushingHitbox: CircularHitbox): CollisionPushInfo => {
    const pushedHitboxPositionX = pushedHitbox.object.position.x + pushedHitbox.rotatedOffsetX;
@@ -222,10 +221,10 @@ const resolveHardCollision = (entity: Entity, pushInfo: CollisionPushInfo): void
    entity.velocity.y = by * projectionCoeff;
 }
 
-const resolveSoftCollision = (entity: Entity, pushedHitbox: Hitbox, pushingHitbox: Hitbox, pushInfo: CollisionPushInfo): void => {
+const resolveSoftCollision = (entity: Entity, pushingHitbox: Hitbox, pushInfo: CollisionPushInfo): void => {
    // Force gets greater the further into each other the entities are
    const distMultiplier = Math.pow(pushInfo.amountIn, 1.1);
-   const pushForce = SettingsConst.ENTITY_PUSH_FORCE * SettingsConst.I_TPS * distMultiplier * pushingHitbox.mass / pushedHitbox.mass;
+   const pushForce = SettingsConst.ENTITY_PUSH_FORCE * SettingsConst.I_TPS * distMultiplier * pushingHitbox.mass / entity.totalMass;
    
    entity.velocity.x += pushForce * Math.sin(pushInfo.direction);
    entity.velocity.y += pushForce * Math.cos(pushInfo.direction);
@@ -239,10 +238,10 @@ export function collide(entity: Entity, pushingEntity: Entity, pushedHitboxIdx: 
          const pushingHitbox = pushingEntity.hitboxes[pushingHitboxIdx];
          
          const pushInfo = getCollisionPushInfo(pushedHitbox, pushingHitbox);
-         if (entityHasHardCollision(pushingEntity, entity)) {
+         if (pushingHitbox.collisionType === HitboxCollisionTypeConst.hard) {
             resolveHardCollision(entity, pushInfo);
          } else {
-            resolveSoftCollision(entity, pushedHitbox, pushingHitbox, pushInfo);
+            resolveSoftCollision(entity, pushingHitbox, pushInfo);
          }
       }
    }
@@ -267,7 +266,7 @@ export function collide(entity: Entity, pushingEntity: Entity, pushedHitboxIdx: 
       case IEntityType.iceArrow: onIceArrowCollision(entity, pushingEntity); break;
       case IEntityType.pebblum: onPebblumCollision(entity, pushingEntity); break;
       case IEntityType.golem: onGolemCollision(entity, pushingEntity); break;
-      case IEntityType.woodenSpikes: onWoodenSpikesCollision(entity, pushingEntity); break;
+      case IEntityType.spikes: onSpikesCollision(entity, pushingEntity); break;
       case IEntityType.punjiSticks: onPunjiSticksCollision(entity, pushingEntity); break;
    }
 }

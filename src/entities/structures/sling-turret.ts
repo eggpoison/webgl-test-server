@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, HitboxCollisionTypeConst, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -19,7 +19,7 @@ export const SLING_TURRET_RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS
 const VISION_RANGE = 400;
 
 export function addSlingTurretHitboxes(entity: Entity): void {
-   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, 40 - 0.05));
+   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, HitboxCollisionTypeConst.hard, 40 - 0.05));
 }
 
 export function createSlingTurret(position: Point, tribe: Tribe, rotation: number): Entity {

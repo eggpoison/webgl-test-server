@@ -1,43 +1,53 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, StatusEffectConst } from "webgl-test-shared";
+import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
-import { HealthComponentArray, SpikesComponentArray, TribeComponentArray } from "../../components/ComponentArray";
+import { BuildingMaterialComponentArray, HealthComponentArray, SpikesComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { SERVER } from "../../server";
 import Tribe from "../../Tribe";
 import { TribeComponent } from "../../components/TribeComponent";
 import { SpikesComponent } from "../../components/SpikesComponent";
+import { BuildingMaterialComponent } from "../../components/BuildingMaterialComponent";
 
 const FLOOR_HITBOX_SIZE = 48 - 0.05;
 
 const WALL_HITBOX_WIDTH = 56 - 0.05;
 const WALL_HITBOX_HEIGHT = 28 - 0.05;
 
-export function createWoodenSpikes(position: Point, tribe: Tribe, attachedWallID: number): Entity {
-   const spikes = new Entity(position, IEntityType.woodenSpikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+export const SPIKE_HEALTHS = [15, 45];
 
+export function addSpikesHitboxes(entity: Entity, attachedWallID: number): void {
    if (attachedWallID === ID_SENTINEL_VALUE) {
       // Floor hitbox
       // @Hack mass
-      spikes.addHitbox(new RectangularHitbox(spikes, Number.EPSILON, 0, 0, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
+      entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
    } else {
       // Wall hitbox
       // @Hack mass
-      spikes.addHitbox(new RectangularHitbox(spikes, Number.EPSILON, 0, 0, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
+      entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
    }
+}
 
-   HealthComponentArray.addComponent(spikes, new HealthComponent(15));
+export function createSpikes(position: Point, tribe: Tribe, attachedWallID: number): Entity {
+   const spikes = new Entity(position, IEntityType.spikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+
+   addSpikesHitboxes(spikes, attachedWallID);
+
+   const material = BuildingMaterial.wood;
+   
+   HealthComponentArray.addComponent(spikes, new HealthComponent(SPIKE_HEALTHS[material]));
    StatusEffectComponentArray.addComponent(spikes, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));
    TribeComponentArray.addComponent(spikes, new TribeComponent(tribe));
    SpikesComponentArray.addComponent(spikes, new SpikesComponent(attachedWallID));
+   BuildingMaterialComponentArray.addComponent(spikes, new BuildingMaterialComponent(material));
 
    return spikes;
 }
 
-export function onWoodenSpikesCollision(spikes: Entity, collidingEntity: Entity): void {
+export function onSpikesCollision(spikes: Entity, collidingEntity: Entity): void {
    // @Incomplete: Why is this condition neeeded? Shouldn't be able to be placed colliding with other structures anyway.
-   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.door || collidingEntity.type === IEntityType.wall) {
+   if (collidingEntity.type === IEntityType.spikes || collidingEntity.type === IEntityType.door || collidingEntity.type === IEntityType.wall) {
       return;
    }
    
@@ -67,10 +77,12 @@ export function onWoodenSpikesCollision(spikes: Entity, collidingEntity: Entity)
    addLocalInvulnerabilityHash(healthComponent, "woodenSpikes", 0.3);
 }
 
-export function onWoodenSpikesRemove(spikes: Entity): void {
+export function onSpikesRemove(spikes: Entity): void {
    HealthComponentArray.removeComponent(spikes);
    StatusEffectComponentArray.removeComponent(spikes);
    TribeComponentArray.removeComponent(spikes);
+   SpikesComponentArray.removeComponent(spikes);
+   BuildingMaterialComponentArray.removeComponent(spikes);
 }
 
 export function spikesAreAttachedToWall(entity: Entity): boolean {

@@ -1,4 +1,4 @@
-import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, IEntityType, PlayerCauseOfDeath, Point, SettingsConst } from "webgl-test-shared";
+import { ArrowStatusEffectInfo, COLLISION_BITS, DEFAULT_COLLISION_MASK, GenericArrowType, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, SettingsConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
 import { ArrowComponentArray, HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -31,7 +31,7 @@ export function createWoodenArrow(position: Point, thrower: Entity, arrowInfo: G
    const arrow = new Entity(position, IEntityType.woodenArrowProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    arrow.rotation = thrower.rotation;
    
-   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight);
+   const hitbox = new RectangularHitbox(arrow, 0.5, 0, 0, HitboxCollisionTypeConst.soft, arrowInfo.hitboxWidth, arrowInfo.hitboxHeight);
    arrow.addHitbox(hitbox);
 
    const throwerTribeComponent = TribeComponentArray.getComponent(thrower.id);
@@ -90,7 +90,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
    }
 
    // Pass over friendly spikes
-   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.punjiSticks) {
+   if (collidingEntity.type === IEntityType.spikes || collidingEntity.type === IEntityType.punjiSticks) {
       const collidingEntityTribeComponent = TribeComponentArray.getComponent(collidingEntity.id);
       if (tribeComponent.tribe === collidingEntityTribeComponent.tribe) {
          return;

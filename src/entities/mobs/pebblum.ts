@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -13,9 +13,9 @@ export function createPebblum(position: Point, targetID: number): Entity {
    const pebblum = new Entity(position, IEntityType.pebblum, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // Body
-   pebblum.addHitbox(new CircularHitbox(pebblum, 0.4, 0, -4, 10 * 2));
+   pebblum.addHitbox(new CircularHitbox(pebblum, 0.4, 0, -4, HitboxCollisionTypeConst.soft, 10 * 2));
    // Nose
-   pebblum.addHitbox(new CircularHitbox(pebblum, 0.3, 0, 6, 8 * 2));
+   pebblum.addHitbox(new CircularHitbox(pebblum, 0.3, 0, 6, HitboxCollisionTypeConst.soft, 8 * 2));
    
    PhysicsComponentArray.addComponent(pebblum, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(pebblum, new HealthComponent(20));

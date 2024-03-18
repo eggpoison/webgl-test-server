@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import Entity from "../../Entity";
 import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -15,7 +15,7 @@ export function createIceArrow(position: Point, rotation: number, tribe: Tribe):
    const iceArrow = new Entity(position, IEntityType.iceArrow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    iceArrow.rotation = rotation;
    
-   const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, ARROW_WIDTH, ARROW_HEIGHT);
+   const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, HitboxCollisionTypeConst.soft, ARROW_WIDTH, ARROW_HEIGHT);
    iceArrow.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false, true));

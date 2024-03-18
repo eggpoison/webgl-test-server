@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, SNOWBALL_SIZES, SnowballSize, StatusEffectConst, randFloat, HitboxCollisionTypeConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../Entity";
 import CircularHitbox from "../hitboxes/CircularHitbox";
 import { HealthComponentArray, SnowballComponentArray } from "../components/ComponentArray";
@@ -17,7 +17,7 @@ export function createSnowball(position: Point, size: SnowballSize = SnowballSiz
    snowball.rotation = 2 * Math.PI * Math.random();
 
    const mass = size === SnowballSize.small ? 1 : 1.5;
-   const hitbox = new CircularHitbox(snowball, mass, 0, 0, SNOWBALL_SIZES[size] / 2);
+   const hitbox = new CircularHitbox(snowball, mass, 0, 0, HitboxCollisionTypeConst.soft, SNOWBALL_SIZES[size] / 2);
    snowball.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(snowball, new PhysicsComponent(true, false));

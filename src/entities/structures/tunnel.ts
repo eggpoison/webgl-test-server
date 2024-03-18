@@ -1,4 +1,4 @@
-import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
+import { BuildingMaterial, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Tribe from "../../Tribe";
 import Entity from "../../Entity";
 import { BuildingMaterialComponentArray, HealthComponentArray, TribeComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
@@ -11,12 +11,18 @@ import { BuildingMaterialComponent } from "../../components/BuildingMaterialComp
 
 const HITBOX_WIDTH = 8 - 0.05;
 const HITBOX_HEIGHT = 64 - 0.05;
+const THIN_HITBOX_WIDTH = 0.1;
 
 export const TUNNEL_HEALTHS = [25, 75];
 
 export function addTunnelHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 1, -32 + HITBOX_WIDTH / 2, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
-   entity.addHitbox(new RectangularHitbox(entity, 1, 32 - HITBOX_WIDTH / 2, 0, HITBOX_WIDTH, HITBOX_HEIGHT));
+   // Soft hitboxes
+   entity.addHitbox(new RectangularHitbox(entity, 1, -32 + HITBOX_WIDTH / 2, 0, HitboxCollisionTypeConst.soft, HITBOX_WIDTH, HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity, 1, 32 - HITBOX_WIDTH / 2, 0, HitboxCollisionTypeConst.soft, HITBOX_WIDTH, HITBOX_HEIGHT));
+
+   // Hard hitboxes
+   entity.addHitbox(new RectangularHitbox(entity, 1, -32 + THIN_HITBOX_WIDTH, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity, 1, 32 - THIN_HITBOX_WIDTH, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
 }
 
 export function createTunnel(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {

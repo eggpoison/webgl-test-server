@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
@@ -23,7 +23,7 @@ export const TRIBE_WORKER_VISION_RANGE = 500;
 export function createTribeWorker(position: Point, tribe: Tribe, hutID: number): Entity {
    const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(worker, 1, 0, 0, TRIBE_WORKER_RADIUS);
+   const hitbox = new CircularHitbox(worker, 1, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WORKER_RADIUS);
    worker.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
@@ -51,8 +51,8 @@ export function createTribeWorker(position: Point, tribe: Tribe, hutID: number):
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
    // @Temporary
-   addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_hammer, 1);
-   addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_bow, 1);
+   // addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_hammer, 1);
+   // addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_bow, 1);
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done

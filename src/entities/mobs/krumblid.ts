@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { EscapeAIComponentArray, FollowAIComponentArray, HealthComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -27,7 +27,7 @@ export function createKrumblid(position: Point): Entity {
    const krumblid = new Entity(position, IEntityType.krumblid, COLLISION_BITS.default, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.cactus);
    krumblid.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(krumblid, 0.75, 0, 0, KRUMBLID_SIZE / 2);
+   const hitbox = new CircularHitbox(krumblid, 0.75, 0, 0, HitboxCollisionTypeConst.soft, KRUMBLID_SIZE / 2);
    krumblid.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(krumblid, new PhysicsComponent(true, false));

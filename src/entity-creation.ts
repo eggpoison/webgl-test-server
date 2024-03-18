@@ -47,7 +47,7 @@ export function createEntity(position: Point, entityType: IEntityType): Entity {
       case IEntityType.golem: return createGolem(position);
       case IEntityType.planterBox: return createPlanterBox(position);
       case IEntityType.pebblum: return createPebblum(position, ID_SENTINEL_VALUE);
-      case IEntityType.woodenSpikes:
+      case IEntityType.spikes:
       case IEntityType.punjiSticks:
       case IEntityType.ballista:
       case IEntityType.slingTurret:

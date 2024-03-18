@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, InventoryComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -13,7 +13,7 @@ export const BARREL_SIZE = 80;
 export function createBarrel(position: Point, tribe: Tribe): Entity {
    const barrel = new Entity(position, IEntityType.barrel, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(barrel, 1.5, 0, 0, BARREL_SIZE / 2);
+   const hitbox = new CircularHitbox(barrel, 1.5, 0, 0, HitboxCollisionTypeConst.hard, BARREL_SIZE / 2);
    barrel.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(barrel, new HealthComponent(20));
@@ -24,10 +24,15 @@ export function createBarrel(position: Point, tribe: Tribe): Entity {
    InventoryComponentArray.addComponent(barrel, inventoryComponent);
    createNewInventory(inventoryComponent, "inventory", 3, 3, false);
 
+   tribe.addBarrel(barrel);
+
    return barrel;
 }
 
 export function onBarrelRemove(barrel: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(barrel.id);
+   tribeComponent.tribe.removeBarrel(barrel);
+   
    HealthComponentArray.removeComponent(barrel);
    StatusEffectComponentArray.removeComponent(barrel);
    InventoryComponentArray.removeComponent(barrel);

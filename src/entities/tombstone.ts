@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import RectangularHitbox from "../hitboxes/RectangularHitbox";
 import { HealthComponentArray, TombstoneComponentArray } from "../components/ComponentArray";
@@ -28,7 +28,7 @@ export function createTombstone(position: Point): Entity {
    const tombstone = new Entity(position, IEntityType.tombstone, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    tombstone.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(tombstone, 1.25, 0, 0, WIDTH, HEIGHT);
+   const hitbox = new RectangularHitbox(tombstone, 1.25, 0, 0, HitboxCollisionTypeConst.soft, WIDTH, HEIGHT);
    tombstone.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(tombstone, new HealthComponent(MAX_HEALTH));

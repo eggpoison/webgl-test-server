@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
@@ -19,11 +19,11 @@ export function createPunjiSticks(position: Point, tribe: Tribe, attachedWallID:
    if (attachedWallID === ID_SENTINEL_VALUE) {
       // Floor hitbox
       // @Hack mass
-      punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
+      punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
    } else {
       // Wall hitbox
       // @Hack mass
-      punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
+      punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
    }
 
    HealthComponentArray.addComponent(punjiSticks, new HealthComponent(10));
@@ -35,7 +35,7 @@ export function createPunjiSticks(position: Point, tribe: Tribe, attachedWallID:
 
 export function onPunjiSticksCollision(punjiSticks: Entity, collidingEntity: Entity): void {
    // @Incomplete: Why is this condition neeeded? Shouldn't be able to be placed colliding with other structures anyway.
-   if (collidingEntity.type === IEntityType.woodenSpikes || collidingEntity.type === IEntityType.door || collidingEntity.type === IEntityType.wall) {
+   if (collidingEntity.type === IEntityType.spikes || collidingEntity.type === IEntityType.door || collidingEntity.type === IEntityType.wall) {
       return;
    }
    

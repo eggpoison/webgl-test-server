@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, randFloat, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, randFloat, randInt, HitboxCollisionTypeConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, TombstoneComponentArray, WanderAIComponentArray, ZombieComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity, healEntity } from "../../components/HealthComponent";
@@ -52,7 +52,7 @@ const HURT_ENTITY_INVESTIGATE_TICKS= Math.floor(0.5 * SettingsConst.TPS);
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
    const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(zombie, 1, 0, 0, 32);
+   const hitbox = new CircularHitbox(zombie, 1, 0, 0, HitboxCollisionTypeConst.soft, 32);
    zombie.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(zombie, new PhysicsComponent(true, false));
@@ -394,7 +394,7 @@ export function onZombieCollision(zombie: Entity, collidingEntity: Entity): void
 }
 
 export function onZombieHurt(zombie: Entity, attackingEntity: Entity): void {
-   if (HealthComponentArray.hasComponent(attackingEntity) && attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.woodenSpikes && attackingEntity.type !== IEntityType.punjiSticks) {
+   if (HealthComponentArray.hasComponent(attackingEntity) && attackingEntity.type !== IEntityType.iceSpikes && attackingEntity.type !== IEntityType.cactus && attackingEntity.type !== IEntityType.spikes && attackingEntity.type !== IEntityType.punjiSticks) {
       const zombieComponent = ZombieComponentArray.getComponent(zombie.id);
       zombieComponent.attackingEntityIDs[attackingEntity.id] = CHASE_PURSUE_TIME_TICKS;
    }

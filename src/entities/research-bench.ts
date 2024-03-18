@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Point, ResearchBenchComponentData, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, ResearchBenchComponentData, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../Entity";
 import { HealthComponentArray, ResearchBenchComponentArray, TribeComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
@@ -11,7 +11,7 @@ import { ResearchBenchComponent } from "../components/ResearchBenchComponent";
 export function createResearchBench(position: Point, tribe: Tribe): Entity {
    const bench = new Entity(position, IEntityType.researchBench, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(bench, 1.8, 0, 0, 32 * 4, 20 * 4);
+   const hitbox = new RectangularHitbox(bench, 1.8, 0, 0, HitboxCollisionTypeConst.hard, 32 * 4, 20 * 4);
    bench.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(bench, new HealthComponent(40));

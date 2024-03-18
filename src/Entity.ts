@@ -1,4 +1,4 @@
-import { DoorToggleType, EntityComponents, EntityDebugData, IEntityType, PathfindingNodeIndex, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
+import { EntityComponents, EntityDebugData, HitboxCollisionTypeConst, IEntityType, PathfindingNodeIndex, Point, RIVER_STEPPING_STONE_SIZES, SettingsConst, TileTypeConst, clampToBoardDimensions, distToSegment, distance, pointIsInRectangle, rotateXAroundPoint, rotateYAroundPoint } from "webgl-test-shared";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -6,36 +6,20 @@ import Board from "./Board";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import { onCowDeath } from "./entities/mobs/cow";
 import { onTreeDeath } from "./entities/resources/tree";
-import { onPlayerCollision, onPlayerDeath } from "./entities/tribes/player";
-import { onIceSpikesCollision, onIceSpikesDeath } from "./entities/resources/ice-spikes";
-import { onIceShardCollision } from "./entities/projectiles/ice-shards";
+import { onPlayerDeath } from "./entities/tribes/player";
+import { onIceSpikesDeath } from "./entities/resources/ice-spikes";
 import { onKrumblidDeath } from "./entities/mobs/krumblid";
-import { onCactusCollision, onCactusDeath } from "./entities/resources/cactus";
-import { onTribeWorkerCollision, onTribeWorkerDeath } from "./entities/tribes/tribe-worker";
-import { onZombieCollision } from "./entities/mobs/zombie";
-import { onSlimeCollision } from "./entities/mobs/slime";
-import { onWoodenArrowCollision } from "./entities/projectiles/wooden-arrow";
-import { onYetiCollision, onYetiDeath } from "./entities/mobs/yeti";
-import { onSnowballCollision } from "./entities/snowball";
+import { onTribeWorkerDeath } from "./entities/tribes/tribe-worker";
+import { onYetiDeath } from "./entities/mobs/yeti";
 import { onFishDeath } from "./entities/mobs/fish";
-import { DoorComponentArray } from "./components/ComponentArray";
-import { onFrozenYetiCollision } from "./entities/mobs/frozen-yeti";
-import { onRockSpikeProjectileCollision } from "./entities/projectiles/rock-spike";
 import { cleanAngle } from "./ai-shared";
-import { onSpearProjectileCollision } from "./entities/projectiles/spear-projectile";
 import { onTribeTotemDeath } from "./entities/tribes/tribe-totem";
 import { onTribeWarriorDeath } from "./entities/tribes/tribe-warrior";
-import { onSlimeSpitCollision, onSlimeSpitDeath } from "./entities/projectiles/slime-spit";
-import { onSpitPoisonCollision } from "./entities/projectiles/spit-poison";
-import { onBattleaxeProjectileCollision, onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
-import Hitbox from "./hitboxes/Hitbox";
-import { onIceArrowCollision } from "./entities/projectiles/ice-arrow";
-import { onPebblumCollision } from "./entities/mobs/pebblum";
-import { onGolemCollision } from "./entities/mobs/golem";
-import { onWoodenSpikesCollision } from "./entities/structures/wooden-spikes";
-import { onPunjiSticksCollision } from "./entities/structures/punji-sticks";
+import { onSlimeSpitDeath } from "./entities/projectiles/slime-spit";
+import { onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
 import { AIHelperComponentArray } from "./components/AIHelperComponent";
 import { PhysicsComponentArray } from "./components/PhysicsComponent";
+import { onCactusDeath } from "./entities/resources/cactus";
 
 export const ID_SENTINEL_VALUE = 99999999;
 
@@ -93,7 +77,7 @@ const findMaxWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offs
 /** A generic class for any object in the world */
 class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
-   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, 0.1, 0.1);
+   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1, 0.1);
    
    /** Unique identifier for each entity */
    public readonly id: number;
@@ -1098,58 +1082,19 @@ class Entity<T extends IEntityType = IEntityType> {
       Board.removeEntityFromJoinBuffer(this);
 
       switch (this.type) {
-         case IEntityType.cow: {
-            onCowDeath(this);
-            break;
-         }
-         case IEntityType.tree: {
-            onTreeDeath(this);
-            break;
-         }
-         case IEntityType.krumblid: {
-            onKrumblidDeath(this);
-            break;
-         }
-         case IEntityType.iceSpikes: {
-            onIceSpikesDeath(this);
-            break;
-         }
-         case IEntityType.cactus: {
-            onCactusDeath(this);
-            break;
-         }
-         case IEntityType.tribeWorker: {
-            onTribeWorkerDeath(this);
-            break;
-         }
-         case IEntityType.tribeWarrior: {
-            onTribeWarriorDeath(this);
-            break;
-         }
-         case IEntityType.yeti: {
-            onYetiDeath(this);
-            break;
-         }
-         case IEntityType.fish: {
-            onFishDeath(this);
-            break;
-         }
-         case IEntityType.player: {
-            onPlayerDeath(this);
-            break;
-         }
-         case IEntityType.tribeTotem: {
-            onTribeTotemDeath(this);
-            break;
-         }
-         case IEntityType.slimeSpit: {
-            onSlimeSpitDeath(this);
-            break;
-         }
-         case IEntityType.battleaxeProjectile: {
-            onBattleaxeProjectileDeath(this);
-            break;
-         }
+         case IEntityType.cow: onCowDeath(this); break;
+         case IEntityType.tree: onTreeDeath(this); break;
+         case IEntityType.krumblid: onKrumblidDeath(this); break;
+         case IEntityType.iceSpikes: onIceSpikesDeath(this); break;
+         case IEntityType.cactus: onCactusDeath(this); break;
+         case IEntityType.tribeWorker: onTribeWorkerDeath(this); break;
+         case IEntityType.tribeWarrior: onTribeWarriorDeath(this); break;
+         case IEntityType.yeti: onYetiDeath(this); break;
+         case IEntityType.fish: onFishDeath(this); break;
+         case IEntityType.player: onPlayerDeath(this); break;
+         case IEntityType.tribeTotem: onTribeTotemDeath(this); break;
+         case IEntityType.slimeSpit: onSlimeSpitDeath(this); break;
+         case IEntityType.battleaxeProjectile: onBattleaxeProjectileDeath(this); break;
       }
    }
 

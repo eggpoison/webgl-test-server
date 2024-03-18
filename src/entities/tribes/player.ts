@@ -1,4 +1,4 @@
-import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, MATERIAL_TO_ITEM_MAP, BuildingMaterial, assertUnreachable, BlueprintType } from "webgl-test-shared";
+import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, MATERIAL_TO_ITEM_MAP, BuildingMaterial, assertUnreachable, BlueprintType, HitboxCollisionTypeConst } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
@@ -20,6 +20,7 @@ import { EntityRelationship, TribeComponent } from "../../components/TribeCompon
 import { createBlueprintEntity } from "../blueprint-entity";
 import { deoccupyResearchBench, attemptToOccupyResearchBench } from "../../components/ResearchBenchComponent";
 import { createItemsOverEntity } from "../../entity-shared";
+import { updateTunnelDoorBitset } from "../../components/TunnelComponent";
 
 /** How far away from the entity the attack is done */
 const ATTACK_OFFSET = 50;
@@ -36,7 +37,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    // @Temporary
-   const hitbox = new CircularHitbox(player, 1.25, 0, 0, 32);
+   const hitbox = new CircularHitbox(player, 1.25, 0, 0, HitboxCollisionTypeConst.soft, 32);
    player.addHitbox(hitbox);
 
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
@@ -67,11 +68,12 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    // @Temporary
    // addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   // addItem(inventoryComponent, createItem(ItemType.barrel, 2));
-   addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
-   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
-   addItem(inventoryComponent, createItem(ItemType.deepfrost_axe, 1));
-   addItem(inventoryComponent, createItem(ItemType.rock, 6));
+   // addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
+   // addItem(inventoryComponent, createItem(ItemType.deepfrost_axe, 1));
+   // addItem(inventoryComponent, createItem(ItemType.rock, 6));
+   // addItem(inventoryComponent, createItem(ItemType.wood, 2));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 2));
 
    tribe.registerNewTribeMember(player);
 
@@ -478,21 +480,28 @@ const blueprintTypeMatchesBuilding = (building: Entity, blueprintType: Blueprint
 
    if (building.type === IEntityType.door) {
       switch (materialComponent.material) {
-         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneDoor;
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneDoorUpgrade;
          case BuildingMaterial.stone: return false;
       }
    }
 
    if (building.type === IEntityType.embrasure) {
       switch (materialComponent.material) {
-         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneEmbrasure;
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneEmbrasureUpgrade;
          case BuildingMaterial.stone: return false;
       }
    }
 
    if (building.type === IEntityType.tunnel) {
       switch (materialComponent.material) {
-         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneTunnel;
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneTunnelUpgrade;
+         case BuildingMaterial.stone: return false;
+      }
+   }
+
+   if (building.type === IEntityType.spikes) {
+      switch (materialComponent.material) {
+         case BuildingMaterial.wood: return blueprintType === BlueprintType.stoneSpikes;
          case BuildingMaterial.stone: return false;
       }
    }
@@ -522,10 +531,9 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
          }
 
          // Upgrade the wall to stone
-         const position = building.position.copy();
          const rotation = snapRotationToPlayer(player, building.position, building.rotation);
          const tribeComponent = TribeComponentArray.getComponent(player.id);
-         createBlueprintEntity(position, BlueprintType.stoneWall, building.id, tribeComponent.tribe, rotation);
+         createBlueprintEntity(building.position.copy(), BlueprintType.stoneWall, building.id, tribeComponent.tribe, rotation);
 
          consumeItemType(inventoryComponent, upgradeMaterialItemType, 5);
          break;
@@ -541,7 +549,7 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
          }
          
          const tribeComponent = TribeComponentArray.getComponent(player.id);
-         createBlueprintEntity(building.position.copy(), blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
+         createBlueprintEntity(position, blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
          
          building.remove();
          break;
@@ -552,15 +560,17 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
          const rotation = snapRotationToPlayer(player, building.position, building.rotation);
          const tribeComponent = TribeComponentArray.getComponent(player.id);
 
-         if ((building.type === IEntityType.tunnel && blueprintType === BlueprintType.stoneTunnel) || (building.type === IEntityType.door && blueprintType === BlueprintType.stoneDoor) || (building.type === IEntityType.embrasure && blueprintType === BlueprintType.stoneEmbrasure)) {
-            console.log("up");
-            // Upgrade
-            createBlueprintEntity(building.position.copy(), blueprintType, building.id, tribeComponent.tribe, rotation);
-         } else {
-            console.log("CREATE");
-            createBlueprintEntity(building.position.copy(), blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
-            building.remove();
-         }
+         createBlueprintEntity(building.position.copy(), blueprintType, ID_SENTINEL_VALUE, tribeComponent.tribe, rotation);
+         building.remove();
+         break;
+      }
+      case BlueprintType.stoneDoorUpgrade:
+      case BlueprintType.stoneEmbrasureUpgrade:
+      case BlueprintType.stoneTunnelUpgrade:
+      case BlueprintType.stoneSpikes: {
+         // Upgrade
+         const tribeComponent = TribeComponentArray.getComponent(player.id);
+         createBlueprintEntity(building.position.copy(), blueprintType, building.id, tribeComponent.tribe, building.rotation);
          break;
       }
    }
@@ -574,6 +584,18 @@ export function modifyBuilding(player: Entity, buildingID: number): void {
    const building = Board.entityRecord[buildingID];
       
    const tunnelComponent = TunnelComponentArray.getComponent(building.id);
+   if (tunnelComponent.doorBitset !== 0b00 && tunnelComponent.doorBitset !== 0b01 && tunnelComponent.doorBitset !== 0b10) {
+      return;
+   }
+
+   
+   const inventoryComponent = InventoryComponentArray.getComponent(player.id);
+   if (countItemType(inventoryComponent, ItemType.wood) < 2) {
+      return;
+   }
+
+   consumeItemType(inventoryComponent, ItemType.wood, 2);
+   
    switch (tunnelComponent.doorBitset) {
       case 0b00: {
          // Place the door blueprint on whichever side is closest to the player
@@ -582,17 +604,17 @@ export function modifyBuilding(player: Entity, buildingID: number): void {
 
          if (dot > 0) {
             // Top door
-            tunnelComponent.doorBitset = 0b01;
+            updateTunnelDoorBitset(building, 0b01);
          } else {
             // Bottom door
-            tunnelComponent.doorBitset = 0b10;
+            updateTunnelDoorBitset(building, 0b10);
          }
          break;
       }
       case 0b10:
       case 0b01: {
          // One door is already placed, so place the other one
-         tunnelComponent.doorBitset = 0b11;
+         updateTunnelDoorBitset(building, 0b11);
          break;
       }
    }

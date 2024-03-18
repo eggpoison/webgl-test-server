@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -12,7 +12,7 @@ export function createSpitPoison(position: Point): Entity {
    const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
    // @Hack mass
-   const hitbox = new CircularHitbox(poison, Number.EPSILON, 0, 0, RADIUS);
+   const hitbox = new CircularHitbox(poison, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, RADIUS);
    poison.addHitbox(hitbox);
    
    return poison;

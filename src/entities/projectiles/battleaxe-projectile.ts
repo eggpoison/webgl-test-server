@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, PlayerCauseOfDeath, Point, SettingsConst, lerp } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Item, PlayerCauseOfDeath, Point, SettingsConst, lerp } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -16,7 +16,7 @@ const RETURN_TIME_TICKS = 1 * SettingsConst.TPS;
 export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, 32);
+   const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, HitboxCollisionTypeConst.soft, 32);
    battleaxe.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true, false));

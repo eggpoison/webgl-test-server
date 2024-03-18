@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randInt } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, PlayerCauseOfDeath, Point, SettingsConst, SlimeSize, StatusEffectConst, TileTypeConst, lerp, randInt } from "webgl-test-shared";
 import Entity, { ID_SENTINEL_VALUE } from "../../Entity";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponentArray, SlimeComponentArray, WanderAIComponentArray } from "../../components/ComponentArray";
@@ -62,7 +62,7 @@ export function createSlime(position: Point, size: SlimeSize, orbSizes: Array<Sl
    collisionPushForceMultiplier = 0.5;
 
    const mass = 1 + size * 0.5;
-   const hitbox = new CircularHitbox(slime, mass, 0, 0, RADII[size]);
+   const hitbox = new CircularHitbox(slime, mass, 0, 0, HitboxCollisionTypeConst.soft, RADII[size]);
    slime.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(slime, new PhysicsComponent(true, false));

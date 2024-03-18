@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, Item, ItemType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Item, ItemType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
 import Entity from "../../Entity";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { createItemEntity } from "../item-entity";
@@ -15,7 +15,7 @@ const DROP_VELOCITY = 400;
 export function createSpearProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
    const spear = new Entity(position, IEntityType.spearProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, 12, 60);
+   const hitbox = new RectangularHitbox(spear, 0.5, 0, 0, HitboxCollisionTypeConst.soft, 12, 60);
    spear.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(spear, new PhysicsComponent(true, false));

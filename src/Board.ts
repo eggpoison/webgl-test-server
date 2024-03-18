@@ -47,7 +47,7 @@ import { onTribeWarriorRemove, tickTribeWarrior } from "./entities/tribes/tribe-
 import { onWallRemove } from "./entities/structures/wall";
 import { onSlimeSpitRemove, tickSlimeSpit } from "./entities/projectiles/slime-spit";
 import { tickSpitPoison } from "./entities/projectiles/spit-poison";
-import { onWoodenDoorRemove } from "./entities/structures/wooden-door";
+import { onWoodenDoorRemove } from "./entities/structures/door";
 import { tickDoorComponent } from "./components/DoorComponent";
 import { onBattleaxeProjectileRemove, tickBattleaxeProjectile } from "./entities/projectiles/battleaxe-projectile";
 import { onGolemRemove, tickGolem } from "./entities/mobs/golem";
@@ -56,7 +56,7 @@ import { onIceArrowRemove, tickIceArrow } from "./entities/projectiles/ice-arrow
 import { onPebblumRemove, tickPebblum } from "./entities/mobs/pebblum";
 import { PhysicsComponentArray, tickPhysicsComponent } from "./components/PhysicsComponent";
 import { onWorkbenchRemove } from "./entities/workbench";
-import { onWoodenSpikesRemove } from "./entities/structures/wooden-spikes";
+import { onSpikesRemove } from "./entities/structures/spikes";
 import { onPunjiSticksRemove } from "./entities/structures/punji-sticks";
 import { onEmbrasureRemove } from "./entities/structures/embrasure";
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
@@ -320,7 +320,7 @@ abstract class Board {
             case IEntityType.rockSpikeProjectile: onRockSpikeRemove(entity); break;
             case IEntityType.itemEntity: onItemEntityRemove(entity); break;
             case IEntityType.workbench: onWorkbenchRemove(entity); break;
-            case IEntityType.woodenSpikes: onWoodenSpikesRemove(entity); break;
+            case IEntityType.spikes: onSpikesRemove(entity); break;
             case IEntityType.punjiSticks: onPunjiSticksRemove(entity); break;
             case IEntityType.embrasure: onEmbrasureRemove(entity); break;
             case IEntityType.blueprintEntity: onBlueprintEntityRemove(entity); break;

@@ -90,7 +90,6 @@ class Tribe {
       }
 
       this.totem = null;
-      this.destroy();
    }
 
    public unlockTech(techID: TechID): void {
@@ -101,6 +100,12 @@ class Tribe {
    }
 
    public tick(): void {
+      // Destroy tribe if it has no entities left
+      if (this.totem === null && this.barrels.length === 0 && this.friendlyTribesmenIDs.length === 0 && this.huts.length === 0 && this.researchBenches.length === 0) {
+         this.destroy();
+         return;
+      }
+
       for (let i = 0; i < this.respawnTimesRemaining.length; i++) {
          if (--this.respawnTimesRemaining[i] <= 0) {
             const hutID = this.respawnHutIDs[i];
@@ -356,6 +361,13 @@ class Tribe {
 
    public addBarrel(barrel: Entity): void {
       this.barrels.push(barrel);
+   }
+
+   public removeBarrel(barrel: Entity): void {
+      const idx = this.barrels.indexOf(barrel);
+      if (idx !== -1) {
+         this.barrels.splice(idx, 1);
+      }
    }
 
    public hasBarrel(barrel: Entity): boolean {

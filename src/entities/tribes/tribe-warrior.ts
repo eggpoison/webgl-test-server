@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
@@ -23,7 +23,7 @@ export const TRIBE_WARRIOR_VISION_RANGE = 560;
 export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number): Entity {
    const warrior = new Entity(position, IEntityType.tribeWarrior, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(warrior, 1.25, 0, 0, TRIBE_WARRIOR_RADIUS);
+   const hitbox = new CircularHitbox(warrior, 1.25, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WARRIOR_RADIUS);
    warrior.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];

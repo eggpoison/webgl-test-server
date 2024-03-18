@@ -463,8 +463,8 @@ const continueCurrentPath = (tribesman: Entity): boolean => {
 
       // If the tribesman is close to the next node, slow down as to not overshoot it
       const distFromNode = getDistanceToNode(tribesman, nextNode);
-      if (distFromNode < 150) {
-         const distProgress = distFromNode / 150;
+      if (distFromNode < 100) {
+         const distProgress = distFromNode / 100;
          acceleration *= lerp(1, 0.3, distProgress);
       }
 
@@ -1442,7 +1442,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
 
       clearPath(tribesman);
    } else {
-      pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, 0, PathfindFailureDefault.returnEmpty);
+      pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, Math.floor(32 / PathfindingSettingsConst.NODE_SEPARATION), PathfindFailureDefault.returnEmpty);
    }
 
    useInfo.currentAction = TribeMemberAction.none;

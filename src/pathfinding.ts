@@ -539,9 +539,6 @@ export function smoothPath(path: ReadonlyArray<PathfindingNodeIndex>, ignoredEnt
    }
    smoothedPath.push(path[path.length - 1]);
    
-   // Don't include the first node in the path
-   smoothedPath.splice(0, 1);
-   
    return smoothedPath;
 }
 

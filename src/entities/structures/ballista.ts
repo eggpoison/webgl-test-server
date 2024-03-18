@@ -1,4 +1,4 @@
-import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS, DEFAULT_COLLISION_MASK, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
+import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, SettingsConst, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
 import { AmmoBoxComponentArray, HealthComponentArray, InventoryComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
@@ -20,7 +20,7 @@ const HITBOX_SIZE = 100 - 0.05;
 const AIM_ARC_SIZE = Math.PI / 2;
 
 export function addBallistaHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HITBOX_SIZE, HITBOX_SIZE));
+   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HitboxCollisionTypeConst.hard, HITBOX_SIZE, HITBOX_SIZE));
 }
 
 export function createBallista(position: Point, tribe: Tribe, rotation: number): Entity {
