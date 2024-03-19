@@ -16,7 +16,6 @@ import { cleanAngle } from "./ai-shared";
 import { onTribeTotemDeath } from "./entities/tribes/tribe-totem";
 import { onTribeWarriorDeath } from "./entities/tribes/tribe-warrior";
 import { onSlimeSpitDeath } from "./entities/projectiles/slime-spit";
-import { onBattleaxeProjectileDeath } from "./entities/projectiles/battleaxe-projectile";
 import { AIHelperComponentArray } from "./components/AIHelperComponent";
 import { PhysicsComponentArray } from "./components/PhysicsComponent";
 import { onCactusDeath } from "./entities/resources/cactus";
@@ -1094,7 +1093,6 @@ class Entity<T extends IEntityType = IEntityType> {
          case IEntityType.player: onPlayerDeath(this); break;
          case IEntityType.tribeTotem: onTribeTotemDeath(this); break;
          case IEntityType.slimeSpit: onSlimeSpitDeath(this); break;
-         case IEntityType.battleaxeProjectile: onBattleaxeProjectileDeath(this); break;
       }
    }
 

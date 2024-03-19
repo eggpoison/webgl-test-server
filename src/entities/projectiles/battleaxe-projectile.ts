@@ -98,25 +98,19 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
    }
 }
 
-export function onBattleaxeProjectileDeath(battleaxe: Entity): void {
-   const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe.id);
-   if (!Board.entityRecord.hasOwnProperty(throwingProjectileComponent.tribeMemberID)) {
-      return;
-   }
-   
-   // Find the inventory the battleaxe item is in
-   const ownerInventoryComponent = InventoryComponentArray.getComponent(throwingProjectileComponent.tribeMemberID);
-   const inventory = findInventoryContainingItem(ownerInventoryComponent, throwingProjectileComponent.item);
-   if (inventory === null) {
-      return;
-   }
-   
-   const ownerInventoryUseComponent = InventoryUseComponentArray.getComponent(throwingProjectileComponent.tribeMemberID);
-   const useInfo = getInventoryUseInfo(ownerInventoryUseComponent, inventory.name);
-   useInfo.thrownBattleaxeItemID = -1;
-}
-
 export function onBattleaxeProjectileRemove(battleaxe: Entity): void {
+   const throwingProjectileComponent = ThrowingProjectileComponentArray.getComponent(battleaxe.id);
+   if (Board.entityRecord.hasOwnProperty(throwingProjectileComponent.tribeMemberID)) {
+      // Find the inventory the battleaxe item is in
+      const ownerInventoryComponent = InventoryComponentArray.getComponent(throwingProjectileComponent.tribeMemberID);
+      const inventory = findInventoryContainingItem(ownerInventoryComponent, throwingProjectileComponent.item);
+      if (inventory !== null) {
+         const ownerInventoryUseComponent = InventoryUseComponentArray.getComponent(throwingProjectileComponent.tribeMemberID);
+         const useInfo = getInventoryUseInfo(ownerInventoryUseComponent, inventory.name);
+         useInfo.thrownBattleaxeItemID = -1;
+      }
+   }
+   
    PhysicsComponentArray.removeComponent(battleaxe);
    ThrowingProjectileComponentArray.removeComponent(battleaxe);
 }

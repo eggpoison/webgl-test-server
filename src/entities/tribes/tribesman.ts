@@ -287,13 +287,15 @@ const depositResources = (tribesman: Entity, barrel: Entity): void => {
    }
 }
 
-const haulToBarrel = (tribesman: Entity, barrel: Entity): void => {
+const haulToBarrel = (tribesman: Entity, barrel: Entity): boolean => {
    // @Incomplete: goal radius
-   pathfindToPosition(tribesman, barrel.position.x, barrel.position.y, barrel.id, TribesmanPathType.default, 0, PathfindFailureDefault.returnEmpty);
+   const didPathfind = pathfindToPosition(tribesman, barrel.position.x, barrel.position.y, barrel.id, TribesmanPathType.haulingToBarrel, 0, PathfindFailureDefault.returnEmpty);
 
    if (tribesman.position.calculateDistanceBetween(barrel.position) <= BARREL_INTERACT_DISTANCE) {
       depositResources(tribesman, barrel);
    }
+
+   return didPathfind;
 }
 
 const hasFood = (tribesman: Entity): boolean => {
@@ -921,15 +923,22 @@ export function tickTribesman(tribesman: Entity): void {
 
    // If full inventory, haul resources back to barrel
    if (inventoryIsFull(inventoryComponent, "hotbar")) {
-      const closestBarrel = findNearestBarrel(tribesman);
-      if (closestBarrel !== null) {
-         const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
-         const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-         
-         haulToBarrel(tribesman, closestBarrel);
-         tribesmanComponent.currentAIType = TribesmanAIType.haulingResources;
-         useInfo.currentAction = TribeMemberAction.none;
-         return;
+      // Only look for/update path to barrel every second
+      if (tribesman.ageTicks % SettingsConst.TPS === 0) {
+         const closestBarrel = findNearestBarrel(tribesman);
+         if (closestBarrel !== null) {
+            const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
+            const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+            
+            const didPathfind = haulToBarrel(tribesman, closestBarrel);
+            if (didPathfind) {
+               tribesmanComponent.currentAIType = TribesmanAIType.haulingResources;
+               useInfo.currentAction = TribeMemberAction.none;
+               return;
+            }
+         }
+      } else if (tribesmanComponent.pathType === TribesmanPathType.haulingToBarrel) {
+         continueCurrentPath(tribesman);
       }
    }
 

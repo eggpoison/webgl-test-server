@@ -4,6 +4,7 @@ import { TribesmanComponentArray } from "./ComponentArray";
 
 export const enum TribesmanPathType {
    default,
+   haulingToBarrel,
    /** Indicates that the path was caused by another tribesman wanting them to come */
    tribesmanRequest
 }

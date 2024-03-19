@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, PlayerCauseOfDeath, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, PebblumComponentArray } from "../../components/ComponentArray";
 import { HealthComponent, addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -8,6 +8,7 @@ import Board from "../../Board";
 import { SERVER } from "../../server";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
+import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 
 export function createPebblum(position: Point, targetID: number): Entity {
    const pebblum = new Entity(position, IEntityType.pebblum, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -19,6 +20,7 @@ export function createPebblum(position: Point, targetID: number): Entity {
    
    PhysicsComponentArray.addComponent(pebblum, new PhysicsComponent(true, false));
    HealthComponentArray.addComponent(pebblum, new HealthComponent(20));
+   StatusEffectComponentArray.addComponent(pebblum, new StatusEffectComponent(StatusEffectConst.burning | StatusEffectConst.bleeding | StatusEffectConst.poisoned));
    PebblumComponentArray.addComponent(pebblum, new PebblumComponent(targetID));
    
    return pebblum;
@@ -77,5 +79,6 @@ export function onPebblumCollision(pebblum: Entity, collidingEntity: Entity): vo
 export function onPebblumRemove(pebblum: Entity): void {
    PhysicsComponentArray.removeComponent(pebblum);
    HealthComponentArray.removeComponent(pebblum);
+   StatusEffectComponentArray.removeComponent(pebblum);
    PebblumComponentArray.removeComponent(pebblum);
 }

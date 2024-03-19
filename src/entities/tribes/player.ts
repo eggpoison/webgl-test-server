@@ -70,10 +70,9 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
    addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
-   addItem(inventoryComponent, createItem(ItemType.deepfrost_axe, 1));
+   addItem(inventoryComponent, createItem(ItemType.stone_battleaxe, 1));
    addItem(inventoryComponent, createItem(ItemType.rock, 6));
-   addItem(inventoryComponent, createItem(ItemType.wood, 2));
-   addItem(inventoryComponent, createItem(ItemType.wooden_spikes, 2));
+   addItem(inventoryComponent, createItem(ItemType.wood, 4));
 
    tribe.registerNewTribeMember(player);
 
