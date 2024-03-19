@@ -8,6 +8,8 @@ import OPTIONS from "./options";
 
 let inaccessiblePathfindingNodes: Record<PathfindingNodeIndex, Array<number>> = {};
 
+const footprintNodeOffsets = new Array<Array<number>>();
+
 const getNode = (nodeX: number, nodeY: number): number => {
    return (nodeY + 1) * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + nodeX + 1;
 }
@@ -37,49 +39,55 @@ for (let nodeY = -1; nodeY < PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1; 
    markPathfindingNodeOccupance(node, 0);
 }
 
-const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
-   // First make sure that the node itself is accessible
-   if (inaccessiblePathfindingNodes.hasOwnProperty(node)) {
-      for (let i = 0; i < inaccessiblePathfindingNodes[node].length; i++) {
-         const id = inaccessiblePathfindingNodes[node][i];
-         if (ignoredEntityIDs.indexOf(id) === -1) {
-            return false;
+// Calculate footprint node offsets
+const MAX_FOOTPRINT = 2;
+for (let footprint = 1; footprint <= MAX_FOOTPRINT; footprint++) {
+   const footprintSquared = footprint * footprint;
+   
+   const offsets = new Array<number>();
+   for (let offsetX = -footprint; offsetX <= footprint; offsetX++) {
+      for (let offsetY = -footprint; offsetY <= footprint; offsetY++) {
+         if (offsetX * offsetX + offsetY * offsetY > footprintSquared) {
+            continue;
          }
+
+         const offset = offsetY * PathfindingSettingsConst.NODES_IN_WORLD_WIDTH + offsetX;
+         offsets.push(offset);
       }
    }
-   
-   const centerNodeX = node % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1;
-   const centerNodeY = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
 
-   // @Hack: Add 1 to account for the fact that a node's occupance can mean that the hitbox overlaps anywhere in the 3x3 grid of nodes around that node
-   const nodeFootprint = pathfindingEntityFootprint / PathfindingSettingsConst.NODE_SEPARATION + 1;
-   const nodeFootprintSquared = nodeFootprint * nodeFootprint;
+   footprintNodeOffsets.push(offsets);
+}
 
-   // @Incomplete: Make sure it doesn't overflow
-   const minNodeX = Math.ceil(centerNodeX - nodeFootprint);
-   const maxNodeX = Math.floor(centerNodeX + nodeFootprint);
-   const minNodeY = Math.ceil(centerNodeY - nodeFootprint);
-   const maxNodeY = Math.floor(centerNodeY + nodeFootprint);
+let a = 0;
+let b  = 0;
+let c = 0;
 
-   for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
-      for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
-         let distX = nodeX - centerNodeX;
-         let distY = nodeY - centerNodeY;
-         if (distX * distX + distY * distY > nodeFootprintSquared) {
-            continue;
-         }
+export function cccc(): void {
+   console.log(a, b, c);
+   a = 0;
+   b = 0;
+   c = 0;
+}
 
-         const currentNode = getNode(nodeX, nodeY);
-         if (!inaccessiblePathfindingNodes.hasOwnProperty(currentNode)) {
-            continue;
-         }
-         
-         // If the node is occupied by anything other than the pathfinding or target entity, then the node isn't accessible
-         for (let i = 0; i < inaccessiblePathfindingNodes[currentNode].length; i++) {
-            const id = inaccessiblePathfindingNodes[currentNode][i];
-            if (ignoredEntityIDs.indexOf(id) === -1) {
-               return false;
-            }
+const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
+   // @Incomplete: Prevent wrap-around on the edges
+   c++;
+   const nodeOffsets = footprintNodeOffsets[pathfindingEntityFootprint - 1];
+   for (let i = 0; i < nodeOffsets.length; i++) {
+      const currentNode = node + nodeOffsets[i];
+
+      if (inaccessiblePathfindingNodes[currentNode] === undefined) {
+         a++;
+         continue;
+      }
+      b++;
+      
+      // If the node is occupied by anything other than the pathfinding or target entity, then the node isn't accessible
+      for (let i = 0; i < inaccessiblePathfindingNodes[currentNode].length; i++) {
+         const id = inaccessiblePathfindingNodes[currentNode][i];
+         if (ignoredEntityIDs.indexOf(id) === -1) {
+            return false;
          }
       }
    }
@@ -131,10 +139,11 @@ const getRectangularHitboxOccupiedNodes = (hitbox: RectangularHitbox): ReadonlyA
    const rectPosX = (hitbox.object.position.x + hitbox.rotatedOffsetX);
    const rectPosY = (hitbox.object.position.y + hitbox.rotatedOffsetY);
    
-   const minNodeX = Math.ceil(minX / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeX = Math.floor(maxX / PathfindingSettingsConst.NODE_SEPARATION);
-   const minNodeY = Math.ceil(minY / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeY = Math.floor(maxY / PathfindingSettingsConst.NODE_SEPARATION);
+   // @Speed: Math.round might also work
+   const minNodeX = Math.floor(minX / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeX = Math.ceil(maxX / PathfindingSettingsConst.NODE_SEPARATION);
+   const minNodeY = Math.floor(minY / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeY = Math.ceil(maxY / PathfindingSettingsConst.NODE_SEPARATION);
 
    const occupiedNodes = new Array<PathfindingNodeIndex>();
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
@@ -164,15 +173,6 @@ function markPathfindingNodeOccupance(node: PathfindingNodeIndex, entityID: numb
    } else {
       inaccessiblePathfindingNodes[node].push(entityID);
    }
-   
-   // const nodeX = node % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1;
-   // const nodeY = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
-   
-   // const groupX = Math.floor((nodeX + 1) / PathfindingVars.GROUP_SIZE);
-   // const groupY = Math.floor((nodeY + 1) / PathfindingVars.GROUP_SIZE);
-   // const group = groupY * PathfindingVars.GROUPS_IN_WORLD_SIZE + groupX;
-   
-   // groupOccupances[group] = true;
 }
 
 export function markPathfindingNodeClearance(nodeIndex: PathfindingNodeIndex, entityID: number): void {
@@ -264,65 +264,6 @@ const aStarHeuristic = (startNode: PathfindingNodeIndex, endNode: PathfindingNod
    return Math.sqrt(diffX * diffX + diffY * diffY);
 }
 
-const getNodeNeighbours = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): ReadonlyArray<PathfindingNodeIndex> => {
-   const nodeX = node % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1;
-   const nodeY = Math.floor(node / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
-
-   const neighbours = new Array<PathfindingNodeIndex>();
-
-   // @Speed: Only need to check the top rect for top neighbour, left for left neighbour, etc. And don't need to check the node itself
-
-   // Left neighbour
-   const leftNode = getNode(nodeX - 1, nodeY);
-   if (nodeIsAccessibleForEntity(leftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(leftNode);
-   }
-   
-   // Right neighbour
-   const rightNode = getNode(nodeX + 1, nodeY);
-   if (nodeIsAccessibleForEntity(rightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(rightNode);
-   }
-
-   // Bottom neighbour
-   const bottomNode = getNode(nodeX, nodeY - 1);
-   if (nodeIsAccessibleForEntity(bottomNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(bottomNode);
-   }
-
-   // Top neighbour
-   const topNode = getNode(nodeX, nodeY + 1);
-   if (nodeIsAccessibleForEntity(topNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(topNode);
-   }
-
-   // Top left neighbour
-   const topLeftNode = getNode(nodeX - 1, nodeY + 1);
-   if (nodeIsAccessibleForEntity(topLeftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(topLeftNode);
-   }
-
-   // Top right neighbour
-   const topRightNode = getNode(nodeX + 1, nodeY + 1);
-   if (nodeIsAccessibleForEntity(topRightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(topRightNode);
-   }
-
-   // Bottom left neighbour
-   const bottomLeftNode = getNode(nodeX - 1, nodeY - 1);
-   if (nodeIsAccessibleForEntity(bottomLeftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(bottomLeftNode);
-   }
-
-   // Bottom right neighbour
-   const bottomRightNode = getNode(nodeX + 1, nodeY - 1);
-   if (nodeIsAccessibleForEntity(bottomRightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
-      neighbours.push(bottomRightNode);
-   }
-
-   return neighbours;
-}
-
 export const enum PathfindFailureDefault {
    /** Returns an empty path */
    returnEmpty,
@@ -335,7 +276,24 @@ export interface PathfindOptions {
    readonly failureDefault: PathfindFailureDefault;
 }
 
-/** A-star pathfinding algorithm */
+export function getEntityFootprint(radius: number): number {
+   // @Incomplete
+   // @Hack: Add 1 to account for the fact that a node's occupance can mean that the hitbox overlaps anywhere in the 3x3 grid of nodes around that node
+   
+   return Math.floor(radius / PathfindingSettingsConst.NODE_SEPARATION) + 1;
+}
+
+/**
+ * A-star pathfinding algorithm
+ * @param startX 
+ * @param startY 
+ * @param endX 
+ * @param endY 
+ * @param ignoredEntityIDs 
+ * @param pathfindingEntityFootprint Radius of the entity's footprint in nodes
+ * @param options 
+ * @returns 
+ */
 export function pathfind(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number, options: PathfindOptions): Array<PathfindingNodeIndex> {
    const start = getClosestPathfindNode(startX, startY);
    const goal = getClosestPathfindNode(endX, endY);
@@ -390,13 +348,97 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
       }
 
       const currentGScore = gScore[current];
-      const neighbours = getNodeNeighbours(current, ignoredEntityIDs, pathfindingEntityFootprint);
+
+      
+      const nodeX = current % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1;
+      const nodeY = Math.floor(current / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
+
+      const neighbours = new Array<PathfindingNodeIndex>();
+
+      // @Incomplete: Wrapping
+
+      // Left neighbour
+      const leftNode = getNode(nodeX - 1, nodeY);
+      if (!closedSet.has(leftNode)) {
+         if (nodeIsAccessibleForEntity(leftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(leftNode);
+         } else {
+            closedSet.add(leftNode);
+         }
+      }
+      
+      // Right neighbour
+      const rightNode = getNode(nodeX + 1, nodeY);
+      if (!closedSet.has(rightNode)) {
+         if (nodeIsAccessibleForEntity(rightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(rightNode);
+         } else {
+            closedSet.add(rightNode);
+         }
+      }
+
+      // Bottom neighbour
+      const bottomNode = getNode(nodeX, nodeY - 1);
+      if (!closedSet.has(bottomNode)) {
+         if (nodeIsAccessibleForEntity(bottomNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(bottomNode);
+         } else {
+            closedSet.add(bottomNode);
+         }
+      }
+
+      // Top neighbour
+      const topNode = getNode(nodeX, nodeY + 1);
+      if (!closedSet.has(topNode)) {
+         if (nodeIsAccessibleForEntity(topNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(topNode);
+         } else {
+            closedSet.add(topNode);
+         }
+      }
+
+      // Top left neighbour
+      const topLeftNode = getNode(nodeX - 1, nodeY + 1);
+      if (!closedSet.has(topLeftNode)) {
+         if (nodeIsAccessibleForEntity(topLeftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(topLeftNode);
+         } else {
+            closedSet.add(topLeftNode);
+         }
+      }
+
+      // Top right neighbour
+      const topRightNode = getNode(nodeX + 1, nodeY + 1);
+      if (!closedSet.has(topRightNode)) {
+         if (nodeIsAccessibleForEntity(topRightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(topRightNode);
+         } else {
+            closedSet.add(topRightNode);
+         }
+      }
+
+      // Bottom left neighbour
+      const bottomLeftNode = getNode(nodeX - 1, nodeY - 1);
+      if (!closedSet.has(bottomLeftNode)) {
+         if (nodeIsAccessibleForEntity(bottomLeftNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(bottomLeftNode);
+         } else {
+            closedSet.add(bottomLeftNode);
+         }
+      }
+
+      // Bottom right neighbour
+      const bottomRightNode = getNode(nodeX + 1, nodeY - 1);
+      if (!closedSet.has(bottomRightNode)) {
+         if (nodeIsAccessibleForEntity(bottomRightNode, ignoredEntityIDs, pathfindingEntityFootprint)) {
+            neighbours.push(bottomRightNode);
+         } else {
+            closedSet.add(bottomRightNode);
+         }
+      }
+
       for (let i = 0; i < neighbours.length; i++) {
          const neighbour = neighbours[i];
-
-         if (closedSet.has(neighbour)) {
-            continue;
-         }
 
          const tentativeGScore = currentGScore + aStarHeuristic(current, neighbour);
          const neighbourGScore = gScore.hasOwnProperty(neighbour) ? gScore[neighbour] : 999999;

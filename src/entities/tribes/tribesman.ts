@@ -1,6 +1,6 @@
 import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight } from "../../ai-shared";
+import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight, getAngleDiff } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { getInventory, addItemToInventory, consumeItemFromSlot, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
@@ -16,7 +16,7 @@ import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "
 import { getItemAttackCooldown } from "../../items";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { attemptToOccupyResearchBench, canResearchAtBench, continueResearching, markPreemptiveMoveToBench, shouldMoveToResearchBench } from "../../components/ResearchBenchComponent";
-import { PathfindFailureDefault, PathfindOptions, entityHasReachedNode, getAngleToNode, getClosestPathfindNode, getDistanceToNode, pathfind, positionIsAccessible, smoothPath } from "../../pathfinding";
+import { PathfindFailureDefault, PathfindOptions, entityHasReachedNode, getAngleToNode, getClosestPathfindNode, getDistanceToNode, getEntityFootprint, pathfind, positionIsAccessible, smoothPath } from "../../pathfinding";
 import { PhysicsComponentArray } from "../../components/PhysicsComponent";
 
 // @Cleanup: Move all of this to the TribesmanComponent file
@@ -432,18 +432,25 @@ const getAvailableResearchBenchID = (tribesman: Entity, tribeComponent: TribeCom
    return id;
 }
 
-const shouldRecalculatePath = (tribesman: Entity, x: number, y: number): boolean => {
+const shouldRecalculatePath = (tribesman: Entity, goalX: number, goalY: number, goalRadiusNodes: number): boolean => {
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id); // @Speed
 
    if (tribesmanComponent.path.length === 0) {
-      const targetNode = getClosestPathfindNode(x, y);
+      // Recalculate the path if the path's final node was reached but it wasn't at the goal
+      const targetNode = getClosestPathfindNode(goalX, goalY);
       return tribesmanComponent.pathfindingTargetNode !== targetNode;
    } else {
-      const pathTarget = tribesmanComponent.path[tribesmanComponent.path.length - 1];
-      const pathTargetX = pathTarget % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH * PathfindingSettingsConst.NODE_SEPARATION;
-      const pathTargetY = Math.floor(pathTarget / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) * PathfindingSettingsConst.NODE_SEPARATION;
+      // Recalculate if the goal has moved too far away from the path's final node
+      
+      const pathTargetNode = tribesmanComponent.path[tribesmanComponent.path.length - 1];
+      
+      const pathTargetNodeX = pathTargetNode % PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1;
+      const pathTargetNodeY = Math.floor(pathTargetNode / PathfindingSettingsConst.NODES_IN_WORLD_WIDTH) - 1;
+      
+      const pathTargetX = pathTargetNodeX * PathfindingSettingsConst.NODE_SEPARATION;
+      const pathTargetY = pathTargetNodeY * PathfindingSettingsConst.NODE_SEPARATION;
 
-      return distance(x, y, pathTargetX, pathTargetY) >= PATH_RECALCULATE_DIST;
+      return distance(goalX, goalY, pathTargetX, pathTargetY) >= goalRadiusNodes * PathfindingSettingsConst.NODE_SEPARATION + PATH_RECALCULATE_DIST;
    }
 }
 
@@ -499,11 +506,11 @@ const pathfindToPosition = (tribesman: Entity, goalX: number, goalY: number, tar
    tribesmanComponent.pathType = pathType;
 
    // If moving to a new target node, recalculate path
-   if (shouldRecalculatePath(tribesman, goalX, goalY)) {
+   if (shouldRecalculatePath(tribesman, goalX, goalY, goalRadius)) {
       const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
       tribeComponent.tribe.friendlyTribesmenIDs.push(targetEntityID);
       
-      const footprint = getRadius(tribesman);
+      const footprint = getEntityFootprint(getRadius(tribesman));
 
       const options: PathfindOptions = {
          goalRadius: goalRadius,
@@ -541,11 +548,84 @@ const entityIsAccessible = (tribesman: Entity, entity: Entity): boolean => {
    const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
    tribeComponent.tribe.friendlyTribesmenIDs.push(entity.id);
 
-   const isAccessible = positionIsAccessible(entity.position.x, entity.position.y, tribeComponent.tribe.friendlyTribesmenIDs, getRadius(tribesman));
+   const isAccessible = positionIsAccessible(entity.position.x, entity.position.y, tribeComponent.tribe.friendlyTribesmenIDs, getEntityFootprint(getRadius(tribesman)));
 
    tribeComponent.tribe.friendlyTribesmenIDs.pop();
 
    return isAccessible;
+}
+
+const attemptToRepairBuildings = (tribesman: Entity): boolean => {
+   const aiHelperComponent = AIHelperComponentArray.getComponent(tribesman.id);
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
+   
+   let closestDamagedBuilding: Entity | undefined;
+   let minDistance = Number.MAX_SAFE_INTEGER;
+   for (const entity of aiHelperComponent.visibleEntities) {
+      const relationship = getTribeMemberRelationship(tribeComponent, entity);
+      if (relationship !== EntityRelationship.friendlyBuilding) {
+         continue;
+      }
+
+      const healthComponent = HealthComponentArray.getComponent(entity.id);
+      if (healthComponent.health === healthComponent.maxHealth) {
+         continue;
+      }
+
+      // @Incomplete: Skip buildings which there isn't a path to
+
+      const distance = tribesman.position.calculateDistanceBetween(entity.position);
+      if (distance < minDistance) {
+         closestDamagedBuilding = entity;
+         minDistance = distance;
+      }
+   }
+
+   if (typeof closestDamagedBuilding !== "undefined") {
+      const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
+      const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+      const hammerItemSlot = getHammerItemSlot(hotbarInventory);
+
+      // Select the hammer item slot
+      const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
+      const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+      useInfo.selectedItemSlot = hammerItemSlot;
+      useInfo.currentAction = TribeMemberAction.none;
+
+      useInfo.currentAction = TribeMemberAction.none;
+
+      const distance = calculateDistanceFromEntity(tribesman, closestDamagedBuilding);
+      if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
+         // If the tribesman will stop too close to the target, move back a bit
+         if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE - 20, distance)) {
+            tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
+            tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
+         } else {
+            stopEntity(tribesman);
+         }
+
+         const targetRotation = tribesman.position.calculateAngleBetween(closestDamagedBuilding.position);
+         tribesman.turn(targetRotation, TURN_SPEED);
+
+         if (Math.abs(getAngleDiff(tribesman.rotation, targetRotation)) < 0.1) {
+            // If in melee range, try to repair the building
+            const targets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
+            const repairTarget = calculateRepairTarget(tribesman, targets);
+            if (repairTarget !== null) {
+               repairBuilding(tribesman, repairTarget, hammerItemSlot, "hotbar");
+            }
+         }
+      } else {
+         pathfindToPosition(tribesman, closestDamagedBuilding.position.x, closestDamagedBuilding.position.y, closestDamagedBuilding.id, TribesmanPathType.default, DESIRED_MELEE_ATTACK_DISTANCE_NODES, PathfindFailureDefault.returnEmpty);
+      }
+
+      const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
+      tribesmanComponent.currentAIType = TribesmanAIType.repairing;
+
+      return true;
+   }
+
+   return false;
 }
 
 export function tickTribesman(tribesman: Entity): void {
@@ -760,74 +840,9 @@ export function tickTribesman(tribesman: Entity): void {
    // @Incomplete: Doesn't work if hammer is in offhand
    const hammerItemSlot = getHammerItemSlot(hotbarInventory);
    if (hammerItemSlot !== 0) {
-      // @Cleanup
-      // @Cleanup
-      // @Cleanup
-      
-      // 
-      // Repair damaged buildings
-      // 
-
-      {
-         let closestDamagedBuilding: Entity | undefined;
-         let minDistance = Number.MAX_SAFE_INTEGER;
-         for (const entity of aiHelperComponent.visibleEntities) {
-            const relationship = getTribeMemberRelationship(tribeComponent, entity);
-            if (relationship !== EntityRelationship.friendlyBuilding) {
-               continue;
-            }
-
-            const healthComponent = HealthComponentArray.getComponent(entity.id);
-            if (healthComponent.health === healthComponent.maxHealth) {
-               continue;
-            }
-
-            // @Incomplete: Skip buildings which there isn't a path to
-   
-            const distance = tribesman.position.calculateDistanceBetween(entity.position);
-            if (distance < minDistance) {
-               closestDamagedBuilding = entity;
-               minDistance = distance;
-            }
-         }
-
-         if (typeof closestDamagedBuilding !== "undefined") {
-            // Select the hammer item slot
-            const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
-            const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
-            useInfo.selectedItemSlot = hammerItemSlot;
-            useInfo.currentAction = TribeMemberAction.none;
-
-            useInfo.currentAction = TribeMemberAction.none;
-
-            // @Cleanup: Copy and paste from huntEntity
-            const distance = calculateDistanceFromEntity(tribesman, closestDamagedBuilding);
-            if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
-               // If the tribesman will stop too close to the target, move back a bit
-               if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE - 20, distance)) {
-                  tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
-                  tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
-               } else {
-                  stopEntity(tribesman);
-               }
-
-               const targetRotation = tribesman.position.calculateAngleBetween(closestDamagedBuilding.position);
-               tribesman.turn(targetRotation, TURN_SPEED);
-            
-               // If in melee range, try to repair the building
-               const targets = calculateRadialAttackTargets(tribesman, ATTACK_OFFSET, ATTACK_RADIUS);
-               const repairTarget = calculateRepairTarget(tribesman, targets);
-               if (repairTarget !== null) {
-                  repairBuilding(tribesman, repairTarget, hammerItemSlot, "hotbar");
-               }
-            } else {
-               pathfindToPosition(tribesman, closestDamagedBuilding.position.x, closestDamagedBuilding.position.y, closestDamagedBuilding.id, TribesmanPathType.default, DESIRED_MELEE_ATTACK_DISTANCE_NODES, PathfindFailureDefault.returnEmpty);
-            }
-
-            tribesmanComponent.currentAIType = TribesmanAIType.repairing;
-
-            return;
-         }
+      const isRepairing = attemptToRepairBuildings(tribesman);
+      if (isRepairing) {
+         return;
       }
       
       // 
@@ -1068,7 +1083,7 @@ export function tickTribesman(tribesman: Entity): void {
          const x = (tile.x + Math.random()) * SettingsConst.TILE_SIZE;
          const y = (tile.y + Math.random()) * SettingsConst.TILE_SIZE;
 
-         if (positionIsAccessible(x, y, tribeComponent.tribe.friendlyTribesmenIDs, getRadius(tribesman))) {
+         if (positionIsAccessible(x, y, tribeComponent.tribe.friendlyTribesmenIDs, getEntityFootprint(getRadius(tribesman)))) {
             const didPathfind = pathfindToPosition(tribesman, x, y, 0, TribesmanPathType.default, 0, PathfindFailureDefault.returnEmpty);
             if (didPathfind) {
                // Patrol to that position
@@ -1317,10 +1332,48 @@ const getMostDamagingItemSlot = (tribesman: Entity, huntedEntity: Entity): numbe
    return bestItemSlot;
 }
 
+const pathToEntityExists = (tribesman: Entity, huntedEntity: Entity): boolean => {
+   const tribeComponent = TribeComponentArray.getComponent(tribesman.id);
+   
+   tribeComponent.tribe.friendlyTribesmenIDs.push(huntedEntity.id);
+   const options: PathfindOptions = {
+      goalRadius: Math.floor(32 / PathfindingSettingsConst.NODE_SEPARATION),
+      failureDefault: PathfindFailureDefault.returnEmpty
+   };
+   const path = pathfind(tribesman.position.x, tribesman.position.y, huntedEntity.position.x, huntedEntity.position.y, tribeComponent.tribe.friendlyTribesmenIDs, getEntityFootprint(getRadius(tribesman)), options);
+   tribeComponent.tribe.friendlyTribesmenIDs.pop();
+
+   return path.length > 0;
+}
+
 const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
-   // @Speed: So much logic! Does it need to be this complicated?
+   // @Cleanup: So much logic! Does it need to be this complicated?
    
    // @Incomplete: Only accounts for hotbar
+
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
+
+   // If there isn't a path to the entity, try to repair buildings
+   // @Incomplete: This will cause a delay after the tribesman finishes repairing the building.
+   if (tribesman.ageTicks % (SettingsConst.TPS / 2) === 0) {
+      const hotbarInventory = getInventory(inventoryComponent, "hotbar");
+      const hammerItemSlot = getHammerItemSlot(hotbarInventory);
+      if (hammerItemSlot !== 0) {
+         const pathExists = pathToEntityExists(tribesman, huntedEntity);
+         if (!pathExists) {
+            const isRepairing = attemptToRepairBuildings(tribesman);
+            if (isRepairing) {
+               return;
+            }
+         }
+      }
+   } else {
+      const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
+      if (tribesmanComponent.currentAIType === TribesmanAIType.repairing) {
+         attemptToRepairBuildings(tribesman);
+         return;
+      }
+   }
    
    const tribesmanComponent = TribesmanComponentArray.getComponent(tribesman.id);
    tribesmanComponent.currentAIType = TribesmanAIType.attacking;
@@ -1331,7 +1384,6 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
    const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
    
    // Select the item slot
-   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
    useInfo.selectedItemSlot = mostDamagingItemSlot;
    
    const inventory = getInventory(inventoryComponent, "hotbar");
@@ -1383,16 +1435,8 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
          // @Cleanup: Copy and paste
          const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
          if (entityIsInLineOfSight(tribesman, huntedEntity, tribeComponent.tribe.friendlyTribesmenIDs)) {
-            tribeComponent.tribe.friendlyTribesmenIDs.push(huntedEntity.id);
-            const options: PathfindOptions = {
-               goalRadius: 0,
-               failureDefault: PathfindFailureDefault.returnEmpty
-            };
-            const path = pathfind(tribesman.position.x, tribesman.position.y, huntedEntity.position.x, huntedEntity.position.y, tribeComponent.tribe.friendlyTribesmenIDs, getRadius(tribesman), options);
-            tribeComponent.tribe.friendlyTribesmenIDs.pop();
-            
-            // If a path exists to the target and the tribesman will stop too close to the target, move back a bit
-            if (path.length > 0 && willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE - 20, distance)) {
+            // If the tribesman will stop too close to the target, move back a bit
+            if (willStopAtDesiredDistance(tribesman, DESIRED_RANGED_ATTACK_DISTANCE - 20, distance)) {
                tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(tribesman.rotation + Math.PI);
                tribesman.acceleration.y = getSlowAcceleration(tribesman) * Math.cos(tribesman.rotation + Math.PI);
             } else {
@@ -1451,7 +1495,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity): void => {
 
       clearPath(tribesman);
    } else {
-      pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, Math.floor(32 / PathfindingSettingsConst.NODE_SEPARATION), PathfindFailureDefault.returnEmpty);
+      pathfindToPosition(tribesman, huntedEntity.position.x, huntedEntity.position.y, huntedEntity.id, TribesmanPathType.default, Math.floor(32 / PathfindingSettingsConst.NODE_SEPARATION), PathfindFailureDefault.returnClosest);
    }
 
    useInfo.currentAction = TribeMemberAction.none;

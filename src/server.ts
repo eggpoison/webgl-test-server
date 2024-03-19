@@ -62,7 +62,7 @@ import { createTribeTotem } from "./entities/tribes/tribe-totem";
 import { createWall } from "./entities/structures/wall";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { getEntityDebugData } from "./entity-debug-data";
-import { getVisiblePathfindingNodeOccupances } from "./pathfinding";
+import { cccc, getVisiblePathfindingNodeOccupances } from "./pathfinding";
 import { createEmbrasure } from "./entities/structures/embrasure";
 import { serialiseBlueprintComponent } from "./components/BlueprintComponent";
 import { serialiseTunnelComponent } from "./components/TunnelComponent";
@@ -423,6 +423,8 @@ class GameServer {
       Board.pushJoinBuffer();
       Board.removeFlaggedEntities();
 
+      // cccc();
+
       if (!isTimed) {
          await SERVER.sendGameDataPackets();
       }
@@ -477,60 +479,62 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            // const tribe = new Tribe(TribeType.plainspeople);
-            
-            // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y - 1500), tribe);
-
-            // const w = 8;
-            // const yo = 150;
-            
-            // for (let i = -w/2; i <= w/2; i++) {
-            //    createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
-            // }
-
-            // setTimeout(() => {
-            //    const hut = createWorkerHut(new Point(spawnPosition.x, spawnPosition.y + 790), tribe);
-            //    tribe.registerNewWorkerHut(hut);
-            // }, 5000);
-
             if(1+1===2)return;
 
-            // const tribe = new Tribe(TribeType.plainspeople);
+            const tribe = new Tribe(TribeType.plainspeople);
             
-            // createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
+            createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
-            // const w = 10;
-            // const h = 10;
-            // const yo = 300;
+            const w = 10;
+            const h = 8;
+            const yo = 300;
             
-            // for (let i = -w/2; i < w/2; i++) {
-            //    if (i === 0) {
-            //       createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0, BuildingMaterial.wood);
-            //    } else {
-            //       createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
-            //    }
-            // }
+            for (let i = -w/2; i < w/2; i++) {
+               if (i === 0) {
+                  createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0, BuildingMaterial.wood);
+               } else {
+                  createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
+               }
+            }
             
-            // for (let i = 0; i < h; i++) {
-            //    createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
-            // }
+            for (let i = 0; i < h; i++) {
+               createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
+            }
             
-            // for (let i = 0; i < h; i++) {
-            //    createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
-            // }
+            for (let i = 0; i < h; i++) {
+               createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
+            }
             
-            // for (let i = -w/2; i < w/2; i++) {
-            //    createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo + (h - 1) * 64), tribe);
-            // }
+            for (let i = -w/2; i < w/2; i++) {
+               // if (i === -1 || i === -2) {
+               //    continue;
+               // }
+               createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo + (h - 1) * 64), tribe);
+            }
 
-            // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 400), tribe);
-            // tribe.registerNewWorkerHut(hut);
+            // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 800), tribe);
+            const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 600), tribe);
+            hut.rotation = Math.PI;
+            tribe.registerNewWorkerHut(hut);
 
             // const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 700), tribe);
             // tribe.registerNewWorkerHut(hut2);
 
             // const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
             // tribe.registerNewWorkerHut(hut3);
+
+
+            
+
+            const hut2 = createWorkerHut(new Point(spawnPosition.x + 150, spawnPosition.y + 600), tribe);
+            hut2.rotation = Math.PI;
+            tribe.registerNewWorkerHut(hut2);
+
+            const hut3 = createWorkerHut(new Point(spawnPosition.x + 50, spawnPosition.y + 600), tribe);
+            hut3.rotation = Math.PI;
+            tribe.registerNewWorkerHut(hut3);
+
+            createTree(new Point(spawnPosition.x + 200, spawnPosition.y + 200));
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -877,8 +881,10 @@ class GameServer {
       if (SERVER.io === null) return;
       
       return new Promise(resolve => {
-         this.nextTickTime += 1000 * SettingsConst.I_TPS;
          const currentTime = performance.now();
+         while (this.nextTickTime < currentTime) {
+            this.nextTickTime += 1000 * SettingsConst.I_TPS;
+         }
 
          setTimeout(() => {
             if (SERVER.trackedEntityID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedEntityID)) {

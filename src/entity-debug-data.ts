@@ -28,15 +28,20 @@ export function getEntityDebugData(entity: Entity): EntityDebugData {
       // Vision range
       debugData.circles!.push({
          radius: getTribesmanVisionRange(entity),
-         thickness: 2,
-         colour: [0, 0, 1]
+         // @Temporary
+         // thickness: 4,
+         thickness: 8,
+         colour: [0.3, 0, 1]
       });
       
       // Communication range
       debugData.circles!.push({
          radius: TRIBESMAN_COMMUNICATION_RANGE,
-         thickness: 2,
-         colour: [1, 1, 0]
+         // @Temporary
+         // thickness: 4,
+         thickness: 8,
+         // colour: [1/3, 1, 1]
+         colour: [1, 0, 0.3]
       });
    }
 
