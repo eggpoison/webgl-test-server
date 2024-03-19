@@ -51,7 +51,7 @@ export function createTribeWorker(position: Point, tribe: Tribe, hutID: number):
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
    // @Temporary
-   addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_bow, 1);
+   // addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_bow, 1);
    addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_hammer, 1);
 
    // If the tribesman is a frostling, spawn with a bow

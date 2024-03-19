@@ -62,7 +62,7 @@ import { createTribeTotem } from "./entities/tribes/tribe-totem";
 import { createWall } from "./entities/structures/wall";
 import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { getEntityDebugData } from "./entity-debug-data";
-import { cccc, getVisiblePathfindingNodeOccupances } from "./pathfinding";
+import { getVisiblePathfindingNodeOccupances } from "./pathfinding";
 import { createEmbrasure } from "./entities/structures/embrasure";
 import { serialiseBlueprintComponent } from "./components/BlueprintComponent";
 import { serialiseTunnelComponent } from "./components/TunnelComponent";
@@ -479,9 +479,9 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            if(1+1===2)return;
+            // if(1+1===2)return;
 
-            const tribe = new Tribe(TribeType.plainspeople);
+            const tribe = new Tribe(TribeType.barbarians);
             
             createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
@@ -490,8 +490,8 @@ class GameServer {
             const yo = 300;
             
             for (let i = -w/2; i < w/2; i++) {
-               if (i === 0) {
-                  createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe, 0, BuildingMaterial.wood);
+               if ((i === 0 || i === 1)) {
+                  createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo - 22), tribe, Math.PI, BuildingMaterial.wood);
                } else {
                   createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
                }
@@ -517,24 +517,24 @@ class GameServer {
             hut.rotation = Math.PI;
             tribe.registerNewWorkerHut(hut);
 
-            // const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 700), tribe);
-            // tribe.registerNewWorkerHut(hut2);
+            const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 630), tribe);
+            tribe.registerNewWorkerHut(hut2);
 
-            // const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
-            // tribe.registerNewWorkerHut(hut3);
+            const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
+            tribe.registerNewWorkerHut(hut3);
 
 
             
 
-            const hut2 = createWorkerHut(new Point(spawnPosition.x + 150, spawnPosition.y + 600), tribe);
-            hut2.rotation = Math.PI;
-            tribe.registerNewWorkerHut(hut2);
+            // const hut2 = createWorkerHut(new Point(spawnPosition.x + 150, spawnPosition.y + 600), tribe);
+            // hut2.rotation = Math.PI;
+            // tribe.registerNewWorkerHut(hut2);
 
-            const hut3 = createWorkerHut(new Point(spawnPosition.x + 50, spawnPosition.y + 600), tribe);
-            hut3.rotation = Math.PI;
-            tribe.registerNewWorkerHut(hut3);
+            // const hut3 = createWorkerHut(new Point(spawnPosition.x + 50, spawnPosition.y + 600), tribe);
+            // hut3.rotation = Math.PI;
+            // tribe.registerNewWorkerHut(hut3);
 
-            createTree(new Point(spawnPosition.x + 200, spawnPosition.y + 200));
+            // createTree(new Point(spawnPosition.x + 200, spawnPosition.y + 200));
          }, 200);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {

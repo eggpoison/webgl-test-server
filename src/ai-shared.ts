@@ -585,6 +585,12 @@ const entityIntersectsLineOfSight = (entity: Entity, originEntity: Entity, targe
    for (let i = 0; i < entity.hitboxes.length; i++) {
       const hitbox = entity.hitboxes[i];
 
+      // @Hack
+      // Ignore the horizontal hitboxes of embrasures
+      if (entity.type === IEntityType.embrasure && i > 1) {
+         continue;
+      }
+
       if (hitbox.hasOwnProperty("radius")) {
          if (lineIntersectsCircularHitbox(originEntity.position.x, originEntity.position.y, targetEntity.position.x, targetEntity.position.y, hitbox as CircularHitbox)) {
             return false;

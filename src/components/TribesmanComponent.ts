@@ -1,6 +1,7 @@
 import { PathfindingNodeIndex, TribesmanAIType, TribesmanComponentData } from "webgl-test-shared";
 import Entity from "../Entity";
 import { TribesmanComponentArray } from "./ComponentArray";
+import Board from "../Board";
 
 export const enum TribesmanPathType {
    default,
@@ -35,8 +36,12 @@ export class TribesmanComponent {
    /** Artificial cooldown added to tribesmen to make them a bit worse at bow combat */
    public extraBowCooldownTicks = 0;
 
+   /** The number of ticks that had occured when the tribesman last had line of sight to an enemy */
+   public lastEnemyLineOfSightTicks: number;
+   
    constructor(hutID: number) {
       this.hutID = hutID;
+      this.lastEnemyLineOfSightTicks = Board.ticks;
    }
 }
 

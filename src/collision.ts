@@ -25,6 +25,7 @@ import { onPunjiSticksCollision } from "./entities/structures/punji-sticks";
 import { onSpikesCollision } from "./entities/structures/spikes";
 import { onPlayerCollision } from "./entities/tribes/player";
 import { onTribeWorkerCollision } from "./entities/tribes/tribe-worker";
+import { onEmbrasureCollision } from "./entities/structures/embrasure";
 
 interface CollisionPushInfo {
    direction: number;
@@ -200,6 +201,17 @@ export function isColliding(entity1: Entity, entity2: Entity): number {
 
          // If the objects are colliding, add the colliding object and this object
          if (hitbox.isColliding(otherHitbox)) {
+            // @Speed @Hack: Remove once the multiple collisions per tick thing is done
+            if (entity1.type === IEntityType.embrasure && entity2.type === IEntityType.woodenArrowProjectile) {
+               if (i >= 2) {
+                  continue;
+               }
+            } else if (entity2.type === IEntityType.embrasure && entity1.type === IEntityType.woodenArrowProjectile) {
+               if (j >= 2) {
+                  continue;
+               }
+            }
+            
             return i + (j << 8);
          }
       }
@@ -269,5 +281,8 @@ export function collide(entity: Entity, pushingEntity: Entity, pushedHitboxIdx: 
       case IEntityType.golem: onGolemCollision(entity, pushingEntity); break;
       case IEntityType.spikes: onSpikesCollision(entity, pushingEntity); break;
       case IEntityType.punjiSticks: onPunjiSticksCollision(entity, pushingEntity); break;
+      case IEntityType.embrasure: {
+         onEmbrasureCollision(entity, pushingEntity, pushedHitboxIdx); break;
+      }
    }
 }

@@ -59,29 +59,15 @@ for (let footprint = 1; footprint <= MAX_FOOTPRINT; footprint++) {
    footprintNodeOffsets.push(offsets);
 }
 
-let a = 0;
-let b  = 0;
-let c = 0;
-
-export function cccc(): void {
-   console.log(a, b, c);
-   a = 0;
-   b = 0;
-   c = 0;
-}
-
 const nodeIsAccessibleForEntity = (node: PathfindingNodeIndex, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean => {
    // @Incomplete: Prevent wrap-around on the edges
-   c++;
    const nodeOffsets = footprintNodeOffsets[pathfindingEntityFootprint - 1];
    for (let i = 0; i < nodeOffsets.length; i++) {
       const currentNode = node + nodeOffsets[i];
 
       if (inaccessiblePathfindingNodes[currentNode] === undefined) {
-         a++;
          continue;
       }
-      b++;
       
       // If the node is occupied by anything other than the pathfinding or target entity, then the node isn't accessible
       for (let i = 0; i < inaccessiblePathfindingNodes[currentNode].length; i++) {
