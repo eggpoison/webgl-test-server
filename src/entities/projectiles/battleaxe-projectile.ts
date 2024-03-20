@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Item, PlayerCauseOfDeath, Point, SettingsConst, lerp } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Item, PlayerCauseOfDeath, Point, Settings, SettingsConst, lerp } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
@@ -19,7 +19,7 @@ export function createBattleaxeProjectile(position: Point, tribeMemberID: number
    const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, HitboxCollisionTypeConst.soft, 32);
    battleaxe.addHitbox(hitbox);
    
-   PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true, false));
+   PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true, true));
    ThrowingProjectileComponentArray.addComponent(battleaxe, new ThrowingProjectileComponent(tribeMemberID, item));
 
    // @Incomplete: Make the battleaxe not be pushed by collisions 
@@ -48,8 +48,13 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       battleaxe.rotation -= lerp(6 * Math.PI / SettingsConst.TPS, 0, Math.min(ticksSinceReturn / SettingsConst.TPS * 1.25, 1));
 
       const returnDirection = battleaxe.position.calculateAngleBetween(owner.position);
-      battleaxe.velocity.x += 50 * Math.sin(returnDirection);
-      battleaxe.velocity.y += 50 * Math.cos(returnDirection);
+      const returnSpeed = lerp(0, 800, Math.min(ticksSinceReturn / SettingsConst.TPS * 1.5, 1));
+      battleaxe.position.x += returnSpeed * SettingsConst.I_TPS * Math.sin(returnDirection);
+      battleaxe.position.y += returnSpeed * SettingsConst.I_TPS * Math.cos(returnDirection);
+
+      const physicsComponent = PhysicsComponentArray.getComponent(battleaxe.id);
+      physicsComponent.positionIsDirty = true;
+      physicsComponent.hitboxesAreDirty = true;
 
       // Turn to face the owner
       battleaxe.turn(owner.rotation, ticksSinceReturn / SettingsConst.TPS * Math.PI);

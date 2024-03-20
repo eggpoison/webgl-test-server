@@ -68,11 +68,11 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   addItem(inventoryComponent, createItem(ItemType.stone_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
    addItem(inventoryComponent, createItem(ItemType.stone_battleaxe, 1));
    addItem(inventoryComponent, createItem(ItemType.rock, 6));
-   addItem(inventoryComponent, createItem(ItemType.wood, 4));
+   addItem(inventoryComponent, createItem(ItemType.warrior_hut, 1));
 
    tribe.registerNewTribeMember(player);
 
@@ -625,11 +625,17 @@ export function deconstructBuilding(buildingID: number): void {
       return;
    }
 
-   const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
-   const materialItemType = MATERIAL_TO_ITEM_MAP[materialComponent.material];
-
    // Deconstruct
    building.remove();
+
+   const materialComponent = BuildingMaterialComponentArray.getComponent(building.id);
+   
+   if (building.type === IEntityType.wall && materialComponent.material === BuildingMaterial.wood) {
+      createItemsOverEntity(building, ItemType.wooden_wall, 1, 40);
+      return;
+   }
+   
+   const materialItemType = MATERIAL_TO_ITEM_MAP[materialComponent.material];
    createItemsOverEntity(building, materialItemType, 5, 40);
    return;
 }

@@ -40,7 +40,7 @@ for (let nodeY = -1; nodeY < PathfindingSettingsConst.NODES_IN_WORLD_WIDTH - 1; 
 }
 
 // Calculate footprint node offsets
-const MAX_FOOTPRINT = 2;
+const MAX_FOOTPRINT = 3;
 for (let footprint = 1; footprint <= MAX_FOOTPRINT; footprint++) {
    const footprintSquared = footprint * footprint;
    
@@ -571,10 +571,11 @@ export function smoothPath(path: ReadonlyArray<PathfindingNodeIndex>, ignoredEnt
 }
 
 export function getVisiblePathfindingNodeOccupances(visibleChunkBounds: VisibleChunkBounds): ReadonlyArray<PathfindingNodeIndex> {
+   // @Hack @Incomplete: Adding 1 to the max vals may cause extra nodes to be sent
    const minNodeX = Math.ceil(visibleChunkBounds[0] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeX = Math.floor(visibleChunkBounds[1] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeX = Math.floor((visibleChunkBounds[1] + 1) * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
    const minNodeY = Math.ceil(visibleChunkBounds[2] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeY = Math.floor(visibleChunkBounds[3] * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeY = Math.floor((visibleChunkBounds[3] + 1) * SettingsConst.CHUNK_UNITS / PathfindingSettingsConst.NODE_SEPARATION);
 
    const occupances = new Array<PathfindingNodeIndex>();
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
@@ -589,7 +590,11 @@ export function getVisiblePathfindingNodeOccupances(visibleChunkBounds: VisibleC
 }
 
 export function entityCanBlockPathfinding(entityType: IEntityType): boolean {
-   return entityType !== IEntityType.itemEntity && entityType !== IEntityType.slimeSpit && entityType !== IEntityType.woodenArrowProjectile;
+   return entityType !== IEntityType.itemEntity
+      && entityType !== IEntityType.slimeSpit
+      && entityType !== IEntityType.woodenArrowProjectile
+      && entityType !== IEntityType.slimewisp
+      && entityType !== IEntityType.blueprintEntity;
 }
 
 export function updateEntityPathfindingNodeOccupance(entity: Entity): void {

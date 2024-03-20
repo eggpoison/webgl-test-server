@@ -479,7 +479,7 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            // if(1+1===2)return;
+            if(1+1===2)return;
 
             const tribe = new Tribe(TribeType.barbarians);
             
