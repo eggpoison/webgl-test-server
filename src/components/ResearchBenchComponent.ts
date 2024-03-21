@@ -1,4 +1,4 @@
-import { RESEARCH_ORB_AMOUNTS, RESEARCH_ORB_COMPLETE_TIME, SettingsConst, getRandomResearchOrbSize } from "webgl-test-shared";
+import { IEntityType, RESEARCH_ORB_AMOUNTS, RESEARCH_ORB_COMPLETE_TIME, ResearchBenchComponentData, SettingsConst, getRandomResearchOrbSize } from "webgl-test-shared";
 import Entity from "../Entity";
 import { InventoryUseComponentArray, ResearchBenchComponentArray, TribeComponentArray, TribesmanComponentArray } from "./ComponentArray";
 import Board from "../Board";
@@ -78,12 +78,19 @@ export function markPreemptiveMoveToBench(researchBench: Entity, researcher: Ent
    researchBenchComponent.preemptiveOccupeeID = researcher.id;
 }
 
+const getResearchTimeMultiplier = (researcher: Entity): number => {
+   if (researcher.type === IEntityType.tribeWarrior) {
+      return 2;
+   }
+   return 1;
+}
+
 // @Cleanup: Should this be in tribesman.ts?
 export function continueResearching(researchBench: Entity, researcher: Entity): void {
    const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
 
    researchBenchComponent.orbCompleteProgressTicks++;
-   if (researchBenchComponent.orbCompleteProgressTicks >= ORB_COMPLETE_TICKS) {
+   if (researchBenchComponent.orbCompleteProgressTicks >= ORB_COMPLETE_TICKS * getResearchTimeMultiplier(researcher)) {
       const size = getRandomResearchOrbSize();
       const amount = RESEARCH_ORB_AMOUNTS[size];
 
@@ -97,4 +104,11 @@ export function continueResearching(researchBench: Entity, researcher: Entity): 
       const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
       useInfo.lastAttackTicks = Board.ticks;
    }
+}
+
+export function serialiseResearchBenchComponent(researchBench: Entity): ResearchBenchComponentData {
+   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
+   return {
+      isOccupied: researchBenchComponent.isOccupied
+   };
 }

@@ -1,6 +1,6 @@
 import { AttackPacket, BowItemInfo, COLLISION_BITS, CRAFTING_RECIPES, DEFAULT_COLLISION_MASK, FoodItemInfo, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, ItemRequirements, ItemType, Point, SettingsConst, TRIBE_INFO_RECORD, TechID, TechInfo, TribeMemberAction, TribeType, getItemStackSize, getTechByID, hasEnoughItems, itemIsStackable, MATERIAL_TO_ITEM_MAP, BuildingMaterial, assertUnreachable, BlueprintType, HitboxCollisionTypeConst } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { attackEntity, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
+import { attemptAttack, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
 import { BuildingMaterialComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SpikesComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
 import { InventoryComponent, addItem, addItemToSlot, consumeItemFromSlot, consumeItemType, consumeItemTypeFromInventory, countItemType, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
@@ -68,7 +68,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   addItem(inventoryComponent, createItem(ItemType.wooden_hammer, 1));
+   addItem(inventoryComponent, createItem(ItemType.spear, 1));
    addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
    addItem(inventoryComponent, createItem(ItemType.stone_battleaxe, 1));
    addItem(inventoryComponent, createItem(ItemType.rock, 6));
@@ -252,7 +252,7 @@ const attemptSwing = (player: Entity, attackTargets: ReadonlyArray<Entity>, item
       // Then look for attack targets
       const attackTarget = calculateAttackTarget(player, attackTargets, ~(EntityRelationship.friendly | EntityRelationship.friendlyBuilding));
       if (attackTarget !== null) {
-         return attackEntity(player, attackTarget, itemSlot, inventoryName);
+         return attemptAttack(player, attackTarget, itemSlot, inventoryName);
       }
 
       // Then look for blueprints to work on
@@ -267,7 +267,7 @@ const attemptSwing = (player: Entity, attackTargets: ReadonlyArray<Entity>, item
    // For non-hammer items, just look for attack targets
    const attackTarget = calculateAttackTarget(player, attackTargets, ~EntityRelationship.friendly);
    if (attackTarget !== null) {
-      return attackEntity(player, attackTarget, itemSlot, inventoryName);
+      return attemptAttack(player, attackTarget, itemSlot, inventoryName);
    }
 
    return false;

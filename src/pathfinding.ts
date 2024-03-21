@@ -269,6 +269,13 @@ export function getEntityFootprint(radius: number): number {
    return Math.floor(radius / PathfindingSettingsConst.NODE_SEPARATION) + 1;
 }
 
+export function pathIsClear(startX: number, startY: number, endX: number, endY: number, ignoredEntityIDs: ReadonlyArray<number>, pathfindingEntityFootprint: number): boolean {
+   const start = getClosestPathfindNode(startX, startY);
+   const goal = getClosestPathfindNode(endX, endY);
+
+   return pathBetweenNodesIsClear(start, goal, ignoredEntityIDs, pathfindingEntityFootprint);
+}
+
 /**
  * A-star pathfinding algorithm
  * @param startX 
@@ -314,8 +321,7 @@ export function pathfind(startX: number, startY: number, endX: number, endY: num
       // @Cleanup @Incomplete: Is this supposed to happen?
       if (++i >= 5000) {
          console.warn("!!! POTENTIAL UNRESOLVEABLE PATH !!!");
-         console.warn("!!! POTENTIAL UNRESOLVEABLE PATH !!!");
-         console.warn("!!! POTENTIAL UNRESOLVEABLE PATH !!!");
+         console.trace();
          break;
       }
 

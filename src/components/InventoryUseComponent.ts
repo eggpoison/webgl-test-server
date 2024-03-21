@@ -20,10 +20,16 @@ export interface InventoryUseInfo {
    lastBattleaxeChargeTicks: number;
    lastCrossbowLoadTicks: number;
    thrownBattleaxeItemID: number;
+   lastAttackCooldown: number;
+
+   /** Artificial cooldown added to tribesmen to make them a bit worse at combat */
+   extraAttackCooldownTicks: number;
 }
 
 export class InventoryUseComponent {
    public readonly inventoryUseInfos = new Array<InventoryUseInfo>();
+
+   public globalAttackCooldown = 0;
 
    public addInventoryUseInfo(inventory: Inventory): void {
       this.inventoryUseInfos.push({
@@ -41,12 +47,18 @@ export class InventoryUseComponent {
          lastSpearChargeTicks: 0,
          lastBattleaxeChargeTicks: 0,
          lastCrossbowLoadTicks: 0,
-         thrownBattleaxeItemID: -1
+         thrownBattleaxeItemID: -1,
+         lastAttackCooldown: SettingsConst.DEFAULT_ATTACK_COOLDOWN,
+         extraAttackCooldownTicks: 0
       });
    }
 }
 
 export function tickInventoryUseComponent(inventoryUseComponent: InventoryUseComponent): void {
+   if (inventoryUseComponent.globalAttackCooldown > 0) {
+      inventoryUseComponent.globalAttackCooldown--;
+   }
+   
    for (let i = 0; i < inventoryUseComponent.inventoryUseInfos.length; i++) {
       const useInfo = inventoryUseComponent.inventoryUseInfos[i];
 
@@ -63,6 +75,10 @@ export function tickInventoryUseComponent(inventoryUseComponent: InventoryUseCom
       // Update bow cooldown
       if (useInfo.bowCooldownTicks > 0) {
          useInfo.bowCooldownTicks--;
+      }
+
+      if (useInfo.itemAttackCooldowns[useInfo.selectedItemSlot] === undefined && useInfo.extraAttackCooldownTicks > 0) {
+         useInfo.extraAttackCooldownTicks--;
       }
    }
 }
@@ -108,7 +124,8 @@ export function serialiseInventoryUseComponent(entity: Entity): InventoryUseComp
             lastSpearChargeTicks: inventoryUseInfo.lastSpearChargeTicks,
             lastBattleaxeChargeTicks: inventoryUseInfo.lastBattleaxeChargeTicks,
             lastCrossbowLoadTicks: inventoryUseInfo.lastCrossbowLoadTicks,
-            thrownBattleaxeItemID: inventoryUseInfo.thrownBattleaxeItemID
+            thrownBattleaxeItemID: inventoryUseInfo.thrownBattleaxeItemID,
+            lastAttackCooldown: inventoryUseInfo.lastAttackCooldown
          };
       })
    };

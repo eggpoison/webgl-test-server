@@ -8,7 +8,7 @@ import { ThrowingProjectileComponent } from "../../components/ThrowingProjectile
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
-import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, getEntityRelationship } from "../../components/TribeComponent";
 
 const DROP_VELOCITY = 400;
 
@@ -35,7 +35,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
    // Don't hurt the entity who threw the spear
    const spearComponent = ThrowingProjectileComponentArray.getComponent(spear.id);
    if (Board.entityRecord.hasOwnProperty(spearComponent.tribeMemberID)) {
-      if (getTribeMemberRelationship(TribeComponentArray.getComponent(spearComponent.tribeMemberID), collidingEntity) === EntityRelationship.friendly) {
+      if (getEntityRelationship(TribeComponentArray.getComponent(spearComponent.tribeMemberID), collidingEntity) === EntityRelationship.friendly) {
          return;
       }
    }
@@ -52,15 +52,18 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
    const damage = Math.floor(spear.velocity.length() / 140);
    
    // Damage the entity
+   // @Temporary
    const hitDirection = spear.position.calculateAngleBetween(collidingEntity.position);
    damageEntity(collidingEntity, damage, tribeMember, PlayerCauseOfDeath.spear);
-   applyKnockback(collidingEntity, 350, hitDirection);
+   applyKnockback(collidingEntity, 200, hitDirection);
+   // applyKnockback(collidingEntity, 350, hitDirection);
    SERVER.registerEntityHit({
       entityPositionX: collidingEntity.position.x,
       entityPositionY: collidingEntity.position.y,
       hitEntityID: collidingEntity.id,
       damage: damage,
-      knockback: 350,
+      // knockback: 350,
+      knockback: 200,
       angleFromAttacker: hitDirection,
       attackerID: tribeMember !== null ? tribeMember.id : -1,
       flags: 0

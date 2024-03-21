@@ -6,7 +6,7 @@ import { StatusEffectComponent, StatusEffectComponentArray } from "../../compone
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import Tribe from "../../Tribe";
-import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 import { getAngleDiff } from "../../ai-shared";
 import { TurretComponent } from "../../components/TurretComponent";
 import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow";
@@ -42,7 +42,7 @@ const entityIsTargetted = (entity: Entity, tribeComponent: TribeComponent): bool
       return false;
    }
    
-   const relationship = getTribeMemberRelationship(tribeComponent, entity);
+   const relationship = getEntityRelationship(tribeComponent, entity);
    return relationship > EntityRelationship.friendlyBuilding && relationship !== EntityRelationship.resource;
 }
 

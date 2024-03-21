@@ -1,4 +1,4 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, ResearchBenchComponentData, StatusEffectConst } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Point, StatusEffectConst } from "webgl-test-shared";
 import Entity from "../Entity";
 import { HealthComponentArray, ResearchBenchComponentArray, TribeComponentArray } from "../components/ComponentArray";
 import { HealthComponent } from "../components/HealthComponent";
@@ -30,11 +30,4 @@ export function onResearchBenchRemove(researchBench: Entity): void {
    StatusEffectComponentArray.removeComponent(researchBench);
    TribeComponentArray.removeComponent(researchBench);
    ResearchBenchComponentArray.removeComponent(researchBench);
-}
-
-export function serialiseResearchBenchComponent(researchBench: Entity): ResearchBenchComponentData {
-   const researchBenchComponent = ResearchBenchComponentArray.getComponent(researchBench.id);
-   return {
-      isOccupied: researchBenchComponent.isOccupied
-   };
 }

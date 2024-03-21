@@ -1,6 +1,6 @@
 import { IEntityType, TribeComponentData, assertUnreachable } from "webgl-test-shared";
 import Tribe from "../Tribe";
-import { TribeComponentArray } from "./ComponentArray";
+import { GolemComponentArray, TribeComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 
 // /** Relationships a tribe member can have, in increasing order of threat */
@@ -22,7 +22,12 @@ export class TribeComponent {
    }
 }
 
-export function getTribeMemberRelationship(tribeComponent: TribeComponent, entity: Entity): EntityRelationship {
+export function getEntityRelationship(tribeComponent: TribeComponent, entity: Entity): EntityRelationship {
+   // @Temporary
+   if (entity.type === IEntityType.player) {
+      return EntityRelationship.friendly;
+   }
+   
    switch (entity.type) {
       // Buildings
       case IEntityType.wall:
@@ -50,7 +55,8 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
          return EntityRelationship.enemyBuilding;
       }
       // Friendlies
-      case IEntityType.player:
+      // @Temporary
+      // case IEntityType.player:
       case IEntityType.tribeWorker:
       case IEntityType.tribeWarrior:
       case IEntityType.woodenArrowProjectile:
@@ -66,9 +72,12 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
       case IEntityType.frozenYeti:
       case IEntityType.zombie:
       case IEntityType.slime:
-      case IEntityType.golem:
       case IEntityType.pebblum: {
          return EntityRelationship.hostileMob;
+      }
+      case IEntityType.golem: {
+         const golemComponent = GolemComponentArray.getComponent(entity.id);
+         return Object.keys(golemComponent.attackingEntities).length > 0 ? EntityRelationship.hostileMob : EntityRelationship.neutral;
       }
       case IEntityType.boulder:
       case IEntityType.cactus:

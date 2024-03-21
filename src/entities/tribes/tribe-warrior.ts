@@ -19,7 +19,9 @@ import { TribeWarriorComponent } from "../../components/TribeWarriorComponent";
 
 export const TRIBE_WARRIOR_RADIUS = 32;
 const INVENTORY_SIZE = 3;
-export const TRIBE_WARRIOR_VISION_RANGE = 560;
+// @Temporary
+export const TRIBE_WARRIOR_VISION_RANGE = 1200;
+// export const TRIBE_WARRIOR_VISION_RANGE = 560;
 
 const generateScars = (): ReadonlyArray<ScarInfo> => {
    let numScars = 1;
@@ -44,12 +46,13 @@ const generateScars = (): ReadonlyArray<ScarInfo> => {
 export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number): Entity {
    const warrior = new Entity(position, IEntityType.tribeWarrior, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(warrior, 1.25, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WARRIOR_RADIUS);
+   const hitbox = new CircularHitbox(warrior, 1.5, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WARRIOR_RADIUS);
    warrior.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
    PhysicsComponentArray.addComponent(warrior, new PhysicsComponent(true, false));
-   HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer));
+   // @Temporary
+   HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer * 2));
    StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent(0));
    TribeComponentArray.addComponent(warrior, new TribeComponent(tribe));
    TribeMemberComponentArray.addComponent(warrior, new TribeMemberComponent(tribe.type, IEntityType.tribeWarrior));
@@ -71,6 +74,18 @@ export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number)
    createNewInventory(inventoryComponent, "backpackSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "gloveSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
+
+   // @Temporary
+   // addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.stone_battleaxe, 1);
+   // addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.wooden_hammer, 1);
+
+   // @Temporary
+   // if (Math.random() < 0.5) {
+   //    addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.stone_battleaxe, 1);
+   // } else {
+      addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.stone_sword, 1);
+   // }
+   addItemToSlot(inventoryComponent, "armourSlot", 1, ItemType.leather_armour, 1);
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done

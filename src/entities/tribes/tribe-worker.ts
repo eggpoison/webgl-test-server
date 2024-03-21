@@ -52,7 +52,13 @@ export function createTribeWorker(position: Point, tribe: Tribe, hutID: number):
 
    // @Temporary
    // addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_bow, 1);
-   addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_hammer, 1);
+   // addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_hammer, 1);
+   if (Math.random() < 0.5) {
+   addItemToInventory(inventoryComponent, "hotbar", ItemType.wooden_sword, 1);
+   }
+   if (Math.random() < 0.4) {
+   addItemToInventory(inventoryComponent, "hotbar", ItemType.spear, 2);
+   }
 
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done

@@ -1,6 +1,6 @@
 import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, Item, PlayerCauseOfDeath, Point, Settings, SettingsConst, lerp } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ThrowingProjectileComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { addLocalInvulnerabilityHash, canDamageEntity, damageEntity } from "../../components/HealthComponent";
 import { ThrowingProjectileComponent } from "../../components/ThrowingProjectileComponent";
 import Board from "../../Board";
@@ -10,16 +10,19 @@ import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { CollisionVars, isColliding } from "../../collision";
+import Tribe from "../../Tribe";
+import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 
 const RETURN_TIME_TICKS = 1 * SettingsConst.TPS;
 
-export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item): Entity {
+export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item, tribe: Tribe): Entity {
    const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
    const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, HitboxCollisionTypeConst.soft, 32);
    battleaxe.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true, true));
+   TribeComponentArray.addComponent(battleaxe, new TribeComponent(tribe));
    ThrowingProjectileComponentArray.addComponent(battleaxe, new ThrowingProjectileComponent(tribeMemberID, item));
 
    // @Incomplete: Make the battleaxe not be pushed by collisions 
@@ -70,7 +73,13 @@ export function onBattleaxeProjectileCollision(battleaxe: Entity, collidingEntit
    if (collidingEntity.id === spearComponent.tribeMemberID) {
       return;
    }
-   
+
+   const tribeComponent = TribeComponentArray.getComponent(battleaxe.id);
+   const relationship = getEntityRelationship(tribeComponent, collidingEntity);
+   if (relationship === EntityRelationship.friendly || relationship === EntityRelationship.friendlyBuilding) {
+      return;
+   }
+
    if (HealthComponentArray.hasComponent(collidingEntity)) {
       const healthComponent = HealthComponentArray.getComponent(collidingEntity.id);
       const attackHash = "battleaxe-" + battleaxe.id;
@@ -117,5 +126,6 @@ export function onBattleaxeProjectileRemove(battleaxe: Entity): void {
    }
    
    PhysicsComponentArray.removeComponent(battleaxe);
+   TribeComponentArray.removeComponent(battleaxe);
    ThrowingProjectileComponentArray.removeComponent(battleaxe);
 }

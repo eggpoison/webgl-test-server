@@ -9,7 +9,9 @@ import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from ".
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
 
-const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
+// @Temporary
+const RESPAWN_TIME_TICKS = 50 * SettingsConst.TPS;
+// const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
 
 let idCounter = 0;
 
@@ -236,8 +238,12 @@ class Tribe {
       let tribesman: Entity;
       if (hut.type === IEntityType.workerHut) {
          tribesman = createTribeWorker(position, this, hut.id);
+         // @Temporary
+         tribesman.velocity.y += 500;
       } else {
          tribesman = createTribeWarrior(position, this, hut.id);
+         // @Temporary
+         tribesman.velocity.x += 250;
       }
       // @Incomplete: Will make hitboxes dirty!!
       tribesman.rotation = hut.rotation;

@@ -4,7 +4,7 @@ import Entity from "../../Entity";
 import { HealthComponentArray, TribeComponentArray } from "../../components/ComponentArray";
 import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
-import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 import Tribe from "../../Tribe";
 
 const ARROW_WIDTH = 5 * 4;
@@ -54,7 +54,7 @@ export function tickIceArrow(iceArrow: Entity): void {
 export function onIceArrowCollision(arrow: Entity, collidingEntity: Entity): void {
    // Don't damage any friendly entities
    const tribeComponent = TribeComponentArray.getComponent(arrow.id);
-   if (getTribeMemberRelationship(tribeComponent, collidingEntity) === EntityRelationship.friendly) {
+   if (getEntityRelationship(tribeComponent, collidingEntity) === EntityRelationship.friendly) {
       return;
    }
    

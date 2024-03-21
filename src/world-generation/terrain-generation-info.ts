@@ -139,7 +139,7 @@ const BIOME_GENERATION_INFO: Record<BiomeName, BiomeGenerationInfo> = {
    },
    swamp: {
       spawnRequirements: {
-         minTemperature: 0.5,
+         minTemperature: 0.55,
          minHumidity: 0.8
       },
       tiles: [
