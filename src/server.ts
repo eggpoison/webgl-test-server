@@ -69,6 +69,8 @@ import { serialiseTunnelComponent } from "./components/TunnelComponent";
 import { serialiseBuildingMaterialComponent } from "./components/BuildingMaterialComponent";
 import { serialiseSpikesComponent } from "./components/SpikesComponent";
 import { createSlime } from "./entities/mobs/slime";
+import { serialiseTribeWarriorComponent } from "./components/TribeWarriorComponent";
+import { createWarriorHut } from "./entities/tribes/warrior-hut";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -155,6 +157,7 @@ const serialiseComponent = <T extends ServerComponentType>(entity: Entity, compo
       case ServerComponentType.tunnel: return serialiseTunnelComponent(entity);
       case ServerComponentType.buildingMaterial: return serialiseBuildingMaterialComponent(entity);
       case ServerComponentType.spikes: return serialiseSpikesComponent(entity);
+      case ServerComponentType.tribeWarrior: return serialiseTribeWarriorComponent(entity);
    }
 
    throw new Error("Unserialised component of type " + componentType);
@@ -479,9 +482,9 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            if(1+1===2)return;
+            // if(1+1===2)return;
 
-            const tribe = new Tribe(TribeType.barbarians);
+            const tribe = new Tribe(TribeType.goblins);
             
             createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
@@ -520,8 +523,8 @@ class GameServer {
             const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 630), tribe);
             tribe.registerNewWorkerHut(hut2);
 
-            const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
-            tribe.registerNewWorkerHut(hut3);
+            const hut3 = createWarriorHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
+            tribe.registerNewWarriorHut(hut3);
 
 
             

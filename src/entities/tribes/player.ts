@@ -46,7 +46,7 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
    StatusEffectComponentArray.addComponent(player, new StatusEffectComponent(0));
 
    TribeComponentArray.addComponent(player, new TribeComponent(tribe));
-   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribe.type));
+   TribeMemberComponentArray.addComponent(player, new TribeMemberComponent(tribe.type, IEntityType.player));
    PlayerComponentArray.addComponent(player, new PlayerComponent());
 
    const inventoryUseComponent = new InventoryUseComponent();

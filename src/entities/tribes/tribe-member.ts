@@ -39,7 +39,6 @@ const DEFAULT_ATTACK_KNOCKBACK = 125;
 const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombie, IEntityType.krumblid, IEntityType.cactus, IEntityType.tribeWorker, IEntityType.tribeWarrior, IEntityType.player, IEntityType.yeti, IEntityType.frozenYeti, IEntityType.berryBush, IEntityType.fish, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.cow, IEntityType.golem, IEntityType.slime, IEntityType.slimewisp];
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace, IEntityType.golem];
 const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.wall, IEntityType.door, IEntityType.embrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.spikes, IEntityType.punjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.barrel];
-export const HOSTILE_MOB_TYPES: ReadonlyArray<IEntityType> = [IEntityType.yeti, IEntityType.frozenYeti, IEntityType.zombie, IEntityType.slime, IEntityType.golem]; // @Incomplete: Golems should only hostile when awake
 
 const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1, 0.1);
 const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1);

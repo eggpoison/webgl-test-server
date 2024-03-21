@@ -355,7 +355,7 @@ export function spawnInitialEntities(): void {
          runSpawnEvent(spawnInfo);
 
          if (++numSpawnAttempts >= 9999) {
-            console.warn("Exceeded maximum number of spawn attempts for " + spawnInfo.entityType + " with " + getEntityCount(spawnInfo.entityType) + " entities.");
+               console.warn("Exceeded maximum number of spawn attempts for " + EntityType[spawnInfo.entityType] + " with " + getEntityCount(spawnInfo.entityType) + " entities.");
             break;
          }
       }

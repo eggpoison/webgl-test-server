@@ -8,7 +8,7 @@ import { StatusEffectComponent, StatusEffectComponentArray } from "../../compone
 import { HutComponent } from "../../components/HutComponent";
 import { TribeComponent } from "../../components/TribeComponent";
 
-export const WARRIOR_HUT_SIZE = 104;
+export const WARRIOR_HUT_SIZE = 104 - 0.05;
 
 export function createWarriorHut(position: Point, tribe: Tribe): Entity {
    const hut = new Entity(position, IEntityType.warriorHut, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);

@@ -1,7 +1,7 @@
-import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, TRIBE_INFO_RECORD, TribeType } from "webgl-test-shared";
+import { COLLISION_BITS, DEFAULT_COLLISION_MASK, HitboxCollisionTypeConst, IEntityType, ItemType, Point, ScarInfo, TRIBE_INFO_RECORD, TribeType, randInt } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray, TribeWarriorComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { HealthComponent } from "../../components/HealthComponent";
 import { InventoryComponent, addItemToSlot, createNewInventory, pickupItemEntity } from "../../components/InventoryComponent";
@@ -15,10 +15,31 @@ import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHe
 import { tickTribesman } from "./tribesman";
 import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
 import { TribeComponent } from "../../components/TribeComponent";
+import { TribeWarriorComponent } from "../../components/TribeWarriorComponent";
 
 export const TRIBE_WARRIOR_RADIUS = 32;
 const INVENTORY_SIZE = 3;
 export const TRIBE_WARRIOR_VISION_RANGE = 560;
+
+const generateScars = (): ReadonlyArray<ScarInfo> => {
+   let numScars = 1;
+   while (Math.random() < 0.65 / numScars) {
+      numScars++;
+   }
+
+   const scars = new Array<ScarInfo>();
+   for (let i = 0; i < numScars; i++) {
+      const offsetDirection = 2 * Math.PI * Math.random();
+      const offsetMagnitude = 20 * Math.random();
+      scars.push({
+         offsetX: offsetMagnitude * Math.sin(offsetDirection),
+         offsetY: offsetMagnitude * Math.cos(offsetDirection),
+         rotation: Math.PI / 2 * randInt(0, 3),
+         type: randInt(0, 1)
+      });
+   }
+   return scars;
+}
 
 export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number): Entity {
    const warrior = new Entity(position, IEntityType.tribeWarrior, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
@@ -31,9 +52,10 @@ export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number)
    HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent(0));
    TribeComponentArray.addComponent(warrior, new TribeComponent(tribe));
-   TribeMemberComponentArray.addComponent(warrior, new TribeMemberComponent(tribe.type));
+   TribeMemberComponentArray.addComponent(warrior, new TribeMemberComponent(tribe.type, IEntityType.tribeWarrior));
    TribesmanComponentArray.addComponent(warrior, new TribesmanComponent(hutID));
    AIHelperComponentArray.addComponent(warrior, new AIHelperComponent(TRIBE_WARRIOR_VISION_RANGE));
+   TribeWarriorComponentArray.addComponent(warrior, new TribeWarriorComponent(generateScars()));
 
    const inventoryUseComponent = new InventoryUseComponent();
    InventoryUseComponentArray.addComponent(warrior, inventoryUseComponent);
@@ -99,4 +121,5 @@ export function onTribeWarriorRemove(warrior: Entity): void {
    InventoryComponentArray.removeComponent(warrior);
    InventoryUseComponentArray.removeComponent(warrior);
    AIHelperComponentArray.removeComponent(warrior);
+   TribeWarriorComponentArray.removeComponent(warrior);
 }

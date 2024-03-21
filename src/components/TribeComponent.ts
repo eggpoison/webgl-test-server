@@ -1,6 +1,5 @@
-import { IEntityType, RESOURCE_ENTITY_TYPES_CONST, TribeComponentData } from "webgl-test-shared";
+import { IEntityType, TribeComponentData, assertUnreachable } from "webgl-test-shared";
 import Tribe from "../Tribe";
-import { HOSTILE_MOB_TYPES } from "../entities/tribes/tribe-member";
 import { TribeComponentArray } from "./ComponentArray";
 import Entity from "../Entity";
 
@@ -38,7 +37,12 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
       case IEntityType.workerHut:
       case IEntityType.warriorHut:
       case IEntityType.tribeTotem:
-      case IEntityType.barrel: {
+      case IEntityType.furnace:
+      case IEntityType.barrel:
+      case IEntityType.workbench:
+      case IEntityType.planterBox:
+      case IEntityType.researchBench:
+      case IEntityType.campfire: {
          const entityTribeComponent = TribeComponentArray.getComponent(entity.id);
          if (entityTribeComponent.tribe === tribeComponent.tribe) {
             return EntityRelationship.friendlyBuilding;
@@ -57,17 +61,41 @@ export function getTribeMemberRelationship(tribeComponent: TribeComponent, entit
          }
          return EntityRelationship.enemy;
       }
+      // Hostile mobs
+      case IEntityType.yeti:
+      case IEntityType.frozenYeti:
+      case IEntityType.zombie:
+      case IEntityType.slime:
+      case IEntityType.golem:
+      case IEntityType.pebblum: {
+         return EntityRelationship.hostileMob;
+      }
+      case IEntityType.boulder:
+      case IEntityType.cactus:
+      case IEntityType.iceSpikes:
+      case IEntityType.berryBush:
+      case IEntityType.tree: {
+         return EntityRelationship.resource;
+      }
+      case IEntityType.cow:
+      case IEntityType.fish:
+      case IEntityType.iceShardProjectile:
+      case IEntityType.itemEntity:
+      case IEntityType.krumblid:
+      case IEntityType.rockSpikeProjectile:
+      case IEntityType.slimeSpit:
+      case IEntityType.slimewisp:
+      case IEntityType.snowball:
+      case IEntityType.spearProjectile:
+      case IEntityType.spitPoison:
+      case IEntityType.tombstone:
+      case IEntityType.battleaxeProjectile: {
+         return EntityRelationship.neutral;
+      }
+      default: {
+         assertUnreachable(entity.type);
+      }
    }
-
-   if (HOSTILE_MOB_TYPES.includes(entity.type)) {
-      return EntityRelationship.hostileMob;
-   }
-
-   if (RESOURCE_ENTITY_TYPES_CONST.includes(entity.type)) {
-      return EntityRelationship.resource;
-   }
-
-   return EntityRelationship.neutral;
 }
 
 export function serialiseTribeComponent(entity: Entity): TribeComponentData {

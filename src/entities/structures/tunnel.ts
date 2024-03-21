@@ -21,8 +21,11 @@ export function addTunnelHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 1, 32 - HITBOX_WIDTH / 2, 0, HitboxCollisionTypeConst.soft, HITBOX_WIDTH, HITBOX_HEIGHT));
 
    // Hard hitboxes
-   entity.addHitbox(new RectangularHitbox(entity, 1, -32 + THIN_HITBOX_WIDTH, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
-   entity.addHitbox(new RectangularHitbox(entity, 1, 32 - THIN_HITBOX_WIDTH, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
+   // entity.addHitbox(new RectangularHitbox(entity, 1, -32 + THIN_HITBOX_WIDTH, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
+   // entity.addHitbox(new RectangularHitbox(entity, 1, 32 - THIN_HITBOX_WIDTH, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
+   // @Temporary
+   entity.addHitbox(new RectangularHitbox(entity, 1, -32.5, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity, 1, 32.5, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
 }
 
 export function createTunnel(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {

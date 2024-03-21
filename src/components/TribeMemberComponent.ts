@@ -1,4 +1,4 @@
-import { TribeMemberComponentData, TribeType, randInt } from "webgl-test-shared";
+import { IEntityType, TribeMemberComponentData, TribeType, randInt } from "webgl-test-shared";
 import Entity from "../Entity";
 import { TribeMemberComponentArray } from "./ComponentArray";
 
@@ -7,9 +7,13 @@ export class TribeMemberComponent {
 
    public readonly fishFollowerIDs = new Array<number>();
 
-   constructor(tribeType: TribeType) {
+   constructor(tribeType: TribeType, entityType: IEntityType) {
       if (tribeType === TribeType.goblins) {
-         this.warPaintType = randInt(1, 5);
+         if (entityType === IEntityType.tribeWarrior) {
+            this.warPaintType = randInt(1, 1);
+         } else {
+            this.warPaintType = randInt(1, 5);
+         }
       } else {
          this.warPaintType = -1;
       }

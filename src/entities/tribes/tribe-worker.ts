@@ -31,7 +31,7 @@ export function createTribeWorker(position: Point, tribe: Tribe, hutID: number):
    HealthComponentArray.addComponent(worker, new HealthComponent(tribeInfo.maxHealthWorker));
    StatusEffectComponentArray.addComponent(worker, new StatusEffectComponent(0));
    TribeComponentArray.addComponent(worker, new TribeComponent(tribe));
-   TribeMemberComponentArray.addComponent(worker, new TribeMemberComponent(tribe.type));
+   TribeMemberComponentArray.addComponent(worker, new TribeMemberComponent(tribe.type, IEntityType.tribeWorker));
    TribesmanComponentArray.addComponent(worker, new TribesmanComponent(hutID));
    AIHelperComponentArray.addComponent(worker, new AIHelperComponent(TRIBE_WORKER_VISION_RANGE));
 

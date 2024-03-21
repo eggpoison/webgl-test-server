@@ -43,6 +43,7 @@ import { ResearchBenchComponent } from "./ResearchBenchComponent";
 import { SpikesComponent } from "./SpikesComponent";
 import { TunnelComponent } from "./TunnelComponent";
 import { BuildingMaterialComponent } from "./BuildingMaterialComponent";
+import { TribeWarriorComponent } from "./TribeWarriorComponent";
 
 export class ComponentArray<T extends {} = {}> {
    public components = new Array<T>();
@@ -169,3 +170,4 @@ export const ResearchBenchComponentArray = new ComponentArray<ResearchBenchCompo
 export const SpikesComponentArray = new ComponentArray<SpikesComponent>();
 export const TunnelComponentArray = new ComponentArray<TunnelComponent>();
 export const BuildingMaterialComponentArray = new ComponentArray<BuildingMaterialComponent>();
+export const TribeWarriorComponentArray = new ComponentArray<TribeWarriorComponent>();
