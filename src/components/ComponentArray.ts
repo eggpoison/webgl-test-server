@@ -93,6 +93,7 @@ export class ComponentArray<T extends {} = {}> {
       throw new Error("Component wasn't in buffer");
    }
 
+   // @Speed @Cleanup: Change parameter from entity to entityID
    public removeComponent(entity: Entity): void {
 		// Copy element at end into deleted element's place to maintain density
       const indexOfRemovedEntity = this.entityToIndexMap[entity.id];
@@ -108,6 +109,7 @@ export class ComponentArray<T extends {} = {}> {
       this.components.pop();
    }
 
+   // @Speed @Cleanup: Change parameter from entity to entityID
    public hasComponent(entity: Entity): boolean {
       return this.entityToIndexMap.hasOwnProperty(entity.id);
    }

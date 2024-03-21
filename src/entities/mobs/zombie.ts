@@ -13,7 +13,7 @@ import { shouldWander, getWanderTargetTile, wander } from "../../ai/wander-ai";
 import Tile from "../../Tile";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { InventoryUseComponent, getInventoryUseInfo, hasInventoryUseInfo } from "../../components/InventoryUseComponent";
-import { attackEntity, calculateRadialAttackTargets, wasTribeMemberKill } from "../tribes/tribe-member";
+import { attemptAttack, calculateRadialAttackTargets, wasTribeMemberKill } from "../tribes/tribe-member";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { createItemsOverEntity } from "../../entity-shared";
@@ -121,7 +121,7 @@ const doMeleeAttack = (zombie: Entity, target: Entity): void => {
 
    // Register the hit
    if (attackTargets.includes(target)) {
-      attackEntity(zombie, target, 1, "handSlot");
+      attemptAttack(zombie, target, 1, "handSlot");
 
       // Reset attack cooldown
       const zombieComponent = ZombieComponentArray.getComponent(zombie.id);

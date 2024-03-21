@@ -26,6 +26,7 @@ import { onSpikesCollision } from "./entities/structures/spikes";
 import { onPlayerCollision } from "./entities/tribes/player";
 import { onTribeWorkerCollision } from "./entities/tribes/tribe-worker";
 import { onEmbrasureCollision } from "./entities/structures/embrasure";
+import { onTribeWarriorCollision } from "./entities/tribes/tribe-warrior";
 
 interface CollisionPushInfo {
    direction: number;
@@ -281,8 +282,7 @@ export function collide(entity: Entity, pushingEntity: Entity, pushedHitboxIdx: 
       case IEntityType.golem: onGolemCollision(entity, pushingEntity); break;
       case IEntityType.spikes: onSpikesCollision(entity, pushingEntity); break;
       case IEntityType.punjiSticks: onPunjiSticksCollision(entity, pushingEntity); break;
-      case IEntityType.embrasure: {
-         onEmbrasureCollision(entity, pushingEntity, pushedHitboxIdx); break;
-      }
+      case IEntityType.embrasure: onEmbrasureCollision(entity, pushingEntity, pushedHitboxIdx); break;
+      case IEntityType.tribeWarrior: onTribeWarriorCollision(entity, pushingEntity);
    }
 }

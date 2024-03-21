@@ -23,7 +23,7 @@ export class TribeComponent {
    }
 }
 
-export function getTribeMemberRelationship(tribeComponent: TribeComponent, entity: Entity): EntityRelationship {
+export function getEntityRelationship(tribeComponent: TribeComponent, entity: Entity): EntityRelationship {
    switch (entity.type) {
       // Buildings
       case IEntityType.wall:

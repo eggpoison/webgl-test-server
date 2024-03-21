@@ -7,7 +7,7 @@ import { ArrowComponent } from "../../components/ArrowComponent";
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
-import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 import { StatusEffectComponentArray, applyStatusEffect } from "../../components/StatusEffectComponent";
 
 // @Cleanup: Rename file to something more generic
@@ -75,7 +75,7 @@ export function onWoodenArrowCollision(arrow: Entity, collidingEntity: Entity): 
    const tribeComponent = TribeComponentArray.getComponent(arrow.id);
 
    // Ignore friendlies, and friendly buildings if the ignoreFriendlyBuildings flag is set
-   const relationship = getTribeMemberRelationship(tribeComponent, collidingEntity);
+   const relationship = getEntityRelationship(tribeComponent, collidingEntity);
    if (relationship === EntityRelationship.friendly || (arrowComponent.ignoreFriendlyBuildings && relationship === EntityRelationship.friendlyBuilding)) {
       return;
    }

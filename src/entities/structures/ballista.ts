@@ -2,7 +2,7 @@ import { AMMO_INFO_RECORD, BALLISTA_AMMO_TYPES, BallistaAmmoType, COLLISION_BITS
 import Entity from "../../Entity";
 import Tribe from "../../Tribe";
 import { AmmoBoxComponentArray, HealthComponentArray, InventoryComponentArray, TribeComponentArray, TurretComponentArray } from "../../components/ComponentArray";
-import { EntityRelationship, TribeComponent, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { TurretComponent } from "../../components/TurretComponent";
@@ -66,7 +66,7 @@ const entityIsTargetted = (turret: Entity, entity: Entity, tribeComponent: Tribe
       return false;
    }
 
-   if (getTribeMemberRelationship(tribeComponent, entity) <= EntityRelationship.friendlyBuilding) {
+   if (getEntityRelationship(tribeComponent, entity) <= EntityRelationship.friendlyBuilding) {
       return false;
    }
 

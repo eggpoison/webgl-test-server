@@ -36,7 +36,6 @@ import { serialiseIceShardComponent } from "./components/IceShardComponent";
 import { serialiseItemComponent } from "./components/ItemComponent";
 import { serialisePebblumComponent } from "./components/PebblumComponent";
 import { serialisePlayerComponent } from "./components/PlayerComponent";
-import { serialiseResearchBenchComponent } from "./entities/research-bench";
 import { serialiseRockSpikeComponent } from "./components/RockSpikeProjectileComponent";
 import { serialiseSlimeSpitComponent } from "./components/SlimeSpitComponent";
 import { serialiseSlimewispComponent } from "./components/SlimewispComponent";
@@ -69,6 +68,8 @@ import { serialiseTunnelComponent } from "./components/TunnelComponent";
 import { serialiseBuildingMaterialComponent } from "./components/BuildingMaterialComponent";
 import { serialiseSpikesComponent } from "./components/SpikesComponent";
 import { createSlime } from "./entities/mobs/slime";
+import { createWarriorHut } from "./entities/tribes/warrior-hut";
+import { serialiseResearchBenchComponent } from "./components/ResearchBenchComponent";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -479,7 +480,7 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            if(1+1===2)return;
+            // if(1+1===2)return;
 
             const tribe = new Tribe(TribeType.barbarians);
             
@@ -489,13 +490,13 @@ class GameServer {
             const h = 8;
             const yo = 300;
             
-            for (let i = -w/2; i < w/2; i++) {
-               if ((i === 0 || i === 1)) {
-                  createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo - 22), tribe, Math.PI, BuildingMaterial.wood);
-               } else {
-                  createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
-               }
-            }
+            // for (let i = -w/2; i < w/2; i++) {
+            //    if ((i === 0 || i === 1) && 1+1===1) {
+            //       createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo - 22), tribe, Math.PI, BuildingMaterial.wood);
+            //    } else {
+            //       createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
+            //    }
+            // }
             
             for (let i = 0; i < h; i++) {
                createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
@@ -504,7 +505,7 @@ class GameServer {
             for (let i = 0; i < h; i++) {
                createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
             }
-            
+
             for (let i = -w/2; i < w/2; i++) {
                // if (i === -1 || i === -2) {
                //    continue;
@@ -513,26 +514,24 @@ class GameServer {
             }
 
             // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 800), tribe);
-            const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 600), tribe);
+            const hut = createWarriorHut(new Point(spawnPosition.x + 250, spawnPosition.y + 600), tribe);
             hut.rotation = Math.PI;
-            tribe.registerNewWorkerHut(hut);
+            tribe.registerNewWarriorHut(hut);
 
-            const hut2 = createWorkerHut(new Point(spawnPosition.x - 50, spawnPosition.y + 630), tribe);
-            tribe.registerNewWorkerHut(hut2);
+            const hut2 = createWarriorHut(new Point(spawnPosition.x - 50, spawnPosition.y + 630), tribe);
+            tribe.registerNewWarriorHut(hut2);
 
-            const hut3 = createWorkerHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
-            tribe.registerNewWorkerHut(hut3);
+            const hut3 = createWarriorHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
+            tribe.registerNewWarriorHut(hut3);
 
-
-            
 
             // const hut2 = createWorkerHut(new Point(spawnPosition.x + 150, spawnPosition.y + 600), tribe);
             // hut2.rotation = Math.PI;
             // tribe.registerNewWorkerHut(hut2);
 
-            // const hut3 = createWorkerHut(new Point(spawnPosition.x + 50, spawnPosition.y + 600), tribe);
-            // hut3.rotation = Math.PI;
-            // tribe.registerNewWorkerHut(hut3);
+            const hut4 = createWorkerHut(new Point(spawnPosition.x + 50, spawnPosition.y), tribe);
+            hut4.rotation = Math.PI;
+            tribe.registerNewWorkerHut(hut4);
 
             // createTree(new Point(spawnPosition.x + 200, spawnPosition.y + 200));
          }, 200);

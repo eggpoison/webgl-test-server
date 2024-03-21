@@ -50,6 +50,10 @@ export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number)
    createNewInventory(inventoryComponent, "gloveSlot", 1, 1, false);
    createNewInventory(inventoryComponent, "backpack", -1, -1, false);
 
+   // @Temporary
+   // addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.stone_battleaxe, 1);
+   addItemToSlot(inventoryComponent, "hotbar", 1, ItemType.wooden_hammer, 1);
+
    // If the tribesman is a frostling, spawn with a bow
    // @Temporary: Remove once tribe rework is done
    if (tribe.type === TribeType.frostlings) {

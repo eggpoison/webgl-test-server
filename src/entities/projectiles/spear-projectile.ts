@@ -8,7 +8,7 @@ import { ThrowingProjectileComponent } from "../../components/ThrowingProjectile
 import Board from "../../Board";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
-import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, getEntityRelationship } from "../../components/TribeComponent";
 
 const DROP_VELOCITY = 400;
 
@@ -35,7 +35,7 @@ export function onSpearProjectileCollision(spear: Entity, collidingEntity: Entit
    // Don't hurt the entity who threw the spear
    const spearComponent = ThrowingProjectileComponentArray.getComponent(spear.id);
    if (Board.entityRecord.hasOwnProperty(spearComponent.tribeMemberID)) {
-      if (getTribeMemberRelationship(TribeComponentArray.getComponent(spearComponent.tribeMemberID), collidingEntity) === EntityRelationship.friendly) {
+      if (getEntityRelationship(TribeComponentArray.getComponent(spearComponent.tribeMemberID), collidingEntity) === EntityRelationship.friendly) {
          return;
       }
    }

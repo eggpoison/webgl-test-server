@@ -1,7 +1,7 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight, HitboxCollisionTypeConst } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight, HitboxCollisionTypeConst, Settings } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Board from "../../Board";
-import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
+import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
 import { addItemToSlot, consumeItemFromSlot, getInventory, getItem, getItemFromInventory, inventoryHasItemInSlot, removeItemFromInventory, resizeInventory } from "../../components/InventoryComponent";
 import { getEntitiesInVisionRange } from "../../ai-shared";
 import { addDefence, damageEntity, healEntity, removeDefence } from "../../components/HealthComponent";
@@ -28,7 +28,7 @@ import { createIceArrow } from "../projectiles/ice-arrow";
 import { createSpikes, spikesAreAttachedToWall } from "../structures/spikes";
 import { createPunjiSticks, punjiSticksAreAttachedToWall } from "../structures/punji-sticks";
 import { doBlueprintWork } from "../../components/BlueprintComponent";
-import { EntityRelationship, getTribeMemberRelationship } from "../../components/TribeComponent";
+import { EntityRelationship, getEntityRelationship } from "../../components/TribeComponent";
 import { createBlueprintEntity } from "../blueprint-entity";
 import { getItemAttackCooldown } from "../../items";
 import { applyKnockback } from "../../components/PhysicsComponent";
@@ -247,6 +247,13 @@ const calculateItemKnockback = (item: Item | null): number => {
    return DEFAULT_ATTACK_KNOCKBACK;
 }
 
+const getRepairTimeMultiplier = (tribeMember: Entity): number => {
+   if (tribeMember.type === IEntityType.tribeWarrior) {
+      return 2.5;
+   }
+   return 1;
+}
+
 // @Cleanup: Maybe split this up into repair and work functions
 export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
    const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
@@ -267,11 +274,10 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
    }
 
    // Reset attack cooldown
-   if (item !== null) {
-      useInfo.itemAttackCooldowns[itemSlot] = getItemAttackCooldown(item);
-   } else {
-      useInfo.itemAttackCooldowns[itemSlot] = SettingsConst.DEFAULT_ATTACK_COOLDOWN;
-   }
+   const baseAttackCooldown = item !== null ? getItemAttackCooldown(item) : SettingsConst.DEFAULT_ATTACK_COOLDOWN;
+   const attackCooldown = baseAttackCooldown * getRepairTimeMultiplier(tribeMember);
+   useInfo.itemAttackCooldowns[itemSlot] = attackCooldown;
+   useInfo.lastAttackCooldown = attackCooldown;
 
    // @Incomplete: Should this instead be its own lastConstructTicks?
    useInfo.lastAttackTicks = Board.ticks;
@@ -299,31 +305,67 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
    return false;
 }
 
+const getSwingTimeMulitplier = (entity: Entity, targetEntity: Entity): number => {
+   let swingTimeMultiplier = 1;
+
+   if (entity.type === IEntityType.tribeWarrior || entity.type === IEntityType.player) {
+      const tribeComponent = TribeComponentArray.getComponent(entity.id);
+      if (tribeComponent.tribe.type === TribeType.barbarians) {
+         // 30% slower
+         swingTimeMultiplier /= 0.7;
+      }
+   }
+   
+   if (entity.type === IEntityType.tribeWarrior) {
+      const tribeComponent = TribeComponentArray.getComponent(entity.id);
+      const relationship = getEntityRelationship(tribeComponent, targetEntity);
+      if (relationship === EntityRelationship.resource) {
+         swingTimeMultiplier *= 2.5;
+      }
+   }
+
+   return swingTimeMultiplier;
+}
+
 /**
  * @param targetEntity The entity to attack
  * @param itemSlot The item slot being used to attack the entity
+ * @returns Whether or not the attack succeeded
  */
 // @Cleanup: (?) Pass in the item to use directly instead of passing in the item slot and inventory name
 // @Cleanup: Not just for tribe members, move to different file
-export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
-   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
+export function attemptAttack(tribeMember: Entity, targetEntity: Entity, itemSlot: number, inventoryName: string): boolean {
    const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
+   if (inventoryUseComponent.globalAttackCooldown > 0) {
+      return false;
+   }
 
    const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
    // Don't attack if on cooldown or not doing another action
-   if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot) || useInfo.currentAction !== TribeMemberAction.none) {
+   if (useInfo.itemAttackCooldowns.hasOwnProperty(itemSlot) || useInfo.extraAttackCooldownTicks > 0 || useInfo.currentAction !== TribeMemberAction.none) {
       return false;
    }
    
    // Find the selected item
-   const item = getItem(inventoryComponent, inventoryName, itemSlot);
+   const inventoryComponent = InventoryComponentArray.getComponent(tribeMember.id);
+   let item = getItem(inventoryComponent, inventoryName, itemSlot);
+   
+   if (item !== null && useInfo.thrownBattleaxeItemID === item.id) {
+      item = null;
+   }
 
    // Reset attack cooldown
-   if (item !== null) {
-      useInfo.itemAttackCooldowns[itemSlot] = getItemAttackCooldown(item);
-   } else {
-      useInfo.itemAttackCooldowns[itemSlot] = SettingsConst.DEFAULT_ATTACK_COOLDOWN;
+   const baseAttackCooldown = item !== null ? getItemAttackCooldown(item) : SettingsConst.DEFAULT_ATTACK_COOLDOWN;
+   const attackCooldown = baseAttackCooldown * getSwingTimeMulitplier(tribeMember, targetEntity);
+   useInfo.itemAttackCooldowns[itemSlot] = attackCooldown;
+   useInfo.lastAttackCooldown = attackCooldown;
+   useInfo.lastAttackTicks = Board.ticks;
+   inventoryUseComponent.globalAttackCooldown = SettingsConst.GLOBAL_ATTACK_COOLDOWN;
+
+   // @Cleanup @Speed: Make a function (e.g. attemptTribesmanAttack) which does this check using the return val of attemptTack
+   if (tribeMember.type === IEntityType.tribeWorker) {
+      useInfo.extraAttackCooldownTicks = Math.floor(0.1 * SettingsConst.TPS);
    }
 
    const attackDamage = calculateItemDamage(item, targetEntity);
@@ -349,8 +391,6 @@ export function attackEntity(tribeMember: Entity, targetEntity: Entity, itemSlot
       applyStatusEffect(targetEntity, StatusEffectConst.poisoned, 3 * SettingsConst.TPS);
    }
 
-   useInfo.lastAttackTicks = Board.ticks;
-
    return true;
 }
 
@@ -366,7 +406,7 @@ export function calculateAttackTarget(tribeMember: Entity, targetEntities: Reado
          continue;
       }
 
-      const relationship = getTribeMemberRelationship(tribeComponent, targetEntity);
+      const relationship = getEntityRelationship(tribeComponent, targetEntity);
       if ((relationship & attackableEntityRelationshipMask) === 0) {
          continue;
       }
@@ -401,7 +441,7 @@ export function calculateRepairTarget(tribeMember: Entity, targetEntities: Reado
          continue;
       }
 
-      const relationship = getTribeMemberRelationship(tribeComponent, targetEntity);
+      const relationship = getEntityRelationship(tribeComponent, targetEntity);
       if (relationship !== EntityRelationship.friendlyBuilding) {
          continue;
       }
@@ -952,12 +992,14 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          // 
 
          const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribeMember.id);
+         const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
+
          const useInfo = getInventoryUseInfo(inventoryUseComponent, inventoryName);
 
          const offsetDirection = tribeMember.rotation + Math.PI / 1.5 - Math.PI / 14;
          const x = tribeMember.position.x + 35 * Math.sin(offsetDirection);
          const y = tribeMember.position.y + 35 * Math.cos(offsetDirection);
-         const battleaxe = createBattleaxeProjectile(new Point(x, y), tribeMember.id, item);
+         const battleaxe = createBattleaxeProjectile(new Point(x, y), tribeMember.id, item, tribeComponent.tribe);
 
          const ticksSinceLastAction = Board.ticks - useInfo.lastBattleaxeChargeTicks;
          const secondsSinceLastAction = ticksSinceLastAction / SettingsConst.TPS;

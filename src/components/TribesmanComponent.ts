@@ -30,8 +30,6 @@ export class TribesmanComponent {
    public readonly path: Array<PathfindingNodeIndex> = [];
    public pathfindingTargetNode: PathfindingNodeIndex = Number.MAX_SAFE_INTEGER;
    public pathType = TribesmanPathType.default;
-   // @Cleanup @Incomplete??
-   // public lastDistFromNextNode = 0;
 
    /** Artificial cooldown added to tribesmen to make them a bit worse at bow combat */
    public extraBowCooldownTicks = 0;
