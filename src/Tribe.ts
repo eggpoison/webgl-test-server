@@ -9,9 +9,7 @@ import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from ".
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
 
-// @Temporary
-const RESPAWN_TIME_TICKS = 50 * SettingsConst.TPS;
-// const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
+const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
 
 let idCounter = 0;
 

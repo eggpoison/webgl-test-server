@@ -19,9 +19,7 @@ import { TribeWarriorComponent } from "../../components/TribeWarriorComponent";
 
 export const TRIBE_WARRIOR_RADIUS = 32;
 const INVENTORY_SIZE = 3;
-// @Temporary
-export const TRIBE_WARRIOR_VISION_RANGE = 1200;
-// export const TRIBE_WARRIOR_VISION_RANGE = 560;
+export const TRIBE_WARRIOR_VISION_RANGE = 560;
 
 const generateScars = (): ReadonlyArray<ScarInfo> => {
    let numScars = 1;
@@ -51,8 +49,7 @@ export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number)
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];
    PhysicsComponentArray.addComponent(warrior, new PhysicsComponent(true, false));
-   // @Temporary
-   HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer * 2));
+   HealthComponentArray.addComponent(warrior, new HealthComponent(tribeInfo.maxHealthPlayer));
    StatusEffectComponentArray.addComponent(warrior, new StatusEffectComponent(0));
    TribeComponentArray.addComponent(warrior, new TribeComponent(tribe));
    TribeMemberComponentArray.addComponent(warrior, new TribeMemberComponent(tribe.type, IEntityType.tribeWarrior));

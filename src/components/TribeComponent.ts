@@ -23,11 +23,6 @@ export class TribeComponent {
 }
 
 export function getEntityRelationship(tribeComponent: TribeComponent, entity: Entity): EntityRelationship {
-   // @Temporary
-   if (entity.type === IEntityType.player) {
-      return EntityRelationship.friendly;
-   }
-   
    switch (entity.type) {
       // Buildings
       case IEntityType.wall:
@@ -55,8 +50,7 @@ export function getEntityRelationship(tribeComponent: TribeComponent, entity: En
          return EntityRelationship.enemyBuilding;
       }
       // Friendlies
-      // @Temporary
-      // case IEntityType.player:
+      case IEntityType.player:
       case IEntityType.tribeWorker:
       case IEntityType.tribeWarrior:
       case IEntityType.woodenArrowProjectile:

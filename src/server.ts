@@ -482,64 +482,6 @@ class GameServer {
 
          // @Temporary
          setTimeout(() => {
-            // if(1+1===2)return;
-            const barbTribe = new Tribe(TribeType.barbarians);
-            
-            createTribeTotem(new Point(spawnPosition.x - 500, spawnPosition.y), barbTribe);
-            
-            {
-               // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 800), tribe);
-               const hut = createWarriorHut(new Point(spawnPosition.x - 500, spawnPosition.y + 600), barbTribe);
-               hut.rotation = Math.PI / 2;
-               barbTribe.registerNewWarriorHut(hut);
-
-               const hut2 = createWarriorHut(new Point(spawnPosition.x - 500, spawnPosition.y + 500), barbTribe);
-               hut2.rotation = Math.PI / 2;
-               barbTribe.registerNewWarriorHut(hut2);
-            }
-
-
-
-
-
-            const gobTribe = new Tribe(TribeType.goblins);
-            
-            createTribeTotem(new Point(spawnPosition.x + 600, spawnPosition.y - 900), gobTribe);
-            
-            {
-               // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 800), tribe);
-               const hut = createWorkerHut(new Point(spawnPosition.x + 650, spawnPosition.y - 300), gobTribe);
-               // hut.rotation = -Math.PI/4;
-               gobTribe.registerNewWorkerHut(hut);
-
-               const hut2 = createWorkerHut(new Point(spawnPosition.x + 700, spawnPosition.y - 300), gobTribe);
-               gobTribe.registerNewWorkerHut(hut2);
-
-               const hut3 = createWorkerHut(new Point(spawnPosition.x + 750, spawnPosition.y - 300), gobTribe);
-               gobTribe.registerNewWorkerHut(hut3);
-
-               const hut4 = createWorkerHut(new Point(spawnPosition.x + 800, spawnPosition.y - 300), gobTribe);
-               gobTribe.registerNewWorkerHut(hut4);
-
-               const hut5 = createWorkerHut(new Point(spawnPosition.x + 850, spawnPosition.y - 300), gobTribe);
-               gobTribe.registerNewWorkerHut(hut5);
-
-               const hut6 = createWorkerHut(new Point(spawnPosition.x + 900, spawnPosition.y - 300), gobTribe);
-               // hut6.rotation = 3  * Math.PI / 2;
-               gobTribe.registerNewWorkerHut(hut6);
-            }
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
             if(1+1===2)return;
 
             const tribe = new Tribe(TribeType.barbarians);

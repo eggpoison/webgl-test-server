@@ -198,9 +198,6 @@ const getFoodItemSlot = (tribesman: Entity): number | null => {
 const shouldEscape = (entityType: IEntityType, healthComponent: HealthComponent): boolean => {
    const remainingHealthRatio = healthComponent.health / healthComponent.maxHealth;
    
-   // @Temporary
-   return false;
-   
    switch (entityType) {
       case IEntityType.tribeWorker: return remainingHealthRatio <= 0.5;
       case IEntityType.tribeWarrior: return remainingHealthRatio <= 0.4;
