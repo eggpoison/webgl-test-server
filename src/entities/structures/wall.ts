@@ -32,6 +32,11 @@ export function createWall(position: Point, tribe: Tribe): Entity {
    return wall;
 }
 
+export function onWallJoin(wall: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(wall.id);
+   tribeComponent.tribe.addBuilding(wall);
+}
+
 export function onWallRemove(wall: Entity): void {
    // Check if the wall has a corresponding blueprint
    const ontopEntities = Board.getEntitiesAtPosition(wall.position.x, wall.position.y);
@@ -46,6 +51,9 @@ export function onWallRemove(wall: Entity): void {
          }
       }
    }
+
+   const tribeComponent = TribeComponentArray.getComponent(wall.id);
+   tribeComponent.tribe.removeBuilding(wall);
    
    HealthComponentArray.removeComponent(wall);
    StatusEffectComponentArray.removeComponent(wall);

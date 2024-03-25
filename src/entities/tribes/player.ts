@@ -36,7 +36,6 @@ const VACUUM_STRENGTH = 25;
 export function createPlayer(position: Point, tribe: Tribe): Entity {
    const player = new Entity(position, IEntityType.player, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   // @Temporary
    const hitbox = new CircularHitbox(player, 1.25, 0, 0, HitboxCollisionTypeConst.soft, 32);
    player.addHitbox(hitbox);
 

@@ -1,4 +1,4 @@
-import { IEntityType, ItemType, Point, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
+import { IEntityType, ItemType, PlaceableItemType, Point, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
@@ -8,6 +8,7 @@ import { createTribeWorker } from "./entities/tribes/tribe-worker";
 import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
+import { VulnerabilityNode } from "./tribe-building";
 
 const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
 
@@ -34,6 +35,12 @@ interface ChunkInfluence {
    numInfluences: number;
 }
 
+export interface BuildingPlan {
+   readonly position: Point;
+   readonly rotation: number;
+   readonly placeableItemType: PlaceableItemType;
+}
+
 class Tribe {
    public readonly id: number;
    
@@ -47,6 +54,11 @@ class Tribe {
    public barrels = new Array<Entity>();
 
    public readonly researchBenches = new Array<Entity>();
+
+   public readonly buildings = new Array<Entity>();
+   public buildingsAreDirty = true;
+
+   public buildingPlan: BuildingPlan | null = null;
 
    /** Stores all tiles in the tribe's zone of influence */
    private area: Record<number, TileInfluence> = {};
@@ -63,6 +75,9 @@ class Tribe {
 
    /** IDs of all friendly tribesmen */
    public readonly friendlyTribesmenIDs = new Array<number>();
+
+   public vulnerabilityNodes = new Array<VulnerabilityNode>();
+   public vulnerabilityNodeRecord: Record<number, VulnerabilityNode> = {};
    
    constructor(tribeType: TribeType) {
       this.id = getAvailableID();
@@ -73,6 +88,16 @@ class Tribe {
       Board.addTribe(this);
    }
 
+   public addBuilding(building: Entity): void {
+      this.buildings.push(building);
+      this.buildingsAreDirty = true;
+   }
+
+   public removeBuilding(building: Entity): void {
+      this.buildings.splice(this.buildings.indexOf(building), 1);
+      this.buildingsAreDirty = true;
+   }
+
    public setTotem(totem: Entity): void {
       if (this.totem !== null) {
          console.warn("Tribe already has a totem.");
@@ -80,6 +105,7 @@ class Tribe {
       }
 
       this.totem = totem;
+      this.addBuilding(totem);
 
       this.createTribeAreaAroundBuilding(totem.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.tribeTotem]);
    }
@@ -89,7 +115,10 @@ class Tribe {
          return;
       }
 
+      this.removeBuilding(this.totem);
       this.totem = null;
+
+      // @Incomplete
    }
 
    public unlockTech(techID: TechID): void {
@@ -123,6 +152,8 @@ class Tribe {
 
    public addResearchBench(bench: Entity): void {
       this.researchBenches.push(bench);
+      this.buildings.push(bench);
+      this.buildingsAreDirty = true;
    }
 
    public removeResearchBench(bench: Entity): void {
@@ -130,6 +161,7 @@ class Tribe {
       if (idx !== -1) {
          this.researchBenches.splice(idx, 1);
       }
+      this.removeBuilding(bench);
    }
    
    // @Cleanup: Call these functions from the hut create functions
@@ -140,6 +172,7 @@ class Tribe {
       }
 
       this.huts.push(workerHut);
+      this.addBuilding(workerHut);
 
       // Create a tribesman for the hut
       this.createNewTribesman(workerHut);
@@ -164,6 +197,7 @@ class Tribe {
       }
 
       this.huts.push(warriorHut);
+      this.addBuilding(warriorHut);
 
       // Create a tribesman for the hut
       this.createNewTribesman(warriorHut);
@@ -186,6 +220,7 @@ class Tribe {
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
+      this.removeBuilding(hut);
 
       if (this.totem !== null) {
          const bannerComponent = TotemBannerComponentArray.getComponent(this.totem.id);
@@ -200,6 +235,7 @@ class Tribe {
       if (idx !== -1) {
          this.huts.splice(idx, 1);
       }
+      this.removeBuilding(hut);
 
       if (this.totem !== null) {
          const bannerComponent = TotemBannerComponentArray.getComponent(this.totem.id);
@@ -236,12 +272,8 @@ class Tribe {
       let tribesman: Entity;
       if (hut.type === IEntityType.workerHut) {
          tribesman = createTribeWorker(position, this, hut.id);
-         // @Temporary
-         tribesman.velocity.y += 500;
       } else {
          tribesman = createTribeWarrior(position, this, hut.id);
-         // @Temporary
-         tribesman.velocity.x += 250;
       }
       // @Incomplete: Will make hitboxes dirty!!
       tribesman.rotation = hut.rotation;
@@ -365,6 +397,7 @@ class Tribe {
 
    public addBarrel(barrel: Entity): void {
       this.barrels.push(barrel);
+      this.addBuilding(barrel);
    }
 
    public removeBarrel(barrel: Entity): void {
@@ -372,6 +405,7 @@ class Tribe {
       if (idx !== -1) {
          this.barrels.splice(idx, 1);
       }
+      this.removeBuilding(barrel);
    }
 
    public hasBarrel(barrel: Entity): boolean {

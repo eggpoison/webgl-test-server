@@ -71,6 +71,7 @@ import { createSlime } from "./entities/mobs/slime";
 import { serialiseTribeWarriorComponent } from "./components/TribeWarriorComponent";
 import { createWarriorHut } from "./entities/tribes/warrior-hut";
 import { serialiseResearchBenchComponent } from "./components/ResearchBenchComponent";
+import { getVisibleBuildingPlans, getVisibleVulnerabilityNodesData } from "./tribe-building";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -676,7 +677,9 @@ class GameServer {
                hasFrostShield: false,
                pickedUpItem: false,
                hotbarCrossbowLoadProgressRecord: {},
-               visiblePathfindingNodeOccupances: []
+               visiblePathfindingNodeOccupances: [],
+               visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(visibleChunkBounds),
+               visibleBuildingPlans: getVisibleBuildingPlans(visibleChunkBounds)
             };
 
             SERVER.playerDataRecord[socket.id] = playerData;
@@ -937,7 +940,9 @@ class GameServer {
                   pickedUpItem: playerData.pickedUpItem,
                   hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player),
                   // @Incomplete: Only send if dev and the checkbox is enabled
-                  visiblePathfindingNodeOccupances: getVisiblePathfindingNodeOccupances(extendedVisibleChunkBounds)
+                  visiblePathfindingNodeOccupances: getVisiblePathfindingNodeOccupances(extendedVisibleChunkBounds),
+                  visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(extendedVisibleChunkBounds),
+                  visibleBuildingPlans: getVisibleBuildingPlans(extendedVisibleChunkBounds)
                };
    
                // Send the game data to the player

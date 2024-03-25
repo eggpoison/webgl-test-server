@@ -44,7 +44,7 @@ import { onWorkerHutRemove } from "./entities/tribes/worker-hut";
 import { onResearchBenchRemove } from "./entities/research-bench";
 import { onWarriorHutRemove } from "./entities/tribes/warrior-hut";
 import { onTribeWarriorRemove, tickTribeWarrior } from "./entities/tribes/tribe-warrior";
-import { onWallRemove } from "./entities/structures/wall";
+import { onWallJoin, onWallRemove } from "./entities/structures/wall";
 import { onSlimeSpitRemove, tickSlimeSpit } from "./entities/projectiles/slime-spit";
 import { tickSpitPoison } from "./entities/projectiles/spit-poison";
 import { onWoodenDoorRemove } from "./entities/structures/door";
@@ -68,6 +68,7 @@ import OPTIONS from "./options";
 import { onTunnelRemove } from "./entities/structures/tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
 import { tickTunnelComponent } from "./components/TunnelComponent";
+import { tickTribes } from "./tribe-building";
 
 const START_TIME = 6;
 
@@ -188,11 +189,10 @@ abstract class Board {
    }
 
    private static initialiseChunks(): void {
-      for (let y = 0; y < SettingsConst.BOARD_SIZE; y++) {
-         for (let x = 0; x < SettingsConst.BOARD_SIZE; x++) {
-            const chunk = new Chunk(x, y);
-            this.chunks.push(chunk);
-         }
+      // @Speed: change to 1-nested
+      for (let i = 0; i < SettingsConst.BOARD_SIZE * SettingsConst.BOARD_SIZE; i++) {
+         const chunk = new Chunk();
+         this.chunks.push(chunk);
       }
    }
 
@@ -247,6 +247,8 @@ abstract class Board {
       for (const tribe of this.tribes) {
          tribe.tick();
       }
+      // @Cleanup: Maybe move to server tick function
+      tickTribes();
    }
 
    public static entityIsFlaggedForRemoval(entity: Entity): boolean {
@@ -614,9 +616,16 @@ abstract class Board {
          this.entityRecord[entity.id] = entity;
 
          // @Speed @Cleanup: Should be in its associated file!
-         if (entity.type === IEntityType.researchBench) {
-            const tribeComponent = TribeComponentArray.getComponent(entity.id);
-            tribeComponent.tribe.addResearchBench(entity);
+         switch (entity.type) {
+            case IEntityType.researchBench: {
+               const tribeComponent = TribeComponentArray.getComponent(entity.id);
+               tribeComponent.tribe.addResearchBench(entity);
+               break;
+            }
+            case IEntityType.wall: {
+               onWallJoin(entity);
+               break;
+            }
          }
       }
 
