@@ -1,6 +1,6 @@
 import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp, Point, TribeType, EntityType } from "webgl-test-shared";
 import Entity from "../../Entity";
-import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight, getAngleDiff } from "../../ai-shared";
+import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight, getAngleDiff, getDistanceFromPointToEntity } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
 import { getInventory, addItemToInventory, consumeItemFromSlot, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
@@ -637,7 +637,7 @@ const attemptToRepairBuildings = (tribesman: Entity): boolean => {
       useInfo.selectedItemSlot = hammerItemSlot;
       useInfo.currentAction = TribeMemberAction.none;
 
-      const distance = calculateDistanceFromEntity(tribesman, closestDamagedBuilding);
+      const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, closestDamagedBuilding) - getRadius(tribesman);
       if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
          // If the tribesman will stop too close to the target, move back a bit
          if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE - 20, distance)) {
@@ -819,7 +819,7 @@ export function tickTribesman(tribesman: Entity): void {
    if (tribesmanComponent.huntedEntityID !== 0) {
       const huntedEntity = Board.entityRecord[tribesmanComponent.huntedEntityID];
       
-      const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
+      const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
       if (distance > getHuntingVisionRange(tribesman)) {
          tribesmanComponent.huntedEntityID = 0;
       } else {
@@ -916,7 +916,7 @@ export function tickTribesman(tribesman: Entity): void {
 
          // @Incomplete: use pathfinding
          // @Cleanup: Copy and pasted from huntEntity. Should be combined into its own function
-         const distance = calculateDistanceFromEntity(tribesman, closestBlueprint);
+         const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, closestBlueprint) - getRadius(tribesman);
          if (distance > 70) {
             // Move closer
             tribesman.acceleration.x = getAcceleration(tribesman) * Math.sin(targetDirection);
@@ -1025,7 +1025,7 @@ export function tickTribesman(tribesman: Entity): void {
          tribesmanComponent.targetResearchBenchID = benchID;
 
          // If close enough, switch to doing research
-         const dist = calculateDistanceFromEntity(tribesman, bench);
+         const dist = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, bench) - getRadius(tribesman);
          if (dist < 50) {
             attemptToOccupyResearchBench(bench, tribesman);
          }
@@ -1312,28 +1312,6 @@ const getBestAxeSlot = (tribesman: Entity): number | null => {
    return null;
 }
 
-const calculateDistanceFromEntity = (tribesman: Entity, entity: Entity): number => {
-   const tribesmanRadius = getRadius(tribesman);
-   
-   let minDistance = tribesman.position.calculateDistanceBetween(entity.position);
-   for (const hitbox of entity.hitboxes) {
-      if (hitbox.hasOwnProperty("radius")) {
-         const rawDistance = distance(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY);
-         const hitboxDistance = rawDistance - tribesmanRadius - (hitbox as CircularHitbox).radius;
-         if (hitboxDistance < minDistance) {
-            minDistance = hitboxDistance;
-         }
-      } else {
-         let dist = distBetweenPointAndRectangle(tribesman.position.x, tribesman.position.y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation + hitbox.object.rotation);
-         dist -= tribesmanRadius;
-         if (dist < minDistance) {
-            minDistance = dist;
-         }
-      }
-   }
-   return minDistance;
-}
-
 const doMeleeAttack = (tribesman: Entity): void => {
    // @Speed: Do the check for if the item is on cooldown before doing the expensive radial attack calculations
 
@@ -1483,7 +1461,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
             physicsComponent.hitboxesAreDirty = true;
          }
 
-         const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
+      const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
          if (distance > 250) {
             // Move closer
             tribesman.acceleration.x = getSlowAcceleration(tribesman) * Math.sin(direction);
@@ -1529,7 +1507,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
          }
          
          if (isInLineOfSight || (Board.ticks - tribesmanComponent.lastEnemyLineOfSightTicks) <= TribesmanVars.BOW_LINE_OF_SIGHT_WAIT_TIME) {
-            const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
+            const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
             
             // @Speed: don't check for path every tick
             if (!pathToEntityExists(tribesman, huntedEntity)) {
@@ -1591,7 +1569,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
 
       if (isAggressive && weaponCategory === "battleaxe") {
          // Use the battleaxe if the entity is in the use range
-         const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
+         const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
          if (distance >= TribesmanVars.BATTLEAXE_MIN_USE_RANGE && distance <= TribesmanVars.BATTLEAXE_MAX_USE_RANGE && selectedItem.id !== hotbarUseInfo.thrownBattleaxeItemID) {
             if (hotbarUseInfo.currentAction !== TribeMemberAction.chargeBattleaxe) {
                hotbarUseInfo.lastBattleaxeChargeTicks = Board.ticks;
@@ -1656,7 +1634,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
       }
    }
 
-   const distance = calculateDistanceFromEntity(tribesman, huntedEntity);
+   const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
    if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE, distance)) {
       // If the tribesman will stop too close to the target, move back a bit
       if (willStopAtDesiredDistance(tribesman, DESIRED_MELEE_ATTACK_DISTANCE - 20, distance)) {

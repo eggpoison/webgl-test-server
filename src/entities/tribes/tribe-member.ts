@@ -307,16 +307,13 @@ export function repairBuilding(tribeMember: Entity, targetEntity: Entity, itemSl
 const getSwingTimeMulitplier = (entity: Entity, targetEntity: Entity): number => {
    let swingTimeMultiplier = 1;
 
-   if (entity.type === IEntityType.tribeWarrior || entity.type === IEntityType.player) {
-      const tribeComponent = TribeComponentArray.getComponent(entity.id);
-      if (tribeComponent.tribe.type === TribeType.barbarians) {
-         // 30% slower
-         swingTimeMultiplier /= 0.7;
-      }
+   // Barbarians swing 30% slower
+   const tribeComponent = TribeComponentArray.getComponent(entity.id);
+   if (tribeComponent.tribe.type === TribeType.barbarians) {
+      swingTimeMultiplier /= 0.7;
    }
    
    if (entity.type === IEntityType.tribeWarrior) {
-      const tribeComponent = TribeComponentArray.getComponent(entity.id);
       const relationship = getEntityRelationship(tribeComponent, targetEntity);
       if (relationship === EntityRelationship.resource) {
          swingTimeMultiplier *= 2.5;

@@ -1,4 +1,4 @@
-import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint, IEntityType, HitboxCollisionTypeConst } from "webgl-test-shared";
+import { SettingsConst, Point, TileTypeConst, angle, curveWeight, lerp, rotateXAroundPoint, rotateYAroundPoint, IEntityType, HitboxCollisionTypeConst, distance, distBetweenPointAndRectangle } from "webgl-test-shared";
 import Board, { raytraceHasWallTile } from "./Board";
 import Tile from "./Tile";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -643,4 +643,23 @@ export function entityIsInLineOfSight(originEntity: Entity, targetEntity: Entity
    }
 
    return true;
+}
+
+export function getDistanceFromPointToEntity(x: number, y: number, entity: Entity): number {
+   let minDistance = Math.sqrt(Math.pow(x - entity.position.x, 2) + Math.pow(y - entity.position.y, 2));
+   for (const hitbox of entity.hitboxes) {
+      if (hitbox.hasOwnProperty("radius")) {
+         const rawDistance = distance(x, y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY);
+         const hitboxDistance = rawDistance - (hitbox as CircularHitbox).radius;
+         if (hitboxDistance < minDistance) {
+            minDistance = hitboxDistance;
+         }
+      } else {
+         let dist = distBetweenPointAndRectangle(x, y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation + hitbox.object.rotation);
+         if (dist < minDistance) {
+            minDistance = dist;
+         }
+      }
+   }
+   return minDistance;
 }
