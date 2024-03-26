@@ -1,4 +1,4 @@
-import { BuildingPlanData, HitboxVertexPositions, IEntityType, ItemType, Point, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
+import { BuildingPlanData, HitboxVertexPositions, IEntityType, ItemType, Point, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
 import Entity from "./Entity";
 import Tribe, { BuildingPlan } from "./Tribe";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -531,6 +531,9 @@ export function tickTribes(): void {
 
       if (Board.ticks % SettingsConst.TPS === 0) {
          updateTribeNextBuilding(tribe);
+
+         // @Cleanup: Not related to tribe building
+         tribe.updateAvailableResources();
       }
    }
 }
@@ -785,7 +788,6 @@ const wallSpaceIsFree = (x: number, y: number, wallRotation: number, tribe: Trib
             }
       
             if (entityCollidesWithWall(x, y, wallRotation, entity)) {
-               console.log("collides with #" + entity.id);
                return false;
             }
          }
@@ -903,7 +905,6 @@ const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<W
             if (entity.type !== IEntityType.wall || seenEntityIDs.indexOf(entity.id) !== -1) {
                continue;
             }
-            console.log("#" + entity.id);
             seenEntityIDs.push(entity.id);
             
             for (let i = 0; i < 4; i++) {
@@ -912,9 +913,7 @@ const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<W
                const y = entity.position.y + 64 * Math.cos(offsetDirection);
 
                const distance = getDistanceFromPointToEntity(x, y, building);
-               console.log(distance, offsetDirection, Vars.WALL_SNAP_SEARCH_DISTANCE, wallSpaceIsFree(x, y, entity.rotation, tribe));
                if (distance <= Vars.WALL_SNAP_SEARCH_DISTANCE && wallSpaceIsFree(x, y, entity.rotation, tribe)) {
-                  console.log("add");
                   placeCandidates.push({
                      position: new Point(x, y),
                      rotation: entity.rotation,
@@ -959,7 +958,7 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
       // Make the AI want to snap to existing walls more
       if (placeCandidate.isSnappedToWall) {
          minVulnerability -= 3;
-         averageVulnerability -= 3;
+         averageVulnerability -= 1;
       }
       
       if (minVulnerability < bestMinVulnerability) {
@@ -967,7 +966,6 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
          bestMinCandidate = placeCandidate;
          currentBestIsDuplicate = false
       } else if (minVulnerability === minVulnerability) {
-         console.log("EQUAL BEST",minVulnerability,averageVulnerability,placeCandidate.isSnappedToWall);
          currentBestIsDuplicate = true;
       }
       if (averageVulnerability < bestAverageVulnerability) {
@@ -988,13 +986,18 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
    return {
       position: candidate.position,
       rotation: candidate.rotation,
-      placeableItemType: ItemType.wooden_wall
+      buildingRecipe: getItemRecipe(ItemType.wooden_wall)!
    };
 }
 
 export function updateTribeNextBuilding(tribe: Tribe): void {
    // Priorities:
    // 1) Protect vulnerable buildings
+
+   // Check if the current plan has been completed
+   if (tribe.buildingPlan !== null) {
+      return;
+   }
 
    // Check for vulnerable buildings
    const building = getVulnerableBuilding(tribe);

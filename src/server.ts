@@ -485,7 +485,7 @@ class GameServer {
          setTimeout(() => {
             if(1+1===2)return;
 
-            const tribe = new Tribe(TribeType.barbarians);
+            const tribe = new Tribe(TribeType.barbarians, false);
             
             createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
 
@@ -562,7 +562,8 @@ class GameServer {
                throw new Error("Player visible chunk bounds was undefined when trying to send initial game data.");
             }
             
-            const tribe = new Tribe(tribeType);
+            // @Temporary
+            const tribe = new Tribe(tribeType, true);
             const player = createPlayer(spawnPosition, tribe);
 
             const playerData: PlayerData = {

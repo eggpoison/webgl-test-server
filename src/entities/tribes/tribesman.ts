@@ -1,4 +1,4 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp, Point, TribeType, EntityType } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp, Point, TribeType, EntityType, CRAFTING_RECIPES } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight, getAngleDiff, getDistanceFromPointToEntity } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
@@ -671,6 +671,42 @@ const attemptToRepairBuildings = (tribesman: Entity): boolean => {
    return false;
 }
 
+const canCraftPlannedBuilding = (tribesman: Entity, tribeComponent: TribeComponent): boolean => {
+   const tribe = tribeComponent.tribe;
+
+   const inventoryComponent = InventoryComponentArray.getComponent(tribesman.id);
+   // @Incomplete: also account for backpack
+   const hotbarInventorySlots = getInventory(inventoryComponent, "hotbar").itemSlots;
+
+   // @Speed
+   const hotbarAvailableResources: Partial<Record<ItemType, number>> = {};
+   for (const item of Object.values(hotbarInventorySlots)) {
+      if (!hotbarAvailableResources.hasOwnProperty(item.type)) {
+         hotbarAvailableResources[item.type] = item.count;
+      } else {
+         hotbarAvailableResources[item.type]! += item.count;
+      }
+   }
+   
+   // @Speed
+   for (const [ingredientType, ingredientCount] of Object.entries(tribe.buildingPlan!.buildingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
+      let availableCount = 0;
+
+      if (tribe.availableResources.hasOwnProperty(ingredientType)) {
+         availableCount += tribe.availableResources[ingredientType]!;
+      }
+      if (hotbarAvailableResources.hasOwnProperty(ingredientType)) {
+         availableCount += hotbarAvailableResources[ingredientType]!;
+      }
+
+      if (availableCount < ingredientCount) {
+         return false;
+      }
+   }
+
+   return true;
+}
+
 export function tickTribesman(tribesman: Entity): void {
    // @Cleanup: This is an absolutely massive function
    
@@ -1002,7 +1038,19 @@ export function tickTribesman(tribesman: Entity): void {
       }
    }
 
+   /*
+   problem: how to ensure that only 1 gets crafted?
+   - idea: keep assignedTribesmanID
+   
+   - if has enough resources: craft it
+   */
+
+   if (tribeComponent.tribe.buildingPlan !== null && canCraftPlannedBuilding(tribesman, tribeComponent)) {
+
+   }
+
    // @Speed: shouldn't have to run for tribesmen which can't research
+   // Research
    if (tribeComponent.tribe.currentTechRequiresResearching() && tribesman.type === IEntityType.tribeWorker) {
       // Continue researching at an occupied bench
       const occupiedBenchID = getOccupiedResearchBenchID(tribesman, tribeComponent);

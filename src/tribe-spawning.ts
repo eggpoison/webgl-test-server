@@ -115,7 +115,7 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
 }
 
 const spawnTribe = (position: Point, tribeType: TribeType): void => {
-   const tribe = new Tribe(tribeType);
+   const tribe = new Tribe(tribeType, true);
    const totem = createTribeTotem(position, tribe);
 
    totem.rotation = 2 * Math.PI * Math.random();

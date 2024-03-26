@@ -1,14 +1,15 @@
-import { IEntityType, ItemType, PlaceableItemType, Point, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
+import { CraftingRecipe, IEntityType, ItemType, PlaceableItemType, Point, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
 import Entity from "./Entity";
-import { HutComponentArray, TotemBannerComponentArray } from "./components/ComponentArray";
+import { HutComponentArray, InventoryComponentArray, TotemBannerComponentArray } from "./components/ComponentArray";
 import { createTribeWorker } from "./entities/tribes/tribe-worker";
 import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
 import { VulnerabilityNode } from "./tribe-building";
+import { getInventory } from "./components/InventoryComponent";
 
 const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
 
@@ -38,13 +39,14 @@ interface ChunkInfluence {
 export interface BuildingPlan {
    readonly position: Point;
    readonly rotation: number;
-   readonly placeableItemType: PlaceableItemType;
+   readonly buildingRecipe: CraftingRecipe;
 }
 
 class Tribe {
    public readonly id: number;
    
    public readonly type: TribeType;
+   public readonly isAIControlled: boolean;
 
    public totem: Entity | null = null;
    
@@ -78,10 +80,13 @@ class Tribe {
 
    public vulnerabilityNodes = new Array<VulnerabilityNode>();
    public vulnerabilityNodeRecord: Record<number, VulnerabilityNode> = {};
+
+   public availableResources: Partial<Record<ItemType, number>> = {};
    
-   constructor(tribeType: TribeType) {
+   constructor(tribeType: TribeType, isAIControlled: boolean) {
       this.id = getAvailableID();
       this.type = tribeType;
+      this.isAIControlled = isAIControlled;
 
       this.tribesmanCap = TRIBE_INFO_RECORD[tribeType].baseTribesmanCap;
 
@@ -484,6 +489,32 @@ class Tribe {
       const techInfo = getTechByID(this.selectedTechID);
       const studyProgress = this.techTreeUnlockProgress[techInfo.id]!.studyProgress;
       return studyProgress < techInfo.researchStudyRequirements;
+   }
+
+   public updateAvailableResources(): void {
+      const newAvailableResources: Partial<Record<ItemType, number>> = {};
+      
+      for (let i = 0; i < this.barrels.length; i++) {
+         const barrel = this.barrels[i];
+
+         const inventoryComponent = InventoryComponentArray.getComponent(barrel.id);
+         const inventory = getInventory(inventoryComponent, "inventory");
+
+         for (let itemSlot = 1; itemSlot <= inventory.width * inventory.height; itemSlot++) {
+            if (!inventory.itemSlots.hasOwnProperty(itemSlot)) {
+               continue;
+            }
+
+            const item = inventory.itemSlots[itemSlot];
+            if (!newAvailableResources.hasOwnProperty(item.type)) {
+               newAvailableResources[item.type] = item.count;
+            } else {
+               newAvailableResources[item.type]! += item.count;
+            }
+         }
+      }
+
+      this.availableResources = newAvailableResources;
    }
 }
 
