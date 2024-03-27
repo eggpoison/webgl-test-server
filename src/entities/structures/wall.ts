@@ -8,20 +8,26 @@ import { TribeComponent } from "../../components/TribeComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { BuildingMaterialComponent } from "../../components/BuildingMaterialComponent";
 import Board from "../../Board";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 const SIZE = 64 - 0.05;
 
 export const WALL_HEALTHS = [25, 75];
 
-export function addWallHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 1, 0, 0, HitboxCollisionTypeConst.hard, SIZE, SIZE));
+export function createWallHitboxes(entity: Entity): ReadonlyArray<RectangularHitbox | CircularHitbox> {
+   const hitboxes = new Array<RectangularHitbox | CircularHitbox>();
+   hitboxes.push(new RectangularHitbox(entity, 1, 0, 0, HitboxCollisionTypeConst.hard, SIZE, SIZE));
+   return hitboxes;
 }
 
 export function createWall(position: Point, rotation: number, tribe: Tribe): Entity {
    const wall = new Entity(position, IEntityType.wall, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    wall.rotation = rotation;
 
-   addWallHitboxes(wall);
+   const hitboxes = createWallHitboxes(wall);
+   for (let i = 0; i < hitboxes.length; i++) {
+      wall.addHitbox(hitboxes[i]);
+   }
 
    const material = BuildingMaterial.wood;
    

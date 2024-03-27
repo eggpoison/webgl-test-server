@@ -82,6 +82,9 @@ class Tribe {
    public vulnerabilityNodes = new Array<VulnerabilityNode>();
    public vulnerabilityNodeRecord: Record<number, VulnerabilityNode> = {};
    public occupiedVulnerabilityNodes = new Set<VulnerabilityNodeIndex>();
+   public insideNodes = new Set<number>();
+   public containedBuildingIDs = new Set<number>();
+   public occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number> = {};
 
    public availableResources: Partial<Record<ItemType, number>> = {};
    

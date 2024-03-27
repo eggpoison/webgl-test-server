@@ -10,15 +10,14 @@ import { addSlingTurretHitboxes } from "./structures/sling-turret";
 import { addDoorHitboxes } from "./structures/door";
 import { addEmbrasureHitboxes } from "./structures/embrasure";
 import { addTunnelHitboxes } from "./structures/tunnel";
-import { addWallHitboxes } from "./structures/wall";
+import { createWallHitboxes } from "./structures/wall";
 import { addFloorSpikesHitboxes, addWallSpikesHitboxes } from "./structures/spikes";
+import CircularHitbox from "../hitboxes/CircularHitbox";
+import RectangularHitbox from "../hitboxes/RectangularHitbox";
 
 // @Incomplete: Remove if the associated entity is removed
 
-export function createBlueprintEntity(position: Point, rotation: number, blueprintType: BlueprintType, associatedEntityID: number, tribe: Tribe): Entity {
-   const blueprintEntity = new Entity(position, IEntityType.blueprintEntity, COLLISION_BITS.none, 0);
-   blueprintEntity.rotation = rotation;
-
+const getBlueprintEntityHitboxes = (blueprintType: BlueprintType): ReadonlyArray<CircularHitbox | RectangularHitbox> => {
    switch (blueprintType) {
       case BlueprintType.woodenTunnel:
       case BlueprintType.stoneTunnel:
@@ -46,9 +45,7 @@ export function createBlueprintEntity(position: Point, rotation: number, bluepri
          addSlingTurretHitboxes(blueprintEntity);
          break;
       }
-      case BlueprintType.stoneWall: {
-         addWallHitboxes(blueprintEntity);
-         break;
+      case BlueprintType.stoneWall: return createWallHitboxes(blueprintEntity); break;
       }
       case BlueprintType.stoneFloorSpikes: {
          addFloorSpikesHitboxes(blueprintEntity);
@@ -62,6 +59,15 @@ export function createBlueprintEntity(position: Point, rotation: number, bluepri
          assertUnreachable(blueprintType);
       }
    }
+}
+
+export function createBlueprintEntity(position: Point, rotation: number, blueprintType: BlueprintType, associatedEntityID: number, tribe: Tribe): Entity {
+   const blueprintEntity = new Entity(position, IEntityType.blueprintEntity, COLLISION_BITS.none, 0);
+   blueprintEntity.rotation = rotation;
+
+   let hitboxes: ReadonlyArray<CircularHitbox | RectangularHitbox>;
+
+   for (let i = 0; i < )
 
    HealthComponentArray.addComponent(blueprintEntity, new HealthComponent(5));
    BlueprintComponentArray.addComponent(blueprintEntity, new BlueprintComponent(blueprintType, associatedEntityID));

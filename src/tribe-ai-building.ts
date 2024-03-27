@@ -36,7 +36,7 @@ const getNodeIndex = (nodeX: number, nodeY: number): VulnerabilityNodeIndex => {
    return nodeY * SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH + nodeX;
 }
 
-const addCircularHitboxNodePositions = (hitbox: CircularHitbox, positions: Set<VulnerabilityNodeIndex>): void => {
+const addCircularHitboxNodePositions = (entityID: number, hitbox: CircularHitbox, positions: Set<VulnerabilityNodeIndex>, occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>): void => {
    const minX = hitbox.calculateHitboxBoundsMinX();
    const maxX = hitbox.calculateHitboxBoundsMaxX();
    const minY = hitbox.calculateHitboxBoundsMinY();
@@ -60,12 +60,13 @@ const addCircularHitboxNodePositions = (hitbox: CircularHitbox, positions: Set<V
          if (xDiff * xDiff + yDiff * yDiff <= hitboxNodeRadiusSquared) {
             const nodeIndex = getNodeIndex(nodeX, nodeY);
             positions.add(nodeIndex);
+            occupiedNodeToEntityIDRecord[nodeIndex] = entityID;
          }
       }
    }
 }
 
-const addRectangularHitboxNodePositions = (hitbox: RectangularHitbox, positions: Set<VulnerabilityNodeIndex>): void => {
+const addRectangularHitboxNodePositions = (entityID: number, hitbox: RectangularHitbox, positions: Set<VulnerabilityNodeIndex>, occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>): void => {
    const minX = hitbox.calculateHitboxBoundsMinX();
    const maxX = hitbox.calculateHitboxBoundsMaxX();
    const minY = hitbox.calculateHitboxBoundsMinY();
@@ -87,83 +88,129 @@ const addRectangularHitboxNodePositions = (hitbox: RectangularHitbox, positions:
          if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation) <= SettingsConst.VULNERABILITY_NODE_SEPARATION * 0.5) {
             const nodeIndex = getNodeIndex(nodeX, nodeY);
             positions.add(nodeIndex);
+            occupiedNodeToEntityIDRecord[nodeIndex] = entityID;
          }
       }
    }
 }
 
-export function addEntityNodePositions(entity: Entity, positions: Set<VulnerabilityNodeIndex>): void {
+const addEntityNodePositions = (entity: Entity, positions: Set<VulnerabilityNodeIndex>, occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>): void => {
    for (let i = 0; i < entity.hitboxes.length; i++) {
       const hitbox = entity.hitboxes[i];
 
       // Add to occupied pathfinding nodes
       if (hitbox.hasOwnProperty("radius")) {
-         addCircularHitboxNodePositions(hitbox as CircularHitbox, positions);
+         addCircularHitboxNodePositions(entity.id, hitbox as CircularHitbox, positions, occupiedNodeToEntityIDRecord);
       } else {
-         addRectangularHitboxNodePositions(hitbox as RectangularHitbox, positions);
+         addRectangularHitboxNodePositions(entity.id, hitbox as RectangularHitbox, positions, occupiedNodeToEntityIDRecord);
       }
    }
 }
 
-const getVulnerabilityNodePositions = (tribe: Tribe): Set<VulnerabilityNodeIndex> => {
+interface OccupiedNodesInfo {
+   readonly occupiedNodeIndexes: Set<VulnerabilityNodeIndex>;
+   readonly occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>;
+}
+
+const getOccupiedNodesInfo = (tribe: Tribe): OccupiedNodesInfo => {
    const positions = new Set<VulnerabilityNodeIndex>();
+   const occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number> = {};
 
    // Add nodes from buildings
    for (let i = 0; i < tribe.buildings.length; i++) {
       const building = tribe.buildings[i];
-      addEntityNodePositions(building, positions);
+      addEntityNodePositions(building, positions, occupiedNodeToEntityIDRecord);
    }
    
-   return positions;
+   return {
+      occupiedNodeIndexes: positions,
+      occupiedNodeToEntityIDRecord: occupiedNodeToEntityIDRecord
+   };
 }
 
 /** Gets all nodes within the tribe's bounding area which aren't occupied */
-const getAreaNodes = (occupiedNodeIndexes: Set<VulnerabilityNodeIndex>, minNodeX: number, maxNodeX: number, minNodeY: number, maxNodeY: number): Array<VulnerabilityNodeIndex> => {
-   const area = new Array<VulnerabilityNodeIndex>();
+const getAreaNodes = (occupiedNodeIndexes: Set<VulnerabilityNodeIndex>, minNodeX: number, maxNodeX: number, minNodeY: number, maxNodeY: number): Set<VulnerabilityNodeIndex> => {
+   const area = new Set<VulnerabilityNodeIndex>();
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const nodeIndex = getNodeIndex(nodeX, nodeY);
-         if (occupiedNodeIndexes.has(nodeIndex)) {
-            area.push(nodeIndex);
+         if (!occupiedNodeIndexes.has(nodeIndex)) {
+            area.add(nodeIndex);
          }
       }
    }
    return area;
 }
 
-const getNodeDist = (nodeIndex: number, occupiedNodeIndexes: Set<VulnerabilityNodeIndex>, insideNodeIndexes: Set<VulnerabilityNodeIndex>, paddingNodeIndexes: Set<VulnerabilityNodeIndex>): number => {
-   const originNodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
-   const originNodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
+const weightNodeDistance = (node: VulnerabilityNode, dist: number): void => {
+   node.vulnerability -= dist * Vars.DISTANCE_FALLOFF;
+}
 
-   let dist = 1;
+const weightNodeDistances = (nodeRecord: Record<number, VulnerabilityNode>, outmostPaddingNodes: Set<VulnerabilityNodeIndex>): void => {
+   let dist = 0;
+   
+   const encounteredNodeIndexes = new Set<VulnerabilityNodeIndex>();
+   for (const nodeIndex of outmostPaddingNodes) {
+      encounteredNodeIndexes.add(nodeIndex);
+   }
+   
+   let outmostNodes = outmostPaddingNodes;
+   const numNodes = Object.keys(nodeRecord).length;
+   while (encounteredNodeIndexes.size < numNodes) {
+      const addedNodes = new Set<VulnerabilityNodeIndex>();
 
-   // @Speed
-   // Find distance from a not-present node
-   outer:
-   for (; dist < 50; dist++) {
-      const minNodeX = Math.max(originNodeX - dist, 0);
-      const maxNodeX = Math.min(originNodeX + dist, SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
-      const minNodeY = Math.max(originNodeY - dist, 0);
-      const maxNodeY = Math.min(originNodeY + dist, SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
+      for (const nodeIndex of outmostNodes) {
+         const nodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
+         const nodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
 
-      for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
-         for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
-            const diffX = nodeX - originNodeX;
-            const diffY = nodeY - originNodeY;
-            if (diffX * diffX + diffY * diffY >= dist * dist) {
-               continue;
+         // Top
+         if (nodeY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+            const nodeIndex = getNodeIndex(nodeX, nodeY + 1);
+            const node = nodeRecord[nodeIndex];
+            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
+               addedNodes.add(nodeIndex);
+               encounteredNodeIndexes.add(nodeIndex);
+               weightNodeDistance(node, dist);
             }
-            
-            const currentNodeIndex = getNodeIndex(nodeX, nodeY);
+         }
 
-            if (!occupiedNodeIndexes.has(currentNodeIndex) && !insideNodeIndexes.has(currentNodeIndex) && !paddingNodeIndexes.has(currentNodeIndex)) {
-               break outer;
+         // Right
+         if (nodeX < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+            const nodeIndex = getNodeIndex(nodeX + 1, nodeY);
+            const node = nodeRecord[nodeIndex];
+            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
+               addedNodes.add(nodeIndex);
+               encounteredNodeIndexes.add(nodeIndex);
+               weightNodeDistance(node, dist);
+            }
+         }
+
+         // Bottom
+         if (nodeY > 0) {
+            const nodeIndex = getNodeIndex(nodeX, nodeY - 1);
+            const node = nodeRecord[nodeIndex];
+            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
+               addedNodes.add(nodeIndex);
+               encounteredNodeIndexes.add(nodeIndex);
+               weightNodeDistance(node, dist);
+            }
+         }
+
+         // Left
+         if (nodeX > 0) {
+            const nodeIndex = getNodeIndex(nodeX - 1, nodeY);
+            const node = nodeRecord[nodeIndex];
+            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
+               addedNodes.add(nodeIndex);
+               encounteredNodeIndexes.add(nodeIndex);
+               weightNodeDistance(node, dist);
             }
          }
       }
-   }
 
-   return dist;
+      outmostNodes = addedNodes;
+      dist++;
+   }
 }
 
 const calculateNodeVulnerability = (maxAdjacentVulnerability: number, isOccupied: boolean): number => {
@@ -177,7 +224,7 @@ const calculateNodeVulnerability = (maxAdjacentVulnerability: number, isOccupied
    return vulnerability;
 }
 
-const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<VulnerabilityNodeIndex>): void => {
+const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<VulnerabilityNodeIndex>, occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>): void => {
    // Find min and max node positions
    let minNodeX = SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1;
    let maxNodeX = 0;
@@ -207,13 +254,19 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
 
    const areaNodes = getAreaNodes(occupiedNodeIndexes, minNodeX, maxNodeX, minNodeY, maxNodeY);
 
-   // Find inside nodes
+   // Find inside nodes and contained buildings
+   const containedBuildingIDs = new Set<number>();
    const insideNodeIndexes = new Set<VulnerabilityNodeIndex>();
-   while (areaNodes.length > 0) {
-      const nodeIdx = Math.floor(Math.random() * areaNodes.length);
-      const originNodeIndex = areaNodes[nodeIdx];
+   while (areaNodes.size > 0) {
+      // Start at the first element in the set
+      let originNodeIndex!: VulnerabilityNodeIndex;
+      for (const nodeIndex of areaNodes) {
+         originNodeIndex = nodeIndex;
+         break;
+      }
 
       let isInside = true;
+      const encounteredOccupiedNodeIndexes = new Set<VulnerabilityNodeIndex>();
 
       // @Speed: Span filling
       // Get all connected nodes
@@ -227,7 +280,9 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
          connectedNodes.push(nodeIndex);
          nodesToCheck.splice(0, 1);
 
-         areaNodes.splice(areaNodes.indexOf(nodeIndex), 1);
+         areaNodes.delete(nodeIndex);
+
+         // @Speed: If outside, immediately break and do the above on the remaining nodes
 
          // Top
          if (nodeY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
@@ -238,6 +293,9 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
                } else {
                   nodesToCheck.push(nodeIndex);
                }
+            }
+            if (occupiedNodeIndexes.has(nodeIndex)) {
+               encounteredOccupiedNodeIndexes.add(nodeIndex);
             }
          }
 
@@ -251,6 +309,9 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
                   nodesToCheck.push(nodeIndex);
                }
             }
+            if (occupiedNodeIndexes.has(nodeIndex)) {
+               encounteredOccupiedNodeIndexes.add(nodeIndex);
+            }
          }
 
          // Bottom
@@ -262,6 +323,9 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
                } else {
                   nodesToCheck.push(nodeIndex);
                }
+            }
+            if (occupiedNodeIndexes.has(nodeIndex)) {
+               encounteredOccupiedNodeIndexes.add(nodeIndex);
             }
          }
 
@@ -275,6 +339,9 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
                   nodesToCheck.push(nodeIndex);
                }
             }
+            if (occupiedNodeIndexes.has(nodeIndex)) {
+               encounteredOccupiedNodeIndexes.add(nodeIndex);
+            }
          }
       }
 
@@ -282,6 +349,12 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
          for (let i = 0; i < connectedNodes.length; i++) {
             const nodeIndex = connectedNodes[i];
             insideNodeIndexes.add(nodeIndex);
+         }
+
+         // Mark all encountered buildings
+         for (const nodeIndex of encounteredOccupiedNodeIndexes) {
+            const entityID = occupiedNodeToEntityIDRecord[nodeIndex];
+            containedBuildingIDs.add(entityID);
          }
       }
    }
@@ -404,7 +477,7 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
       remainingNodes.push(nodeIndex);
    }
    
-   // Calculate occupied and inside nodes vulnerability
+   // Calculate contained nodes vulnerability
    let i = 0;
    const surroundingNodes = new Array<VulnerabilityNodeIndex>();
    for (const nodeIndex of borderNodes) {
@@ -417,7 +490,10 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
          console.log(remainingNodes.length);
          throw new Error();
       }
+
+      // @Incomplete: Don't assume all occupied nodes are safe
       
+      // @Speed
       // find the surrounding node with the highest vulnerability
       let maxVulnerability = 0;
       let currentNodeIdx = 0;
@@ -505,18 +581,14 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
       }
    }
 
-   // Account for node distances
-   for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-
-      const nodeIndex = node.y * SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH + node.x;
-      const dist = getNodeDist(nodeIndex, occupiedNodeIndexes, insideNodeIndexes, paddingNodeIndexes);
-      node.vulnerability -= dist * Vars.DISTANCE_FALLOFF;
-   }
+   weightNodeDistances(nodeRecord, previousOuterNodes);
    
    tribe.vulnerabilityNodes = nodes;
    tribe.vulnerabilityNodeRecord = nodeRecord;
    tribe.occupiedVulnerabilityNodes = occupiedNodeIndexes;
+   tribe.containedBuildingIDs = containedBuildingIDs;
+   tribe.insideNodes = insideNodeIndexes;
+   tribe.occupiedNodeToEntityIDRecord = occupiedNodeToEntityIDRecord;
 }
 
 export function tickTribes(): void {
@@ -525,8 +597,8 @@ export function tickTribes(): void {
       
       // Update vulnerability nodes
       if (tribe.buildingsAreDirty) {
-         const occupiedNodeIndexes = getVulnerabilityNodePositions(tribe);
-         updateTribeVulnerabilityNodes(tribe, occupiedNodeIndexes);
+         const occupiedNodesInfo = getOccupiedNodesInfo(tribe);
+         updateTribeVulnerabilityNodes(tribe, occupiedNodesInfo.occupiedNodeIndexes, occupiedNodesInfo.occupiedNodeToEntityIDRecord);
 
          tribe.buildingsAreDirty = false;
       }
@@ -570,7 +642,7 @@ const addTileNodePositions = (placeCandidate: WallPlaceCandidate, occupiedNodeIn
 
 const getBuildingMinVulnerability = (tribe: Tribe, building: Entity): number => {
    const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
-   addEntityNodePositions(building, occupiedIndexes);
+   addEntityNodePositions(building, occupiedIndexes, {});
 
    let maxVulnerability = 0;
    for (const nodeIndex of occupiedIndexes) {
@@ -585,7 +657,7 @@ const getBuildingMinVulnerability = (tribe: Tribe, building: Entity): number => 
 
 const getBuildingAverageVulnerability = (tribe: Tribe, building: Entity): number => {
    const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
-   addEntityNodePositions(building, occupiedIndexes);
+   addEntityNodePositions(building, occupiedIndexes, {});
 
    let averageVulnerability = 0;
    for (const nodeIndex of occupiedIndexes) {
@@ -700,7 +772,7 @@ interface WallPlaceCandidate {
 
 const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<WallPlaceCandidate> => {
    const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
-   addEntityNodePositions(building, occupiedIndexes);
+   addEntityNodePositions(building, occupiedIndexes, {});
 
    const occupyingTileIndexes = new Array<number>();
    for (const nodeIndex of occupiedIndexes) {
@@ -832,6 +904,8 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
    const realNodes = tribe.vulnerabilityNodes;
    const realNodeRecord = tribe.vulnerabilityNodeRecord;
    const realOccupiedNodes = tribe.occupiedVulnerabilityNodes;
+   const realInsideNodes = tribe.insideNodes;
+   const realContainedBuildingIDs = tribe.containedBuildingIDs;
    
    // @Incomplete: run average check only using the tied candidates
    
@@ -844,10 +918,10 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
    for (let i = 0; i < potentialWallPlaceCandidates.length; i++) {
       const placeCandidate = potentialWallPlaceCandidates[i];
 
-      const occupiedNodeIndexes = getVulnerabilityNodePositions(tribe);
-      addTileNodePositions(placeCandidate, occupiedNodeIndexes);
+      const occupiedNodesInfo = getOccupiedNodesInfo(tribe);
+      addTileNodePositions(placeCandidate, occupiedNodesInfo.occupiedNodeIndexes);
 
-      updateTribeVulnerabilityNodes(tribe, occupiedNodeIndexes);
+      updateTribeVulnerabilityNodes(tribe, occupiedNodesInfo.occupiedNodeIndexes, occupiedNodesInfo.occupiedNodeToEntityIDRecord);
 
       let minVulnerability = getBuildingMinVulnerability(tribe, building);
       let averageVulnerability = getBuildingAverageVulnerability(tribe, building);
@@ -874,6 +948,8 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
       tribe.vulnerabilityNodes = realNodes;
       tribe.vulnerabilityNodeRecord = realNodeRecord;
       tribe.occupiedVulnerabilityNodes = realOccupiedNodes;
+      tribe.insideNodes = realInsideNodes;
+      tribe.containedBuildingIDs = realContainedBuildingIDs;
    }
 
    if (bestMinVulnerability > Vars.MAX_VULNERABILITY) {
@@ -889,13 +965,21 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
    };
 }
 
+const planIsInvalid = (tribe: Tribe, plan: BuildingPlan): boolean => {
+   const hitboxes = new Array<Entity>();
+}
+
 export function updateTribeNextBuilding(tribe: Tribe): void {
    // Priorities:
    // 1) Protect vulnerable buildings
 
-   // Check if the current plan has been completed
    if (tribe.buildingPlan !== null) {
-      return;
+      // Make sure the plan is still valid
+      if (planIsInvalid(tribe, tribe.buildingPlan)) {
+         tribe.buildingPlan = null;
+      } else {
+         return;
+      }
    }
 
    // Check for vulnerable buildings
@@ -945,7 +1029,8 @@ export function getVisibleVulnerabilityNodesData(visibleTribes: ReadonlyArray<Tr
          vulnerabilityNodesData.push({
             index: nodeIndex,
             vulnerability: node.vulnerability,
-            isOccupied: tribe.occupiedVulnerabilityNodes.has(nodeIndex)
+            isOccupied: tribe.occupiedVulnerabilityNodes.has(nodeIndex),
+            isContained: tribe.insideNodes.has(nodeIndex) || (tribe.occupiedNodeToEntityIDRecord[nodeIndex] !== undefined && tribe.containedBuildingIDs.has(tribe.occupiedNodeToEntityIDRecord[nodeIndex]))
          });
       }
    }

@@ -386,12 +386,6 @@ class GameServer {
          while (SERVER.isRunning) {
             await SERVER.tick();
          }
-         // @Incomplete: warp
-         // if (OPTIONS.warp) {
-         //    SERVER.tickInterval = setInterval(() => SERVER.tick(), 2);
-         // } else {
-         //    SERVER.tickInterval = setInterval(() => SERVER.tick(), 1000 / SettingsConst.TPS);
-         // }
       }
    }
 
@@ -830,13 +824,21 @@ class GameServer {
    public async sendGameDataPackets(): Promise<void> {
       if (SERVER.io === null) return;
       
-      return new Promise(resolve => {
+      return new Promise(async resolve => {
          const currentTime = performance.now();
          while (this.nextTickTime < currentTime) {
             this.nextTickTime += 1000 * SettingsConst.I_TPS;
          }
+         
+         await (() => {
+            return new Promise<void>(resolve => {
+               setTimeout(() => {
+                  resolve();
+               }, OPTIONS.warp ? 2 : this.nextTickTime - currentTime);
+            })
+         })();
 
-         setTimeout(() => {
+         // setTimeout(() => {
             if (SERVER.trackedEntityID !== null && !Board.entityRecord.hasOwnProperty(SERVER.trackedEntityID)) {
                SERVER.trackedEntityID = null;
             }
@@ -905,7 +907,7 @@ class GameServer {
             }
 
             resolve();
-         }, this.nextTickTime - currentTime);
+         // }, this.nextTickTime - currentTime);
       });
    }
 
