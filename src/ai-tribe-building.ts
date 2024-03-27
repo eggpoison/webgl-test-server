@@ -1,4 +1,4 @@
-import { BuildingPlanData, BuildingVulnerabilityData, HitboxVertexPositions, IEntityType, ItemType, Point, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, distBetweenPointAndRectangle, distance, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
+import { BuildingPlanData, BuildingVulnerabilityData, HitboxVertexPositions, IEntityType, ITEM_INFO_RECORD, ItemType, PlaceableItemInfo, Point, RestrictedBuildingAreaData, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, distBetweenPointAndRectangle, distance, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
 import Entity from "./Entity";
 import Tribe, { BuildingPlan } from "./Tribe";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -6,6 +6,7 @@ import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Board from "./Board";
 import { TribeComponentArray } from "./components/ComponentArray";
 import { getDistanceFromPointToEntity } from "./ai-shared";
+import { createBuildingHitboxes } from "./buildings";
 
 const enum Vars {
    MAX_VULNERABILITY = 100,
@@ -42,8 +43,8 @@ const addCircularHitboxNodePositions = (entityID: number, hitbox: CircularHitbox
    const minY = hitbox.calculateHitboxBoundsMinY();
    const maxY = hitbox.calculateHitboxBoundsMaxY();
 
-   const centerX = (hitbox.object.position.x + hitbox.rotatedOffsetX) / SettingsConst.VULNERABILITY_NODE_SEPARATION;
-   const centerY = (hitbox.object.position.y + hitbox.rotatedOffsetY) / SettingsConst.VULNERABILITY_NODE_SEPARATION;
+   const centerX = hitbox.x / SettingsConst.VULNERABILITY_NODE_SEPARATION;
+   const centerY = hitbox.y / SettingsConst.VULNERABILITY_NODE_SEPARATION;
    
    const minNodeX = Math.max(Math.floor(minX / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
    const maxNodeX = Math.min(Math.ceil(maxX / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
@@ -72,8 +73,8 @@ const addRectangularHitboxNodePositions = (entityID: number, hitbox: Rectangular
    const minY = hitbox.calculateHitboxBoundsMinY();
    const maxY = hitbox.calculateHitboxBoundsMaxY();
 
-   const rectPosX = (hitbox.object.position.x + hitbox.rotatedOffsetX);
-   const rectPosY = (hitbox.object.position.y + hitbox.rotatedOffsetY);
+   const rectPosX = hitbox.x;
+   const rectPosY = hitbox.y;
    
    // @Speed: Math.round might also work
    const minNodeX = Math.max(Math.floor(minX / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
@@ -85,7 +86,7 @@ const addRectangularHitboxNodePositions = (entityID: number, hitbox: Rectangular
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const x = nodeX * SettingsConst.VULNERABILITY_NODE_SEPARATION;
          const y = nodeY * SettingsConst.VULNERABILITY_NODE_SEPARATION;
-         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation) <= SettingsConst.VULNERABILITY_NODE_SEPARATION * 0.5) {
+         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation) <= SettingsConst.VULNERABILITY_NODE_SEPARATION * 0.5) {
             const nodeIndex = getNodeIndex(nodeX, nodeY);
             positions.add(nodeIndex);
             occupiedNodeToEntityIDRecord[nodeIndex] = entityID;
@@ -603,9 +604,18 @@ export function tickTribes(): void {
          tribe.buildingsAreDirty = false;
       }
 
-      if (Board.ticks % SettingsConst.TPS === 0) {
-         updateTribeNextBuilding(tribe);
+      // Update restricted areas
+      for (let i = 0; i < tribe.restrictedBuildingAreas.length; i++) {
+         const restrictedArea = tribe.restrictedBuildingAreas[i];
+         if (!Board.entityRecord.hasOwnProperty(restrictedArea.associatedBuildingID)) {
+            tribe.restrictedBuildingAreas.splice(i, 1);
+            i--;
+         }
+      }
 
+      updateTribeNextBuilding(tribe);
+      
+      if (Board.ticks % SettingsConst.TPS === 0) {
          // @Cleanup: Not related to tribe building
          tribe.updateAvailableResources();
       }
@@ -704,7 +714,7 @@ const entityCollidesWithWall = (x: number, y: number, wallRotation: number, enti
       const hitbox = entity.hitboxes[i];
       // @Cleanup: copy and paste
       if (hitbox.hasOwnProperty("radius")) {
-         if (circleAndRectangleDoIntersect(hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius, x, y, SettingsConst.TILE_SIZE, SettingsConst.TILE_SIZE, wallRotation)) {
+         if (circleAndRectangleDoIntersect(hitbox.x, hitbox.y, (hitbox as CircularHitbox).radius, x, y, SettingsConst.TILE_SIZE, SettingsConst.TILE_SIZE, wallRotation)) {
             return true;
          }
       } else {
@@ -728,7 +738,7 @@ const entityCollidesWithWall = (x: number, y: number, wallRotation: number, enti
             new Point(-topLeftX, -topLeftY),
             new Point(-topRightX, -topRightY)
          ];
-         if (rectanglePointsDoIntersect(tileVertexOffsets, (hitbox as RectangularHitbox).vertexOffsets, x, y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, cosRotation, -sinRotation, (hitbox as RectangularHitbox).axisX, (hitbox as RectangularHitbox).axisY)) {
+         if (rectanglePointsDoIntersect(tileVertexOffsets, (hitbox as RectangularHitbox).vertexOffsets, x, y, hitbox.x, hitbox.y, cosRotation, -sinRotation, (hitbox as RectangularHitbox).axisX, (hitbox as RectangularHitbox).axisY)) {
             return true;
          }
       }
@@ -966,7 +976,68 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
 }
 
 const planIsInvalid = (tribe: Tribe, plan: BuildingPlan): boolean => {
-   const hitboxes = new Array<Entity>();
+   const entityType = (ITEM_INFO_RECORD[plan.buildingRecipe.product] as PlaceableItemInfo).entityTypeConst;
+   
+   const hitboxes = createBuildingHitboxes(entityType, plan.position.x, plan.position.y, 1, plan.rotation);
+
+   const firstHitbox = hitboxes[0];
+   let minX = firstHitbox.calculateHitboxBoundsMinX();
+   let maxX = firstHitbox.calculateHitboxBoundsMaxX();
+   let minY = firstHitbox.calculateHitboxBoundsMinY();
+   let maxY = firstHitbox.calculateHitboxBoundsMaxY();
+   for (let i = 1; i < hitboxes.length; i++) {
+      const hitbox = hitboxes[i];
+
+      const hitboxMinX = hitbox.calculateHitboxBoundsMinX();
+      const hitboxMaxX = hitbox.calculateHitboxBoundsMaxX();
+      const hitboxMinY = hitbox.calculateHitboxBoundsMinY();
+      const hitboxMaxY = hitbox.calculateHitboxBoundsMaxY();
+
+      if (hitboxMinX < minX) {
+         minX = hitboxMinX;
+      }
+      if (hitboxMaxX > maxX) {
+         maxX = hitboxMinX;
+      }
+      if (hitboxMinY < minY) {
+         minY = hitboxMinY;
+      }
+      if (hitboxMaxY > minY) {
+         maxY = hitboxMaxY;
+      }
+   }
+
+   const minChunkX = Math.max(Math.floor(minX / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor(maxX / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor(minY / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor(maxY / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   
+   // Check which entities are colliding
+   for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+         const chunk = Board.getChunk(chunkX, chunkY);
+         for (let i = 0; i < chunk.entities.length; i++) {
+            const entity = chunk.entities[i];
+            if (tribe.buildings.indexOf(entity) === -1) {
+               continue;
+            }
+
+            for (let j = 0; j < hitboxes.length; j++) {
+               const hitbox = hitboxes[j];
+
+               for (let k = 0; k < entity.hitboxes.length; k++) {
+                  const entityHitbox = entity.hitboxes[k];
+
+                  if (hitbox.isColliding(entityHitbox)) {
+                     return true;
+                  }
+               }
+            }
+         }
+      }
+   }
+   
+   return false;
 }
 
 export function updateTribeNextBuilding(tribe: Tribe): void {
@@ -1086,4 +1157,27 @@ export function getVisibleBuildingVulnerabilities(visibleTribes: ReadonlyArray<T
    }
 
    return buildingVulnerabiliesData;
+}
+
+export function getVisibleRestrictedBuildingAreas(visibleTribes: ReadonlyArray<Tribe>, chunkBounds: VisibleChunkBounds): ReadonlyArray<RestrictedBuildingAreaData> {
+   const restrictedAreasData = new Array<RestrictedBuildingAreaData>();
+   for (let i = 0; i < visibleTribes.length; i++) {
+      const tribe = visibleTribes[i];
+
+      for (let i = 0; i < tribe.restrictedBuildingAreas.length; i++) {
+         const restrictedArea = tribe.restrictedBuildingAreas[i];
+
+         // @Incomplete: filter out areas which aren't in the chunk bounds
+
+         restrictedAreasData.push({
+            x: restrictedArea.x,
+            y: restrictedArea.y,
+            rotation: restrictedArea.rotation,
+            width: restrictedArea.width,
+            height: restrictedArea.height
+         });
+      }
+   }
+
+   return restrictedAreasData;
 }

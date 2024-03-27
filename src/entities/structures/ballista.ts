@@ -19,15 +19,20 @@ const VISION_RANGE = 550;
 const HITBOX_SIZE = 100 - 0.05;
 const AIM_ARC_SIZE = Math.PI / 2;
 
-export function addBallistaHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HitboxCollisionTypeConst.hard, HITBOX_SIZE, HITBOX_SIZE));
+export function createBallistaHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
+   hitboxes.push(new RectangularHitbox(entity.position.x, entity.position.y, 2, 0, 0, HitboxCollisionTypeConst.hard, entity.getNextHitboxLocalID(), entity.rotation, HITBOX_SIZE, HITBOX_SIZE, 0));
+   return hitboxes;
 }
 
 export function createBallista(position: Point, rotation: number, tribe: Tribe): Entity {
    const ballista = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    ballista.rotation = rotation;
 
-   addBallistaHitboxes(ballista);
+   const hitboxes = createBallistaHitboxes(ballista);
+   for (let i = 0; i < hitboxes.length; i++) {
+      ballista.addHitbox(hitboxes[i]);
+   }
    
    HealthComponentArray.addComponent(ballista, new HealthComponent(100));
    StatusEffectComponentArray.addComponent(ballista, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.bleeding));

@@ -40,8 +40,9 @@ const SWORD_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.zombi
 const PICKAXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.boulder, IEntityType.tombstone, IEntityType.iceSpikes, IEntityType.furnace, IEntityType.golem];
 const AXE_DAMAGEABLE_ENTITIES: ReadonlyArray<IEntityType> = [IEntityType.tree, IEntityType.wall, IEntityType.door, IEntityType.embrasure, IEntityType.researchBench, IEntityType.workbench, IEntityType.spikes, IEntityType.punjiSticks, IEntityType.tribeTotem, IEntityType.workerHut, IEntityType.warriorHut, IEntityType.barrel];
 
-const testRectangularHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1, 0.1);
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1);
+// @Cleanup: Remove these
+const testRectangularHitbox = new RectangularHitbox(0, 0, 1, 0, 0, HitboxCollisionTypeConst.soft, 1, 0, 0.1, 0.1, 0);
+const testCircularHitbox = new CircularHitbox(0, 0, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1, 1, 0);
 
 // @Cleanup: Copy and paste. This placeable entity stuff is shared between server and client
 
@@ -671,13 +672,13 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
       // Rectangular
       testRectangularHitbox.width = width !== null ? width : testHitboxInfo.width;
       testRectangularHitbox.height = height !== null ? height : testHitboxInfo.height;
-      // @Incomplete(?): Do we need to update vertices and axes?
       placeTestHitbox = testRectangularHitbox;
    }
 
-   placeTestHitbox.object.position.x = spawnPositionX;
-   placeTestHitbox.object.position.y = spawnPositionY;
-   placeTestHitbox.object.rotation = placeRotation;
+   placeTestHitbox.updatePosition(spawnPositionX, spawnPositionY, placeRotation);
+   if (testHitboxInfo.type === PlaceableItemHitboxType.rectangular) {
+      (placeTestHitbox as RectangularHitbox).updateRotationAndVertexPositionsAndSideAxes(placeRotation);
+   }
 
    const hitboxBoundsMinX = placeTestHitbox.calculateHitboxBoundsMinX();
    const hitboxBoundsMaxX = placeTestHitbox.calculateHitboxBoundsMaxX();
@@ -697,7 +698,7 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
          for (const entity of chunk.entities) {
             if (!previouslyCheckedEntityIDs.has(entity.id)) {
                for (const hitbox of entity.hitboxes) {   
-                  if (placeTestHitbox.isColliding(hitbox, entity.rotation)) {
+                  if (placeTestHitbox.isColliding(hitbox)) {
                      return false;
                   }
                }

@@ -13,7 +13,7 @@ import { StatusEffectComponent, StatusEffectComponentArray } from "../../compone
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
 import Board from "../../Board";
-import { CollisionVars, isColliding } from "../../collision";
+import { CollisionVars, entitiesAreColliding } from "../../collision";
 
 const MAX_HEALTH = 3;
 const RADIUS = 16;
@@ -29,7 +29,7 @@ export function createSlimewisp(position: Point): Entity {
    slimewisp.rotation = 2 * Math.PI * Math.random();
    slimewisp.collisionPushForceMultiplier = 0.3;
 
-   const hitbox = new CircularHitbox(slimewisp, 0.5, 0, 0, HitboxCollisionTypeConst.soft, RADIUS);
+   const hitbox = new CircularHitbox(slimewisp.position.x, slimewisp.position.y, 0.5, 0, 0, HitboxCollisionTypeConst.soft, RADIUS, slimewisp.getNextHitboxLocalID(), slimewisp.rotation);
    slimewisp.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(slimewisp, new PhysicsComponent(true, false));
@@ -56,7 +56,7 @@ export function tickSlimewisp(slimewisp: Entity): void {
          moveEntityToPosition(slimewisp, mergingSlimewisp.position.x, mergingSlimewisp.position.y, ACCELERATION);
    
          // Continue merge
-         if (isColliding(slimewisp, mergingSlimewisp) !== CollisionVars.NO_COLLISION) {
+         if (entitiesAreColliding(slimewisp, mergingSlimewisp) !== CollisionVars.NO_COLLISION) {
             const slimewispComponent = SlimewispComponentArray.getComponent(slimewisp.id);
             slimewispComponent.mergeTimer -= SettingsConst.I_TPS;
             if (slimewispComponent.mergeTimer <= 0 && !Board.entityIsFlaggedForRemoval(mergingSlimewisp)) {

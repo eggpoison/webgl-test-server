@@ -29,10 +29,10 @@ const hitboxIsVisible = (entity: Entity, hitbox: Hitbox, visionRange: number): b
    // @Speed: This check is slow
    if (hitbox.hasOwnProperty("radius")) {
       // Circular hitbox
-      return circlesDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
+      return circlesDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.x, hitbox.y, (hitbox as CircularHitbox).radius);
    } else {
       // Rectangular hitbox
-      return circleAndRectangleDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+      return circleAndRectangleDoIntersect(entity.position.x, entity.position.y, visionRange, hitbox.x, hitbox.y, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).relativeRotation);
    }
 }
 

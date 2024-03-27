@@ -16,7 +16,7 @@ export function createBerryBush(position: Point): Entity {
    const berryBush = new Entity(position, IEntityType.berryBush, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    berryBush.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(berryBush, 1, 0, 0, HitboxCollisionTypeConst.soft, BERRY_BUSH_RADIUS);
+   const hitbox = new CircularHitbox(berryBush.position.x, berryBush.position.y, 1, 0, 0, HitboxCollisionTypeConst.soft, BERRY_BUSH_RADIUS, berryBush.getNextHitboxLocalID(), berryBush.rotation);
    berryBush.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(berryBush, new HealthComponent(10));

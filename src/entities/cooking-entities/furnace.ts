@@ -16,7 +16,7 @@ export function createFurnace(position: Point, rotation: number, tribe: Tribe): 
    const furnace = new Entity(position, IEntityType.furnace, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    furnace.rotation = rotation;
 
-   const hitbox = new RectangularHitbox(furnace, 2, 0, 0, HitboxCollisionTypeConst.hard, FURNACE_SIZE, FURNACE_SIZE);
+   const hitbox = new RectangularHitbox(furnace.position.x, furnace.position.y, 2, 0, 0, HitboxCollisionTypeConst.hard, furnace.getNextHitboxLocalID(), furnace.rotation, FURNACE_SIZE, FURNACE_SIZE, 0);
    furnace.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(furnace, new HealthComponent(25));

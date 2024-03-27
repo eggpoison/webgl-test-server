@@ -11,7 +11,7 @@ export function createPlanterBox(position: Point, rotation: number, tribe: Tribe
    const planterBox = new Entity(position, IEntityType.planterBox, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    planterBox.rotation = rotation;
 
-   planterBox.addHitbox(new RectangularHitbox(planterBox, 1.5, 0, 0, HitboxCollisionTypeConst.hard, 80, 80));
+   planterBox.addHitbox(new RectangularHitbox(planterBox.position.x, planterBox.position.y, 1.5, 0, 0, HitboxCollisionTypeConst.hard, planterBox.getNextHitboxLocalID(), planterBox.rotation, 80, 80, 0));
 
    HealthComponentArray.addComponent(planterBox, new HealthComponent(15));
    StatusEffectComponentArray.addComponent(planterBox, new StatusEffectComponent(StatusEffectConst.poisoned | StatusEffectConst.bleeding));

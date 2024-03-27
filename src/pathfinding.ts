@@ -91,8 +91,8 @@ const getCircularHitboxOccupiedNodes = (hitbox: CircularHitbox): ReadonlyArray<P
    const minY = hitbox.calculateHitboxBoundsMinY();
    const maxY = hitbox.calculateHitboxBoundsMaxY();
 
-   const centerX = (hitbox.object.position.x + hitbox.rotatedOffsetX) / PathfindingSettingsConst.NODE_SEPARATION;
-   const centerY = (hitbox.object.position.y + hitbox.rotatedOffsetY) / PathfindingSettingsConst.NODE_SEPARATION;
+   const centerX = hitbox.x / PathfindingSettingsConst.NODE_SEPARATION;
+   const centerY = hitbox.y / PathfindingSettingsConst.NODE_SEPARATION;
    
    const minNodeX = Math.floor(minX / PathfindingSettingsConst.NODE_SEPARATION);
    const maxNodeX = Math.ceil(maxX / PathfindingSettingsConst.NODE_SEPARATION);
@@ -124,8 +124,8 @@ const getRectangularHitboxOccupiedNodes = (hitbox: RectangularHitbox): ReadonlyA
    const minY = hitbox.calculateHitboxBoundsMinY();
    const maxY = hitbox.calculateHitboxBoundsMaxY();
 
-   const rectPosX = (hitbox.object.position.x + hitbox.rotatedOffsetX);
-   const rectPosY = (hitbox.object.position.y + hitbox.rotatedOffsetY);
+   const rectPosX = hitbox.x;
+   const rectPosY = hitbox.y;
    
    // @Speed: Math.round might also work
    const minNodeX = Math.floor(minX / PathfindingSettingsConst.NODE_SEPARATION);
@@ -141,7 +141,7 @@ const getRectangularHitboxOccupiedNodes = (hitbox: RectangularHitbox): ReadonlyA
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const x = nodeX * PathfindingSettingsConst.NODE_SEPARATION;
          const y = nodeY * PathfindingSettingsConst.NODE_SEPARATION;
-         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation) <= nodeClearance) {
+         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation) <= nodeClearance) {
             const nodeIndex = getNode(nodeX, nodeY);
             occupiedNodes.push(nodeIndex);
          }

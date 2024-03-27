@@ -21,7 +21,7 @@ export function createIceSpikes(position: Point, rootIceSpike?: Entity): Entity 
    const iceSpikes = new Entity(position, IEntityType.iceSpikes, COLLISION_BITS.iceSpikes, DEFAULT_COLLISION_MASK & ~COLLISION_BITS.iceSpikes);
    iceSpikes.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(iceSpikes, 1, 0, 0, HitboxCollisionTypeConst.soft, ICE_SPIKE_RADIUS);
+   const hitbox = new CircularHitbox(iceSpikes.position.x, iceSpikes.position.y, 1, 0, 0, HitboxCollisionTypeConst.soft, ICE_SPIKE_RADIUS, iceSpikes.getNextHitboxLocalID(), iceSpikes.rotation);
    iceSpikes.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(iceSpikes, new HealthComponent(5));

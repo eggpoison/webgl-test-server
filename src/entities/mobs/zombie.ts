@@ -17,7 +17,7 @@ import { attemptAttack, calculateRadialAttackTargets, wasTribeMemberKill } from 
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
 import { createItemsOverEntity } from "../../entity-shared";
-import { CollisionVars, isColliding } from "../../collision";
+import { CollisionVars, entitiesAreColliding } from "../../collision";
 
 const TURN_SPEED = 3 * Math.PI;
 
@@ -52,7 +52,7 @@ const HURT_ENTITY_INVESTIGATE_TICKS= Math.floor(0.5 * SettingsConst.TPS);
 export function createZombie(position: Point, isGolden: boolean, tombstoneID: number): Entity {
    const zombie = new Entity(position, IEntityType.zombie, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(zombie, 1, 0, 0, HitboxCollisionTypeConst.soft, 32);
+   const hitbox = new CircularHitbox(zombie.position.x, zombie.position.y, 1, 0, 0, HitboxCollisionTypeConst.soft, 32, zombie.getNextHitboxLocalID(), zombie.rotation);
    zombie.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(zombie, new PhysicsComponent(true, false));
@@ -237,7 +237,7 @@ export function tickZombie(zombie: Entity): void {
          zombie.acceleration.x = ACCELERATION * Math.sin(targetDirection);
          zombie.acceleration.y = ACCELERATION * Math.cos(targetDirection);
 
-         if (isColliding(zombie, closestFoodItem) !== CollisionVars.NO_COLLISION) {
+         if (entitiesAreColliding(zombie, closestFoodItem) !== CollisionVars.NO_COLLISION) {
             healEntity(zombie, 3, zombie.id);
             closestFoodItem.remove();
          }

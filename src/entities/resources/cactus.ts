@@ -73,7 +73,7 @@ export function createCactus(position: Point): Entity {
    const cactus = new Entity(position, IEntityType.cactus, COLLISION_BITS.cactus, DEFAULT_COLLISION_MASK);
    cactus.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(cactus, 1, 0, 0, HitboxCollisionTypeConst.soft, RADIUS - HITBOX_PADDING);
+   const hitbox = new CircularHitbox(cactus.position.x, cactus.position.y, 1, 0, 0, HitboxCollisionTypeConst.soft, RADIUS - HITBOX_PADDING, cactus.getNextHitboxLocalID(), cactus.rotation);
    cactus.addHitbox(hitbox);
 
    const flowers = generateRandomFlowers();
@@ -82,7 +82,7 @@ export function createCactus(position: Point): Entity {
    // Create hitboxes for all the cactus limbs
    for (let i = 0; i < limbs.length; i++) {
       const limb = limbs[i]
-      const hitbox = new CircularHitbox(cactus, 0.4, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), HitboxCollisionTypeConst.soft, 18);
+      const hitbox = new CircularHitbox(cactus.position.x, cactus.position.y, 0.4, 37 * Math.sin(limb.direction), 37 * Math.cos(limb.direction), HitboxCollisionTypeConst.soft, 18, cactus.getNextHitboxLocalID(), cactus.rotation);
       cactus.addHitbox(hitbox);
    }
 

@@ -15,7 +15,7 @@ export function createIceArrow(position: Point, rotation: number, tribe: Tribe):
    const iceArrow = new Entity(position, IEntityType.iceArrow, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    iceArrow.rotation = rotation;
    
-   const hitbox = new RectangularHitbox(iceArrow, 0.4, 0, 0, HitboxCollisionTypeConst.soft, ARROW_WIDTH, ARROW_HEIGHT);
+   const hitbox = new RectangularHitbox(iceArrow.position.x, iceArrow.position.y, 0.4, 0, 0, HitboxCollisionTypeConst.soft, iceArrow.getNextHitboxLocalID(), iceArrow.rotation, ARROW_WIDTH, ARROW_HEIGHT, 0);
    iceArrow.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(iceArrow, new PhysicsComponent(false, true));

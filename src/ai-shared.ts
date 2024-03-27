@@ -5,12 +5,12 @@ import CircularHitbox from "./hitboxes/CircularHitbox";
 import Entity from "./Entity";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import { PhysicsComponentArray } from "./components/PhysicsComponent";
-import { CollisionVars, isColliding } from "./collision";
+import { CollisionVars, entitiesAreColliding } from "./collision";
 
 const TURN_CONSTANT = Math.PI / SettingsConst.TPS;
 const WALL_AVOIDANCE_MULTIPLIER = 1.5;
    
-const testCircularHitbox = new CircularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, -1);
+const testCircularHitbox = new CircularHitbox(0, 0, 1, 0, 0, HitboxCollisionTypeConst.soft, -1, 1, 0);
 
 // @Cleanup: Only used in tribesman.ts, so move there.
 export function getClosestAccessibleEntity(entity: Entity, entities: ReadonlyArray<Entity>): Entity {
@@ -46,7 +46,7 @@ export function willStopAtDesiredDistance(entity: Entity, desiredDistance: numbe
 }
 
 export function chaseAndEatItemEntity(entity: Entity, itemEntity: Entity, acceleration: number): boolean {
-   if (isColliding(entity, itemEntity) !== CollisionVars.NO_COLLISION) {
+   if (entitiesAreColliding(entity, itemEntity) !== CollisionVars.NO_COLLISION) {
       itemEntity.remove();
       return true;
    }
@@ -336,8 +336,8 @@ export function entityIsInVisionRange(position: Point, visionRange: number, enti
    }
 
    testCircularHitbox.radius = visionRange;
-   testCircularHitbox.object.position.x = position.x;
-   testCircularHitbox.object.position.y = position.y;
+   testCircularHitbox.x = position.x;
+   testCircularHitbox.y = position.y;
 
    // If the test hitbox can 'see' any of the game object's hitboxes, it is visible
    for (const hitbox of entity.hitboxes) {
@@ -356,8 +356,8 @@ export function getEntitiesInVisionRange(x: number, y: number, visionRange: numb
    const maxChunkY = Math.max(Math.min(Math.floor((y + visionRange) / SettingsConst.TILE_SIZE / SettingsConst.CHUNK_SIZE), SettingsConst.BOARD_SIZE - 1), 0);
 
    testCircularHitbox.radius = visionRange;
-   testCircularHitbox.object.position.x = x;
-   testCircularHitbox.object.position.y = y;
+   testCircularHitbox.x = x;
+   testCircularHitbox.y = y;
 
    const visionRangeSquared = Math.pow(visionRange, 2);
    
@@ -414,8 +414,8 @@ export function getAngleDiff(sourceAngle: number, targetAngle: number): number {
 }
 
 export function getMinAngleToCircularHitbox(x: number, y: number, hitbox: CircularHitbox): number {
-   const xDiff = hitbox.object.position.x + hitbox.rotatedOffsetX - x;
-   const yDiff = hitbox.object.position.y + hitbox.rotatedOffsetY - y;
+   const xDiff = hitbox.x - x;
+   const yDiff = hitbox.y - y;
 
    const angleToHitboxCenter = angle(xDiff, yDiff);
    
@@ -426,8 +426,8 @@ export function getMinAngleToCircularHitbox(x: number, y: number, hitbox: Circul
 }
 
 export function getMaxAngleToCircularHitbox(x: number, y: number, hitbox: CircularHitbox): number {
-   const xDiff = hitbox.object.position.x + hitbox.rotatedOffsetX - x;
-   const yDiff = hitbox.object.position.y + hitbox.rotatedOffsetY - y;
+   const xDiff = hitbox.x - x;
+   const yDiff = hitbox.y - y;
 
    const angleToHitboxCenter = angle(xDiff, yDiff);
    
@@ -442,8 +442,8 @@ export function getMinAngleToRectangularHitbox(x: number, y: number, hitbox: Rec
    for (let i = 0; i < 4; i++) {
       const vertexOffset = hitbox.vertexOffsets[i];
 
-      const vertexX = hitbox.object.position.x + hitbox.rotatedOffsetX + vertexOffset.x;
-      const vertexY = hitbox.object.position.y + hitbox.rotatedOffsetY + vertexOffset.y;
+      const vertexX = hitbox.x + vertexOffset.x;
+      const vertexY = hitbox.y + vertexOffset.y;
 
       const angleToVertex = angle(vertexX - x, vertexY - y);
       if (angleToVertex < minAngle) {
@@ -459,8 +459,8 @@ export function getMaxAngleToRectangularHitbox(x: number, y: number, hitbox: Rec
    for (let i = 0; i < 4; i++) {
       const vertexOffset = hitbox.vertexOffsets[i];
 
-      const vertexX = hitbox.object.position.x + hitbox.rotatedOffsetX + vertexOffset.x;
-      const vertexY = hitbox.object.position.y + hitbox.rotatedOffsetY + vertexOffset.y;
+      const vertexX = hitbox.x + vertexOffset.x;
+      const vertexY = hitbox.y + vertexOffset.y;
 
       const angleToVertex = angle(vertexX - x, vertexY - y);
       if (angleToVertex > maxAngle) {
@@ -520,11 +520,11 @@ export function turnAngle(angle: number, targetAngle: number, turnSpeed: number)
 }
 
 const lineIntersectsRectangularHitbox = (lineX1: number, lineY1: number, lineX2: number, lineY2: number, hitbox: RectangularHitbox): boolean => {
-   const rectPosX = hitbox.object.position.x + hitbox.rotatedOffsetX;
-   const rectPosY = hitbox.object.position.y + hitbox.rotatedOffsetY;
+   const rectPosX = hitbox.x;
+   const rectPosY = hitbox.y;
    
    // Rotate the line and rectangle to axis-align the rectangle
-   const rectRotation = hitbox.rotation + hitbox.object.rotation;
+   const rectRotation = hitbox.rotation;
    const x1 = rotateXAroundPoint(lineX1, lineY1, rectPosX, rectPosY, -rectRotation);
    const y1 = rotateYAroundPoint(lineX1, lineY1, rectPosX, rectPosY, -rectRotation);
    const x2 = rotateXAroundPoint(lineX2, lineY2, rectPosX, rectPosY, -rectRotation);
@@ -564,8 +564,8 @@ const entityAffectsLineOfSight = (entityType: IEntityType): boolean => {
 const lineIntersectsCircularHitbox = (lineX1: number, lineY1: number, lineX2: number, lineY2: number, hitbox: CircularHitbox): boolean => {
    // https://stackoverflow.com/questions/67116296/is-this-code-for-determining-if-a-circle-and-line-segment-intersects-correct
    
-   const circleX = hitbox.object.position.x + hitbox.rotatedOffsetX;
-   const circleY = hitbox.object.position.y + hitbox.rotatedOffsetY;
+   const circleX = hitbox.x;
+   const circleY = hitbox.y;
    
    let x_linear = lineX2 - lineX1;
    let x_constant = lineX1 - circleX;
@@ -649,13 +649,13 @@ export function getDistanceFromPointToEntity(x: number, y: number, entity: Entit
    let minDistance = Math.sqrt(Math.pow(x - entity.position.x, 2) + Math.pow(y - entity.position.y, 2));
    for (const hitbox of entity.hitboxes) {
       if (hitbox.hasOwnProperty("radius")) {
-         const rawDistance = distance(x, y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY);
+         const rawDistance = distance(x, y, hitbox.x, hitbox.y);
          const hitboxDistance = rawDistance - (hitbox as CircularHitbox).radius;
          if (hitboxDistance < minDistance) {
             minDistance = hitboxDistance;
          }
       } else {
-         let dist = distBetweenPointAndRectangle(x, y, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation + hitbox.object.rotation);
+         let dist = distBetweenPointAndRectangle(x, y, hitbox.x, hitbox.y, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
          if (dist < minDistance) {
             minDistance = dist;
          }

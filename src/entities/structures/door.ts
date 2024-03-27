@@ -9,21 +9,27 @@ import { DoorComponent } from "../../components/DoorComponent";
 import { TribeComponent } from "../../components/TribeComponent";
 import { PhysicsComponent, PhysicsComponentArray } from "../../components/PhysicsComponent";
 import { BuildingMaterialComponent } from "../../components/BuildingMaterialComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 const HITBOX_WIDTH = 64 - 0.05;
 const HITBOX_HEIGHT = 16 - 0.05;
 
 export const DOOR_HEALTHS = [15, 45];
 
-export function addDoorHitboxes(entity: Entity): void {
-   entity.addHitbox(new RectangularHitbox(entity, 0.5, 0, 0, HitboxCollisionTypeConst.hard, HITBOX_WIDTH, HITBOX_HEIGHT));
+export function createDoorHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
+   hitboxes.push(new RectangularHitbox(entity.position.x, entity.position.y, 0.5, 0, 0, HitboxCollisionTypeConst.hard, entity.getNextHitboxLocalID(), entity.rotation, HITBOX_WIDTH, HITBOX_HEIGHT, 0));
+   return hitboxes;
 }
 
 export function createDoor(position: Point, rotation: number, tribe: Tribe, material: BuildingMaterial): Entity {
    const door = new Entity(position, IEntityType.door, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    door.rotation = rotation;
 
-   addDoorHitboxes(door);
+   const hitboxes = createDoorHitboxes(door);
+   for (let i = 0; i < hitboxes.length; i++) {
+      door.addHitbox(hitboxes[i]);
+   }
    
    PhysicsComponentArray.addComponent(door, new PhysicsComponent(false, true));
    HealthComponentArray.addComponent(door, new HealthComponent(DOOR_HEALTHS[material]));

@@ -15,7 +15,7 @@ import { createSnowball } from "../snowball";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
-import { CollisionVars, isColliding } from "../../collision";
+import { CollisionVars, entitiesAreColliding } from "../../collision";
 
 const MIN_TERRITORY_SIZE = 50;
 const MAX_TERRITORY_SIZE = 100;
@@ -148,7 +148,7 @@ export function createYeti(position: Point): Entity {
    const yeti = new Entity(position, IEntityType.yeti, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    yeti.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(yeti, 3, 0, 0, HitboxCollisionTypeConst.soft, YETI_SIZE / 2);
+   const hitbox = new CircularHitbox(yeti.position.x, yeti.position.y, 3, 0, 0, HitboxCollisionTypeConst.soft, YETI_SIZE / 2, yeti.getNextHitboxLocalID(), yeti.rotation);
    yeti.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(yeti, new PhysicsComponent(true, false));
@@ -353,7 +353,7 @@ export function tickYeti(yeti: Entity): void {
          yeti.turn(targetDirection, TURN_SPEED);
          yeti.acceleration.x = 100 * Math.sin(targetDirection);
          yeti.acceleration.y = 100 * Math.cos(targetDirection);
-         if (isColliding(yeti, closestFoodItem) !== CollisionVars.NO_COLLISION) {
+         if (entitiesAreColliding(yeti, closestFoodItem) !== CollisionVars.NO_COLLISION) {
             healEntity(yeti, 3, yeti.id);
             closestFoodItem.remove();
          }

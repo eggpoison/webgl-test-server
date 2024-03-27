@@ -8,7 +8,7 @@ import { createTribeWorker } from "./entities/tribes/tribe-worker";
 import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
-import { VulnerabilityNode, VulnerabilityNodeIndex } from "./tribe-ai-building";
+import { VulnerabilityNode, VulnerabilityNodeIndex } from "./ai-tribe-building";
 import { getInventory } from "./components/InventoryComponent";
 
 const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
@@ -41,6 +41,16 @@ export interface BuildingPlan {
    readonly rotation: number;
    readonly buildingRecipe: CraftingRecipe;
    assignedTribesmanID: number;
+}
+
+export interface RestrictedBuildingArea {
+   readonly x: number;
+   readonly y: number;
+   readonly width: number;
+   readonly height: number;
+   readonly rotation: number;
+   /** The ID of the building responsible for the restricted area */
+   readonly associatedBuildingID: number;
 }
 
 class Tribe {
@@ -85,6 +95,8 @@ class Tribe {
    public insideNodes = new Set<number>();
    public containedBuildingIDs = new Set<number>();
    public occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number> = {};
+
+   public restrictedBuildingAreas = new Array<RestrictedBuildingArea>();
 
    public availableResources: Partial<Record<ItemType, number>> = {};
    

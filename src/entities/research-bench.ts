@@ -12,7 +12,7 @@ export function createResearchBench(position: Point, rotation: number, tribe: Tr
    const bench = new Entity(position, IEntityType.researchBench, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    bench.rotation = rotation;
 
-   const hitbox = new RectangularHitbox(bench, 1.8, 0, 0, HitboxCollisionTypeConst.hard, 32 * 4, 20 * 4);
+   const hitbox = new RectangularHitbox(bench.position.x, bench.position.y, 1.8, 0, 0, HitboxCollisionTypeConst.hard, bench.getNextHitboxLocalID(), bench.rotation, 32 * 4, 20 * 4, 0);
    bench.addHitbox(hitbox);
    
    HealthComponentArray.addComponent(bench, new HealthComponent(40));

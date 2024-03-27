@@ -17,7 +17,7 @@ export function createSlimeSpit(position: Point, size: number): Entity {
    const spit = new Entity(position, IEntityType.slimeSpit, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
    const hitboxSize = SIZES[size];
-   const hitbox = new RectangularHitbox(spit, 0.2, 0, 0, HitboxCollisionTypeConst.soft, hitboxSize, hitboxSize);
+   const hitbox = new RectangularHitbox(spit.position.x, spit.position.y, 0.2, 0, 0, HitboxCollisionTypeConst.soft, spit.getNextHitboxLocalID(), spit.rotation, hitboxSize, hitboxSize, 0);
    spit.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(spit, new PhysicsComponent(true, false));

@@ -17,7 +17,7 @@ export function createSnowball(position: Point, size: SnowballSize = SnowballSiz
    snowball.rotation = 2 * Math.PI * Math.random();
 
    const mass = size === SnowballSize.small ? 1 : 1.5;
-   const hitbox = new CircularHitbox(snowball, mass, 0, 0, HitboxCollisionTypeConst.soft, SNOWBALL_SIZES[size] / 2);
+   const hitbox = new CircularHitbox(snowball.position.x, snowball.position.y, mass, 0, 0, HitboxCollisionTypeConst.soft, SNOWBALL_SIZES[size] / 2, snowball.getNextHitboxLocalID(), snowball.rotation);
    snowball.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(snowball, new PhysicsComponent(true, false));

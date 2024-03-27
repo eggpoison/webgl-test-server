@@ -44,7 +44,7 @@ const generateScars = (): ReadonlyArray<ScarInfo> => {
 export function createTribeWarrior(position: Point, tribe: Tribe, hutID: number): Entity {
    const warrior = new Entity(position, IEntityType.tribeWarrior, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(warrior, 1.5, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WARRIOR_RADIUS);
+   const hitbox = new CircularHitbox(warrior.position.x, warrior.position.y, 1.5, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WARRIOR_RADIUS, warrior.getNextHitboxLocalID(), warrior.rotation);
    warrior.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];

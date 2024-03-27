@@ -18,7 +18,7 @@ export function createCampfire(position: Point, rotation: number, tribe: Tribe):
    const campfire = new Entity(position, IEntityType.campfire, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    campfire.rotation = rotation;
 
-   const hitbox = new CircularHitbox(campfire, 2, 0, 0, HitboxCollisionTypeConst.soft, CAMPFIRE_SIZE / 2);
+   const hitbox = new CircularHitbox(campfire.position.x, campfire.position.y, 2, 0, 0, HitboxCollisionTypeConst.soft, CAMPFIRE_SIZE / 2, campfire.getNextHitboxLocalID(), campfire.rotation);
    campfire.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(campfire, new HealthComponent(25));

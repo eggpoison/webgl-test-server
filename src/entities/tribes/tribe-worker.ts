@@ -23,7 +23,7 @@ export const TRIBE_WORKER_VISION_RANGE = 500;
 export function createTribeWorker(position: Point, tribe: Tribe, hutID: number): Entity {
    const worker = new Entity(position, IEntityType.tribeWorker, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
 
-   const hitbox = new CircularHitbox(worker, 1, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WORKER_RADIUS);
+   const hitbox = new CircularHitbox(worker.position.x, worker.position.y, 1, 0, 0, HitboxCollisionTypeConst.soft, TRIBE_WORKER_RADIUS, worker.getNextHitboxLocalID(), worker.rotation);
    worker.addHitbox(hitbox);
    
    const tribeInfo = TRIBE_INFO_RECORD[tribe.type];

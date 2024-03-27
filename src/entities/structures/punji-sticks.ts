@@ -7,24 +7,34 @@ import { StatusEffectComponent, StatusEffectComponentArray, applyStatusEffect } 
 import { SERVER } from "../../server";
 import { TribeComponent } from "../../components/TribeComponent";
 import Tribe from "../../Tribe";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 const FLOOR_HITBOX_SIZE = 48 - 0.05;
 
 const WALL_HITBOX_WIDTH = 56 - 0.05;
 const WALL_HITBOX_HEIGHT = 32 - 0.05;
 
+export function createFloorPunjiSticksHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
+   // @Hack mass
+   hitboxes.push(new RectangularHitbox(entity.position.x, entity.position.y, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, entity.getNextHitboxLocalID(), entity.rotation, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE, 0));
+   return hitboxes;
+}
+
+export function createWallPunjiSticksHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
+   // @Hack mass
+   entity.addHitbox(new RectangularHitbox(entity.position.x, entity.position.y, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, entity.getNextHitboxLocalID(), entity.rotation, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT, 0));
+   return hitboxes;
+}
+
 export function createPunjiSticks(position: Point, rotation: number, tribe: Tribe, attachedWallID: number): Entity {
    const punjiSticks = new Entity(position, IEntityType.punjiSticks, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    punjiSticks.rotation = rotation;
 
-   if (attachedWallID === 0) {
-      // Floor hitbox
-      // @Hack mass
-      punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
-   } else {
-      // Wall hitbox
-      // @Hack mass
-      punjiSticks.addHitbox(new RectangularHitbox(punjiSticks, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
+   const hitboxes = attachedWallID !== 0 ? createWallPunjiSticksHitboxes(punjiSticks) : createFloorPunjiSticksHitboxes(punjiSticks);
+   for (let i = 0; i < hitboxes.length; i++) {
+      punjiSticks.addHitbox(hitboxes[i]);
    }
 
    HealthComponentArray.addComponent(punjiSticks, new HealthComponent(10));

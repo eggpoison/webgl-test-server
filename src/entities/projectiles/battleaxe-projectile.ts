@@ -9,7 +9,7 @@ import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
-import { CollisionVars, isColliding } from "../../collision";
+import { CollisionVars, entitiesAreColliding } from "../../collision";
 import Tribe from "../../Tribe";
 import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 
@@ -18,7 +18,7 @@ const RETURN_TIME_TICKS = 1 * SettingsConst.TPS;
 export function createBattleaxeProjectile(position: Point, tribeMemberID: number, item: Item, tribe: Tribe): Entity {
    const battleaxe = new Entity(position, IEntityType.battleaxeProjectile, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
-   const hitbox = new CircularHitbox(battleaxe, 0.6, 0, 0, HitboxCollisionTypeConst.soft, 32);
+   const hitbox = new CircularHitbox(battleaxe.position.x, battleaxe.position.y, 0.6, 0, 0, HitboxCollisionTypeConst.soft, 32, battleaxe.getNextHitboxLocalID(), battleaxe.rotation);
    battleaxe.addHitbox(hitbox);
    
    PhysicsComponentArray.addComponent(battleaxe, new PhysicsComponent(true, true));
@@ -42,7 +42,7 @@ export function tickBattleaxeProjectile(battleaxe: Entity): void {
       
       const owner = Board.entityRecord[throwingProjectileComponent.tribeMemberID];
 
-      if (isColliding(battleaxe, owner) !== CollisionVars.NO_COLLISION) {
+      if (entitiesAreColliding(battleaxe, owner) !== CollisionVars.NO_COLLISION) {
          battleaxe.remove();
          return;
       }

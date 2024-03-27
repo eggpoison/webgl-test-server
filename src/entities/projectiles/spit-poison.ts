@@ -12,7 +12,7 @@ export function createSpitPoison(position: Point): Entity {
    const poison = new Entity(position, IEntityType.spitPoison, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    
    // @Hack mass
-   const hitbox = new CircularHitbox(poison, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, RADIUS);
+   const hitbox = new CircularHitbox(poison.position.x, poison.position.y, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, RADIUS, poison.getNextHitboxLocalID(), poison.rotation);
    poison.addHitbox(hitbox);
    
    return poison;

@@ -9,6 +9,7 @@ import Tribe from "../../Tribe";
 import { TribeComponent } from "../../components/TribeComponent";
 import { SpikesComponent } from "../../components/SpikesComponent";
 import { BuildingMaterialComponent } from "../../components/BuildingMaterialComponent";
+import CircularHitbox from "../../hitboxes/CircularHitbox";
 
 const FLOOR_HITBOX_SIZE = 48 - 0.05;
 
@@ -17,24 +18,27 @@ const WALL_HITBOX_HEIGHT = 28 - 0.05;
 
 export const SPIKE_HEALTHS = [15, 45];
 
-export function addFloorSpikesHitboxes(entity: Entity): void {
+export function createFloorSpikesHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
    // @Hack mass
-   entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE));
+   hitboxes.push(new RectangularHitbox(entity.position.x, entity.position.y, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, entity.getNextHitboxLocalID(), entity.rotation, FLOOR_HITBOX_SIZE, FLOOR_HITBOX_SIZE, 0));
+   return hitboxes;
 }
 
-export function addWallSpikesHitboxes(entity: Entity): void {
+export function createWallSpikesHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
    // @Hack mass
-   entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
+   entity.addHitbox(new RectangularHitbox(entity.position.x, entity.position.y, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, entity.getNextHitboxLocalID(), entity.rotation, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT, 0));
+   return hitboxes;
 }
 
 export function createSpikes(position: Point, rotation: number, tribe: Tribe, attachedWallID: number): Entity {
    const spikes = new Entity(position, IEntityType.spikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    spikes.rotation = rotation;
 
-   if (attachedWallID !== 0) {
-      addWallSpikesHitboxes(spikes);
-   } else {
-      addFloorSpikesHitboxes(spikes);
+   const hitboxes = attachedWallID !== 0 ? createWallSpikesHitboxes(spikes) : createFloorSpikesHitboxes(spikes);
+   for (let i = 0; i < hitboxes.length; i++) {
+      spikes.addHitbox(hitboxes[i]);
    }
 
    const material = BuildingMaterial.wood;

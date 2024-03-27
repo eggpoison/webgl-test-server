@@ -67,11 +67,11 @@ export const enum CollisionVars {
 // }
 
 const getCircleCircleCollisionPushInfo = (pushedHitbox: CircularHitbox, pushingHitbox: CircularHitbox): CollisionPushInfo => {
-   const pushedHitboxPositionX = pushedHitbox.object.position.x + pushedHitbox.rotatedOffsetX;
-   const pushedHitboxPositionY = pushedHitbox.object.position.y + pushedHitbox.rotatedOffsetY;
+   const pushedHitboxPositionX = pushedHitbox.x;
+   const pushedHitboxPositionY = pushedHitbox.y;
 
-   const pushingHitboxPositionX = pushingHitbox.object.position.x + pushingHitbox.rotatedOffsetX;
-   const pushingHitboxPositionY = pushingHitbox.object.position.y + pushingHitbox.rotatedOffsetY;
+   const pushingHitboxPositionX = pushingHitbox.x;
+   const pushingHitboxPositionY = pushingHitbox.y;
    
    const dist = Math.sqrt(Math.pow(pushedHitboxPositionX - pushingHitboxPositionX, 2) + Math.pow(pushedHitboxPositionY - pushingHitboxPositionY, 2));
    
@@ -83,13 +83,13 @@ const getCircleCircleCollisionPushInfo = (pushedHitbox: CircularHitbox, pushingH
 }
 
 const getCircleRectCollisionPushInfo = (pushedHitbox: CircularHitbox, pushingHitbox: RectangularHitbox): CollisionPushInfo => {
-   const rectRotation = pushingHitbox.object.rotation + pushingHitbox.rotation;
+   const rectRotation = pushingHitbox.rotation;
 
-   const pushedHitboxPositionX = pushedHitbox.object.position.x + pushedHitbox.rotatedOffsetX;
-   const pushedHitboxPositionY = pushedHitbox.object.position.y + pushedHitbox.rotatedOffsetY;
+   const pushedHitboxPositionX = pushedHitbox.x;
+   const pushedHitboxPositionY = pushedHitbox.y;
 
-   const pushingHitboxPositionX = pushingHitbox.object.position.x + pushingHitbox.rotatedOffsetX;
-   const pushingHitboxPositionY = pushingHitbox.object.position.y + pushingHitbox.rotatedOffsetY;
+   const pushingHitboxPositionX = pushingHitbox.x;
+   const pushingHitboxPositionY = pushingHitbox.y;
    
    const circlePosX = rotateXAroundPoint(pushedHitboxPositionX, pushedHitboxPositionY, pushingHitboxPositionX, pushingHitboxPositionY, -rectRotation);
    const circlePosY = rotateYAroundPoint(pushedHitboxPositionX, pushedHitboxPositionY, pushingHitboxPositionX, pushingHitboxPositionY, -rectRotation);
@@ -178,7 +178,7 @@ const getCollisionPushInfo = (pushedHitbox: Hitbox, pushingHitbox: Hitbox): Coll
 /**
  * @returns A number where the first 8 bits hold the index of the entity's colliding hitbox, and the next 8 bits hold the index of the other entity's colliding hitbox
 */
-export function isColliding(entity1: Entity, entity2: Entity): number {
+export function entitiesAreColliding(entity1: Entity, entity2: Entity): number {
    if ((entity1.collisionMask & entity2.collisionBit) === 0 || (entity2.collisionMask & entity1.collisionBit) === 0) {
       return CollisionVars.NO_COLLISION;
    }

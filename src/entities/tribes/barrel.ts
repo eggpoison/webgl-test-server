@@ -14,7 +14,7 @@ export function createBarrel(position: Point, rotation: number, tribe: Tribe): E
    const barrel = new Entity(position, IEntityType.barrel, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    barrel.rotation = rotation;
 
-   const hitbox = new CircularHitbox(barrel, 1.5, 0, 0, HitboxCollisionTypeConst.hard, BARREL_SIZE / 2);
+   const hitbox = new CircularHitbox(barrel.position.x, barrel.position.y, 1.5, 0, 0, HitboxCollisionTypeConst.hard, BARREL_SIZE / 2, barrel.getNextHitboxLocalID(), barrel.rotation);
    barrel.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(barrel, new HealthComponent(20));

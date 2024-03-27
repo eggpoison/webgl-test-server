@@ -74,7 +74,7 @@ const findMaxWithOffset = (vertices: ReadonlyArray<Point>, offsetX: number, offs
 /** A generic class for any object in the world */
 class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Remove
-   private static readonly rectangularTestHitbox = new RectangularHitbox({position: new Point(0, 0), rotation: 0}, 1, 0, 0, HitboxCollisionTypeConst.soft, 0.1, 0.1);
+   private static readonly rectangularTestHitbox = new RectangularHitbox(0, 0, 1, 0, 0, HitboxCollisionTypeConst.soft, 1, 0, 0.1, 0.1, 0);
    
    /** Unique identifier for each entity */
    public readonly id: number;
@@ -128,7 +128,7 @@ class Entity<T extends IEntityType = IEntityType> {
    // @Cleanup: Maybe can be moved to physics component
    public pathfindingNodesAreDirty = false;
 
-   public nextHitboxLocalID = 1;
+   private nextHitboxLocalID = 1;
 
    constructor(position: Point, type: T, collisionBit: number, collisionMask: number) {
       this.position = position;
@@ -149,6 +149,10 @@ class Entity<T extends IEntityType = IEntityType> {
       this.strictCheckIsInRiver();
 
       Board.addEntityToJoinBuffer(this);
+   }
+
+   public getNextHitboxLocalID(): number {
+      return this.nextHitboxLocalID++;
    }
 
    public addHitbox(hitbox: RectangularHitbox | CircularHitbox): void {
@@ -198,10 +202,10 @@ class Entity<T extends IEntityType = IEntityType> {
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
 
-         hitbox.updateOffset();
+         hitbox.updatePosition(this.position.x, this.position.y, this.rotation);
          // @Speed: This check is slow
          if (!hitbox.hasOwnProperty("radius")) {
-            (hitbox as RectangularHitbox).updateVertexPositionsAndSideAxes();
+            (hitbox as RectangularHitbox).updateRotationAndVertexPositionsAndSideAxes(this.rotation);
          }
 
          const boundsMinX = hitbox.calculateHitboxBoundsMinX();
@@ -275,6 +279,8 @@ class Entity<T extends IEntityType = IEntityType> {
       const numHitboxes = this.hitboxes.length;
       for (let i = 0; i < numHitboxes; i++) {
          const hitbox = this.hitboxes[i];
+
+         hitbox.updatePosition(this.position.x, this.position.y, this.rotation);
 
          const boundsMinX = hitbox.calculateHitboxBoundsMinX();
          const boundsMaxX = hitbox.calculateHitboxBoundsMaxX();
@@ -572,8 +578,7 @@ class Entity<T extends IEntityType = IEntityType> {
       Entity.rectangularTestHitbox.width = SettingsConst.TILE_SIZE;
       Entity.rectangularTestHitbox.height = SettingsConst.TILE_SIZE;
       // @Incomplete(?): Do we need to update vertices and axes?
-      Entity.rectangularTestHitbox.object.position.x = (tile.x + 0.5) * SettingsConst.TILE_SIZE;
-      Entity.rectangularTestHitbox.object.position.y = (tile.y + 0.5) * SettingsConst.TILE_SIZE;
+      Entity.rectangularTestHitbox.updatePosition((tile.x + 0.5) * SettingsConst.TILE_SIZE, (tile.y + 0.5) * SettingsConst.TILE_SIZE, 0);
 
       if (Entity.rectangularTestHitbox.isColliding(hitbox)) {
          return TileCollisionAxis.diagonal;
@@ -744,9 +749,9 @@ class Entity<T extends IEntityType = IEntityType> {
       let tileVertexX!: number;
       let tileVertexY!: number;
       for (const pair of pairs2) {
-         const tilePosX = this.position.x + hitbox.rotatedOffsetX;
-         const tilePosY = this.position.y + hitbox.rotatedOffsetY;
-         if (pointIsInRectangle(pair[0], pair[1], tilePosX, tilePosY, hitbox.width, hitbox.height, this.rotation + hitbox.rotation)) {
+         const tilePosX = hitbox.x;
+         const tilePosY = hitbox.y;
+         if (pointIsInRectangle(pair[0], pair[1], tilePosX, tilePosY, hitbox.width, hitbox.height, this.rotation + hitbox.relativeRotation)) {
             tileVertexX = pair[0];
             tileVertexY = pair[1];
             break;
@@ -884,186 +889,6 @@ class Entity<T extends IEntityType = IEntityType> {
          console.log(this);
          throw new Error("Unable to properly resolve border collisions.");
       }
-   }
-
-   private resolveCircleRectangleCollision(circleHitbox: CircularHitbox, rectangularHitbox: RectangularHitbox): void {
-      const rectRotation = rectangularHitbox.rotation + rectangularHitbox.object.rotation;
-
-      const rectPosX = rectangularHitbox.object.position.x + rectangularHitbox.rotatedOffsetX;
-      const rectPosY = rectangularHitbox.object.position.y + rectangularHitbox.rotatedOffsetY;
-      
-      const unrotatedCirclePosX = circleHitbox.object.position.x + circleHitbox.rotatedOffsetX;
-      const unrotatedCirclePosY = circleHitbox.object.position.y + circleHitbox.rotatedOffsetY;
-      const circlePosX = rotateXAroundPoint(unrotatedCirclePosX, unrotatedCirclePosY, rectPosX, rectPosY, -rectRotation);
-      const circlePosY = rotateYAroundPoint(unrotatedCirclePosX, unrotatedCirclePosY, rectPosX, rectPosY, -rectRotation);
-      
-      const distanceX = circlePosX - rectPosX;
-      const distanceY = circlePosY - rectPosY;
-
-      const absDistanceX = Math.abs(distanceX);
-      const absDistanceY = Math.abs(distanceY);
-
-      // Top and bottom collisions
-      if (absDistanceX <= (rectangularHitbox.width/2)) {
-         const amountIn = absDistanceY - rectangularHitbox.height/2 - circleHitbox.radius;
-         const offsetMagnitude = -amountIn * Math.sign(distanceY);
-
-         this.position.x += offsetMagnitude * Math.sin(rectRotation);
-         this.position.y += offsetMagnitude * Math.cos(rectRotation);
-
-         const direction = rectRotation + Math.PI/2;
-         const bx = Math.sin(direction);
-         const by = Math.cos(direction);
-         const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
-         this.velocity.x = bx * projectionCoeff;
-         this.velocity.y = by * projectionCoeff;
-         return;
-      }
-
-      // Left and right collisions
-      if (absDistanceY <= (rectangularHitbox.height/2)) {
-         const amountIn = absDistanceX - rectangularHitbox.width/2 - circleHitbox.radius;
-         const offsetMagnitude = -amountIn * Math.sign(distanceX);
-
-         this.position.x += offsetMagnitude * Math.sin(rectRotation + Math.PI/2);
-         this.position.y += offsetMagnitude * Math.cos(rectRotation + Math.PI/2);
-
-         const bx = Math.sin(rectRotation);
-         const by = Math.cos(rectRotation);
-         const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
-         this.velocity.x = bx * projectionCoeff;
-         this.velocity.y = by * projectionCoeff;
-         return;
-      }
-
-      const cornerDistanceSquared = Math.pow(absDistanceX - rectangularHitbox.width/2, 2) + Math.pow(absDistanceY - rectangularHitbox.height/2, 2);
-      if (cornerDistanceSquared <= circleHitbox.radius * circleHitbox.radius) {
-         // @Cleanup: Whole lot of copy and paste
-         const amountInX = absDistanceX - rectangularHitbox.width/2 - circleHitbox.radius;
-         const amountInY = absDistanceY - rectangularHitbox.height/2 - circleHitbox.radius;
-         if (Math.abs(amountInY) < Math.abs(amountInX)) {
-            const closestRectBorderY = circlePosY < rectPosY ? rectPosY - rectangularHitbox.height/2 : rectPosY + rectangularHitbox.height/2;
-            
-            const closestRectBorderX = circlePosX < rectPosX ? rectPosX - rectangularHitbox.width/2 : rectPosX + rectangularHitbox.width/2;
-            const xDistanceFromRectBorder = Math.abs(closestRectBorderX - circlePosX);
-            const len = Math.sqrt(circleHitbox.radius * circleHitbox.radius - xDistanceFromRectBorder * xDistanceFromRectBorder);
-
-            const amountIn = Math.abs(closestRectBorderY - (circlePosY - len * Math.sign(distanceY)));
-            const offsetMagnitude = amountIn * Math.sign(distanceY);
-   
-            this.position.x += offsetMagnitude * Math.sin(rectRotation);
-            this.position.y += offsetMagnitude * Math.cos(rectRotation);
-   
-            const direction = rectRotation + Math.PI/2;
-            const bx = Math.sin(direction);
-            const by = Math.cos(direction);
-            const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
-            this.velocity.x = bx * projectionCoeff;
-            this.velocity.y = by * projectionCoeff;
-         } else {
-            const closestRectBorderX = circlePosX < rectPosX ? rectPosX - rectangularHitbox.width/2 : rectPosX + rectangularHitbox.width/2;
-            
-            const closestRectBorderY = circlePosY < rectPosY ? rectPosY - rectangularHitbox.height/2 : rectPosY + rectangularHitbox.height/2;
-            const yDistanceFromRectBorder = Math.abs(closestRectBorderY - circlePosY);
-            const len = Math.sqrt(circleHitbox.radius * circleHitbox.radius - yDistanceFromRectBorder * yDistanceFromRectBorder);
-
-            const amountIn = Math.abs(closestRectBorderX - (circlePosX - len * Math.sign(distanceX)));
-            const offsetMagnitude = amountIn * Math.sign(distanceX);
-   
-            this.position.x += offsetMagnitude * Math.sin(rectRotation + Math.PI/2);
-            this.position.y += offsetMagnitude * Math.cos(rectRotation + Math.PI/2);
-   
-            const bx = Math.sin(rectRotation);
-            const by = Math.cos(rectRotation);
-            const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
-            this.velocity.x = bx * projectionCoeff;
-            this.velocity.y = by * projectionCoeff;
-         }
-      }
-   }
-
-   private resolveRectangleRectangleCollision(hitbox: RectangularHitbox, collidingHitbox: RectangularHitbox): void {
-      const offset1x = this.position.x + hitbox.rotatedOffsetX;
-      const offset1y = this.position.y + hitbox.rotatedOffsetY;
-      const offset2x = collidingHitbox.object.position.x + collidingHitbox.rotatedOffsetX;
-      const offset2y = collidingHitbox.object.position.y + collidingHitbox.rotatedOffsetY;
-      
-      let minDiff = 99999.9;
-      let minDiffAxis!: Point;
-      let minDiffIsPositive = true;
-      
-      // main: hitbox1
-      for (let i = 0; i < 2; i++) {
-         // const axis = hitbox.sideAxes[i];
-         // @Incomplete: THE SAME FOR 2!
-         const axis = new Point(hitbox.axisX, hitbox.axisY);
-
-         const min1 = findMinWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
-         const max1 = findMaxWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
-         const min2 = findMinWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
-         const max2 = findMaxWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
-
-         const isIntersection = min2 < max1 && min1 < max2;
-         if (isIntersection) {
-            const diff1 = max1 - min2;
-            const diff2 = max2 - min1;
-
-            if (diff1 < minDiff) {
-               minDiff = diff1;
-               minDiffAxis = axis;
-               minDiffIsPositive = true;
-            }
-            if (diff2 < minDiff) {
-               minDiff = diff2;
-               minDiffAxis = axis;
-               minDiffIsPositive = false;
-            }
-         }
-      }
-
-      for (let i = 0; i < 2; i++) {
-         // const axis = hitbox.sideAxes[i];
-         // @Incomplete: THE SAME FOR 2!
-         const axis = new Point(hitbox.axisX, hitbox.axisY);
-
-         const min1 = findMinWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
-         const max1 = findMaxWithOffset(hitbox.vertexOffsets, offset1x, offset1y, axis);
-         const min2 = findMinWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
-         const max2 = findMaxWithOffset(collidingHitbox.vertexOffsets, offset2x, offset2y, axis);
-
-         const isIntersection = min2 < max1 && min1 < max2;
-         if (isIntersection) {
-            const diff1 = max1 - min2;
-            const diff2 = max2 - min1;
-
-            if (diff1 < minDiff) {
-               minDiff = diff1;
-               minDiffAxis = axis;
-               minDiffIsPositive = true;
-            }
-            if (diff2 < minDiff) {
-               minDiff = diff2;
-               minDiffAxis = axis;
-               minDiffIsPositive = false;
-            }
-         }
-      }
-
-      const diffMult = (minDiffIsPositive ? 1 : -1) * -1;
-
-      this.position.x += minDiff * minDiffAxis.x * diffMult;
-      this.position.y += minDiff * minDiffAxis.y * diffMult;
-
-      // console.log(minDiff);
-      // const direction = rectRotation + Math.PI/2;
-      // const direction = minDiffAxis;
-      // const bx = Math.sin(direction);
-      // const by = Math.cos(direction);
-      // const bx = minDiffAxis.x;
-      // const by = minDiffAxis.y;
-      // const projectionCoeff = (this.velocity.x * bx + this.velocity.y * by) / (bx * bx + by * by);
-      // this.velocity.x = bx * projectionCoeff;
-      // this.velocity.y = by * projectionCoeff;
    }
 
    public remove(): void {

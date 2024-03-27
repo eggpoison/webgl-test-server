@@ -72,11 +72,11 @@ export function createGolem(position: Point): Entity {
    golem.rotation = 2 * Math.PI * Math.random();
 
    // Create core hitbox
-   const hitbox = new CircularHitbox(golem, ROCK_MASSIVE_MASS, 0, 0, HitboxCollisionTypeConst.soft, 36);
+   const hitbox = new CircularHitbox(golem.position.x, golem.position.y, ROCK_MASSIVE_MASS, 0, 0, HitboxCollisionTypeConst.soft, 36, golem.getNextHitboxLocalID(), golem.rotation);
    golem.addHitbox(hitbox);
 
    // Create head hitbox
-   golem.addHitbox(new CircularHitbox(golem, ROCK_LARGE_MASS, 0, 45, HitboxCollisionTypeConst.soft, 32));
+   golem.addHitbox(new CircularHitbox(golem.position.x, golem.position.y, ROCK_LARGE_MASS, 0, 45, HitboxCollisionTypeConst.soft, 32, golem.getNextHitboxLocalID(), golem.rotation));
    
    // Create body hitboxes
    let i = 0;
@@ -104,7 +104,7 @@ export function createGolem(position: Point): Entity {
       }
 
       const mass = size === 0 ? ROCK_SMALL_MASS : ROCK_MEDIUM_MASS;
-      const hitbox = new CircularHitbox(golem, mass, offsetX, offsetY, HitboxCollisionTypeConst.soft, radius);
+      const hitbox = new CircularHitbox(golem.position.x, golem.position.y, mass, offsetX, offsetY, HitboxCollisionTypeConst.soft, radius, golem.getNextHitboxLocalID(), golem.rotation);
       golem.addHitbox(hitbox);
 
       i++;
@@ -113,12 +113,12 @@ export function createGolem(position: Point): Entity {
    // Create hand hitboxes
    for (let j = 0; j < 2; j++) {
       const offsetX = 60 * (j === 0 ? -1 : 1);
-      const hitbox = new CircularHitbox(golem, ROCK_MEDIUM_MASS, offsetX, 50, HitboxCollisionTypeConst.soft, 20);
+      const hitbox = new CircularHitbox(golem.position.x, golem.position.y, ROCK_MEDIUM_MASS, offsetX, 50, HitboxCollisionTypeConst.soft, 20, golem.getNextHitboxLocalID(), golem.rotation);
       golem.addHitbox(hitbox);
 
       // Wrist
       const inFactor = 0.75;
-      golem.addHitbox(new CircularHitbox(golem, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, HitboxCollisionTypeConst.soft, 12));
+      golem.addHitbox(new CircularHitbox(golem.position.x, golem.position.y, ROCK_TINY_MASS, offsetX * inFactor, 50 * inFactor, HitboxCollisionTypeConst.soft, 12, golem.getNextHitboxLocalID(), golem.rotation));
    }
 
    PhysicsComponentArray.addComponent(golem, new PhysicsComponent(true, false));

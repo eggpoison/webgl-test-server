@@ -17,7 +17,7 @@ import { getInventory } from "../../components/InventoryComponent";
 import { AIHelperComponent, AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { SERVER } from "../../server";
 import { PhysicsComponent, PhysicsComponentArray, applyKnockback } from "../../components/PhysicsComponent";
-import { CollisionVars, isColliding } from "../../collision";
+import { CollisionVars, entitiesAreColliding } from "../../collision";
 
 const MAX_HEALTH = 5;
 
@@ -43,7 +43,7 @@ export function createFish(position: Point): Entity {
    const fish = new Entity(position, IEntityType.fish, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    fish.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new RectangularHitbox(fish, 0.5, 0, 0, HitboxCollisionTypeConst.soft, FISH_WIDTH, FISH_HEIGHT);
+   const hitbox = new RectangularHitbox(fish.position.x, fish.position.y, 0.5, 0, 0, HitboxCollisionTypeConst.soft, fish.getNextHitboxLocalID(), fish.rotation, FISH_WIDTH, FISH_HEIGHT, 0);
    fish.addHitbox(hitbox);
 
    PhysicsComponentArray.addComponent(fish, new PhysicsComponent(true, false));
@@ -182,7 +182,7 @@ export function tickFish(fish: Entity): void {
          // Attack the target
          move(fish, fish.position.calculateAngleBetween(fishComponent.attackTarget.position));
 
-         if (isColliding(fish, fishComponent.attackTarget) !== CollisionVars.NO_COLLISION) {
+         if (entitiesAreColliding(fish, fishComponent.attackTarget) !== CollisionVars.NO_COLLISION) {
             const healthComponent = HealthComponentArray.getComponent(fishComponent.attackTarget.id);
             if (!canDamageEntity(healthComponent, "fish")) {
                return;

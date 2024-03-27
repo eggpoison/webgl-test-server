@@ -66,9 +66,9 @@ import { tickResearchBenchComponent } from "./components/ResearchBenchComponent"
 import { clearEntityPathfindingNodes, entityCanBlockPathfinding, markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
 import OPTIONS from "./options";
 import { onTunnelJoin, onTunnelRemove } from "./entities/structures/tunnel";
-import { CollisionVars, collide, isColliding } from "./collision";
+import { CollisionVars, collide, entitiesAreColliding } from "./collision";
 import { tickTunnelComponent } from "./components/TunnelComponent";
-import { tickTribes } from "./tribe-ai-building";
+import { tickTribes } from "./ai-tribe-building";
 
 const START_TIME = 6;
 
@@ -441,7 +441,7 @@ abstract class Board {
             for (let k = j + 1; k <= chunk.entities.length - 1; k++) {
                const entity2 = chunk.entities[k];
 
-               const collisionNum = isColliding(entity1, entity2);
+               const collisionNum = entitiesAreColliding(entity1, entity2);
                if (collisionNum !== CollisionVars.NO_COLLISION) {
                   a.push({
                      entity1: entity1,
@@ -700,11 +700,11 @@ abstract class Board {
       // @Speed: This check is slow
       if (hitbox.hasOwnProperty("radius")) {
          // Circular hitbox
-         return circlesDoIntersect(testPosition.x, testPosition.y, range, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as CircularHitbox).radius);
+         return circlesDoIntersect(testPosition.x, testPosition.y, range, hitbox.x, hitbox.y, (hitbox as CircularHitbox).radius);
       } else {
          // Rectangular hitbox
          // @Speed
-         return circleAndRectangleDoIntersect(testPosition.x, testPosition.y, range, hitbox.object.position.x + hitbox.rotatedOffsetX, hitbox.object.position.y + hitbox.rotatedOffsetY, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).rotation);
+         return circleAndRectangleDoIntersect(testPosition.x, testPosition.y, range, hitbox.x, hitbox.y, (hitbox as RectangularHitbox).width, (hitbox as RectangularHitbox).height, (hitbox as RectangularHitbox).relativeRotation);
       }
    }
 

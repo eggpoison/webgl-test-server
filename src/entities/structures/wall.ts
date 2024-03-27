@@ -14,9 +14,9 @@ const SIZE = 64 - 0.05;
 
 export const WALL_HEALTHS = [25, 75];
 
-export function createWallHitboxes(entity: Entity): ReadonlyArray<RectangularHitbox | CircularHitbox> {
+export function createWallHitboxes(parentX: number, parentY: number, localID: number, parentRotation: number): ReadonlyArray<RectangularHitbox | CircularHitbox> {
    const hitboxes = new Array<RectangularHitbox | CircularHitbox>();
-   hitboxes.push(new RectangularHitbox(entity, 1, 0, 0, HitboxCollisionTypeConst.hard, SIZE, SIZE));
+   hitboxes.push(new RectangularHitbox(parentX, parentY, 1, 0, 0, HitboxCollisionTypeConst.hard, localID, parentRotation, SIZE, SIZE, 0));
    return hitboxes;
 }
 
@@ -24,7 +24,7 @@ export function createWall(position: Point, rotation: number, tribe: Tribe): Ent
    const wall = new Entity(position, IEntityType.wall, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    wall.rotation = rotation;
 
-   const hitboxes = createWallHitboxes(wall);
+   const hitboxes = createWallHitboxes(wall.position.x, wall.position.y, wall.getNextHitboxLocalID(), wall.rotation);
    for (let i = 0; i < hitboxes.length; i++) {
       wall.addHitbox(hitboxes[i]);
    }

@@ -13,7 +13,7 @@ export function createBoulder(position: Point): Entity {
    const boulder = new Entity(position, IEntityType.boulder, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    boulder.rotation = 2 * Math.PI * Math.random();
 
-   const hitbox = new CircularHitbox(boulder, 1.25, 0, 0, HitboxCollisionTypeConst.soft, RADIUS);
+   const hitbox = new CircularHitbox(boulder.position.x, boulder.position.y, 1.25, 0, 0, HitboxCollisionTypeConst.soft, RADIUS, boulder.getNextHitboxLocalID(), boulder.rotation);
    boulder.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(boulder, new HealthComponent(40));

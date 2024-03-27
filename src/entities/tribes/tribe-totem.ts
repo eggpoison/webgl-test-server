@@ -28,7 +28,7 @@ export function createTribeTotem(position: Point, rotation: number, tribe: Tribe
    const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    totem.rotation = rotation;
    
-   const hitbox = new CircularHitbox(totem, 2.2, 0, 0, HitboxCollisionTypeConst.hard, TRIBE_TOTEM_SIZE / 2);
+   const hitbox = new CircularHitbox(totem.position.x, totem.position.y, 2.2, 0, 0, HitboxCollisionTypeConst.hard, TRIBE_TOTEM_SIZE / 2, totem.getNextHitboxLocalID(), totem.rotation);
    totem.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(totem, new HealthComponent(50));

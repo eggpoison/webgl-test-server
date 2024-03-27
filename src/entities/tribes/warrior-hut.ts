@@ -14,7 +14,7 @@ export function createWarriorHut(position: Point, rotation: number, tribe: Tribe
    const hut = new Entity(position, IEntityType.warriorHut, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    hut.rotation = rotation;
 
-   const hitbox = new RectangularHitbox(hut, 2, 0, 0, HitboxCollisionTypeConst.soft, WARRIOR_HUT_SIZE, WARRIOR_HUT_SIZE);
+   const hitbox = new RectangularHitbox(hut.position.x, hut.position.y, 2, 0, 0, HitboxCollisionTypeConst.soft, hut.getNextHitboxLocalID(), hut.rotation, WARRIOR_HUT_SIZE, WARRIOR_HUT_SIZE, 0);
    hut.addHitbox(hitbox);
 
    HealthComponentArray.addComponent(hut, new HealthComponent(75));

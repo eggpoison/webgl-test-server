@@ -10,6 +10,7 @@ import { EntityRelationship, TribeComponent, getEntityRelationship } from "../..
 import { getAngleDiff } from "../../ai-shared";
 import { TurretComponent } from "../../components/TurretComponent";
 import { GenericArrowInfo, createWoodenArrow } from "../projectiles/wooden-arrow";
+import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 
 // @Cleanup: A lot of copy and paste from ballista.ts
 
@@ -18,15 +19,20 @@ export const SLING_TURRET_SHOT_COOLDOWN_TICKS = 1.5 * SettingsConst.TPS;
 export const SLING_TURRET_RELOAD_TIME_TICKS = Math.floor(0.4 * SettingsConst.TPS);
 const VISION_RANGE = 400;
 
-export function addSlingTurretHitboxes(entity: Entity): void {
-   entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, HitboxCollisionTypeConst.hard, 40 - 0.05));
+export function createSlingTurretHitboxes(entity: Entity): ReadonlyArray<CircularHitbox | RectangularHitbox> {
+   const hitboxes = new Array<CircularHitbox | RectangularHitbox>();
+   hitboxes.push(new CircularHitbox(entity.position.x, entity.position.y, 1.5, 0, 0, HitboxCollisionTypeConst.hard, 40 - 0.05, entity.getNextHitboxLocalID(), entity.rotation));
+   return hitboxes;
 }
 
 export function createSlingTurret(position: Point, rotation: number, tribe: Tribe): Entity {
    const slingTurret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slingTurret.rotation = rotation;
 
-   addSlingTurretHitboxes(slingTurret);
+   const hitboxes = createSlingTurretHitboxes(slingTurret);
+   for (let i = 0; i < hitboxes.length; i++) {
+      slingTurret.addHitbox(hitboxes[i]);
+   }
 
    HealthComponentArray.addComponent(slingTurret, new HealthComponent(25));
    StatusEffectComponentArray.addComponent(slingTurret, new StatusEffectComponent(StatusEffectConst.bleeding | StatusEffectConst.poisoned));
