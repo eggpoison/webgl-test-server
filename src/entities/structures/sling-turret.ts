@@ -22,7 +22,7 @@ export function addSlingTurretHitboxes(entity: Entity): void {
    entity.addHitbox(new CircularHitbox(entity, 1.5, 0, 0, HitboxCollisionTypeConst.hard, 40 - 0.05));
 }
 
-export function createSlingTurret(position: Point, tribe: Tribe, rotation: number): Entity {
+export function createSlingTurret(position: Point, rotation: number, tribe: Tribe): Entity {
    const slingTurret = new Entity(position, IEntityType.slingTurret, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    slingTurret.rotation = rotation;
 

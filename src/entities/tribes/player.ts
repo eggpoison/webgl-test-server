@@ -3,7 +3,7 @@ import Entity from "../../Entity";
 import { attemptAttack, calculateAttackTarget, calculateBlueprintWorkTarget, calculateRadialAttackTargets, calculateRepairTarget, onTribeMemberHurt, repairBuilding, tickTribeMember, tribeMemberCanPickUpItem, useItem } from "./tribe-member";
 import Tribe from "../../Tribe";
 import { BuildingMaterialComponentArray, HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, ItemComponentArray, PlayerComponentArray, SpikesComponentArray, TribeComponentArray, TribeMemberComponentArray, TunnelComponentArray } from "../../components/ComponentArray";
-import { InventoryComponent, addItem, addItemToSlot, consumeItemFromSlot, consumeItemType, consumeItemTypeFromInventory, countItemType, createNewInventory, dropInventory, getInventory, getItem, pickupItemEntity } from "../../components/InventoryComponent";
+import { InventoryComponent, addItem, addItemToSlot, consumeItemFromSlot, consumeItemType, consumeItemTypeFromInventory, countItemType, craftRecipe, createNewInventory, dropInventory, getInventory, getItem, inventoryComponentCanAffordRecipe, pickupItemEntity } from "../../components/InventoryComponent";
 import Board from "../../Board";
 import { createItemEntity, itemEntityCanBePickedUp } from "../item-entity";
 import { HealthComponent } from "../../components/HealthComponent";
@@ -67,11 +67,12 @@ export function createPlayer(position: Point, tribe: Tribe): Entity {
 
    // @Temporary
    addItem(inventoryComponent, createItem(ItemType.tribe_totem, 1));
-   addItem(inventoryComponent, createItem(ItemType.spear, 1));
-   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
-   addItem(inventoryComponent, createItem(ItemType.stone_battleaxe, 1));
-   addItem(inventoryComponent, createItem(ItemType.rock, 6));
-   addItem(inventoryComponent, createItem(ItemType.warrior_hut, 1));
+   // addItem(inventoryComponent, createItem(ItemType.spear, 1));
+   // addItem(inventoryComponent, createItem(ItemType.wooden_wall, 10));
+   // addItem(inventoryComponent, createItem(ItemType.stone_battleaxe, 1));
+   // addItem(inventoryComponent, createItem(ItemType.rock, 6));
+   addItem(inventoryComponent, createItem(ItemType.worker_hut, 1));
+   addItem(inventoryComponent, createItem(ItemType.wooden_wall, 20));
 
    tribe.registerNewTribeMember(player);
 
@@ -152,33 +153,9 @@ export function processPlayerCraftingPacket(player: Entity, recipeIndex: number)
    
    const inventoryComponent = InventoryComponentArray.getComponent(player.id);
    const craftingRecipe = CRAFTING_RECIPES[recipeIndex];
-   
-   // Don't craft past items' stack size
-   const craftingOutputInventory = getInventory(inventoryComponent, "craftingOutputSlot");
-   if (craftingOutputInventory.itemSlots.hasOwnProperty(1)) {
-      const craftingOutputItem = craftingOutputInventory.itemSlots[1];
-      if ((craftingOutputItem.type !== craftingRecipe.product || !itemIsStackable(craftingOutputItem.type) || craftingOutputItem.count + craftingRecipe.yield > getItemStackSize(craftingOutputItem))) {
-         return;
-      }
-   }
-   
-   const hotbarInventory = getInventory(inventoryComponent, "hotbar");
-   const backpackInventory = getInventory(inventoryComponent, "backpack");
 
-   // @Speed: Garbage collection
-   if (hasEnoughItems([hotbarInventory.itemSlots, backpackInventory.itemSlots], craftingRecipe.ingredients)) {
-      // Consume ingredients
-      for (const [ingredientType, ingredientCount] of Object.entries(craftingRecipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
-         // Prioritise consuming ingredients from the backpack inventory first
-         const amountConsumedFromBackpackInventory = consumeItemTypeFromInventory(inventoryComponent, "backpack", ingredientType, ingredientCount);
-
-         // Consume the rest from the hotbar
-         const remainingAmountToConsume = ingredientCount - amountConsumedFromBackpackInventory;
-         consumeItemTypeFromInventory(inventoryComponent, "hotbar", ingredientType, remainingAmountToConsume);
-      }
-
-      // Add product to held item
-      addItemToSlot(inventoryComponent, "craftingOutputSlot", 1, craftingRecipe.product, craftingRecipe.yield);
+   if (inventoryComponentCanAffordRecipe(inventoryComponent, craftingRecipe, "craftingOutputSlot")) {
+      craftRecipe(inventoryComponent, craftingRecipe, "craftingOutputSlot");
    }
 }
 
@@ -540,7 +517,7 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
          }
          
          const tribeComponent = TribeComponentArray.getComponent(player.id);
-         createBlueprintEntity(position, blueprintType, 0, tribeComponent.tribe, rotation);
+         createBlueprintEntity(position, rotation, blueprintType, 0, tribeComponent.tribe);
          
          building.remove();
          break;
@@ -561,7 +538,7 @@ export function placeBlueprint(player: Entity, buildingID: number, blueprintType
 
          // Upgrade
          const tribeComponent = TribeComponentArray.getComponent(player.id);
-         createBlueprintEntity(building.position.copy(), blueprintType, building.id, tribeComponent.tribe, building.rotation);
+         createBlueprintEntity(building.position.copy(), building.rotation, blueprintType, building.id, tribeComponent.tribe);
          
          consumeItemType(inventoryComponent, upgradeMaterialItemType, 5);
          break;

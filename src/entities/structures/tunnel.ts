@@ -28,7 +28,7 @@ export function addTunnelHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 1, 32.5, 0, HitboxCollisionTypeConst.hard, THIN_HITBOX_WIDTH, HITBOX_HEIGHT));
 }
 
-export function createTunnel(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {
+export function createTunnel(position: Point, rotation: number, tribe: Tribe, material: BuildingMaterial): Entity {
    const tunnel = new Entity(position, IEntityType.tunnel, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    tunnel.rotation = rotation;
 
@@ -43,7 +43,15 @@ export function createTunnel(position: Point, tribe: Tribe, rotation: number, ma
    return tunnel;
 }
 
+export function onTunnelJoin(tunnel: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(tunnel.id);
+   tribeComponent.tribe.addBuilding(tunnel);
+}
+
 export function onTunnelRemove(tunnel: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(tunnel.id);
+   tribeComponent.tribe.removeBuilding(tunnel);
+
    HealthComponentArray.removeComponent(tunnel);
    StatusEffectComponentArray.removeComponent(tunnel);
    TribeComponentArray.removeComponent(tunnel);

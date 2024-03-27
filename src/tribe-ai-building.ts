@@ -1,4 +1,4 @@
-import { BuildingPlanData, HitboxVertexPositions, IEntityType, ItemType, Point, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
+import { BuildingPlanData, BuildingVulnerabilityData, HitboxVertexPositions, IEntityType, ItemType, Point, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, distBetweenPointAndRectangle, distance, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
 import Entity from "./Entity";
 import Tribe, { BuildingPlan } from "./Tribe";
 import CircularHitbox from "./hitboxes/CircularHitbox";
@@ -12,16 +12,17 @@ const enum Vars {
    /** Base amount the vulnerability decreases when moving in a node */
    SAFE_DISTANCE_FALLOFF = 5,
    /** Falloff from distance from outside the padding */
-   DISTANCE_FALLOFF = 3,
+   DISTANCE_FALLOFF = 2,
    OCCUPIED_NODE_WEIGHT = 10,
    BORDER_PADDING = 5,
    /** Maximum vulnerability that buildings can be placed in */
    MAX_SAFE_VULNERABILITY = 50,
    /** Distance that the AI will try to snap new walls to existing ones */
-   WALL_SNAP_SEARCH_DISTANCE = 200
+   WALL_SNAP_SEARCH_DISTANCE = 200,
+   PLAN_COMPLETE_RANGE = 10
 }
 
-type VulnerabilityNodeIndex = number;
+export type VulnerabilityNodeIndex = number;
 
 // @Cleanup @Memory: Can remove x and y.
 // @Cleanup: Might be able to just make into number
@@ -49,7 +50,7 @@ const addCircularHitboxNodePositions = (hitbox: CircularHitbox, positions: Set<V
    const minNodeY = Math.max(Math.floor(minY / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
    const maxNodeY = Math.min(Math.ceil(maxY / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
 
-   const hitboxNodeRadius = hitbox.radius / SettingsConst.VULNERABILITY_NODE_SEPARATION;
+   const hitboxNodeRadius = hitbox.radius / SettingsConst.VULNERABILITY_NODE_SEPARATION + 0.5;
    const hitboxNodeRadiusSquared = hitboxNodeRadius * hitboxNodeRadius;
 
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
@@ -83,7 +84,7 @@ const addRectangularHitboxNodePositions = (hitbox: RectangularHitbox, positions:
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const x = nodeX * SettingsConst.VULNERABILITY_NODE_SEPARATION;
          const y = nodeY * SettingsConst.VULNERABILITY_NODE_SEPARATION;
-         if (pointIsInRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation)) {
+         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation) <= SettingsConst.VULNERABILITY_NODE_SEPARATION * 0.5) {
             const nodeIndex = getNodeIndex(nodeX, nodeY);
             positions.add(nodeIndex);
          }
@@ -515,6 +516,7 @@ const updateTribeVulnerabilityNodes = (tribe: Tribe, occupiedNodeIndexes: Set<Vu
    
    tribe.vulnerabilityNodes = nodes;
    tribe.vulnerabilityNodeRecord = nodeRecord;
+   tribe.occupiedVulnerabilityNodes = occupiedNodeIndexes;
 }
 
 export function tickTribes(): void {
@@ -536,120 +538,6 @@ export function tickTribes(): void {
          tribe.updateAvailableResources();
       }
    }
-}
-
-export function getVisibleVulnerabilityNodesData(chunkBounds: VisibleChunkBounds): ReadonlyArray<VulnerabilityNodeData> {
-   // Calculate visible tribes
-   const visibleTribes = new Array<Tribe>();
-   for (let chunkX = chunkBounds[0]; chunkX <= chunkBounds[1]; chunkX++) {
-      for (let chunkY = chunkBounds[2]; chunkY <= chunkBounds[3]; chunkY++) {
-         const chunk = Board.getChunk(chunkX, chunkY);
-         for (let i = 0; i < chunk.entities.length; i++) {
-            const entity = chunk.entities[i];
-            if (TribeComponentArray.hasComponent(entity)) {
-               const tribeComponent = TribeComponentArray.getComponent(entity.id);
-               if (visibleTribes.indexOf(tribeComponent.tribe) === -1) {
-                  visibleTribes.push(tribeComponent.tribe);
-               }
-            }
-         }
-      }
-   }
-
-   const vulnerabilityNodesData = new Array<VulnerabilityNodeData>();
-   for (let i = 0; i < visibleTribes.length; i++) {
-      const tribe = visibleTribes[i];
-
-      for (let j = 0; j < tribe.vulnerabilityNodes.length; j++) {
-         const node = tribe.vulnerabilityNodes[j];
-         
-         const nodeIndex = getNodeIndex(node.x, node.y);
-         vulnerabilityNodesData.push({
-            index: nodeIndex,
-            vulnerability: node.vulnerability
-         });
-      }
-   }
-
-   return vulnerabilityNodesData;
-}
-
-// @Cleanup: Copy and paste
-const getCircularHitboxNodePositions = (hitbox: CircularHitbox, indexes: Array<VulnerabilityNodeIndex>): void => {
-   const minX = hitbox.calculateHitboxBoundsMinX();
-   const maxX = hitbox.calculateHitboxBoundsMaxX();
-   const minY = hitbox.calculateHitboxBoundsMinY();
-   const maxY = hitbox.calculateHitboxBoundsMaxY();
-
-   const centerX = (hitbox.object.position.x + hitbox.rotatedOffsetX) / SettingsConst.VULNERABILITY_NODE_SEPARATION;
-   const centerY = (hitbox.object.position.y + hitbox.rotatedOffsetY) / SettingsConst.VULNERABILITY_NODE_SEPARATION;
-   
-   const minNodeX = Math.max(Math.floor(minX / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
-   const maxNodeX = Math.min(Math.ceil(maxX / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
-   const minNodeY = Math.max(Math.floor(minY / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
-   const maxNodeY = Math.min(Math.ceil(maxY / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
-
-   const hitboxNodeRadius = hitbox.radius / SettingsConst.VULNERABILITY_NODE_SEPARATION;
-   const hitboxNodeRadiusSquared = hitboxNodeRadius * hitboxNodeRadius;
-
-   for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
-      for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
-         const xDiff = nodeX - centerX;
-         const yDiff = nodeY - centerY;
-         if (xDiff * xDiff + yDiff * yDiff <= hitboxNodeRadiusSquared) {
-            const nodeIndex = getNodeIndex(nodeX, nodeY);
-            if (indexes.indexOf(nodeIndex) === -1) {
-               indexes.push(nodeIndex);
-            }
-         }
-      }
-   }
-}
-
-// @Cleanup: Copy and paste
-const getRectangularHitboxNodePositions = (hitbox: RectangularHitbox, indexes: Array<VulnerabilityNodeIndex>): void => {
-   const minX = hitbox.calculateHitboxBoundsMinX();
-   const maxX = hitbox.calculateHitboxBoundsMaxX();
-   const minY = hitbox.calculateHitboxBoundsMinY();
-   const maxY = hitbox.calculateHitboxBoundsMaxY();
-
-   const rectPosX = (hitbox.object.position.x + hitbox.rotatedOffsetX);
-   const rectPosY = (hitbox.object.position.y + hitbox.rotatedOffsetY);
-   
-   // @Speed: Math.round might also work
-   const minNodeX = Math.max(Math.floor(minX / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
-   const maxNodeX = Math.min(Math.ceil(maxX / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
-   const minNodeY = Math.max(Math.floor(minY / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
-   const maxNodeY = Math.min(Math.ceil(maxY / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
-
-   for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
-      for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
-         const x = nodeX * SettingsConst.VULNERABILITY_NODE_SEPARATION;
-         const y = nodeY * SettingsConst.VULNERABILITY_NODE_SEPARATION;
-         if (pointIsInRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation)) {
-            const nodeIndex = getNodeIndex(nodeX, nodeY);
-            if (indexes.indexOf(nodeIndex) === -1) {
-               indexes.push(nodeIndex);
-            }
-         }
-      }
-   }
-}
-
-// @Cleanup: Copy and paste
-export function getEntityNodePositions(entity: Entity): ReadonlyArray<VulnerabilityNodeIndex> {
-   const indexes = new Array<VulnerabilityNodeIndex>();
-   for (let i = 0; i < entity.hitboxes.length; i++) {
-      const hitbox = entity.hitboxes[i];
-
-      // Add to occupied pathfinding nodes
-      if (hitbox.hasOwnProperty("radius")) {
-         getCircularHitboxNodePositions(hitbox as CircularHitbox, indexes);
-      } else {
-         getRectangularHitboxNodePositions(hitbox as RectangularHitbox, indexes);
-      }
-   }
-   return indexes;
 }
 
 // @Cleanup: Copy and paste
@@ -681,12 +569,11 @@ const addTileNodePositions = (placeCandidate: WallPlaceCandidate, occupiedNodeIn
 }
 
 const getBuildingMinVulnerability = (tribe: Tribe, building: Entity): number => {
-   const occupiedIndexes = getEntityNodePositions(building);
+   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
+   addEntityNodePositions(building, occupiedIndexes);
 
    let maxVulnerability = 0;
-   for (let i = 0; i < occupiedIndexes.length; i++) {
-      const nodeIndex = occupiedIndexes[i];
-
+   for (const nodeIndex of occupiedIndexes) {
       const vulnerability = tribe.vulnerabilityNodeRecord[nodeIndex].vulnerability;
       if (vulnerability > maxVulnerability) {
          maxVulnerability = vulnerability;
@@ -697,17 +584,25 @@ const getBuildingMinVulnerability = (tribe: Tribe, building: Entity): number => 
 }
 
 const getBuildingAverageVulnerability = (tribe: Tribe, building: Entity): number => {
-   const occupiedIndexes = getEntityNodePositions(building);
+   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
+   addEntityNodePositions(building, occupiedIndexes);
 
    let averageVulnerability = 0;
-   for (let i = 0; i < occupiedIndexes.length; i++) {
-      const nodeIndex = occupiedIndexes[i];
-
+   for (const nodeIndex of occupiedIndexes) {
       const vulnerability = tribe.vulnerabilityNodeRecord[nodeIndex].vulnerability;
       averageVulnerability += vulnerability;
    }
 
-   return averageVulnerability / occupiedIndexes.length;
+   if (averageVulnerability < 0) {
+      averageVulnerability = 0;
+   }
+
+   // @Speed: Don't need to do the division as we are just comparing the averages and the occupied size will always be the same
+   return averageVulnerability / occupiedIndexes.size;
+}
+
+const buildingIsInfrastructure = (entityType: IEntityType): boolean => {
+   return entityType !== IEntityType.wall && entityType !== IEntityType.embrasure && entityType !== IEntityType.door && entityType !== IEntityType.tunnel;
 }
 
 const getVulnerableBuilding = (tribe: Tribe): Entity | null => {
@@ -715,7 +610,7 @@ const getVulnerableBuilding = (tribe: Tribe): Entity | null => {
    let vulnerableBuilding: Entity;
    for (let i = 0; i < tribe.buildings.length; i++) {
       const building = tribe.buildings[i];
-      if (building.type === IEntityType.wall || building.type === IEntityType.embrasure || building.type === IEntityType.door || building.type === IEntityType.tunnel) {
+      if (!buildingIsInfrastructure(building.type)) {
          continue;
       }
 
@@ -804,12 +699,11 @@ interface WallPlaceCandidate {
 }
 
 const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<WallPlaceCandidate> => {
-   const nodeIndexes = getEntityNodePositions(building);
+   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
+   addEntityNodePositions(building, occupiedIndexes);
 
    const occupyingTileIndexes = new Array<number>();
-   for (let i = 0; i < nodeIndexes.length; i++) {
-      const nodeIndex = nodeIndexes[i];
-
+   for (const nodeIndex of occupiedIndexes) {
       const nodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
       const nodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
 
@@ -937,6 +831,9 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
 
    const realNodes = tribe.vulnerabilityNodes;
    const realNodeRecord = tribe.vulnerabilityNodeRecord;
+   const realOccupiedNodes = tribe.occupiedVulnerabilityNodes;
+   
+   // @Incomplete: run average check only using the tied candidates
    
    // Simulate placing each position to see which one reduces vulnerability the most
    let bestMinVulnerability = Vars.MAX_VULNERABILITY + 1;
@@ -957,8 +854,8 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
 
       // Make the AI want to snap to existing walls more
       if (placeCandidate.isSnappedToWall) {
-         minVulnerability -= 3;
-         averageVulnerability -= 1;
+         minVulnerability -= 5;
+         averageVulnerability -= 5;
       }
       
       if (minVulnerability < bestMinVulnerability) {
@@ -976,6 +873,7 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
       // Reset back to real nodes
       tribe.vulnerabilityNodes = realNodes;
       tribe.vulnerabilityNodeRecord = realNodeRecord;
+      tribe.occupiedVulnerabilityNodes = realOccupiedNodes;
    }
 
    if (bestMinVulnerability > Vars.MAX_VULNERABILITY) {
@@ -986,7 +884,8 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
    return {
       position: candidate.position,
       rotation: candidate.rotation,
-      buildingRecipe: getItemRecipe(ItemType.wooden_wall)!
+      buildingRecipe: getItemRecipe(ItemType.wooden_wall)!,
+      assignedTribesmanID: 0
    };
 }
 
@@ -1004,19 +903,16 @@ export function updateTribeNextBuilding(tribe: Tribe): void {
    if (building !== null) {
       // Find the place for a wall that would minimise the building's vulnerability
       const wallPlan = findIdealWallPlacePosition(tribe, building);
-      console.log("wall plan found:",wallPlan!==null)
 
       tribe.buildingPlan = wallPlan;
       return;
    }
-   console.log("no vulnerables")
 
    tribe.buildingPlan = null;
 }
 
-export function getVisibleBuildingPlans(chunkBounds: VisibleChunkBounds): ReadonlyArray<BuildingPlanData> {
+export function getVisibleTribes(chunkBounds: VisibleChunkBounds): ReadonlyArray<Tribe> {
    // Calculate visible tribes
-   // @Speed: We calculate this same thing for both visible vulnerability nodes and visible building plans
    const visibleTribes = new Array<Tribe>();
    for (let chunkX = chunkBounds[0]; chunkX <= chunkBounds[1]; chunkX++) {
       for (let chunkY = chunkBounds[2]; chunkY <= chunkBounds[3]; chunkY++) {
@@ -1032,20 +928,77 @@ export function getVisibleBuildingPlans(chunkBounds: VisibleChunkBounds): Readon
          }
       }
    }
+   return visibleTribes;
+}
 
+export function getVisibleVulnerabilityNodesData(visibleTribes: ReadonlyArray<Tribe>, chunkBounds: VisibleChunkBounds): ReadonlyArray<VulnerabilityNodeData> {
+   const vulnerabilityNodesData = new Array<VulnerabilityNodeData>();
+   for (let i = 0; i < visibleTribes.length; i++) {
+      const tribe = visibleTribes[i];
+
+      for (let j = 0; j < tribe.vulnerabilityNodes.length; j++) {
+         const node = tribe.vulnerabilityNodes[j];
+
+         // @Incomplete: filter out nodes which aren't in the chunk bounds
+         
+         const nodeIndex = getNodeIndex(node.x, node.y);
+         vulnerabilityNodesData.push({
+            index: nodeIndex,
+            vulnerability: node.vulnerability,
+            isOccupied: tribe.occupiedVulnerabilityNodes.has(nodeIndex)
+         });
+      }
+   }
+
+   return vulnerabilityNodesData;
+}
+
+export function getVisibleBuildingPlans(visibleTribes: ReadonlyArray<Tribe>, chunkBounds: VisibleChunkBounds): ReadonlyArray<BuildingPlanData> {
    const buildingPlansData = new Array<BuildingPlanData>();
    for (let i = 0; i < visibleTribes.length; i++) {
       const tribe = visibleTribes[i];
 
       if (tribe.buildingPlan !== null) {
-         buildingPlansData.push({
-            x: tribe.buildingPlan.position.x,
-            y: tribe.buildingPlan.position.y,
-            rotation: tribe.buildingPlan.rotation,
-            entityType: IEntityType.wall
-         });
+         // @Cleanup: hardcoded
+         const minChunkX = Math.max(Math.floor((tribe.buildingPlan.position.x - 800) / SettingsConst.CHUNK_UNITS), 0);
+         const maxChunkX = Math.min(Math.floor((tribe.buildingPlan.position.x + 800) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+         const minChunkY = Math.max(Math.floor((tribe.buildingPlan.position.y - 800) / SettingsConst.CHUNK_UNITS), 0);
+         const maxChunkY = Math.min(Math.floor((tribe.buildingPlan.position.y + 800) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+
+         if (minChunkX <= chunkBounds[1] && maxChunkX >= chunkBounds[0] && minChunkY <= chunkBounds[3] && maxChunkY >= chunkBounds[2]) {
+            buildingPlansData.push({
+               x: tribe.buildingPlan.position.x,
+               y: tribe.buildingPlan.position.y,
+               rotation: tribe.buildingPlan.rotation,
+               entityType: IEntityType.wall
+            });
+         }
       }
    }
 
    return buildingPlansData;
+}
+
+export function getVisibleBuildingVulnerabilities(visibleTribes: ReadonlyArray<Tribe>, chunkBounds: VisibleChunkBounds): ReadonlyArray<BuildingVulnerabilityData> {
+   const buildingVulnerabiliesData = new Array<BuildingVulnerabilityData>();
+   for (let i = 0; i < visibleTribes.length; i++) {
+      const tribe = visibleTribes[i];
+
+      for (let i = 0; i < tribe.buildings.length; i++) {
+         const building = tribe.buildings[i];
+         if (!buildingIsInfrastructure(building.type)) {
+            continue;
+         }
+         // @Incomplete: filter out nodes which aren't in the chunk bounds
+
+         buildingVulnerabiliesData.push({
+            x: building.position.x,
+            y: building.position.y,
+            minVulnerability: getBuildingMinVulnerability(tribe, building),
+            averageVulnerability: getBuildingAverageVulnerability(tribe, building)
+         });
+      }
+   }
+
+   return buildingVulnerabiliesData;
 }

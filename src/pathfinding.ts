@@ -1,4 +1,4 @@
-import { IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distance, pointIsInRectangle } from "webgl-test-shared"
+import { HitboxCollisionTypeConst, IEntityType, PathfindingNodeIndex, PathfindingSettingsConst, SettingsConst, VisibleChunkBounds, angle, calculateDistanceSquared, distBetweenPointAndRectangle, distance, pointIsInRectangle } from "webgl-test-shared"
 import Entity from "./Entity";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
@@ -94,12 +94,14 @@ const getCircularHitboxOccupiedNodes = (hitbox: CircularHitbox): ReadonlyArray<P
    const centerX = (hitbox.object.position.x + hitbox.rotatedOffsetX) / PathfindingSettingsConst.NODE_SEPARATION;
    const centerY = (hitbox.object.position.y + hitbox.rotatedOffsetY) / PathfindingSettingsConst.NODE_SEPARATION;
    
-   const minNodeX = Math.ceil(minX / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeX = Math.floor(maxX / PathfindingSettingsConst.NODE_SEPARATION);
-   const minNodeY = Math.ceil(minY / PathfindingSettingsConst.NODE_SEPARATION);
-   const maxNodeY = Math.floor(maxY / PathfindingSettingsConst.NODE_SEPARATION);
+   const minNodeX = Math.floor(minX / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeX = Math.ceil(maxX / PathfindingSettingsConst.NODE_SEPARATION);
+   const minNodeY = Math.floor(minY / PathfindingSettingsConst.NODE_SEPARATION);
+   const maxNodeY = Math.ceil(maxY / PathfindingSettingsConst.NODE_SEPARATION);
 
-   const hitboxNodeRadius = hitbox.radius / PathfindingSettingsConst.NODE_SEPARATION;
+   // Make soft hitboxes take up less node radius so that it easier to pathfind around them
+   const radiusOffset = hitbox.collisionType === HitboxCollisionTypeConst.hard ? 0.5 : 0;
+   const hitboxNodeRadius = hitbox.radius / PathfindingSettingsConst.NODE_SEPARATION + radiusOffset;
    const hitboxNodeRadiusSquared = hitboxNodeRadius * hitboxNodeRadius;
 
    const occupiedNodes = new Array<PathfindingNodeIndex>();
@@ -131,12 +133,15 @@ const getRectangularHitboxOccupiedNodes = (hitbox: RectangularHitbox): ReadonlyA
    const minNodeY = Math.floor(minY / PathfindingSettingsConst.NODE_SEPARATION);
    const maxNodeY = Math.ceil(maxY / PathfindingSettingsConst.NODE_SEPARATION);
 
+   // Make soft hitboxes take up less node radius so that it easier to pathfind around them
+   const nodeClearance = hitbox.collisionType === HitboxCollisionTypeConst.hard ? PathfindingSettingsConst.NODE_SEPARATION * 0.5 : 0;
+
    const occupiedNodes = new Array<PathfindingNodeIndex>();
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const x = nodeX * PathfindingSettingsConst.NODE_SEPARATION;
          const y = nodeY * PathfindingSettingsConst.NODE_SEPARATION;
-         if (pointIsInRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation)) {
+         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation + hitbox.object.rotation) <= nodeClearance) {
             const nodeIndex = getNode(nodeX, nodeY);
             occupiedNodes.push(nodeIndex);
          }

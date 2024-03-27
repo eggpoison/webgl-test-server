@@ -17,8 +17,9 @@ export function addWallHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 1, 0, 0, HitboxCollisionTypeConst.hard, SIZE, SIZE));
 }
 
-export function createWall(position: Point, tribe: Tribe): Entity {
+export function createWall(position: Point, rotation: number, tribe: Tribe): Entity {
    const wall = new Entity(position, IEntityType.wall, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   wall.rotation = rotation;
 
    addWallHitboxes(wall);
 

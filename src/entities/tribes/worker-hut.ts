@@ -10,8 +10,9 @@ import { TribeComponent } from "../../components/TribeComponent";
 
 export const WORKER_HUT_SIZE = 88;
 
-export function createWorkerHut(position: Point, tribe: Tribe): Entity {
+export function createWorkerHut(position: Point, rotation: number, tribe: Tribe): Entity {
    const hut = new Entity(position, IEntityType.workerHut, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   hut.rotation = rotation;
 
    const hitbox = new RectangularHitbox(hut, 1.8, 0, 0, HitboxCollisionTypeConst.soft, WORKER_HUT_SIZE, WORKER_HUT_SIZE);
    hut.addHitbox(hitbox);
@@ -22,6 +23,11 @@ export function createWorkerHut(position: Point, tribe: Tribe): Entity {
    TribeComponentArray.addComponent(hut, new TribeComponent(tribe));
 
    return hut;
+}
+
+export function onWorkerHutJoin(hut: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(hut.id);
+   tribeComponent.tribe.registerNewWorkerHut(hut);
 }
 
 export function onWorkerHutRemove(hut: Entity): void {

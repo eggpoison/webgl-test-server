@@ -24,8 +24,9 @@ for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
    }
 }
 
-export function createTribeTotem(position: Point, tribe: Tribe): Entity {
+export function createTribeTotem(position: Point, rotation: number, tribe: Tribe): Entity {
    const totem = new Entity(position, IEntityType.tribeTotem, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   totem.rotation = rotation;
    
    const hitbox = new CircularHitbox(totem, 2.2, 0, 0, HitboxCollisionTypeConst.hard, TRIBE_TOTEM_SIZE / 2);
    totem.addHitbox(hitbox);
@@ -39,9 +40,12 @@ export function createTribeTotem(position: Point, tribe: Tribe): Entity {
       availableBannerPositions: Array.from(new Set(TRIBE_TOTEM_POSITIONS))
    });
 
-   tribe.setTotem(totem);
-   
    return totem;
+}
+
+export function onTribeTotemJoin(totem: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(totem.id);
+   tribeComponent.tribe.setTotem(totem);
 }
 
 export function onTribeTotemDeath(totem: Entity): void {

@@ -15,7 +15,7 @@ import { addFloorSpikesHitboxes, addWallSpikesHitboxes } from "./structures/spik
 
 // @Incomplete: Remove if the associated entity is removed
 
-export function createBlueprintEntity(position: Point, blueprintType: BlueprintType, associatedEntityID: number, tribe: Tribe, rotation: number): Entity {
+export function createBlueprintEntity(position: Point, rotation: number, blueprintType: BlueprintType, associatedEntityID: number, tribe: Tribe): Entity {
    const blueprintEntity = new Entity(position, IEntityType.blueprintEntity, COLLISION_BITS.none, 0);
    blueprintEntity.rotation = rotation;
 

@@ -23,7 +23,7 @@ export function addBallistaHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 2, 0, 0, HitboxCollisionTypeConst.hard, HITBOX_SIZE, HITBOX_SIZE));
 }
 
-export function createBallista(position: Point, tribe: Tribe, rotation: number): Entity {
+export function createBallista(position: Point, rotation: number, tribe: Tribe): Entity {
    const ballista = new Entity(position, IEntityType.ballista, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    ballista.rotation = rotation;
 

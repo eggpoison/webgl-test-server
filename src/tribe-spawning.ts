@@ -116,9 +116,7 @@ const findValidBuildingPosition = (tribe: Tribe, otherBuildingPositions: Readonl
 
 const spawnTribe = (position: Point, tribeType: TribeType): void => {
    const tribe = new Tribe(tribeType, true);
-   const totem = createTribeTotem(position, tribe);
-
-   totem.rotation = 2 * Math.PI * Math.random();
+   const totem = createTribeTotem(position, 2 * Math.PI * Math.random(), tribe);
 
    const buildingPositions: Array<Point> = [position];
 
@@ -128,10 +126,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
       const hutPosition = findValidBuildingPosition(tribe, buildingPositions);
 
       if (hutPosition !== null) {
-         const hut = createWorkerHut(hutPosition, tribe);
-         // @Cleanup: This should be done in the createWorkerHut function, so that we don't forget to call it
-         tribe.registerNewWorkerHut(hut);
-         hut.rotation = 2 * Math.PI * Math.random();
+         createWorkerHut(hutPosition, 2 * Math.PI * Math.random(), tribe);
          buildingPositions.push(hutPosition);
       }
    }
@@ -139,7 +134,7 @@ const spawnTribe = (position: Point, tribeType: TribeType): void => {
    // Spawn barrel
    const barrelSpawnPosition = findValidBuildingPosition(tribe, buildingPositions);
    if (barrelSpawnPosition !== null) {
-      createBarrel(barrelSpawnPosition, tribe);
+      createBarrel(barrelSpawnPosition, 2 * Math.PI * Math.random(), tribe);
    }
 }
 

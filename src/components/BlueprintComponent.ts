@@ -83,35 +83,35 @@ const completeBlueprint = (blueprintEntity: Entity, blueprintComponent: Blueprin
    
    switch (blueprintComponent.buildingType) {
       case BlueprintType.woodenDoor: {
-         createDoor(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation, BuildingMaterial.wood);
+         createDoor(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe, BuildingMaterial.wood);
          return;
       }
       case BlueprintType.stoneDoor: {
-         createDoor(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation, BuildingMaterial.stone);
+         createDoor(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe, BuildingMaterial.stone);
          return;
       }
       case BlueprintType.woodenEmbrasure: {
-         createEmbrasure(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation, BuildingMaterial.wood);
+         createEmbrasure(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe, BuildingMaterial.wood);
          return;
       }
       case BlueprintType.stoneEmbrasure: {
-         createEmbrasure(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation, BuildingMaterial.stone);
+         createEmbrasure(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe, BuildingMaterial.stone);
          return;
       }
       case BlueprintType.ballista: {
-         createBallista(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation);
+         createBallista(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe);
          return;
       }
       case BlueprintType.slingTurret: {
-         createSlingTurret(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation);
+         createSlingTurret(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe);
          return;
       }
       case BlueprintType.woodenTunnel: {
-         createTunnel(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation, BuildingMaterial.wood);
+         createTunnel(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe, BuildingMaterial.wood);
          return;
       }
       case BlueprintType.stoneTunnel: {
-         createTunnel(blueprintEntity.position.copy(), tribeComponent.tribe, blueprintEntity.rotation, BuildingMaterial.stone);
+         createTunnel(blueprintEntity.position.copy(), blueprintEntity.rotation, tribeComponent.tribe, BuildingMaterial.stone);
          return;
       }
       case BlueprintType.stoneWall:

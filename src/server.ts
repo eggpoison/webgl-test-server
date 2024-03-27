@@ -52,26 +52,20 @@ import { serialiseWanderAIComponent } from "./components/WanderAIComponent";
 import { serialiseYetiComponent } from "./components/YetiComponent";
 import { serialiseZombieComponent } from "./components/ZombieComponent";
 import SRandom from "./SRandom";
-import { createYeti, resetYetiTerritoryTiles } from "./entities/mobs/yeti";
+import { resetYetiTerritoryTiles } from "./entities/mobs/yeti";
 import { resetComponents } from "./components/components";
 import { resetPerlinNoiseCache } from "./perlin-noise";
 import { serialiseAmmoBoxComponent } from "./components/AmmoBoxComponent";
 import { serialiseSlimeComponent } from "./components/SlimeComponent";
-import { createTribeTotem } from "./entities/tribes/tribe-totem";
-import { createWall } from "./entities/structures/wall";
-import { createWorkerHut } from "./entities/tribes/worker-hut";
 import { getEntityDebugData } from "./entity-debug-data";
 import { getVisiblePathfindingNodeOccupances } from "./pathfinding";
-import { createEmbrasure } from "./entities/structures/embrasure";
 import { serialiseBlueprintComponent } from "./components/BlueprintComponent";
 import { serialiseTunnelComponent } from "./components/TunnelComponent";
 import { serialiseBuildingMaterialComponent } from "./components/BuildingMaterialComponent";
 import { serialiseSpikesComponent } from "./components/SpikesComponent";
-import { createSlime } from "./entities/mobs/slime";
 import { serialiseTribeWarriorComponent } from "./components/TribeWarriorComponent";
-import { createWarriorHut } from "./entities/tribes/warrior-hut";
 import { serialiseResearchBenchComponent } from "./components/ResearchBenchComponent";
-import { getVisibleBuildingPlans, getVisibleVulnerabilityNodesData } from "./tribe-building";
+import { getVisibleBuildingPlans, getVisibleBuildingVulnerabilities, getVisibleTribes, getVisibleVulnerabilityNodesData } from "./tribe-ai-building";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -411,7 +405,8 @@ class GameServer {
    }
 
    private async tick(): Promise<void> {
-      // This is done before each tick to account for player packets causing entities to be removed between ticks.
+      // These are done before each tick to account for player packets causing entities to be removed/added between ticks.
+      Board.pushJoinBuffer();
       Board.removeFlaggedEntities();
 
       Board.spreadGrass();
@@ -484,58 +479,6 @@ class GameServer {
          // @Temporary
          setTimeout(() => {
             if(1+1===2)return;
-
-            const tribe = new Tribe(TribeType.barbarians, false);
-            
-            createTribeTotem(new Point(spawnPosition.x, spawnPosition.y + 500), tribe);
-
-            const w = 10;
-            const h = 8;
-            const yo = 300;
-            
-            // for (let i = -w/2; i < w/2; i++) {
-            //    if ((i === 0 || i === 1) && 1+1===1) {
-            //       createEmbrasure(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo - 22), tribe, Math.PI, BuildingMaterial.wood);
-            //    } else {
-            //       createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo), tribe);
-            //    }
-            // }
-            
-            for (let i = 0; i < h; i++) {
-               createWall(new Point(spawnPosition.x - w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
-            }
-            
-            for (let i = 0; i < h; i++) {
-               createWall(new Point(spawnPosition.x + w/2 * 64, spawnPosition.y + yo + i * 64), tribe);
-            }
-
-            for (let i = -w/2; i < w/2; i++) {
-               // if (i === -1 || i === -2) {
-               //    continue;
-               // }
-               createWall(new Point(spawnPosition.x + i * 64, spawnPosition.y + yo + (h - 1) * 64), tribe);
-            }
-
-            // const hut = createWorkerHut(new Point(spawnPosition.x + 250, spawnPosition.y + 800), tribe);
-            const hut = createWarriorHut(new Point(spawnPosition.x + 250, spawnPosition.y + 600), tribe);
-            hut.rotation = Math.PI;
-            tribe.registerNewWarriorHut(hut);
-
-            const hut2 = createWarriorHut(new Point(spawnPosition.x - 50, spawnPosition.y + 630), tribe);
-            tribe.registerNewWarriorHut(hut2);
-            
-            const hut3 = createWarriorHut(new Point(spawnPosition.x - 100, spawnPosition.y + 400), tribe);
-            tribe.registerNewWarriorHut(hut3);
-
-            // const hut2 = createWorkerHut(new Point(spawnPosition.x + 150, spawnPosition.y + 600), tribe);
-            // hut2.rotation = Math.PI;
-            // tribe.registerNewWorkerHut(hut2);
-
-            const hut4 = createWorkerHut(new Point(spawnPosition.x + 50, spawnPosition.y), tribe);
-            hut4.rotation = Math.PI;
-            tribe.registerNewWorkerHut(hut4);
-
-            // createTree(new Point(spawnPosition.x + 200, spawnPosition.y + 200));
          }, 2000);
          
          socket.on("initial_player_data", (_username: string, _tribeType: TribeType) => {
@@ -603,6 +546,8 @@ class GameServer {
                   isWall: tile.isWall
                });
             }
+
+            const visibleTribes = getVisibleTribes(visibleChunkBounds);
 
             const initialGameDataPacket: InitialGameDataPacket = {
                playerID: player.id,
@@ -679,8 +624,9 @@ class GameServer {
                pickedUpItem: false,
                hotbarCrossbowLoadProgressRecord: {},
                visiblePathfindingNodeOccupances: [],
-               visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(visibleChunkBounds),
-               visibleBuildingPlans: getVisibleBuildingPlans(visibleChunkBounds)
+               visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(visibleTribes, visibleChunkBounds),
+               visibleBuildingPlans: getVisibleBuildingPlans(visibleTribes, visibleChunkBounds),
+               visibleBuildingVulnerabilities: getVisibleBuildingVulnerabilities(visibleTribes, visibleChunkBounds)
             };
 
             SERVER.playerDataRecord[socket.id] = playerData;
@@ -920,6 +866,8 @@ class GameServer {
    
                // @Incomplete
                // const playerArmour = player !== null ? getItem(InventoryComponentArray.getComponent(player.id), "armourSlot", 1) : null;
+
+               const visibleTribes = getVisibleTribes(extendedVisibleChunkBounds);
    
                // Initialise the game data packet
                const gameDataPacket: GameDataPacket = {
@@ -942,8 +890,9 @@ class GameServer {
                   hotbarCrossbowLoadProgressRecord: this.bundleHotbarCrossbowLoadProgressRecord(player),
                   // @Incomplete: Only send if dev and the checkbox is enabled
                   visiblePathfindingNodeOccupances: getVisiblePathfindingNodeOccupances(extendedVisibleChunkBounds),
-                  visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(extendedVisibleChunkBounds),
-                  visibleBuildingPlans: getVisibleBuildingPlans(extendedVisibleChunkBounds)
+                  visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(visibleTribes, extendedVisibleChunkBounds),
+                  visibleBuildingPlans: getVisibleBuildingPlans(visibleTribes, extendedVisibleChunkBounds),
+                  visibleBuildingVulnerabilities: getVisibleBuildingVulnerabilities(visibleTribes, extendedVisibleChunkBounds)
                };
    
                // Send the game data to the player

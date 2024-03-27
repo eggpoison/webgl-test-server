@@ -1,33 +1,32 @@
-import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp, Point, TribeType, EntityType, CRAFTING_RECIPES } from "webgl-test-shared";
+import { ITEM_TYPE_RECORD, ITEM_INFO_RECORD, ToolItemInfo, ArmourItemInfo, Item, FoodItemInfo, IEntityType, TribeMemberAction, ItemType, BowItemInfo, angle, distance, TRIBE_INFO_RECORD, HammerItemInfo, distBetweenPointAndRectangle, randInt, PathfindingSettingsConst, Inventory, SettingsConst, TribesmanAIType, PathfindingNodeIndex, lerp, Point, TribeType, EntityType, CRAFTING_RECIPES, PlaceableItemInfo } from "webgl-test-shared";
 import Entity from "../../Entity";
 import { getEntitiesInVisionRange, willStopAtDesiredDistance, getClosestAccessibleEntity, stopEntity, moveEntityToPosition, entityIsInLineOfSight, getAngleDiff, getDistanceFromPointToEntity } from "../../ai-shared";
 import { InventoryComponentArray, TribeComponentArray, TribesmanComponentArray, HealthComponentArray, InventoryUseComponentArray, PlayerComponentArray, ItemComponentArray, TribeMemberComponentArray } from "../../components/ComponentArray";
 import { HealthComponent } from "../../components/HealthComponent";
-import { getInventory, addItemToInventory, consumeItemFromSlot, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot } from "../../components/InventoryComponent";
+import { getInventory, addItemToInventory, consumeItemFromSlot, addItemToSlot, removeItemFromInventory, getItem, inventoryIsFull, inventoryHasItemInSlot, inventoryHasItemType, craftRecipe, getItemTypeSlot } from "../../components/InventoryComponent";
 import { TribesmanPathType } from "../../components/TribesmanComponent";
-import { tickTribeMember, tribeMemberCanPickUpItem, attemptAttack, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem, repairBuilding, calculateRepairTarget } from "./tribe-member";
+import { tickTribeMember, tribeMemberCanPickUpItem, attemptAttack, calculateAttackTarget, calculateItemDamage, calculateRadialAttackTargets, useItem, repairBuilding, calculateRepairTarget, placeBuilding } from "./tribe-member";
 import { TRIBE_WORKER_RADIUS, TRIBE_WORKER_VISION_RANGE } from "./tribe-worker";
-import CircularHitbox from "../../hitboxes/CircularHitbox";
 import { getInventoryUseInfo } from "../../components/InventoryUseComponent";
 import Board from "../../Board";
 import { TRIBE_WARRIOR_VISION_RANGE } from "./tribe-warrior";
 import { AIHelperComponentArray } from "../../components/AIHelperComponent";
 import { EntityRelationship, TribeComponent, getEntityRelationship } from "../../components/TribeComponent";
 import { getItemAttackCooldown } from "../../items";
-import RectangularHitbox from "../../hitboxes/RectangularHitbox";
 import { attemptToOccupyResearchBench, canResearchAtBench, continueResearching, markPreemptiveMoveToBench, shouldMoveToResearchBench } from "../../components/ResearchBenchComponent";
 import { PathfindFailureDefault, PathfindOptions, entityHasReachedNode, getAngleToNode, getClosestPathfindNode, getDistanceToNode, getEntityFootprint, pathIsClear, pathfind, positionIsAccessible, smoothPath } from "../../pathfinding";
 import { PhysicsComponentArray } from "../../components/PhysicsComponent";
 
 // @Cleanup: Move all of this to the TribesmanComponent file
 
-const enum TribesmanVars {
+const enum Vars {
    BOW_LINE_OF_SIGHT_WAIT_TIME = 0.5 * SettingsConst.TPS,
    EMBRASURE_USE_RADIUS = 40,
    BATTLEAXE_MIN_USE_RANGE = 120,
    BATTLEAXE_IDEAL_USE_RANGE = 260,
    BATTLEAXE_MAX_USE_RANGE = 400,
-   HELP_TIME = 10 * SettingsConst.TPS
+   HELP_TIME = 10 * SettingsConst.TPS,
+   BUILDING_PLACE_DISTANCE = 80
 }
 
 const SLOW_ACCELERATION = 200;
@@ -878,7 +877,7 @@ export function tickTribesman(tribesman: Entity): void {
    }
 
    // Help other tribesmen
-   if (tribesmanComponent.ticksSinceLastHelpRequest <= TribesmanVars.HELP_TIME) {
+   if (tribesmanComponent.ticksSinceLastHelpRequest <= Vars.HELP_TIME) {
       pathfindToPosition(tribesman, tribesmanComponent.helpX, tribesmanComponent.helpY, 0, TribesmanPathType.default, Math.floor(100 / PathfindingSettingsConst.NODE_SEPARATION), PathfindFailureDefault.returnClosest);
       tribesmanComponent.currentAIType = TribesmanAIType.assistingOtherTribesmen;
 
@@ -1045,8 +1044,67 @@ export function tickTribesman(tribesman: Entity): void {
    - if has enough resources: craft it
    */
 
-   if (tribeComponent.tribe.buildingPlan !== null && canCraftPlannedBuilding(tribesman, tribeComponent)) {
+   // Build
+   const buildingPlan = tribeComponent.tribe.buildingPlan;
+   if (buildingPlan !== null) {
+      // If the building plan isn't reserved and the tribesman can craft it, reserve it
+      if (buildingPlan.assignedTribesmanID === 0 && (canCraftPlannedBuilding(tribesman, tribeComponent) || inventoryHasItemType(hotbarInventory, buildingPlan.buildingRecipe.product))) {
+         buildingPlan.assignedTribesmanID = tribesman.id;
+      }
+      if (buildingPlan.assignedTribesmanID === tribesman.id) {
+         // If the tribesman has the item, go place it
+         if (inventoryHasItemType(hotbarInventory, buildingPlan.buildingRecipe.product)) {
+            const distance = getDistanceFromPointToEntity(buildingPlan.position.x, buildingPlan.position.y, tribesman);
+            if (distance < Vars.BUILDING_PLACE_DISTANCE) {
+               // Equip the item
+               const buildingItemSlot = getItemTypeSlot(hotbarInventory, buildingPlan.buildingRecipe.product);
+               const inventoryUseComponent = InventoryUseComponentArray.getComponent(tribesman.id);
+               const useInfo = getInventoryUseInfo(inventoryUseComponent, "hotbar");
+               useInfo.selectedItemSlot = buildingItemSlot;
+               
+               const targetDirection = angle(buildingPlan.position.x - tribesman.position.x, buildingPlan.position.y - tribesman.position.y);
+               if (distance < 40) {
+                  // @Incomplete: Shouldn't move backwards from the target position, should instead pathfind to the closest position
+                  // which is far enough away, as currently it will try to back into buildings and get stuck like this.
+                  
+                  // If too close to the plan position, move back a bit
+                  tribesman.turn(targetDirection, TURN_SPEED);
+                  const acceleration = getSlowAcceleration(tribesman);
+                  tribesman.acceleration.x = acceleration * Math.sin(targetDirection + Math.PI);
+                  tribesman.acceleration.y = acceleration * Math.cos(targetDirection + Math.PI);
 
+                  tribesmanComponent.currentAIType = TribesmanAIType.building;
+                  return;
+               } else if (Math.abs(getAngleDiff(tribesman.rotation, targetDirection)) < 0.02) {
+                  // Place the item
+                  const item = hotbarInventory.itemSlots[buildingItemSlot];
+                  const placingEntityType = (ITEM_INFO_RECORD[item.type] as PlaceableItemInfo).entityTypeConst;
+                  // @Temporary: attachedWallID
+                  placeBuilding(tribesman, buildingPlan.position, buildingPlan.rotation, placingEntityType, 0);
+                  
+                  useInfo.lastAttackTicks = Board.ticks;
+
+                  // Mark as completed!
+                  tribeComponent.tribe.buildingPlan = null;
+               } else {
+                  tribesman.turn(targetDirection, TURN_SPEED);
+                  stopEntity(tribesman);
+
+                  tribesmanComponent.currentAIType = TribesmanAIType.building;
+                  return;
+               }
+            } else {
+               const isPathfinding = pathfindToPosition(tribesman, buildingPlan.position.x, buildingPlan.position.y, 0, TribesmanPathType.default, Math.floor(Vars.BUILDING_PLACE_DISTANCE / PathfindingSettingsConst.NODE_SEPARATION), PathfindFailureDefault.returnEmpty);
+               if (isPathfinding) {
+                  tribesmanComponent.currentAIType = TribesmanAIType.building;
+                  return;
+               }
+            }
+         } else {
+            // Craft the item
+            craftRecipe(inventoryComponent, buildingPlan.buildingRecipe, "hotbar");
+         }
+      }
    }
 
    // @Speed: shouldn't have to run for tribesmen which can't research
@@ -1432,10 +1490,10 @@ const pathToEntityExists = (tribesman: Entity, huntedEntity: Entity): boolean =>
 
 const getNearbyEmbrasureUsePoints = (tribesman: Entity): ReadonlyArray<Point> => {
    // Add 30 to the range to account for the fact that use points are disconnected from the embrasure positions
-   const minChunkX = Math.max(Math.floor((tribesman.position.x - (TribesmanVars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), 0);
-   const maxChunkX = Math.min(Math.floor((tribesman.position.x + (TribesmanVars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
-   const minChunkY = Math.max(Math.floor((tribesman.position.y - (TribesmanVars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), 0);
-   const maxChunkY = Math.min(Math.floor((tribesman.position.y + (TribesmanVars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkX = Math.max(Math.floor((tribesman.position.x - (Vars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkX = Math.min(Math.floor((tribesman.position.x + (Vars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
+   const minChunkY = Math.max(Math.floor((tribesman.position.y - (Vars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), 0);
+   const maxChunkY = Math.min(Math.floor((tribesman.position.y + (Vars.EMBRASURE_USE_RADIUS + 30)) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
 
    const usePoints = new Array<Point>();
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
@@ -1450,7 +1508,7 @@ const getNearbyEmbrasureUsePoints = (tribesman: Entity): ReadonlyArray<Point> =>
             const usePointX = entity.position.x - 22 * Math.sin(entity.rotation);
             const usePointY = entity.position.y - 22 * Math.cos(entity.rotation);
 
-            if (distance(tribesman.position.x, tribesman.position.y, usePointX, usePointY) > TribesmanVars.EMBRASURE_USE_RADIUS) {
+            if (distance(tribesman.position.x, tribesman.position.y, usePointX, usePointY) > Vars.EMBRASURE_USE_RADIUS) {
                continue;
             }
 
@@ -1554,7 +1612,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
             tribesmanComponent.lastEnemyLineOfSightTicks = Board.ticks;
          }
          
-         if (isInLineOfSight || (Board.ticks - tribesmanComponent.lastEnemyLineOfSightTicks) <= TribesmanVars.BOW_LINE_OF_SIGHT_WAIT_TIME) {
+         if (isInLineOfSight || (Board.ticks - tribesmanComponent.lastEnemyLineOfSightTicks) <= Vars.BOW_LINE_OF_SIGHT_WAIT_TIME) {
             const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
             
             // @Speed: don't check for path every tick
@@ -1618,7 +1676,7 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
       if (isAggressive && weaponCategory === "battleaxe") {
          // Use the battleaxe if the entity is in the use range
          const distance = getDistanceFromPointToEntity(tribesman.position.x, tribesman.position.y, huntedEntity) - getRadius(tribesman);
-         if (distance >= TribesmanVars.BATTLEAXE_MIN_USE_RANGE && distance <= TribesmanVars.BATTLEAXE_MAX_USE_RANGE && selectedItem.id !== hotbarUseInfo.thrownBattleaxeItemID) {
+         if (distance >= Vars.BATTLEAXE_MIN_USE_RANGE && distance <= Vars.BATTLEAXE_MAX_USE_RANGE && selectedItem.id !== hotbarUseInfo.thrownBattleaxeItemID) {
             if (hotbarUseInfo.currentAction !== TribeMemberAction.chargeBattleaxe) {
                hotbarUseInfo.lastBattleaxeChargeTicks = Board.ticks;
             }
@@ -1626,12 +1684,12 @@ const huntEntity = (tribesman: Entity, huntedEntity: Entity, isAggressive: boole
             const targetDirection = tribesman.position.calculateAngleBetween(huntedEntity.position);
             tribesman.turn(targetDirection, TURN_SPEED);
 
-            if (distance > TribesmanVars.BATTLEAXE_IDEAL_USE_RANGE + 10) {
+            if (distance > Vars.BATTLEAXE_IDEAL_USE_RANGE + 10) {
                // Move closer
                const acceleration = getSlowAcceleration(tribesman);
                tribesman.acceleration.x = acceleration * Math.sin(targetDirection);
                tribesman.acceleration.y = acceleration * Math.cos(targetDirection);
-            } else if (distance < TribesmanVars.BATTLEAXE_IDEAL_USE_RANGE - 10) {
+            } else if (distance < Vars.BATTLEAXE_IDEAL_USE_RANGE - 10) {
                // Move futher away
                const acceleration = getSlowAcceleration(tribesman);
                const moveDirection = targetDirection + Math.PI;

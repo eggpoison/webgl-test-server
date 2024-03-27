@@ -8,7 +8,7 @@ import { createTribeWorker } from "./entities/tribes/tribe-worker";
 import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
-import { VulnerabilityNode } from "./tribe-building";
+import { VulnerabilityNode, VulnerabilityNodeIndex } from "./tribe-ai-building";
 import { getInventory } from "./components/InventoryComponent";
 
 const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
@@ -40,6 +40,7 @@ export interface BuildingPlan {
    readonly position: Point;
    readonly rotation: number;
    readonly buildingRecipe: CraftingRecipe;
+   assignedTribesmanID: number;
 }
 
 class Tribe {
@@ -80,6 +81,7 @@ class Tribe {
 
    public vulnerabilityNodes = new Array<VulnerabilityNode>();
    public vulnerabilityNodeRecord: Record<number, VulnerabilityNode> = {};
+   public occupiedVulnerabilityNodes = new Set<VulnerabilityNodeIndex>();
 
    public availableResources: Partial<Record<ItemType, number>> = {};
    
@@ -179,8 +181,9 @@ class Tribe {
       this.huts.push(workerHut);
       this.addBuilding(workerHut);
 
-      // Create a tribesman for the hut
-      this.createNewTribesman(workerHut);
+      // Create a tribesman for the hut, but 1 tick after as to not cause a crash in the join buffer
+      this.respawnTimesRemaining.push(1);
+      this.respawnHutIDs.push(workerHut.id);
 
       this.createTribeAreaAroundBuilding(workerHut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.workerHut]);
       
@@ -204,8 +207,9 @@ class Tribe {
       this.huts.push(warriorHut);
       this.addBuilding(warriorHut);
 
-      // Create a tribesman for the hut
-      this.createNewTribesman(warriorHut);
+      // Create a tribesman for the hut, but 1 tick after as to not cause a crash in the join buffer
+      this.respawnTimesRemaining.push(1);
+      this.respawnHutIDs.push(warriorHut.id);
 
       this.createTribeAreaAroundBuilding(warriorHut.position, TRIBE_BUILDING_AREA_INFLUENCES[IEntityType.warriorHut]);
       

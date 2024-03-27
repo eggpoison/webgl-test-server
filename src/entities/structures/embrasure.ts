@@ -26,7 +26,7 @@ export function addEmbrasureHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 0.4, (64 - HORIZONTAL_HITBOX_WIDTH) / 2 + 0.025, 0, HitboxCollisionTypeConst.hard, HORIZONTAL_HITBOX_WIDTH, HORIZONTAL_HITBOX_HEIGHT));
 }
 
-export function createEmbrasure(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {
+export function createEmbrasure(position: Point, rotation: number, tribe: Tribe, material: BuildingMaterial): Entity {
    const embrasure = new Entity(position, IEntityType.embrasure, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    embrasure.rotation = rotation;
 
@@ -38,6 +38,11 @@ export function createEmbrasure(position: Point, tribe: Tribe, rotation: number,
    BuildingMaterialComponentArray.addComponent(embrasure, new BuildingMaterialComponent(material));
 
    return embrasure;
+}
+
+export function onEmbrasureJoin(embrasure: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(embrasure.id);
+   tribeComponent.tribe.addBuilding(embrasure);
 }
 
 export function onEmbrasureCollision(embrasure: Entity, collidingEntity: Entity, pushedHitboxIdx: number): void {
@@ -54,6 +59,9 @@ export function onEmbrasureCollision(embrasure: Entity, collidingEntity: Entity,
 }
 
 export function onEmbrasureRemove(embrasure: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(embrasure.id);
+   tribeComponent.tribe.removeBuilding(embrasure);
+
    HealthComponentArray.removeComponent(embrasure);
    StatusEffectComponentArray.removeComponent(embrasure);
    TribeComponentArray.removeComponent(embrasure);

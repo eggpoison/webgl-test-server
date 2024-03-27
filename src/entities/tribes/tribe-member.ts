@@ -1,4 +1,4 @@
-import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight, HitboxCollisionTypeConst, Settings } from "webgl-test-shared";
+import { ArmourItemInfo, AxeItemInfo, BackpackItemInfo, BattleaxeItemInfo, BlueprintType, BowItemInfo, FoodItemInfo, GenericArrowType, HammerItemInfo, HitFlags, IEntityType, ITEM_INFO_RECORD, ITEM_TYPE_RECORD, Item, ItemType, PlaceableItemType, PlayerCauseOfDeath, Point, SettingsConst, STRUCTURE_TYPES_CONST, StatusEffectConst, StructureTypeConst, SwordItemInfo, ToolItemInfo, TribeMemberAction, TribeType, distance, getItemStackSize, itemIsStackable, lerp, getSnapOffsetWidth, getSnapOffsetHeight, HitboxCollisionTypeConst, Settings, EntityType } from "webgl-test-shared";
 import Entity from "../../Entity";
 import Board from "../../Board";
 import { HealthComponentArray, InventoryComponentArray, InventoryUseComponentArray, TribeComponentArray, TribeMemberComponentArray, TribesmanComponentArray } from "../../components/ComponentArray";
@@ -711,6 +711,31 @@ const buildingCanBePlaced = (spawnPositionX: number, spawnPositionY: number, pla
    return true;
 }
 
+export function placeBuilding(tribeMember: Entity, position: Point, rotation: number, entityType: IEntityType, attachedWallID: number): void {
+   const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
+
+   // Spawn the placeable entity
+   switch (entityType) {
+      case IEntityType.workbench: createWorkbench(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.tribeTotem: createTribeTotem(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.workerHut: createWorkerHut(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.warriorHut: createWarriorHut(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.barrel: createBarrel(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.campfire: createCampfire(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.furnace: createFurnace(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.researchBench: createResearchBench(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.wall: createWall(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.planterBox: createPlanterBox(position, rotation, tribeComponent.tribe); break;
+      case IEntityType.spikes: createSpikes(position, rotation, tribeComponent.tribe, attachedWallID); break;
+      case IEntityType.punjiSticks: createPunjiSticks(position, rotation, tribeComponent.tribe, attachedWallID); break;
+      case IEntityType.ballista: createBlueprintEntity(position, rotation, BlueprintType.ballista, 0, tribeComponent.tribe); break;
+      case IEntityType.slingTurret: createBlueprintEntity(position, rotation, BlueprintType.slingTurret, 0, tribeComponent.tribe); break;
+      default: {
+         throw new Error("No case for placing entity type '" + EntityType[entityType] + "'.");
+      }
+   }
+}
+
 export function useItem(tribeMember: Entity, item: Item, inventoryName: string, itemSlot: number): void {
    const itemCategory = ITEM_TYPE_RECORD[item.type];
 
@@ -779,96 +804,9 @@ export function useItem(tribeMember: Entity, item: Item, inventoryName: string, 
          // Make sure the placeable item can be placed
          if (!buildingCanBePlaced(placePosition.x, placePosition.y, placeRotation, item.type, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall)) return;
          
-         // Spawn the placeable entity
-         let placedEntity: Entity;
          const placedEntityType = snapInfo !== null ? snapInfo.entityType : placeInfo.entityType;
-         switch (placedEntityType) {
-            case IEntityType.workbench: {
-               placedEntity = createWorkbench(placePosition);
-               break;
-            }
-            case IEntityType.tribeTotem: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createTribeTotem(placePosition, tribeComponent.tribe);
-               break;
-            }
-            case IEntityType.workerHut: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               
-               placedEntity = createWorkerHut(placePosition, tribeComponent.tribe);
-               // @Incomplete @Bug
-               placedEntity.rotation = placeRotation; // This has to be done before the hut is registered in its tribe
-               // @Cleanup: Move to create function
-               tribeComponent.tribe.registerNewWorkerHut(placedEntity);
-               break;
-            }
-            case IEntityType.warriorHut: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               
-               placedEntity = createWarriorHut(placePosition, tribeComponent.tribe);
-               // @Incomplete @Bug
-               placedEntity.rotation = placeRotation; // This has to be done before the hut is registered in its tribe
-               // @Cleanup: Move to create function
-               tribeComponent.tribe.registerNewWarriorHut(placedEntity);
-               break;
-            }
-            case IEntityType.barrel: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-
-               placedEntity = createBarrel(placePosition, tribeComponent.tribe);
-               break;
-            }
-            case IEntityType.campfire: {
-               placedEntity = createCampfire(placePosition);
-               break;
-            }
-            case IEntityType.furnace: {
-               placedEntity = createFurnace(placePosition);
-               break;
-            }
-            case IEntityType.researchBench: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createResearchBench(placePosition, tribeComponent.tribe);
-               break;
-            }
-            case IEntityType.wall: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createWall(placePosition, tribeComponent.tribe);
-               break;
-            }
-            case IEntityType.planterBox: {
-               placedEntity = createPlanterBox(placePosition);
-               break;
-            }
-            case IEntityType.spikes: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createSpikes(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : 0);
-               break;
-            }
-            case IEntityType.punjiSticks: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createPunjiSticks(placePosition, tribeComponent.tribe, snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : 0);
-               break;
-            }
-            case IEntityType.ballista: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintType.ballista, 0, tribeComponent.tribe, placeRotation);
-               break;
-            }
-            case IEntityType.slingTurret: {
-               const tribeComponent = TribeComponentArray.getComponent(tribeMember.id);
-               placedEntity = createBlueprintEntity(placePosition, BlueprintType.slingTurret, 0, tribeComponent.tribe, placeRotation);
-               break;
-            }
-            default: {
-               // @Robustness: Should automatically detect this before compiled
-               throw new Error("No case for placing item type '" + item.type + "'.");
-            }
-         }
-
-         // @Incomplete @Bug: This will mess up the hitboxes of the entity as we don't clean the hitboxes!
-         // Rotate it to match the entity's rotation
-         placedEntity.rotation = placeRotation;
+         const attachedWallID = snapInfo !== null && Board.entityRecord[snapInfo.snappedEntityID].type === IEntityType.wall ? snapInfo.snappedEntityID : 0;
+         placeBuilding(tribeMember, placePosition, placeRotation, placedEntityType, attachedWallID);
 
          consumeItemFromSlot(inventoryComponent, "hotbar", itemSlot, 1);
 

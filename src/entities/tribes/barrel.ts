@@ -10,8 +10,9 @@ import { TribeComponent } from "../../components/TribeComponent";
 
 export const BARREL_SIZE = 80;
 
-export function createBarrel(position: Point, tribe: Tribe): Entity {
+export function createBarrel(position: Point, rotation: number, tribe: Tribe): Entity {
    const barrel = new Entity(position, IEntityType.barrel, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   barrel.rotation = rotation;
 
    const hitbox = new CircularHitbox(barrel, 1.5, 0, 0, HitboxCollisionTypeConst.hard, BARREL_SIZE / 2);
    barrel.addHitbox(hitbox);

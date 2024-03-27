@@ -27,8 +27,9 @@ export function addWallSpikesHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, Number.EPSILON, 0, 0, HitboxCollisionTypeConst.soft, WALL_HITBOX_WIDTH, WALL_HITBOX_HEIGHT));
 }
 
-export function createSpikes(position: Point, tribe: Tribe, attachedWallID: number): Entity {
+export function createSpikes(position: Point, rotation: number, tribe: Tribe, attachedWallID: number): Entity {
    const spikes = new Entity(position, IEntityType.spikes, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   spikes.rotation = rotation;
 
    if (attachedWallID !== 0) {
       addWallSpikesHitboxes(spikes);

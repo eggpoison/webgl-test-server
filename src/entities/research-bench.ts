@@ -8,8 +8,9 @@ import Tribe from "../Tribe";
 import { TribeComponent } from "../components/TribeComponent";
 import { ResearchBenchComponent } from "../components/ResearchBenchComponent";
 
-export function createResearchBench(position: Point, tribe: Tribe): Entity {
+export function createResearchBench(position: Point, rotation: number, tribe: Tribe): Entity {
    const bench = new Entity(position, IEntityType.researchBench, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   bench.rotation = rotation;
 
    const hitbox = new RectangularHitbox(bench, 1.8, 0, 0, HitboxCollisionTypeConst.hard, 32 * 4, 20 * 4);
    bench.addHitbox(hitbox);
@@ -20,6 +21,11 @@ export function createResearchBench(position: Point, tribe: Tribe): Entity {
    ResearchBenchComponentArray.addComponent(bench, new ResearchBenchComponent());
 
    return bench;
+}
+
+export function onResearchBenchJoin(researchBench: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(researchBench.id);
+   tribeComponent.tribe.addResearchBench(researchBench);
 }
 
 export function onResearchBenchRemove(researchBench: Entity): void {

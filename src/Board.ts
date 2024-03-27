@@ -31,44 +31,44 @@ import { onTreeRemove } from "./entities/resources/tree";
 import { onBoulderRemove } from "./entities/resources/boulder";
 import { onCactusRemove } from "./entities/resources/cactus";
 import { onIceSpikesRemove, tickIceSpikes } from "./entities/resources/ice-spikes";
-import { onTribeTotemRemove } from "./entities/tribes/tribe-totem";
+import { onTribeTotemJoin, onTribeTotemRemove } from "./entities/tribes/tribe-totem";
 import { onItemEntityRemove, tickItemEntity } from "./entities/item-entity";
 import { onBarrelRemove } from "./entities/tribes/barrel";
 import { onFrozenYetiRemove, tickFrozenYeti } from "./entities/mobs/frozen-yeti";
 import { onRockSpikeRemove, tickRockSpikeProjectile } from "./entities/projectiles/rock-spike";
 import { AIHelperComponentArray, tickAIHelperComponent } from "./components/AIHelperComponent";
-import { onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
-import { onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
+import { onCampfireJoin, onCampfireRemove, tickCampfire } from "./entities/cooking-entities/campfire";
+import { onFurnaceJoin, onFurnaceRemove, tickFurnace } from "./entities/cooking-entities/furnace";
 import { onSpearProjectileRemove, tickSpearProjectile } from "./entities/projectiles/spear-projectile";
-import { onWorkerHutRemove } from "./entities/tribes/worker-hut";
-import { onResearchBenchRemove } from "./entities/research-bench";
-import { onWarriorHutRemove } from "./entities/tribes/warrior-hut";
+import { onWorkerHutJoin, onWorkerHutRemove } from "./entities/tribes/worker-hut";
+import { onResearchBenchJoin, onResearchBenchRemove } from "./entities/research-bench";
+import { onWarriorHutJoin, onWarriorHutRemove } from "./entities/tribes/warrior-hut";
 import { onTribeWarriorRemove, tickTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { onWallJoin, onWallRemove } from "./entities/structures/wall";
 import { onSlimeSpitRemove, tickSlimeSpit } from "./entities/projectiles/slime-spit";
 import { tickSpitPoison } from "./entities/projectiles/spit-poison";
-import { onWoodenDoorRemove } from "./entities/structures/door";
+import { onDoorJoin, onWoodenDoorRemove } from "./entities/structures/door";
 import { tickDoorComponent } from "./components/DoorComponent";
 import { onBattleaxeProjectileRemove, tickBattleaxeProjectile } from "./entities/projectiles/battleaxe-projectile";
 import { onGolemRemove, tickGolem } from "./entities/mobs/golem";
-import { onPlanterBoxRemove } from "./entities/structures/planter-box";
+import { onPlanterBoxJoin, onPlanterBoxRemove } from "./entities/structures/planter-box";
 import { onIceArrowRemove, tickIceArrow } from "./entities/projectiles/ice-arrow";
 import { onPebblumRemove, tickPebblum } from "./entities/mobs/pebblum";
 import { PhysicsComponentArray, tickPhysicsComponent } from "./components/PhysicsComponent";
-import { onWorkbenchRemove } from "./entities/workbench";
+import { onWorkbenchJoin, onWorkbenchRemove } from "./entities/workbench";
 import { onSpikesRemove } from "./entities/structures/spikes";
 import { onPunjiSticksRemove } from "./entities/structures/punji-sticks";
-import { onEmbrasureRemove } from "./entities/structures/embrasure";
+import { onEmbrasureJoin, onEmbrasureRemove } from "./entities/structures/embrasure";
 import { onBlueprintEntityRemove } from "./entities/blueprint-entity";
 import { onBallistaRemove, tickBallista } from "./entities/structures/ballista";
 import { onSlingTurretRemove, tickSlingTurret } from "./entities/structures/sling-turret";
 import { tickResearchBenchComponent } from "./components/ResearchBenchComponent";
 import { clearEntityPathfindingNodes, entityCanBlockPathfinding, markPathfindingNodeClearance, markWallTileInPathfinding, updateDynamicPathfindingNodes, updateEntityPathfindingNodeOccupance } from "./pathfinding";
 import OPTIONS from "./options";
-import { onTunnelRemove } from "./entities/structures/tunnel";
+import { onTunnelJoin, onTunnelRemove } from "./entities/structures/tunnel";
 import { CollisionVars, collide, isColliding } from "./collision";
 import { tickTunnelComponent } from "./components/TunnelComponent";
-import { tickTribes } from "./tribe-building";
+import { tickTribes } from "./tribe-ai-building";
 
 const START_TIME = 6;
 
@@ -615,17 +615,20 @@ abstract class Board {
          this.entities.push(entity);
          this.entityRecord[entity.id] = entity;
 
-         // @Speed @Cleanup: Should be in its associated file!
+         // NOTE: These functions cannot create an entity, as that will cause a crash.
          switch (entity.type) {
-            case IEntityType.researchBench: {
-               const tribeComponent = TribeComponentArray.getComponent(entity.id);
-               tribeComponent.tribe.addResearchBench(entity);
-               break;
-            }
-            case IEntityType.wall: {
-               onWallJoin(entity);
-               break;
-            }
+            case IEntityType.researchBench: onResearchBenchJoin(entity); break;
+            case IEntityType.wall: onWallJoin(entity); break;
+            case IEntityType.tribeTotem: onTribeTotemJoin(entity); break;
+            case IEntityType.workerHut: onWorkerHutJoin(entity); break;
+            case IEntityType.warriorHut: onWarriorHutJoin(entity); break;
+            case IEntityType.embrasure: onEmbrasureJoin(entity); break;
+            case IEntityType.tunnel: onTunnelJoin(entity); break;
+            case IEntityType.door: onDoorJoin(entity); break;
+            case IEntityType.workbench: onWorkbenchJoin(entity); break;
+            case IEntityType.campfire: onCampfireJoin(entity); break;
+            case IEntityType.furnace: onFurnaceJoin(entity); break;
+            case IEntityType.planterBox: onPlanterBoxJoin(entity); break;
          }
       }
 

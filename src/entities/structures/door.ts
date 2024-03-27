@@ -19,7 +19,7 @@ export function addDoorHitboxes(entity: Entity): void {
    entity.addHitbox(new RectangularHitbox(entity, 0.5, 0, 0, HitboxCollisionTypeConst.hard, HITBOX_WIDTH, HITBOX_HEIGHT));
 }
 
-export function createDoor(position: Point, tribe: Tribe, rotation: number, material: BuildingMaterial): Entity {
+export function createDoor(position: Point, rotation: number, tribe: Tribe, material: BuildingMaterial): Entity {
    const door = new Entity(position, IEntityType.door, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
    door.rotation = rotation;
 
@@ -35,7 +35,15 @@ export function createDoor(position: Point, tribe: Tribe, rotation: number, mate
    return door;
 }
 
+export function onDoorJoin(door: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(door.id);
+   tribeComponent.tribe.addBuilding(door);
+}
+
 export function onWoodenDoorRemove(door: Entity): void {
+   const tribeComponent = TribeComponentArray.getComponent(door.id);
+   tribeComponent.tribe.removeBuilding(door);
+
    PhysicsComponentArray.removeComponent(door);
    HealthComponentArray.removeComponent(door);
    StatusEffectComponentArray.removeComponent(door);

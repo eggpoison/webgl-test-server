@@ -13,8 +13,9 @@ const FLOOR_HITBOX_SIZE = 48 - 0.05;
 const WALL_HITBOX_WIDTH = 56 - 0.05;
 const WALL_HITBOX_HEIGHT = 32 - 0.05;
 
-export function createPunjiSticks(position: Point, tribe: Tribe, attachedWallID: number): Entity {
+export function createPunjiSticks(position: Point, rotation: number, tribe: Tribe, attachedWallID: number): Entity {
    const punjiSticks = new Entity(position, IEntityType.punjiSticks, COLLISION_BITS.default, DEFAULT_COLLISION_MASK);
+   punjiSticks.rotation = rotation;
 
    if (attachedWallID === 0) {
       // Floor hitbox

@@ -1,4 +1,4 @@
-import { ITEM_INFO_RECORD, Inventory, InventoryComponentData, Item, ItemType, StackableItemInfo, itemIsStackable } from "webgl-test-shared";
+import { CraftingRecipe, ITEM_INFO_RECORD, Inventory, InventoryComponentData, Item, ItemType, StackableItemInfo, getItemStackSize, itemIsStackable } from "webgl-test-shared";
 import Entity from "../Entity";
 import { createItemEntity, itemEntityCanBePickedUp } from "../entities/item-entity";
 import { InventoryComponentArray, ItemComponentArray } from "./ComponentArray";
@@ -72,6 +72,34 @@ export function setItem(inventoryComponent: InventoryComponent, inventoryName: s
    } else {
       delete inventory.itemSlots[itemSlot];
    }
+}
+
+export function inventoryHasItemType(inventory: Inventory, itemType: ItemType): boolean {
+   for (let itemSlot = 1; itemSlot < inventory.width * inventory.height; itemSlot++) {
+      if (inventory.itemSlots[itemSlot] === undefined) {
+         continue;
+      }
+
+      if (inventory.itemSlots[itemSlot].type === itemType) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+export function getItemTypeSlot(inventory: Inventory, itemType: ItemType): number {
+   for (let itemSlot = 1; itemSlot < inventory.width * inventory.height; itemSlot++) {
+      if (inventory.itemSlots[itemSlot] === undefined) {
+         continue;
+      }
+
+      if (inventory.itemSlots[itemSlot].type === itemType) {
+         return itemSlot;
+      }
+   }
+
+   throw new Error("Item type not in inventory")
 }
 
 /**
@@ -360,6 +388,67 @@ export function countItemType(inventoryComponent: InventoryComponent, itemType: 
    }
 
    return count;
+}
+
+export type InventoryTally = Partial<Record<ItemType, number>>;
+
+export function tallyInventoryItems(tally: InventoryTally, inventory: Inventory): void {
+   for (const item of Object.values(inventory.itemSlots)) {
+      if (!tally.hasOwnProperty(item.type)) {
+         tally[item.type] = item.count;
+      } else {
+         tally[item.type]! += item.count;
+      }
+   }
+}
+
+export function inventoryComponentCanAffordRecipe(inventoryComponent: InventoryComponent, recipe: CraftingRecipe, outputInventoryName: string): boolean {
+   // Don't craft if there isn't space
+   let hasSpace = false;
+   const outputInventory = getInventory(inventoryComponent, outputInventoryName);
+   for (let itemSlot = 1; itemSlot <= outputInventory.width * outputInventory.height; itemSlot++) {
+      if (outputInventory.itemSlots[itemSlot] === undefined) {
+         hasSpace = true;
+         break;
+      }
+
+      const item = outputInventory.itemSlots[itemSlot];
+      if (item.type === recipe.product && itemIsStackable(recipe.product) && item.count + recipe.yield <= getItemStackSize(item)) {
+         hasSpace = true;
+         break;
+      }
+   }
+   if (!hasSpace) {
+      return false;
+   }
+   
+   const tally: InventoryTally = {};
+   for (let i = 0; i < inventoryComponent.inventories.length; i++) {
+      const inventory = inventoryComponent.inventories[i];
+      tallyInventoryItems(tally, inventory);
+   }
+
+   // @Speed
+   for (const [ingredientType, ingredientCount] of Object.entries(recipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
+      if (!tally.hasOwnProperty(ingredientType) || tally[ingredientType]! < ingredientCount) {
+         return false;
+      }
+   }
+
+   return true;
+}
+
+export function craftRecipe(inventoryComponent: InventoryComponent, recipe: CraftingRecipe, outputInventoryName: string): void {
+   // Consume ingredients
+   for (const [ingredientType, ingredientCount] of Object.entries(recipe.ingredients).map(entry => [Number(entry[0]), entry[1]]) as ReadonlyArray<[ItemType, number]>) {
+      for (let remainingAmountToConsume = 0, i = 0; remainingAmountToConsume > 0 && i < inventoryComponent.inventories.length; i++) {
+         const inventory = inventoryComponent.inventories[i];
+         remainingAmountToConsume -= consumeItemTypeFromInventory(inventoryComponent, inventory.name, ingredientType, ingredientCount);
+      }
+   }
+
+   // Add product to held item
+   addItemToSlot(inventoryComponent, outputInventoryName, 1, recipe.product, recipe.yield);
 }
 
 export function serialiseInventoryComponent(entity: Entity): InventoryComponentData {
