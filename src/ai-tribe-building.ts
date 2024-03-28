@@ -171,70 +171,96 @@ const weightNodeDistance = (node: VulnerabilityNode, dist: number): void => {
    node.vulnerability -= dist * Vars.DISTANCE_FALLOFF;
 }
 
-const weightNodeDistances = (nodeRecord: Record<number, VulnerabilityNode>, outmostPaddingNodes: Set<VulnerabilityNodeIndex>): void => {
-   let dist = 0;
-   
-   const encounteredNodeIndexes = new Set<VulnerabilityNodeIndex>();
-   for (const nodeIndex of outmostPaddingNodes) {
-      encounteredNodeIndexes.add(nodeIndex);
-   }
-   
-   let outmostNodes = outmostPaddingNodes;
-   const numNodes = Object.keys(nodeRecord).length;
-   while (encounteredNodeIndexes.size < numNodes) {
-      const addedNodes = new Set<VulnerabilityNodeIndex>();
+const getNodeDist = (nodeIndex: number, minDist: number, nodeRecord: Record<number, VulnerabilityNode>): number => {
+   const originNodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
+   const originNodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
 
-      for (const nodeIndex of outmostNodes) {
-         const nodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
-         const nodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
-
-         // Top
-         if (nodeY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
-            const nodeIndex = getNodeIndex(nodeX, nodeY + 1);
-            const node = nodeRecord[nodeIndex];
-            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
-               addedNodes.add(nodeIndex);
-               encounteredNodeIndexes.add(nodeIndex);
-               weightNodeDistance(node, dist);
-            }
-         }
-
-         // Right
-         if (nodeX < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
-            const nodeIndex = getNodeIndex(nodeX + 1, nodeY);
-            const node = nodeRecord[nodeIndex];
-            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
-               addedNodes.add(nodeIndex);
-               encounteredNodeIndexes.add(nodeIndex);
-               weightNodeDistance(node, dist);
-            }
-         }
-
-         // Bottom
-         if (nodeY > 0) {
-            const nodeIndex = getNodeIndex(nodeX, nodeY - 1);
-            const node = nodeRecord[nodeIndex];
-            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
-               addedNodes.add(nodeIndex);
-               encounteredNodeIndexes.add(nodeIndex);
-               weightNodeDistance(node, dist);
-            }
-         }
-
-         // Left
-         if (nodeX > 0) {
-            const nodeIndex = getNodeIndex(nodeX - 1, nodeY);
-            const node = nodeRecord[nodeIndex];
-            if (!encounteredNodeIndexes.has(nodeIndex) && node !== undefined) {
-               addedNodes.add(nodeIndex);
-               encounteredNodeIndexes.add(nodeIndex);
-               weightNodeDistance(node, dist);
+   for (let dist = minDist; ; dist++) {
+      const minNodeX = Math.max(originNodeX - dist, 0);
+      const maxNodeX = Math.min(originNodeX + dist, SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
+      const minNodeY = Math.max(originNodeY - dist, 0);
+      const maxNodeY = Math.min(originNodeY + dist, SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
+      for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
+         for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
+            const diffX = nodeX - originNodeX;
+            const diffY = nodeY - originNodeY;
+            if (diffX * diffX + diffY * diffY <= dist * dist) {
+               const nodeIndex = getNodeIndex(nodeX, nodeY);
+               if (nodeRecord[nodeIndex] === undefined) {
+                  return dist;
+               }
             }
          }
       }
+   }
+}
 
-      outmostNodes = addedNodes;
-      dist++;
+const weightNodeDistances = (nodeRecord: Record<number, VulnerabilityNode>, outmostPaddingNodes: Set<VulnerabilityNodeIndex>): void => {
+   if (outmostPaddingNodes.size === 0) {
+      return;
+   }
+   
+   let startingNode!: VulnerabilityNodeIndex;
+   for (const nodeIndex of outmostPaddingNodes) {
+      startingNode = nodeIndex;
+      break;
+   }
+   
+   const checkedNodes = new Set<VulnerabilityNodeIndex>();
+   const nodesToCheck = [startingNode];
+   const adjacentDistsToCheck = [1];
+   while (nodesToCheck.length > 0) {
+      const currentNodeIndex = nodesToCheck[0];
+      const adjacentDist = adjacentDistsToCheck[0];
+
+      nodesToCheck.splice(0, 1);
+      adjacentDistsToCheck.splice(0, 1);
+
+      const dist = getNodeDist(currentNodeIndex, adjacentDist - 1, nodeRecord);
+      weightNodeDistance(nodeRecord[currentNodeIndex], dist);
+
+      const nodeX = currentNodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
+      const nodeY = Math.floor(currentNodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
+
+      // Top
+      if (nodeY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+         const nodeIndex = getNodeIndex(nodeX, nodeY + 1);
+         if (!checkedNodes.has(nodeIndex) && nodeRecord[nodeIndex] !== undefined) {
+            checkedNodes.add(nodeIndex);
+            nodesToCheck.push(nodeIndex);
+            adjacentDistsToCheck.push(adjacentDist);
+         }
+      }
+
+      // Right
+      if (nodeX < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+         const nodeIndex = getNodeIndex(nodeX + 1, nodeY);
+         if (!checkedNodes.has(nodeIndex) && nodeRecord[nodeIndex] !== undefined) {
+            checkedNodes.add(nodeIndex);
+            nodesToCheck.push(nodeIndex);
+            adjacentDistsToCheck.push(adjacentDist);
+         }
+      }
+
+      // Bottom
+      if (nodeY > 0) {
+         const nodeIndex = getNodeIndex(nodeX, nodeY - 1);
+         if (!checkedNodes.has(nodeIndex) && nodeRecord[nodeIndex] !== undefined) {
+            checkedNodes.add(nodeIndex);
+            nodesToCheck.push(nodeIndex);
+            adjacentDistsToCheck.push(adjacentDist);
+         }
+      }
+
+      // Left
+      if (nodeX > 0) {
+         const nodeIndex = getNodeIndex(nodeX - 1, nodeY);
+         if (!checkedNodes.has(nodeIndex) && nodeRecord[nodeIndex] !== undefined) {
+            checkedNodes.add(nodeIndex);
+            nodesToCheck.push(nodeIndex);
+            adjacentDistsToCheck.push(adjacentDist);
+         }
+      }
    }
 }
 
@@ -1168,16 +1194,13 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): WallPlaceQu
       const averageVulnerability = getBuildingAverageVulnerability(tribe, occupiedIndexes);
       const extendedAverageVulnerability = getBuildingAverageVulnerability(tribe, extendedOccupiedNodeIndexes);
 
-      // Make the AI want to snap to existing walls more
-      const weightedAverage = candidate.isSnappedToWall ? averageVulnerability - 0.5 : averageVulnerability;
-      
       if (minVulnerability < bestMinVulnerability) {
          bestMinVulnerability = minVulnerability;
          bestCandidates = [candidate];
          bestCandidateAverages = [averageVulnerability];
       } else if (minVulnerability === bestMinVulnerability) {
          bestCandidates.push(candidate);
-         bestCandidateAverages.push(weightedAverage);
+         bestCandidateAverages.push(averageVulnerability);
       }
 
       potentialPlans.push({
