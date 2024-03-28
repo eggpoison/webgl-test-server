@@ -1,4 +1,4 @@
-import { CraftingRecipe, IEntityType, ItemType, PlaceableItemType, Point, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
+import { CraftingRecipe, HitboxVertexPositions, IEntityType, ItemType, PlaceableItemType, Point, PotentialBuildingPlanData, SettingsConst, TECHS, TRIBE_INFO_RECORD, TechID, TechTreeUnlockProgress, TribeType, clampToBoardDimensions, getTechByID } from "webgl-test-shared";
 import Board from "./Board";
 import Tile from "./Tile";
 import Chunk from "./Chunk";
@@ -51,6 +51,7 @@ export interface RestrictedBuildingArea {
    readonly rotation: number;
    /** The ID of the building responsible for the restricted area */
    readonly associatedBuildingID: number;
+   readonly vertexOffsets: HitboxVertexPositions;
 }
 
 class Tribe {
@@ -97,6 +98,8 @@ class Tribe {
    public occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number> = {};
 
    public restrictedBuildingAreas = new Array<RestrictedBuildingArea>();
+
+   public potentialPlansData: ReadonlyArray<PotentialBuildingPlanData> = [];
 
    public availableResources: Partial<Record<ItemType, number>> = {};
    

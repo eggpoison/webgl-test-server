@@ -1,6 +1,6 @@
-import { BuildingPlanData, BuildingVulnerabilityData, HitboxVertexPositions, IEntityType, ITEM_INFO_RECORD, ItemType, PlaceableItemInfo, Point, RestrictedBuildingAreaData, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, distBetweenPointAndRectangle, distance, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
+import { BuildingPlanData, BuildingVulnerabilityData, HitboxVertexPositions, IEntityType, ITEM_INFO_RECORD, ItemType, PlaceableItemInfo, Point, PotentialBuildingPlanData, RestrictedBuildingAreaData, Settings, SettingsConst, VisibleChunkBounds, VulnerabilityNodeData, circleAndRectangleDoIntersect, distBetweenPointAndRectangle, distance, getItemRecipe, pointIsInRectangle, rectanglePointsDoIntersect } from "webgl-test-shared";
 import Entity from "./Entity";
-import Tribe, { BuildingPlan } from "./Tribe";
+import Tribe, { BuildingPlan, RestrictedBuildingArea } from "./Tribe";
 import CircularHitbox from "./hitboxes/CircularHitbox";
 import RectangularHitbox from "./hitboxes/RectangularHitbox";
 import Board from "./Board";
@@ -13,7 +13,7 @@ const enum Vars {
    /** Base amount the vulnerability decreases when moving in a node */
    SAFE_DISTANCE_FALLOFF = 5,
    /** Falloff from distance from outside the padding */
-   DISTANCE_FALLOFF = 2,
+   DISTANCE_FALLOFF = 1,
    OCCUPIED_NODE_WEIGHT = 10,
    BORDER_PADDING = 5,
    /** Maximum vulnerability that buildings can be placed in */
@@ -32,6 +32,37 @@ export interface VulnerabilityNode {
    readonly y: number;
    vulnerability: number;
 };
+
+export function createRestrictedBuildingArea(x: number, y: number, width: number, height: number, rotation: number, associatedBuildingID: number): RestrictedBuildingArea {
+   const sinRotation = Math.sin(rotation);
+   const cosRotation = Math.cos(rotation);
+
+   const x1 = width * -0.5;
+   const x2 = width * 0.5;
+   const y2 = height * 0.5;
+   
+   const topLeftX = cosRotation * x1 + sinRotation * y2;
+   const topLeftY = cosRotation * y2 - sinRotation * x1;
+   const topRightX = cosRotation * x2 + sinRotation * y2;
+   const topRightY = cosRotation * y2 - sinRotation * x2;
+
+   const vertexOffsets: HitboxVertexPositions = [
+      new Point(topLeftX, topLeftY),
+      new Point(topRightX, topRightY),
+      new Point(-topLeftX, -topLeftY),
+      new Point(-topRightX, -topRightY)
+   ];
+   
+   return {
+      x: x,
+      y: y,
+      width: width,
+      height: height,
+      rotation: rotation,
+      associatedBuildingID: associatedBuildingID,
+      vertexOffsets: vertexOffsets
+   };
+}
 
 const getNodeIndex = (nodeX: number, nodeY: number): VulnerabilityNodeIndex => {
    return nodeY * SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH + nodeX;
@@ -67,26 +98,18 @@ const addCircularHitboxNodePositions = (entityID: number, hitbox: CircularHitbox
    }
 }
 
-const addRectangularHitboxNodePositions = (entityID: number, hitbox: RectangularHitbox, positions: Set<VulnerabilityNodeIndex>, occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>): void => {
-   const minX = hitbox.calculateHitboxBoundsMinX();
-   const maxX = hitbox.calculateHitboxBoundsMaxX();
-   const minY = hitbox.calculateHitboxBoundsMinY();
-   const maxY = hitbox.calculateHitboxBoundsMaxY();
-
-   const rectPosX = hitbox.x;
-   const rectPosY = hitbox.y;
-   
+const addRectangularNodePositions = (entityID: number, rectX: number, rectY: number, rectWidth: number, rectHeight: number, rectRotation: number, rectMinX: number, rectMaxX: number, rectMinY: number, rectMaxY: number, positions: Set<VulnerabilityNodeIndex>, occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number>): void => {
    // @Speed: Math.round might also work
-   const minNodeX = Math.max(Math.floor(minX / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
-   const maxNodeX = Math.min(Math.ceil(maxX / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
-   const minNodeY = Math.max(Math.floor(minY / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
-   const maxNodeY = Math.min(Math.ceil(maxY / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
+   const minNodeX = Math.max(Math.floor(rectMinX / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
+   const maxNodeX = Math.min(Math.ceil(rectMaxX / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
+   const minNodeY = Math.max(Math.floor(rectMinY / SettingsConst.VULNERABILITY_NODE_SEPARATION), 0);
+   const maxNodeY = Math.min(Math.floor(rectMaxY / SettingsConst.VULNERABILITY_NODE_SEPARATION), SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1);
 
    for (let nodeX = minNodeX; nodeX <= maxNodeX; nodeX++) {
       for (let nodeY = minNodeY; nodeY <= maxNodeY; nodeY++) {
          const x = nodeX * SettingsConst.VULNERABILITY_NODE_SEPARATION;
          const y = nodeY * SettingsConst.VULNERABILITY_NODE_SEPARATION;
-         if (distBetweenPointAndRectangle(x, y, rectPosX, rectPosY, hitbox.width, hitbox.height, hitbox.rotation) <= SettingsConst.VULNERABILITY_NODE_SEPARATION * 0.5) {
+         if (distBetweenPointAndRectangle(x, y, rectX, rectY, rectWidth, rectHeight, rectRotation) <= SettingsConst.VULNERABILITY_NODE_SEPARATION * 0.5) {
             const nodeIndex = getNodeIndex(nodeX, nodeY);
             positions.add(nodeIndex);
             occupiedNodeToEntityIDRecord[nodeIndex] = entityID;
@@ -103,7 +126,8 @@ const addEntityNodePositions = (entity: Entity, positions: Set<VulnerabilityNode
       if (hitbox.hasOwnProperty("radius")) {
          addCircularHitboxNodePositions(entity.id, hitbox as CircularHitbox, positions, occupiedNodeToEntityIDRecord);
       } else {
-         addRectangularHitboxNodePositions(entity.id, hitbox as RectangularHitbox, positions, occupiedNodeToEntityIDRecord);
+         const rect = hitbox as RectangularHitbox;
+         addRectangularNodePositions(entity.id, rect.x, rect.y, rect.width, rect.height, rect.rotation, rect.calculateHitboxBoundsMinX(), rect.calculateHitboxBoundsMaxX(), rect.calculateHitboxBoundsMinY(), rect.calculateHitboxBoundsMaxY(), positions, occupiedNodeToEntityIDRecord);
       }
    }
 }
@@ -596,6 +620,8 @@ export function tickTribes(): void {
    for (let i = 0; i < Board.tribes.length; i++) {
       const tribe = Board.tribes[i];
       
+      const buildingsAreDirty = tribe.buildingsAreDirty;
+      
       // Update vulnerability nodes
       if (tribe.buildingsAreDirty) {
          const occupiedNodesInfo = getOccupiedNodesInfo(tribe);
@@ -613,7 +639,7 @@ export function tickTribes(): void {
          }
       }
 
-      updateTribeNextBuilding(tribe);
+      updateTribeNextBuilding(tribe, buildingsAreDirty);
       
       if (Board.ticks % SettingsConst.TPS === 0) {
          // @Cleanup: Not related to tribe building
@@ -650,10 +676,7 @@ const addTileNodePositions = (placeCandidate: WallPlaceCandidate, occupiedNodeIn
    }
 }
 
-const getBuildingMinVulnerability = (tribe: Tribe, building: Entity): number => {
-   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
-   addEntityNodePositions(building, occupiedIndexes, {});
-
+const getBuildingMinVulnerability = (tribe: Tribe, occupiedIndexes: Set<VulnerabilityNodeIndex>): number => {
    let maxVulnerability = 0;
    for (const nodeIndex of occupiedIndexes) {
       const vulnerability = tribe.vulnerabilityNodeRecord[nodeIndex].vulnerability;
@@ -665,10 +688,7 @@ const getBuildingMinVulnerability = (tribe: Tribe, building: Entity): number => 
    return maxVulnerability;
 }
 
-const getBuildingAverageVulnerability = (tribe: Tribe, building: Entity): number => {
-   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
-   addEntityNodePositions(building, occupiedIndexes, {});
-
+const getBuildingAverageVulnerability = (tribe: Tribe, occupiedIndexes: Set<VulnerabilityNodeIndex>): number => {
    let averageVulnerability = 0;
    for (const nodeIndex of occupiedIndexes) {
       const vulnerability = tribe.vulnerabilityNodeRecord[nodeIndex].vulnerability;
@@ -696,7 +716,10 @@ const getVulnerableBuilding = (tribe: Tribe): Entity | null => {
          continue;
       }
 
-      const vulnerability = getBuildingMinVulnerability(tribe, building);
+      const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
+      addEntityNodePositions(building, occupiedIndexes, {});
+
+      const vulnerability = getBuildingMinVulnerability(tribe, occupiedIndexes);
       if (vulnerability > maxVulnerability) {
          maxVulnerability = vulnerability;
          vulnerableBuilding = building;
@@ -709,7 +732,7 @@ const getVulnerableBuilding = (tribe: Tribe): Entity | null => {
    return null;
 }
 
-const entityCollidesWithWall = (x: number, y: number, wallRotation: number, entity: Entity): boolean => {
+const entityCollidesWithWall = (x: number, y: number, wallRotation: number, entity: Entity, wallVertexOffsets: HitboxVertexPositions): boolean => {
    for (let i = 0; i < entity.hitboxes.length; i++) {
       const hitbox = entity.hitboxes[i];
       // @Cleanup: copy and paste
@@ -718,27 +741,9 @@ const entityCollidesWithWall = (x: number, y: number, wallRotation: number, enti
             return true;
          }
       } else {
-         // @Incomplete @Hack: This should be * 0.5, but doing that causes the wall to think its colliding with its snap-pairing wall
-         const x1 = -SettingsConst.TILE_SIZE * 0.4;
-         const x2 = SettingsConst.TILE_SIZE * 0.4;
-         const y2 = SettingsConst.TILE_SIZE * 0.4;
-
          const sinRotation = Math.sin(wallRotation);
          const cosRotation = Math.cos(wallRotation);
-         
-         const topLeftX = cosRotation * x1 + sinRotation * y2;
-         const topLeftY = cosRotation * y2 - sinRotation * x1;
-         const topRightX = cosRotation * x2 + sinRotation * y2;
-         const topRightY = cosRotation * y2 - sinRotation * x2;
-
-         // @Speed
-         const tileVertexOffsets: HitboxVertexPositions = [
-            new Point(topLeftX, topLeftY),
-            new Point(topRightX, topRightY),
-            new Point(-topLeftX, -topLeftY),
-            new Point(-topRightX, -topRightY)
-         ];
-         if (rectanglePointsDoIntersect(tileVertexOffsets, (hitbox as RectangularHitbox).vertexOffsets, x, y, hitbox.x, hitbox.y, cosRotation, -sinRotation, (hitbox as RectangularHitbox).axisX, (hitbox as RectangularHitbox).axisY)) {
+         if (rectanglePointsDoIntersect(wallVertexOffsets, (hitbox as RectangularHitbox).vertexOffsets, x, y, hitbox.x, hitbox.y, cosRotation, -sinRotation, (hitbox as RectangularHitbox).axisX, (hitbox as RectangularHitbox).axisY)) {
             return true;
          }
       }
@@ -754,6 +759,26 @@ const wallSpaceIsFree = (x: number, y: number, wallRotation: number, tribe: Trib
    const minChunkY = Math.max(Math.floor((y - SettingsConst.TILE_SIZE) / SettingsConst.CHUNK_UNITS), 0);
    const maxChunkY = Math.min(Math.floor((y + SettingsConst.TILE_SIZE) / SettingsConst.CHUNK_UNITS), SettingsConst.BOARD_SIZE - 1);
 
+   const sinRotation = Math.sin(wallRotation);
+   const cosRotation = Math.cos(wallRotation);
+
+   const x2 = SettingsConst.TILE_SIZE * 0.499;
+   const x1 = -x2;
+   const y2 = SettingsConst.TILE_SIZE * 0.499;
+   
+   const topLeftX = cosRotation * x1 + sinRotation * y2;
+   const topLeftY = cosRotation * y2 - sinRotation * x1;
+   const topRightX = cosRotation * x2 + sinRotation * y2;
+   const topRightY = cosRotation * y2 - sinRotation * x2;
+
+   const wallVertexOffsets: HitboxVertexPositions = [
+      new Point(topLeftX, topLeftY),
+      new Point(topRightX, topRightY),
+      new Point(-topLeftX, -topLeftY),
+      new Point(-topRightX, -topRightY)
+   ];
+   
+   // Check for existing walls
    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
          const chunk = Board.getChunk(chunkX, chunkY);
@@ -764,10 +789,19 @@ const wallSpaceIsFree = (x: number, y: number, wallRotation: number, tribe: Trib
                continue;
             }
       
-            if (entityCollidesWithWall(x, y, wallRotation, entity)) {
+            if (entityCollidesWithWall(x, y, wallRotation, entity, wallVertexOffsets)) {
                return false;
             }
          }
+      }
+   }
+
+   // Check for restricted areas
+   for (let i = 0; i < tribe.restrictedBuildingAreas.length; i++) {
+      const restrictedArea = tribe.restrictedBuildingAreas[i];
+
+      if (rectanglePointsDoIntersect(wallVertexOffsets, restrictedArea.vertexOffsets, x, y, restrictedArea.x, restrictedArea.y, cosRotation, -sinRotation, Math.sin(restrictedArea.rotation), Math.cos(restrictedArea.rotation))) {
+         return false;
       }
    }
 
@@ -780,12 +814,42 @@ interface WallPlaceCandidate {
    readonly isSnappedToWall: boolean;
 }
 
-const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<WallPlaceCandidate> => {
-   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
-   addEntityNodePositions(building, occupiedIndexes, {});
+const addGridAlignedWallCandidates = (tribe: Tribe, placeCandidates: Array<WallPlaceCandidate>): void => {
+   const occupiedNodeIndexes = new Set<VulnerabilityNodeIndex>();
+   for (let i = 0; i < tribe.buildings.length; i++) {
+      const building = tribe.buildings[i];
+      addEntityNodePositions(building, occupiedNodeIndexes, {});
 
-   const occupyingTileIndexes = new Array<number>();
-   for (const nodeIndex of occupiedIndexes) {
+   }
+   for (let i = 0; i < tribe.restrictedBuildingAreas.length; i++) {
+      const restrictedArea = tribe.restrictedBuildingAreas[i];
+
+      let minX = Number.MAX_SAFE_INTEGER;
+      let maxX = Number.MIN_SAFE_INTEGER;
+      let minY = Number.MAX_SAFE_INTEGER;
+      let maxY = Number.MIN_SAFE_INTEGER;
+      for (let i = 0; i < 4; i++) {
+         const offset = restrictedArea.vertexOffsets[i];
+         if (offset.x < minX) {
+            minX = offset.x;
+         }
+         if (offset.x > maxX) {
+            maxX = offset.x;
+         }
+         if (offset.y < minY) {
+            minY = offset.y;
+         }
+         if (offset.y > maxY) {
+            maxY = offset.y;
+         }
+      }
+      
+      addRectangularNodePositions(0, restrictedArea.x, restrictedArea.y, restrictedArea.width, restrictedArea.height, restrictedArea.rotation, minX, maxX, minY, maxY, occupiedNodeIndexes, {});
+   }
+
+   // Convert to occupied tile indexes
+   const occupiedTileIndexes = new Set<number>();
+   for (const nodeIndex of occupiedNodeIndexes) {
       const nodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
       const nodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
 
@@ -793,57 +857,100 @@ const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<W
       const tileY = Math.floor(nodeY * SettingsConst.VULNERABILITY_NODE_SEPARATION / SettingsConst.TILE_SIZE);
 
       const tileIndex = tileY * SettingsConst.TILES_IN_WORLD_WIDTH + tileX;
-      if (occupyingTileIndexes.indexOf(tileIndex) === -1) {
-         occupyingTileIndexes.push(tileIndex);
-      }
+      occupiedTileIndexes.add(tileIndex);
    }
 
-   // Find all neighbouring tile indexes
-   const neighbouringTileIndexes = new Array<number>();
-   for (let i = 0; i < occupyingTileIndexes.length; i++) {
-      const tileIndex = occupyingTileIndexes[i];
-
+   // Find border tiles
+   const borderTileIndexes = new Set<number>();
+   for (const tileIndex of occupiedTileIndexes) {
       const tileX = tileIndex % SettingsConst.TILES_IN_WORLD_WIDTH;
       const tileY = Math.floor(tileIndex / SettingsConst.TILES_IN_WORLD_WIDTH);
-
-      // Bottom
-      if (tileY > 0) {
-         const tileIndex = (tileY - 1) * SettingsConst.TILES_IN_WORLD_WIDTH + tileX;
-         if (occupyingTileIndexes.indexOf(tileIndex) === -1 && neighbouringTileIndexes.indexOf(tileIndex) === -1) {
-            neighbouringTileIndexes.push(tileIndex);
-         }
-      }
-
-      // Left
-      if (tileX > 0) {
-         const tileIndex = tileY * SettingsConst.TILES_IN_WORLD_WIDTH + tileX - 1;
-         if (occupyingTileIndexes.indexOf(tileIndex) === -1 && neighbouringTileIndexes.indexOf(tileIndex) === -1) {
-            neighbouringTileIndexes.push(tileIndex);
-         }
-      }
 
       // Top
       if (tileY < SettingsConst.TILES_IN_WORLD_WIDTH - 1) {
          const tileIndex = (tileY + 1) * SettingsConst.TILES_IN_WORLD_WIDTH + tileX;
-         if (occupyingTileIndexes.indexOf(tileIndex) === -1 && neighbouringTileIndexes.indexOf(tileIndex) === -1) {
-            neighbouringTileIndexes.push(tileIndex);
+         if (!occupiedTileIndexes.has(tileIndex)) {
+            borderTileIndexes.add(tileIndex);
          }
       }
 
       // Right
       if (tileX < SettingsConst.TILES_IN_WORLD_WIDTH - 1) {
          const tileIndex = tileY * SettingsConst.TILES_IN_WORLD_WIDTH + tileX + 1;
-         if (occupyingTileIndexes.indexOf(tileIndex) === -1 && neighbouringTileIndexes.indexOf(tileIndex) === -1) {
-            neighbouringTileIndexes.push(tileIndex);
+         if (!occupiedTileIndexes.has(tileIndex)) {
+            borderTileIndexes.add(tileIndex);
+         }
+      }
+
+      // Bottom
+      if (tileY > 0) {
+         const tileIndex = (tileY - 1) * SettingsConst.TILES_IN_WORLD_WIDTH + tileX;
+         if (!occupiedTileIndexes.has(tileIndex)) {
+            borderTileIndexes.add(tileIndex);
+         }
+      }
+
+      // Left
+      if (tileX > 0) {
+         const tileIndex = tileY * SettingsConst.TILES_IN_WORLD_WIDTH + tileX - 1;
+         if (!occupiedTileIndexes.has(tileIndex)) {
+            borderTileIndexes.add(tileIndex);
          }
       }
    }
-   
-   const placeCandidates = new Array<WallPlaceCandidate>();
 
-   // Add non-occupied tiles
-   for (let i = 0; i < neighbouringTileIndexes.length; i++) {
-      const tileIndex = neighbouringTileIndexes[i];
+   // Expand tile indexes
+   // @Speed
+   let previousOuterTileIndexes = borderTileIndexes;
+   for (let i = 0; i < 2; i++) {
+      const addedTileIndexes = new Set<VulnerabilityNodeIndex>();
+      
+      for (const tileIndex of previousOuterTileIndexes) {
+         const tileX = tileIndex % SettingsConst.TILES_IN_WORLD_WIDTH;
+         const tileY = Math.floor(tileIndex / SettingsConst.TILES_IN_WORLD_WIDTH);
+
+         // Top
+         if (tileY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+            const tileIndex = (tileY + 1) * SettingsConst.TILES_IN_WORLD_WIDTH + tileX;
+            if (!occupiedTileIndexes.has(tileIndex)) {
+               occupiedTileIndexes.add(tileIndex);
+               addedTileIndexes.add(tileIndex);
+            }
+         }
+   
+         // Right
+         if (tileX < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+            const tileIndex = tileY * SettingsConst.TILES_IN_WORLD_WIDTH + tileX + 1;
+            if (!occupiedTileIndexes.has(tileIndex)) {
+               occupiedTileIndexes.add(tileIndex);
+               addedTileIndexes.add(tileIndex);
+            }
+         }
+   
+         // Bottom
+         if (tileY > 0) {
+            const tileIndex = (tileY - 1) * SettingsConst.TILES_IN_WORLD_WIDTH + tileX;
+            if (!occupiedTileIndexes.has(tileIndex)) {
+               occupiedTileIndexes.add(tileIndex);
+               addedTileIndexes.add(tileIndex);
+            }
+         }
+   
+         // Left
+         if (tileX > 0) {
+            const tileIndex = tileY * SettingsConst.TILES_IN_WORLD_WIDTH + tileX - 1;
+            if (!occupiedTileIndexes.has(tileIndex)) {
+               occupiedTileIndexes.add(tileIndex);
+               addedTileIndexes.add(tileIndex);
+            }
+         }
+      }
+
+      previousOuterTileIndexes = addedTileIndexes;
+   }
+
+   // Filter candidates
+   for (const tileIndex of occupiedTileIndexes) {
       const tileX = tileIndex % SettingsConst.TILES_IN_WORLD_WIDTH;
       const tileY = Math.floor(tileIndex / SettingsConst.TILES_IN_WORLD_WIDTH);
 
@@ -859,7 +966,9 @@ const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<W
          isSnappedToWall: false
       });
    }
-   
+}
+
+const addSnappedWallCandidates = (tribe: Tribe, building: Entity, placeCandidates: Array<WallPlaceCandidate>): void => {
    // @Incomplete: Add tile positions which would connect to existing walls
    const minX = building.boundingAreaMinX - Vars.WALL_SNAP_SEARCH_DISTANCE - 64;
    const maxX = building.boundingAreaMaxX + Vars.WALL_SNAP_SEARCH_DISTANCE + 64;
@@ -878,7 +987,7 @@ const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<W
 
          for (let i = 0; i < chunk.entities.length; i++) {
             const entity = chunk.entities[i];
-            if (entity.type !== IEntityType.wall || seenEntityIDs.indexOf(entity.id) !== -1) {
+            if ((entity.type !== IEntityType.wall) || seenEntityIDs.indexOf(entity.id) !== -1) {
                continue;
             }
             seenEntityIDs.push(entity.id);
@@ -900,59 +1009,187 @@ const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<W
          }
       }
    }
+}
+
+const getWallPlaceCandidates = (tribe: Tribe, building: Entity): ReadonlyArray<WallPlaceCandidate> => {
+   const placeCandidates = new Array<WallPlaceCandidate>();
+
+   addGridAlignedWallCandidates(tribe, placeCandidates);
+   addSnappedWallCandidates(tribe, building, placeCandidates);
    
    return placeCandidates;
 }
 
-const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPlan | null => {
-   const potentialWallPlaceCandidates = getWallPlaceCandidates(tribe, building);
-   if (potentialWallPlaceCandidates.length === 0) {
-      // Unable to find a position
-      return null;
+interface WallPlaceQueryResults {
+   readonly plan: BuildingPlan | null;
+   readonly potentialPlans: ReadonlyArray<PotentialBuildingPlanData>;
+}
+
+const getExtendedOccupiedNodes = (occupiedNodeIndexes: Set<VulnerabilityNodeIndex>): Set<VulnerabilityNodeIndex> => {
+   // Find border nodes
+   const borderNodeIndexes = new Set<number>();
+   for (const nodeIndex of occupiedNodeIndexes) {
+      const nodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
+      const nodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
+
+      // Top
+      if (nodeY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+         const nodeIndex = getNodeIndex(nodeX, nodeY + 1);
+         if (!occupiedNodeIndexes.has(nodeIndex)) {
+            borderNodeIndexes.add(nodeIndex);
+         }
+      }
+
+      // Right
+      if (nodeX < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+         const nodeIndex = getNodeIndex(nodeX + 1, nodeY);
+         if (!occupiedNodeIndexes.has(nodeIndex)) {
+            borderNodeIndexes.add(nodeIndex);
+         }
+      }
+
+      // Bottom
+      if (nodeY > 0) {
+         const nodeIndex = getNodeIndex(nodeX, nodeY - 1);
+         if (!occupiedNodeIndexes.has(nodeIndex)) {
+            borderNodeIndexes.add(nodeIndex);
+         }
+      }
+
+      // Left
+      if (nodeX > 0) {
+         const nodeIndex = getNodeIndex(nodeX - 1, nodeY);
+         if (!occupiedNodeIndexes.has(nodeIndex)) {
+            borderNodeIndexes.add(nodeIndex);
+         }
+      }
    }
+
+   const expandedNodeIndexes = new Set<VulnerabilityNodeIndex>();
+   for (const nodeIndex of occupiedNodeIndexes) {
+      expandedNodeIndexes.add(nodeIndex);
+   }
+   
+   // Expand nodes
+   let previousOuterNodes = borderNodeIndexes;
+   for (let i = 0; i < 5; i++) {
+      // 
+      // Expand previous outer nodes
+      // 
+
+      const addedNodes = new Set<VulnerabilityNodeIndex>();
+      
+      for (const nodeIndex of previousOuterNodes) {
+         const nodeX = nodeIndex % SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH;
+         const nodeY = Math.floor(nodeIndex / SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH);
+
+         // Top
+         if (nodeY < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+            const nodeIndex = getNodeIndex(nodeX, nodeY + 1);
+            if (!expandedNodeIndexes.has(nodeIndex)) {
+               expandedNodeIndexes.add(nodeIndex);
+               addedNodes.add(nodeIndex);
+            }
+         }
+   
+         // Right
+         if (nodeX < SettingsConst.VULNERABILITY_NODES_IN_WORLD_WIDTH - 1) {
+            const nodeIndex = getNodeIndex(nodeX + 1, nodeY);
+            if (!expandedNodeIndexes.has(nodeIndex)) {
+               expandedNodeIndexes.add(nodeIndex);
+               addedNodes.add(nodeIndex);
+            }
+         }
+   
+         // Bottom
+         if (nodeY > 0) {
+            const nodeIndex = getNodeIndex(nodeX, nodeY - 1);
+            if (!expandedNodeIndexes.has(nodeIndex)) {
+               expandedNodeIndexes.add(nodeIndex);
+               addedNodes.add(nodeIndex);
+            }
+         }
+   
+         // Left
+         if (nodeX > 0) {
+            const nodeIndex = getNodeIndex(nodeX - 1, nodeY);
+            if (!expandedNodeIndexes.has(nodeIndex)) {
+               expandedNodeIndexes.add(nodeIndex);
+               addedNodes.add(nodeIndex);
+            }
+         }
+      }
+
+      previousOuterNodes = addedNodes;
+   }
+
+   return expandedNodeIndexes;
+}
+
+const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): WallPlaceQueryResults => {
+   const potentialCandidates = getWallPlaceCandidates(tribe, building);
+   if (potentialCandidates.length === 0) {
+      // Unable to find a position
+      return {
+         potentialPlans: [],
+         plan:  null
+      };
+   }
+
+   const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
+   addEntityNodePositions(building, occupiedIndexes, {});
+
+   const extendedOccupiedNodeIndexes = getExtendedOccupiedNodes(occupiedIndexes);
 
    const realNodes = tribe.vulnerabilityNodes;
    const realNodeRecord = tribe.vulnerabilityNodeRecord;
    const realOccupiedNodes = tribe.occupiedVulnerabilityNodes;
    const realInsideNodes = tribe.insideNodes;
    const realContainedBuildingIDs = tribe.containedBuildingIDs;
+
+   const potentialPlans = new Array<PotentialBuildingPlanData>();
    
-   // @Incomplete: run average check only using the tied candidates
-   
+   // 
    // Simulate placing each position to see which one reduces vulnerability the most
+   // 
+
    let bestMinVulnerability = Vars.MAX_VULNERABILITY + 1;
-   let bestMinCandidate: WallPlaceCandidate;
-   let bestAverageVulnerability = Vars.MAX_VULNERABILITY + 1;
-   let bestAverageCandidate: WallPlaceCandidate;
-   let currentBestIsDuplicate = false;
-   for (let i = 0; i < potentialWallPlaceCandidates.length; i++) {
-      const placeCandidate = potentialWallPlaceCandidates[i];
+   let bestCandidates = new Array<WallPlaceCandidate>();
+   let bestCandidateAverages = new Array<number>();
+   for (let i = 0; i < potentialCandidates.length; i++) {
+      const candidate = potentialCandidates[i];
 
       const occupiedNodesInfo = getOccupiedNodesInfo(tribe);
-      addTileNodePositions(placeCandidate, occupiedNodesInfo.occupiedNodeIndexes);
+      addTileNodePositions(candidate, occupiedNodesInfo.occupiedNodeIndexes);
 
       updateTribeVulnerabilityNodes(tribe, occupiedNodesInfo.occupiedNodeIndexes, occupiedNodesInfo.occupiedNodeToEntityIDRecord);
 
-      let minVulnerability = getBuildingMinVulnerability(tribe, building);
-      let averageVulnerability = getBuildingAverageVulnerability(tribe, building);
+      const minVulnerability = getBuildingMinVulnerability(tribe, occupiedIndexes);
+      const averageVulnerability = getBuildingAverageVulnerability(tribe, occupiedIndexes);
+      const extendedAverageVulnerability = getBuildingAverageVulnerability(tribe, extendedOccupiedNodeIndexes);
 
       // Make the AI want to snap to existing walls more
-      if (placeCandidate.isSnappedToWall) {
-         minVulnerability -= 5;
-         averageVulnerability -= 5;
-      }
+      const weightedAverage = candidate.isSnappedToWall ? averageVulnerability - 0.5 : averageVulnerability;
       
       if (minVulnerability < bestMinVulnerability) {
          bestMinVulnerability = minVulnerability;
-         bestMinCandidate = placeCandidate;
-         currentBestIsDuplicate = false
-      } else if (minVulnerability === minVulnerability) {
-         currentBestIsDuplicate = true;
+         bestCandidates = [candidate];
+         bestCandidateAverages = [averageVulnerability];
+      } else if (minVulnerability === bestMinVulnerability) {
+         bestCandidates.push(candidate);
+         bestCandidateAverages.push(weightedAverage);
       }
-      if (averageVulnerability < bestAverageVulnerability) {
-         bestAverageVulnerability = averageVulnerability;
-         bestAverageCandidate = placeCandidate;
-      }
+
+      potentialPlans.push({
+         x: candidate.position.x,
+         y: candidate.position.y,
+         rotation: candidate.rotation,
+         buildingType: IEntityType.wall,
+         minVulnerability: minVulnerability,
+         averageVulnerability: averageVulnerability,
+         extendedAverageVulnerability: extendedAverageVulnerability,
+         isBestMin: false
+      });
 
       // Reset back to real nodes
       tribe.vulnerabilityNodes = realNodes;
@@ -962,16 +1199,87 @@ const findIdealWallPlacePosition = (tribe: Tribe, building: Entity): BuildingPla
       tribe.containedBuildingIDs = realContainedBuildingIDs;
    }
 
-   if (bestMinVulnerability > Vars.MAX_VULNERABILITY) {
-      throw new Error();
+   if (bestCandidates.length === 1) {
+      // Mark best min
+      for (let i = 0; i < potentialCandidates.length; i++) {
+         const candidate = potentialCandidates[i];
+         if (candidate === bestCandidates[0]) {
+            potentialPlans[i].isBestMin = true;
+            break;
+         }
+      }
+      
+      const candidate = bestCandidates[0];
+      return {
+         plan: {
+            position: candidate.position,
+            rotation: candidate.rotation,
+            buildingRecipe: getItemRecipe(ItemType.wooden_wall)!,
+            assignedTribesmanID: 0
+         },
+         potentialPlans: potentialPlans
+      };
    }
 
-   const candidate = currentBestIsDuplicate ? bestAverageCandidate! : bestMinCandidate!;
+   let bestAverageCandidates = [bestCandidates[0]];
+   let bestAverage = bestCandidateAverages[0];
+   for (let i = 1; i < bestCandidates.length; i++) {
+      const average = bestCandidateAverages[i];
+      if (average < bestAverage) {
+         bestAverage = average;
+         bestAverageCandidates = [bestCandidates[i]];
+      } else if (average === bestAverage) {
+         bestAverageCandidates.push(bestCandidates[i]);
+      }
+   }
+
+   // Mark best mins
+   for (let i = 0; i < potentialPlans.length; i++) {
+      const planData = potentialPlans[i];
+      if (planData.minVulnerability === bestMinVulnerability) {
+         potentialPlans[i].isBestMin = true;
+      }
+   }
+
+   if (bestAverageCandidates.length === 1) {
+      const bestCandidate = bestAverageCandidates[0];
+      return {
+         plan: {
+            position: bestCandidate.position,
+            rotation: bestCandidate.rotation,
+            buildingRecipe: getItemRecipe(ItemType.wooden_wall)!,
+            assignedTribesmanID: 0
+         },
+         potentialPlans: potentialPlans
+      };
+   }
+
+   // If tied for averages, use smallest extended average
+
+   let bestExtendedAverageCandidate!: WallPlaceCandidate;
+   let bestExtendedAverage = Number.MAX_SAFE_INTEGER;
+   for (let i = 0; i < bestAverageCandidates.length; i++) {
+      const candidate = bestAverageCandidates[i];
+      const idx = potentialCandidates.indexOf(candidate);
+      if (idx === -1) {
+         throw new Error();
+      }
+
+      const planData = potentialPlans[idx];
+      if (planData.extendedAverageVulnerability < bestExtendedAverage) {
+         bestExtendedAverage = planData.extendedAverageVulnerability;
+         bestExtendedAverageCandidate = candidate;
+      }
+   }
+
    return {
-      position: candidate.position,
-      rotation: candidate.rotation,
-      buildingRecipe: getItemRecipe(ItemType.wooden_wall)!,
-      assignedTribesmanID: 0
+      plan: {
+         position: bestExtendedAverageCandidate.position,
+         rotation: bestExtendedAverageCandidate.rotation,
+         buildingRecipe: getItemRecipe(ItemType.wooden_wall)!,
+         assignedTribesmanID: 0
+      },
+      potentialPlans: potentialPlans
    };
 }
 
@@ -1040,26 +1348,30 @@ const planIsInvalid = (tribe: Tribe, plan: BuildingPlan): boolean => {
    return false;
 }
 
-export function updateTribeNextBuilding(tribe: Tribe): void {
+export function updateTribeNextBuilding(tribe: Tribe, buildingsAreDirty: boolean): void {
    // Priorities:
    // 1) Protect vulnerable buildings
 
-   if (tribe.buildingPlan !== null) {
-      // Make sure the plan is still valid
-      if (planIsInvalid(tribe, tribe.buildingPlan)) {
-         tribe.buildingPlan = null;
-      } else {
-         return;
+   // If the buildings are dirty, always recalculate
+   if (!buildingsAreDirty) {
+      if (tribe.buildingPlan !== null) {
+         // Make sure the plan is still valid
+         if (planIsInvalid(tribe, tribe.buildingPlan)) {
+            tribe.buildingPlan = null;
+         } else {
+            return;
+         }
       }
    }
-
+   
    // Check for vulnerable buildings
    const building = getVulnerableBuilding(tribe);
    if (building !== null) {
       // Find the place for a wall that would minimise the building's vulnerability
-      const wallPlan = findIdealWallPlacePosition(tribe, building);
+      const planQueryResults = findIdealWallPlacePosition(tribe, building);
 
-      tribe.buildingPlan = wallPlan;
+      tribe.buildingPlan = planQueryResults.plan;
+      tribe.potentialPlansData = planQueryResults.potentialPlans;
       return;
    }
 
@@ -1135,6 +1447,23 @@ export function getVisibleBuildingPlans(visibleTribes: ReadonlyArray<Tribe>, chu
    return buildingPlansData;
 }
 
+export function getVisiblePotentialBuildingPlans(visibleTribes: ReadonlyArray<Tribe>, chunkBounds: VisibleChunkBounds): ReadonlyArray<PotentialBuildingPlanData> {
+   const potentialPlansData = new Array<PotentialBuildingPlanData>();
+   for (let i = 0; i < visibleTribes.length; i++) {
+      const tribe = visibleTribes[i];
+
+      for (let i = 0; i < tribe.potentialPlansData.length; i++) {
+         const potentialPlanData = tribe.potentialPlansData[i];
+      
+         // @Incomplete: filter out potential plans which aren't visible
+         
+         potentialPlansData.push(potentialPlanData);
+      }
+   }
+
+   return potentialPlansData;
+}
+
 export function getVisibleBuildingVulnerabilities(visibleTribes: ReadonlyArray<Tribe>, chunkBounds: VisibleChunkBounds): ReadonlyArray<BuildingVulnerabilityData> {
    const buildingVulnerabiliesData = new Array<BuildingVulnerabilityData>();
    for (let i = 0; i < visibleTribes.length; i++) {
@@ -1147,11 +1476,14 @@ export function getVisibleBuildingVulnerabilities(visibleTribes: ReadonlyArray<T
          }
          // @Incomplete: filter out nodes which aren't in the chunk bounds
 
+         const occupiedIndexes = new Set<VulnerabilityNodeIndex>();
+         addEntityNodePositions(building, occupiedIndexes, {});
+
          buildingVulnerabiliesData.push({
             x: building.position.x,
             y: building.position.y,
-            minVulnerability: getBuildingMinVulnerability(tribe, building),
-            averageVulnerability: getBuildingAverageVulnerability(tribe, building)
+            minVulnerability: getBuildingMinVulnerability(tribe, occupiedIndexes),
+            averageVulnerability: getBuildingAverageVulnerability(tribe, occupiedIndexes)
          });
       }
    }

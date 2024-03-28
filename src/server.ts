@@ -65,7 +65,7 @@ import { serialiseBuildingMaterialComponent } from "./components/BuildingMateria
 import { serialiseSpikesComponent } from "./components/SpikesComponent";
 import { serialiseTribeWarriorComponent } from "./components/TribeWarriorComponent";
 import { serialiseResearchBenchComponent } from "./components/ResearchBenchComponent";
-import { getVisibleBuildingPlans, getVisibleBuildingVulnerabilities, getVisibleRestrictedBuildingAreas, getVisibleTribes, getVisibleVulnerabilityNodesData } from "./ai-tribe-building";
+import { getVisibleBuildingPlans, getVisibleBuildingVulnerabilities, getVisiblePotentialBuildingPlans, getVisibleRestrictedBuildingAreas, getVisibleTribes, getVisibleVulnerabilityNodesData } from "./ai-tribe-building";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
@@ -621,7 +621,8 @@ class GameServer {
                visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(visibleTribes, visibleChunkBounds),
                visibleBuildingPlans: getVisibleBuildingPlans(visibleTribes, visibleChunkBounds),
                visibleBuildingVulnerabilities: getVisibleBuildingVulnerabilities(visibleTribes, visibleChunkBounds),
-               visibleRestrictedBuildingAreas: getVisibleRestrictedBuildingAreas(visibleTribes, visibleChunkBounds)
+               visibleRestrictedBuildingAreas: getVisibleRestrictedBuildingAreas(visibleTribes, visibleChunkBounds),
+               visiblePotentialBuildingPlans: getVisiblePotentialBuildingPlans(visibleTribes, visibleChunkBounds)
             };
 
             SERVER.playerDataRecord[socket.id] = playerData;
@@ -896,7 +897,8 @@ class GameServer {
                   visibleVulnerabilityNodes: getVisibleVulnerabilityNodesData(visibleTribes, extendedVisibleChunkBounds),
                   visibleBuildingPlans: getVisibleBuildingPlans(visibleTribes, extendedVisibleChunkBounds),
                   visibleBuildingVulnerabilities: getVisibleBuildingVulnerabilities(visibleTribes, extendedVisibleChunkBounds),
-                  visibleRestrictedBuildingAreas: getVisibleRestrictedBuildingAreas(visibleTribes, extendedVisibleChunkBounds)
+                  visibleRestrictedBuildingAreas: getVisibleRestrictedBuildingAreas(visibleTribes, extendedVisibleChunkBounds),
+                  visiblePotentialBuildingPlans: getVisiblePotentialBuildingPlans(visibleTribes, extendedVisibleChunkBounds)
                };
    
                // Send the game data to the player

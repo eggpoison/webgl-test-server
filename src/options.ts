@@ -14,7 +14,7 @@ const OPTIONS: Options = {
    generateRivers: false,
    generateWalls: true,
    inBenchmarkMode: true,
-   warp: true
+   warp: false
 };
 
 

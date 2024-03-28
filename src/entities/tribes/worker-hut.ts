@@ -7,6 +7,7 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { HutComponent } from "../../components/HutComponent";
 import { TribeComponent } from "../../components/TribeComponent";
+import { createRestrictedBuildingArea } from "../../ai-tribe-building";
 
 export const WORKER_HUT_SIZE = 88;
 
@@ -32,14 +33,9 @@ export function onWorkerHutJoin(hut: Entity): void {
    const offsetAmount = WORKER_HUT_SIZE / 2 + 55;
    const x = hut.position.x + offsetAmount * Math.sin(hut.rotation);
    const y = hut.position.y + offsetAmount * Math.cos(hut.rotation);
-   tribeComponent.tribe.restrictedBuildingAreas.push({
-      x: x,
-      y: y,
-      rotation: hut.rotation,
-      width: 100,
-      height: 70,
-      associatedBuildingID: hut.id
-   });
+
+   const restrictedArea = createRestrictedBuildingArea(x, y, 100, 70, hut.rotation, hut.id);
+   tribeComponent.tribe.restrictedBuildingAreas.push(restrictedArea);
 }
 
 export function onWorkerHutRemove(hut: Entity): void {
