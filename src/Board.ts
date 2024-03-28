@@ -68,7 +68,7 @@ import OPTIONS from "./options";
 import { onTunnelJoin, onTunnelRemove } from "./entities/structures/tunnel";
 import { CollisionVars, collide, entitiesAreColliding } from "./collision";
 import { tickTunnelComponent } from "./components/TunnelComponent";
-import { tickTribes } from "./ai-tribe-building";
+import { tickTribes } from "./ai-tribe-building/ai-tribe-building";
 
 const START_TIME = 6;
 

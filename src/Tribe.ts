@@ -8,7 +8,7 @@ import { createTribeWorker } from "./entities/tribes/tribe-worker";
 import { TotemBannerComponent, addBannerToTotem, removeBannerFromTotem } from "./components/TotemBannerComponent";
 import { createTribeWarrior } from "./entities/tribes/tribe-warrior";
 import { SERVER } from "./server";
-import { VulnerabilityNode, VulnerabilityNodeIndex } from "./ai-tribe-building";
+import { SafetyNode, SafetyNodeIndex } from "./ai-tribe-building/ai-tribe-building";
 import { getInventory } from "./components/InventoryComponent";
 
 const RESPAWN_TIME_TICKS = 5 * SettingsConst.TPS;
@@ -90,12 +90,12 @@ class Tribe {
    /** IDs of all friendly tribesmen */
    public readonly friendlyTribesmenIDs = new Array<number>();
 
-   public vulnerabilityNodes = new Array<VulnerabilityNode>();
-   public vulnerabilityNodeRecord: Record<number, VulnerabilityNode> = {};
-   public occupiedVulnerabilityNodes = new Set<VulnerabilityNodeIndex>();
+   public safetyNodes = new Array<SafetyNode>();
+   public safetyNodeRecord: Record<number, SafetyNode> = {};
+   public occupiedSafetyNodes = new Set<SafetyNodeIndex>();
    public insideNodes = new Set<number>();
    public containedBuildingIDs = new Set<number>();
-   public occupiedNodeToEntityIDRecord: Record<VulnerabilityNodeIndex, number> = {};
+   public occupiedNodeToEntityIDRecord: Record<SafetyNodeIndex, number> = {};
 
    public restrictedBuildingAreas = new Array<RestrictedBuildingArea>();
 

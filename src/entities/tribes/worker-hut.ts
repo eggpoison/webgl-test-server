@@ -7,7 +7,7 @@ import { HealthComponent } from "../../components/HealthComponent";
 import { StatusEffectComponent, StatusEffectComponentArray } from "../../components/StatusEffectComponent";
 import { HutComponent } from "../../components/HutComponent";
 import { TribeComponent } from "../../components/TribeComponent";
-import { createRestrictedBuildingArea } from "../../ai-tribe-building";
+import { createRestrictedBuildingArea } from "../../ai-tribe-building/ai-tribe-building";
 
 export const WORKER_HUT_SIZE = 88;
 

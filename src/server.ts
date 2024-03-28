@@ -65,7 +65,7 @@ import { serialiseBuildingMaterialComponent } from "./components/BuildingMateria
 import { serialiseSpikesComponent } from "./components/SpikesComponent";
 import { serialiseTribeWarriorComponent } from "./components/TribeWarriorComponent";
 import { serialiseResearchBenchComponent } from "./components/ResearchBenchComponent";
-import { getVisibleBuildingPlans, getVisibleBuildingVulnerabilities, getVisiblePotentialBuildingPlans, getVisibleRestrictedBuildingAreas, getVisibleTribes, getVisibleVulnerabilityNodesData } from "./ai-tribe-building";
+import { getVisibleTribes, getVisibleVulnerabilityNodesData, getVisibleBuildingPlans, getVisibleBuildingVulnerabilities, getVisibleRestrictedBuildingAreas, getVisiblePotentialBuildingPlans } from "./ai-tribe-building/ai-tribe-client-data";
 
 // @Incomplete: Make slower
 const TIME_PASS_RATE = 300;
